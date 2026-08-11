@@ -47,15 +47,17 @@ Topics:
   kit help template      the feature doc format, field by field
   kit help conventions   how the features directory works
   kit help checks        every audit finding and what it means
+  kit help go-checklist  engineering practices for Go projects, tiered
 
 Run "kit <command> --help" for a command's options.`
 
 // topics map a help topic to embedded content, so the binary carries its own
 // documentation and an agent never needs the kit's repository.
 var topics = map[string]string{
-	"protocol":    "templates/AGENTS-section.md",
-	"template":    "templates/features-TEMPLATE.md",
-	"conventions": "templates/features-README.md",
+	"protocol":     "templates/AGENTS-section.md",
+	"template":     "templates/features-TEMPLATE.md",
+	"conventions":  "templates/features-README.md",
+	"go-checklist": "templates/go-checklist.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
