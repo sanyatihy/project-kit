@@ -18,6 +18,7 @@ Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
   kit block <id> "<question>"         park a decision only a human can make
+  kit ship  <id>                      tick the last box: verify, stamp, freeze
   kit next  [PATH ...] [--json]       what should I work on?
   kit audit [PATH ...] [--json] [--strict]
                                       where do the docs disagree with the repo?
@@ -124,6 +125,21 @@ State a leaning. It turns most questions into a yes/no.
 
   kit block 0007 "Should codes expire? Leaning: no, keep forever."
   kit block 7 "Using base62 for slugs." --fyi`,
+
+	"ship": `kit ship <id>
+
+Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
+status: Shipped, and stamps shipped: with today's date.
+
+Doing this by hand is where two audit findings come from — unticked-shipped and
+shipped-no-date — so the command removes the mistake rather than reporting it
+afterwards.
+
+A Shipped doc is frozen history: durable facts belong in docs/TECH.md from then
+on, and the doc itself must not be edited again.
+
+  kit ship 0007
+  kit ship 7`,
 
 	"next": `kit next [PATH ...] [--json]
 

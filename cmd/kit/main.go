@@ -74,6 +74,8 @@ func run() int {
 		return runNew(os.Args[2:])
 	case "block":
 		return runBlock(os.Args[2:])
+	case "ship":
+		return runShip(os.Args[2:])
 	case "next":
 		return runNext(os.Args[2:])
 	case "audit":
@@ -208,6 +210,45 @@ func runBlock(args []string) int {
 	} else {
 		fmt.Printf("\n  %s is blocked until a human answers. Move to another feature.\n\n", id)
 	}
+	return 0
+}
+
+// ---------------------------------------------------------------- ship
+
+func runShip(args []string) int {
+	fs := newFlagSet("ship")
+	rest := parseArgs(fs, args)
+	if len(rest) != 1 {
+		fmt.Fprintf(os.Stderr, "kit ship: need one feature id\n\n%s\n", commandHelp["ship"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit ship: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit ship: %v\n", err)
+		return 2
+	}
+	res, err := kit.Ship(repo, id, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit ship: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  shipped  %s  (was %s)\n", res.Doc, res.Was)
+	fmt.Printf("\nnext:\n")
+	if res.TechDoc != "" {
+		fmt.Printf("  move durable facts into %s — the feature doc is frozen history now\n", res.TechDoc)
+	} else {
+		fmt.Printf("  add docs/TECH.md and move durable facts into it\n")
+	}
+	if res.OpenLogs {
+		fmt.Printf("  ## Log is empty; record what was decided and why\n")
+	}
+	fmt.Printf("  kit next\n\n")
 	return 0
 }
 

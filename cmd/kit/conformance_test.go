@@ -229,18 +229,22 @@ func (r *result) lacks(unwanted ...string) *result {
 	return r
 }
 
-func (r *result) outHas(want string) *result {
+func (r *result) outHas(want ...string) *result {
 	r.t.Helper()
-	if !strings.Contains(r.Stdout, want) {
-		r.t.Errorf("%s: stdout lacks %q%s", r.cmd(), want, r.context())
+	for _, w := range want {
+		if !strings.Contains(r.Stdout, w) {
+			r.t.Errorf("%s: stdout lacks %q%s", r.cmd(), w, r.context())
+		}
 	}
 	return r
 }
 
-func (r *result) errHas(want string) *result {
+func (r *result) errHas(want ...string) *result {
 	r.t.Helper()
-	if !strings.Contains(r.Stderr, want) {
-		r.t.Errorf("%s: stderr lacks %q%s", r.cmd(), want, r.context())
+	for _, w := range want {
+		if !strings.Contains(r.Stderr, w) {
+			r.t.Errorf("%s: stderr lacks %q%s", r.cmd(), w, r.context())
+		}
 	}
 	return r
 }
