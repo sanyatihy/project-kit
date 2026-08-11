@@ -42,10 +42,11 @@ the tasks this way keeps every intermediate state green.
 ## Tasks
 - [x] Commit the tree and create the private `sanyatihy/project-kit` remote, then push
 - [x] Document `GOPRIVATE` in the README install section — a private module needs it on every machine
-- [ ] Verify `go install github.com/sanyatihy/project-kit/cmd/kit@latest` from a clean `GOMODCACHE` with `GOPRIVATE` set
+- [x] Verify `go install github.com/sanyatihy/project-kit/cmd/kit@latest` from a clean `GOMODCACHE` with `GOPRIVATE` set
+- [x] `kit version` reports the module version from build info, not `dev`, when installed with `go install`
 - [ ] Tag `v0.1.0` so `@latest` pins a release rather than the branch
-- [ ] Teach the generated `--stack go` `check.yml` to install the kit from a private module
-- [ ] Add the kit's own `.github/workflows/check.yml` running `make check`
+- [x] Drop `kit audit --strict` from the generated `--stack go` `check.yml` so scaffolding needs no credential
+- [x] Add the kit's own `.github/workflows/check.yml` running `make check`
 
 ## Open questions
 <!-- none -->
@@ -58,3 +59,24 @@ the tasks this way keeps every intermediate state green.
   `GOPRIVATE` and Git credentials for the host on every machine and in every CI job
   that installs the kit. Added the two tasks that carry that cost: the README note and
   the generated `check.yml`.
+- 2026-08-11 — cold `go install` from an empty `GOMODCACHE` verified working against
+  the private remote over the SSH rewrite. Two traps found doing it, both now in the
+  README: `GOPRIVATE` is a list that an existing shell `export` silently overrides, and
+  a `sum.golang.org` 404 quotes a git auth failure from *its* server, which reads like
+  a local credential problem but is not.
+- 2026-08-11 — the installed binary reports `kit dev`: `Version` is stamped only by the
+  Makefile's `-ldflags`, which `go install` does not apply, so tagging alone will not
+  make `kit version` report the tag. The module version is in the embedded build info.
+  Added a task to read it from there, ordered before the tag so `v0.1.0` is the first
+  release that reports itself correctly.
+- 2026-08-11 — generated projects no longer run `kit audit --strict` in CI. Auditing
+  elsewhere means installing a private module, so every scaffolded repo would carry a
+  token to store and rotate, and its first push would fail until someone set it.
+  Zero-setup scaffolding is worth more than catching drift a few hours before
+  `kit next` would. The kit's own CI keeps the audit — it has the source, so
+  `go run ./cmd/kit` needs nothing to authenticate. Revisit if the kit goes public;
+  the two steps cost nothing then.
+- 2026-08-11 — adding `golangci-lint` to the kit's CI surfaced an unchecked `Close`
+  on a written file in `NewFeature`. A flush failure there would have `kit new`
+  report a doc it had only half written. Fixed by reporting the `Close` error rather
+  than deferring it.

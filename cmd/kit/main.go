@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -24,7 +25,35 @@ import (
 var templates = assets.FS
 
 // Version is stamped at build time: -ldflags "-X main.Version=$(git describe)".
+// `go install` does not apply the Makefile's ldflags, so a binary installed over
+// the network reports whatever Go embedded in its build info instead — see
+// resolveVersion.
 var Version = "dev"
+
+// resolveVersion decides what `kit version` prints.
+//
+// The ldflags stamp wins when it is there: `git describe` carries the commit and a
+// -dirty marker, which the module version cannot. Otherwise fall back to the module
+// version Go embeds, which is the tag for `@v0.1.0`, a pseudo-version for `@latest`
+// off an untagged branch, and "(devel)" for a plain `go build` — that last one is
+// noise, so it degrades to "dev".
+func resolveVersion(stamped, embedded string) string {
+	if stamped != "" && stamped != "dev" {
+		return stamped
+	}
+	if embedded != "" && embedded != "(devel)" {
+		return embedded
+	}
+	return "dev"
+}
+
+func version() string {
+	embedded := ""
+	if info, ok := debug.ReadBuildInfo(); ok {
+		embedded = info.Main.Version
+	}
+	return resolveVersion(Version, embedded)
+}
 
 func main() { os.Exit(run()) }
 
@@ -37,7 +66,7 @@ func run() int {
 	case "-h", "--help", "help":
 		return runHelp(templates, os.Args[2:])
 	case "version", "--version":
-		fmt.Println("kit " + Version)
+		fmt.Println("kit " + version())
 		return 0
 	case "init":
 		return runInit(os.Args[2:])
@@ -325,8 +354,10 @@ func printFindings(repos []*kit.Repo, all [][]kit.Finding, color bool) {
 func newFlagSet(name string) *flag.FlagSet {
 	fs := flag.NewFlagSet("kit "+name, flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Fprintln(fs.Output(), commandHelp[name])
-		fmt.Fprintln(fs.Output(), "\nOptions:")
+		// Nothing useful to do if printing help fails; the process is on its
+		// way out either way.
+		_, _ = fmt.Fprintln(fs.Output(), commandHelp[name])
+		_, _ = fmt.Fprintln(fs.Output(), "\nOptions:")
 		fs.PrintDefaults()
 	}
 	return fs

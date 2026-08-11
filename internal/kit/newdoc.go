@@ -78,8 +78,13 @@ func NewFeature(templates fs.FS, r *Repo, title string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
 	if _, err := file.WriteString(filled); err != nil {
+		_ = file.Close()
+		return "", err
+	}
+	// Close is reported, not deferred and dropped: a write can fail on flush, and
+	// swallowing that would have `kit new` announce a doc it only half wrote.
+	if err := file.Close(); err != nil {
 		return "", err
 	}
 	return path, nil
