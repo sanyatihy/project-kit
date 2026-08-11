@@ -1,7 +1,7 @@
 ---
 id: 0002
 title: Restore the conformance suite
-status: Accepted
+status: In progress
 created: 2026-08-11
 shipped:
 check:
@@ -34,7 +34,7 @@ it stays quiet when it should. The quiet cases are the ones that matter, because
 noisy check trains people to ignore the tool.
 
 ## Tasks
-- [ ] Harness in `cmd/kit`: build the binary once, helpers to make a temp project and run subcommands
+- [x] Harness in `cmd/kit`: build the binary once, helpers to make a temp project and run subcommands
 - [ ] `init`: fresh layout, never overwrites, appends vs refreshes the protocol, creates the repo, `--stack go`, no duplicate entry point
 - [ ] `new`: next free ID, slug, frontmatter filled, refuses to overwrite
 - [ ] `next`: topmost box, In progress before Accepted, branch claims, INBOX blocks, drafts, WIP warning
