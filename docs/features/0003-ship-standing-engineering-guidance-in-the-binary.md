@@ -1,9 +1,9 @@
 ---
 id: 0003
 title: Ship standing engineering guidance in the binary
-status: Accepted
+status: Shipped
 created: 2026-08-11
-shipped:
+shipped: 2026-08-11
 check:
 checked:
 related: ../../cmd/kit/help.go
@@ -61,7 +61,7 @@ findings become their own docs, not fixes smuggled into this feature.
 - [x] `kit help go-checklist` — the tiered checklist, embedded, checkbox syntax removed
 - [x] Conduct rules in `## Work protocol`: how to approach the code, not just the process
 - [x] `kit help deployment` — the provider-agnostic patterns behind ai-bot's setup
-- [ ] Dogfood: review the kit against its own checklist; findings become BACKLOG entries or feature docs
+- [x] Dogfood: review the kit against its own checklist; findings become BACKLOG entries or feature docs
 
 ## Open questions
 <!-- none -->
@@ -74,3 +74,10 @@ findings become their own docs, not fixes smuggled into this feature.
   decision stands. That decision was about generating files that rot; it never said
   the knowledge should stay in one repo. The patterns are what a future
   "go to production" feature doc puts in its Design section.
+- 2026-08-11 — dogfooding found six real things in a small, carefully written
+  codebase, which is the evidence the checklist earns its place. Four are filed in
+  BACKLOG.md; the strongest is that `NewFeature` calls `time.Now()` inline while
+  `audit` correctly takes an injected `today`, so the kit already knows the rule and
+  breaks it in one place. Three checklist items were considered and rejected as
+  thumping — immutable lookup tables are not the global mutable state the rule is
+  about.
