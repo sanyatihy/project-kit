@@ -59,7 +59,7 @@ findings become their own docs, not fixes smuggled into this feature.
 
 ## Tasks
 - [x] `kit help go-checklist` — the tiered checklist, embedded, checkbox syntax removed
-- [ ] Conduct rules in `## Work protocol`: how to approach the code, not just the process
+- [x] Conduct rules in `## Work protocol`: how to approach the code, not just the process
 - [ ] `kit help deployment` — the provider-agnostic patterns behind ai-bot's setup
 - [ ] Dogfood: review the kit against its own checklist; findings become BACKLOG entries or feature docs
 
