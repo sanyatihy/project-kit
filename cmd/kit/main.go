@@ -72,6 +72,8 @@ func run() int {
 		return runInit(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
+	case "block":
+		return runBlock(os.Args[2:])
 	case "next":
 		return runNext(os.Args[2:])
 	case "audit":
@@ -168,6 +170,44 @@ func runNew(args []string) int {
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
 	fmt.Printf("  set status: Accepted when it is settled, then run kit next.\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- block
+
+func runBlock(args []string) int {
+	fs := newFlagSet("block")
+	fyi := fs.Bool("fyi", false, "record it without blocking the feature")
+	rest := parseArgs(fs, args)
+
+	if len(rest) < 2 {
+		fmt.Fprintf(os.Stderr, "kit block: need a feature id and a question\n\n%s\n",
+			commandHelp["block"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
+		return 2
+	}
+	line, err := kit.AppendQuestion(repo, id, strings.Join(rest[1:], " "), *fyi, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  %s\n", repo.Rel(repo.Inbox))
+	fmt.Printf("  %s\n", line)
+	if *fyi {
+		fmt.Printf("\n  recorded. %s is not blocked — carry on.\n\n", id)
+	} else {
+		fmt.Printf("\n  %s is blocked until a human answers. Move to another feature.\n\n", id)
+	}
 	return 0
 }
 

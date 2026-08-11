@@ -72,7 +72,7 @@ binary alone, cannot reach those four conclusions.
 
 ## Tasks
 - [x] Blocking reads the feature-ID field of an INBOX line, not the whole line
-- [ ] `kit block <id> "<question>"` appends a canonical INBOX line
+- [x] `kit block <id> "<question>"` appends a canonical INBOX line
 - [x] Audit: `inbox-unparsed` — a line outside the documented format, found while fixing the parser
 - [ ] Audit: claim consistency — `In progress` with no branch, branch with no doc, two branches for one doc, a branch on a `Draft`
 - [ ] A feature with no task boxes reports that, in `next` and in `audit`, instead of "every task is ticked"

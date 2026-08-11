@@ -17,8 +17,10 @@ const overview = `kit — bootstrap projects and run them with agents.
 Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
+  kit block <id> "<question>"         park a decision only a human can make
   kit next  [PATH ...] [--json]       what should I work on?
-  kit audit [PATH ...] [--json]       where do the docs disagree with the repo?
+  kit audit [PATH ...] [--json] [--strict]
+                                      where do the docs disagree with the repo?
   kit help  [TOPIC]                   this, or a topic below
   kit version
 
@@ -39,8 +41,9 @@ The four rules:
   3. One agent per feature. A branch named after the doc is the claim on it.
   4. A feature named in an open docs/INBOX.md question is blocked until answered.
 
-Blocked on something only a human can decide? Write it to docs/INBOX.md with your
-leaning and move to another feature. Never guess, and never idle.
+Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
+which writes docs/INBOX.md in the format the tool parses, then move to another
+feature. Never guess, and never idle.
 
 Exit codes, so a script can tell these apart:
   0  it worked
@@ -101,6 +104,26 @@ Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in
 in docs/INBOX.md. Set status: Accepted when it is settled.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
+
+	"block": `kit block <id> "<question>" [--fyi]
+
+Blocked on something only a human can decide? Write it here and move on. Appends
+one line to docs/INBOX.md in the format the tool parses:
+
+  - [ ] YYYY-MM-DD · <id> · BLOCKING|FYI · <question>
+
+"kit next" then stops offering that feature until a human answers and deletes the
+line. With --fyi it is recorded without blocking, for anything work can continue
+without.
+
+Use this rather than editing INBOX.md by hand. A line that misses the format is
+matched by prose instead of by its id field, so it blocks whatever it happens to
+mention — "kit audit" reports those as inbox-unparsed.
+
+State a leaning. It turns most questions into a yes/no.
+
+  kit block 0007 "Should codes expire? Leaning: no, keep forever."
+  kit block 7 "Using base62 for slugs." --fyi`,
 
 	"next": `kit next [PATH ...] [--json]
 
