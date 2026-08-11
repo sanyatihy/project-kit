@@ -116,7 +116,7 @@ Each of these has already caused a bug.
 ## Verifying
 
 ```sh
-make check     # fmt-check, vet, go unit tests
+make check     # fmt-check, vet, unit tests, conformance suite
 make install   # go install ./cmd/kit
 kit audit .    # the kit passes its own audit
 kit next .     # its own plan
@@ -126,11 +126,28 @@ kit next .     # its own plan
 `go run ./cmd/kit audit . --strict` on every PR and every push to `main`. The audit
 step uses `go run` rather than an installed binary so it needs no credential.
 
-`make check` is currently weaker than it looks: the conformance suite that drove the
-binary end to end was deleted while untracked and is tracked as work in
-[features/0002-restore-the-conformance-suite.md](features/0002-restore-the-conformance-suite.md).
-Unit tests cover parsing, doc creation, and help consistency; nothing yet exercises
-`init`, `next`, or `audit` as a user runs them.
+**The conformance suite** is `cmd/kit/conformance*_test.go`. It builds the binary
+once and drives it against throwaway projects, asserting on stdout, stderr, exit
+codes, and the files left behind — `init`, `next`, `new`, and `audit` as a user runs
+them, plus BOM/CRLF, missing frontmatter, unparseable dates, non-git directories,
+and the flag orders people actually type.
+
+It is a Go test in-tree rather than an external script. The previous suite was
+Python driving the binary, untracked and outside the build, which is exactly how it
+could be deleted without anything noticing.
+
+Two things about it are load-bearing:
+
+- **`TestEveryRegisteredCheckIsExercised`** compares the conformance cases against
+  `kit.Checks` in both directions. AGENTS.md has always asked for a test that a new
+  check fires and one that it stays quiet; this makes the first half a build
+  failure rather than an honour-system rule.
+- **Every audit case starts from the same clean project**, which must report
+  nothing. A noisy baseline would make all sixteen firing cases vacuous.
+
+`cmd/kit` coverage reads about 6% and will stay there: these tests drive a
+subprocess, so nothing they exercise is instrumented. The number is not a signal
+for this package.
 
 ## State of play
 
@@ -139,8 +156,13 @@ Published. `github.com/sanyatihy/project-kit` is a private repo tagged `v0.1.0`,
 verified from an empty `GOMODCACHE`, not just assumed. Setting up a new machine takes
 the two settings in the README's install section.
 
-The gap that remains is testing. `make check` covers parsing, doc creation, help
-consistency, and version resolution; nothing exercises `init`, `next`, or `audit` as
-a user runs them, because the conformance suite was deleted while untracked. That is
-[features/0002-restore-the-conformance-suite.md](features/0002-restore-the-conformance-suite.md),
-and it is what `kit next` hands back now.
+The testing gap is closed. `make check` is now the whole gate: fmt, vet, unit tests,
+and the conformance suite that drives the commands end to end. The kit's own CI runs
+that plus `golangci-lint` and its own audit.
+
+What is left is written down rather than urgent —
+[features/BACKLOG.md](features/BACKLOG.md) holds four findings from reviewing the kit
+against `kit help go-checklist`, none scheduled. The sharpest is that `NewFeature`
+reads the clock inline while `Audit` takes an injected `today`; the conformance suite
+works around it with a loose date assertion, which is the cost of that
+inconsistency.

@@ -244,8 +244,15 @@ templates/        what `kit init` writes, embedded into the binary
 ## Changing the kit
 
 ```sh
-make check     # fmt-check, vet, go unit tests
+make check     # fmt-check, vet, unit tests, conformance suite
 ```
 
+The conformance suite is `cmd/kit/conformance*_test.go`. It builds the binary once
+and drives it against throwaway projects, so the commands are covered as a user runs
+them rather than only through their parts. It is a Go test in-tree on purpose: the
+suite it replaced was an external script outside the build, which is how it came to
+be deleted without anything noticing.
+
 If you add a check to `audit`, add a test that it fires, a test that it stays quiet
-when it should, and document the code above.
+when it should, and document the code above. The first of those is enforced —
+`TestEveryRegisteredCheckIsExercised` fails the build for a check with no case.

@@ -8,20 +8,16 @@ LDFLAGS := -X main.Version=$(VERSION)
 build:
 	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/kit
 
-# check is the gate. The conformance suite is not in it: that file is currently
-# missing (see docs/features/), and a gate that silently skips is worse than none.
+# check is the gate, and it is whole: the conformance suite is a Go test in
+# cmd/kit, so `test` runs it. Keeping it in-tree is the point — the previous suite
+# was an external script outside the build, which is how it got deleted without
+# anything noticing.
 .PHONY: check
 check: fmt-check vet test
 
 .PHONY: test
 test:
 	$(GO) test -race -cover $(PKG)
-
-# conformance builds the binary and runs the behavioural suite against it.
-.PHONY: conformance
-conformance: build
-	@test -f ./test || (echo "./test is missing — the conformance suite has not been restored" && exit 1)
-	./test
 
 .PHONY: fmt
 fmt:
@@ -54,8 +50,7 @@ help:
 	@echo "  build       - compile ./$(BIN)"
 	@echo "  install     - go install onto your PATH"
 	@echo "  check       - fmt-check + vet + test (the gate)"
-	@echo "  test        - go unit tests"
-	@echo "  conformance - build, then run ./test against the binary"
+	@echo "  test        - unit tests + the conformance suite"
 	@echo "  fmt         - gofmt -s -w ."
 	@echo "  fmt-check   - fail if anything is unformatted"
 	@echo "  vet         - go vet ./..."
