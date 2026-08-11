@@ -201,6 +201,17 @@ looked like a task list would be worked through.
 `next` and `audit` read only and never write. With no path they use the repo you are in, from any
 subdirectory; `kit next ~/code/*` surveys every project at once.
 
+Exit codes are a contract, so a script can tell a typo from a finding:
+
+| Code | Means |
+| --- | --- |
+| `0` | it worked |
+| `1` | `kit audit --strict` found something HIGH — only `--strict` ever exits 1 |
+| `2` | the command could not run: unknown command, bad flag, missing path |
+
+Diagnostics go to stderr and data to stdout, so `kit next --json` stays pipe-clean
+even when something goes wrong.
+
 `audit` names the file, the problem, and the fix. It reports:
 
 - **HIGH** — `stalled`, `unticked-shipped`, `inbox-stale`, `unchecked`

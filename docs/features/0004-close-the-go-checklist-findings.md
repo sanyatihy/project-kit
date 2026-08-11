@@ -36,10 +36,9 @@ other is not. Passing the date in from `main` matches the shape already there ra
 than inventing a `Clock` interface for a single caller. Once it lands, the loose
 date assertion in the `new` conformance suite tightens to an exact one.
 
-**Error context** is `fmt.Errorf("...: %w", err)` at each boundary that currently
-returns a bare `err`. The failure to fix is `kit init` reporting `permission denied`
-without naming the file it could not write. `%w` rather than `%v` so `errors.Is/As`
-keep working.
+**Error context** was dropped after checking it against the code — see the Log. The
+premise was false: Go's `os` and `fs` calls return `*PathError`, so the messages
+already name the file and the operation.
 
 **Exit codes** are already a contract — `TestExitCodesAreDistinct` pins 0, 1, and 2 —
 but nothing tells a user what they mean. This documents what the suite already
@@ -51,8 +50,7 @@ enforces, in `kit help` and the README, and adds nothing new.
 
 ## Tasks
 - [x] Pass the date into `NewFeature` instead of reading the clock, and tighten the conformance date assertion
-- [ ] Wrap errors with the operation that failed, so a failure names the file
-- [ ] Document the exit-code contract in `kit help` and the README
+- [x] Document the exit-code contract in `kit help` and the README
 - [ ] Harden the build: `toolchain` in go.mod, `govulncheck` in CI, reproducible build flags
 
 ## Open questions
@@ -65,3 +63,16 @@ enforces, in `kit help` and the README, and adds nothing new.
 - 2026-08-11 — passing `today` in rather than introducing a `Clock` interface. The
   kit already does exactly this for `Audit`; a second shape for the same problem
   would be the pre-abstraction the checklist warns about.
+- 2026-08-11 — dropped the error-context box. The BACKLOG entry claimed a failed
+  `kit init` reports `permission denied` without naming the file; running it says
+  otherwise:
+
+  ```
+  kit init: open /tmp/perm/docs/features/README.md: permission denied
+  ```
+
+  Every bare `return err` in `scaffold.go`, `newdoc.go`, and `repo.go` originates in
+  an `os` or `fs` call returning `*PathError`, which already carries the path and the
+  operation. Wrapping would repeat the path and add nothing. `%w` for `errors.Is/As`
+  has no caller inspecting these errors, so adding it now is the pre-abstraction the
+  checklist warns against. Reopen if a real failure is ever hard to read.
