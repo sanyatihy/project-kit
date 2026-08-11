@@ -43,7 +43,7 @@ the tasks this way keeps every intermediate state green.
 - [x] Commit the tree and create the private `sanyatihy/project-kit` remote, then push
 - [x] Document `GOPRIVATE` in the README install section — a private module needs it on every machine
 - [x] Verify `go install github.com/sanyatihy/project-kit/cmd/kit@latest` from a clean `GOMODCACHE` with `GOPRIVATE` set
-- [ ] `kit version` reports the module version from build info, not `dev`, when installed with `go install`
+- [x] `kit version` reports the module version from build info, not `dev`, when installed with `go install`
 - [ ] Tag `v0.1.0` so `@latest` pins a release rather than the branch
 - [ ] Teach the generated `--stack go` `check.yml` to install the kit from a private module
 - [ ] Add the kit's own `.github/workflows/check.yml` running `make check`
