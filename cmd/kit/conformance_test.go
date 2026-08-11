@@ -123,6 +123,15 @@ func (p *project) git(args ...string) {
 	}
 }
 
+// commitAll makes a commit, which branches need in order to exist: `git branch`
+// reports nothing until there is something for a ref to point at, and a claim is a
+// branch name.
+func (p *project) commitAll(message string) {
+	p.t.Helper()
+	p.git("add", "-A")
+	p.git("commit", "-q", "-m", message)
+}
+
 func (p *project) path(rel string) string { return filepath.Join(p.Root, rel) }
 
 func (p *project) write(rel, content string) {
