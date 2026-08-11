@@ -158,7 +158,7 @@ func runNew(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit new: %v\n", err)
 		return 2
 	}
-	path, err := kit.NewFeature(templates, repo, title)
+	path, err := kit.NewFeature(templates, repo, title, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit new: %v\n", err)
 		return 2

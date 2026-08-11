@@ -44,7 +44,10 @@ func NextID(r *Repo) string {
 //
 // It fails rather than overwrites, so two agents racing on the same ID get an
 // error instead of one silently losing its work.
-func NewFeature(templates fs.FS, r *Repo, title string) (string, error) {
+//
+// today is passed in rather than read here, the same way Audit takes it, so a test
+// can assert the date a doc gets instead of guessing at the one the clock produced.
+func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (string, error) {
 	if strings.TrimSpace(title) == "" {
 		return "", fmt.Errorf("a title is required")
 	}
@@ -69,7 +72,7 @@ func NewFeature(templates fs.FS, r *Repo, title string) (string, error) {
 		case strings.HasPrefix(line, "title:"):
 			return "title: " + title
 		default:
-			return "created: " + time.Now().UTC().Format(DateLayout)
+			return "created: " + today.UTC().Format(DateLayout)
 		}
 	})
 

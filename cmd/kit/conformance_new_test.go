@@ -58,6 +58,9 @@ func TestNewFillsTheFrontmatter(t *testing.T) {
 	p.run("new", "Shorten URLs").ok()
 	doc := p.read("docs/features/0001-shorten-urls.md")
 
+	// The binary still reads the real clock — only the library takes a date — so
+	// today is the honest expectation here. It is exact rather than "some date"
+	// because NewFeature no longer invents one.
 	for _, want := range []string{
 		"id: 0001",
 		"title: Shorten URLs",
