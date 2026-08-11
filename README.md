@@ -15,19 +15,42 @@ dependencies.
 
 ## Install
 
-The repo is private, so the module proxy cannot serve it. Tell Go to skip the proxy
-for it, once per machine:
+From a clone, nothing special: `make install`. The source is already there, so none
+of the below applies.
+
+Installing over the network takes two settings, because the repo is private.
+
+**1. Tell Go not to use the proxy or the checksum database for it.** Neither can
+see a private repo.
 
 ```sh
-go env -w GOPRIVATE=github.com/sanyatihy/*
+go env -w GOPRIVATE='github.com/sanyatihy/*'
 ```
 
-Go then fetches it with plain `git`, so that has to be able to authenticate to
-GitHub. If you use SSH keys, make `git` prefer them over HTTPS:
+`GOPRIVATE` is a comma-separated list, and if you already have one — many company
+setups do — this **appends**, it does not replace:
 
 ```sh
-git config --global url."git@github.com:".insteadOf "https://github.com/"
+export GOPRIVATE="go.example.com,github.com/sanyatihy/*"
 ```
+
+Two ways that write can silently do nothing. An `export GOPRIVATE=` in your shell
+profile overrides `go env -w` completely; Go warns about the conflict, and the fix
+is to edit the profile line instead. And `GOPRIVATE` is ignored outright if
+`GONOPROXY` or `GONOSUMDB` is set, since those are what it is shorthand for. Run
+`go env GOPRIVATE` and confirm you see what you expect before blaming anything else.
+
+**2. Give `git` a way to authenticate to GitHub.** Go always fetches over HTTPS,
+which needs credentials for a private repo. Reuse the SSH key you already have:
+
+```sh
+git config --global url."git@github.com:sanyatihy/".insteadOf "https://github.com/sanyatihy/"
+```
+
+Scoped to the one namespace on purpose — the unscoped form rewrites every
+`github.com` URL on the machine, which is a large side effect for one module. If
+you would rather not rewrite URLs at all, a `~/.netrc` entry or a credential helper
+holding a token with `repo` scope works instead, at the cost of a secret to rotate.
 
 Then:
 
@@ -35,12 +58,13 @@ Then:
 go install github.com/sanyatihy/project-kit/cmd/kit@latest
 ```
 
-Or from a clone: `make install` — no `GOPRIVATE` needed, the source is already
-there. Upgrading is the same command again.
+Upgrading is the same command again.
 
-A `410 Gone` or `404 Not Found` from `proxy.golang.org` means `GOPRIVATE` is not
-set; a git authentication prompt or `terminal prompts disabled` means it is set
-and the credentials are what is missing.
+The failure modes are distinguishable. `410 Gone` from `proxy.golang.org` means
+setting 1 is missing. A `sum.golang.org` `404` — often quoting a `could not read
+Username` from *its* server, not yours — also means setting 1, specifically the
+checksum half. A local git prompt or `terminal prompts disabled` means setting 1
+worked and setting 2 is what is missing.
 
 ## Setup
 

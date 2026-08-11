@@ -42,7 +42,8 @@ the tasks this way keeps every intermediate state green.
 ## Tasks
 - [x] Commit the tree and create the private `sanyatihy/project-kit` remote, then push
 - [x] Document `GOPRIVATE` in the README install section — a private module needs it on every machine
-- [ ] Verify `go install github.com/sanyatihy/project-kit/cmd/kit@latest` from a clean `GOMODCACHE` with `GOPRIVATE` set
+- [x] Verify `go install github.com/sanyatihy/project-kit/cmd/kit@latest` from a clean `GOMODCACHE` with `GOPRIVATE` set
+- [ ] `kit version` reports the module version from build info, not `dev`, when installed with `go install`
 - [ ] Tag `v0.1.0` so `@latest` pins a release rather than the branch
 - [ ] Teach the generated `--stack go` `check.yml` to install the kit from a private module
 - [ ] Add the kit's own `.github/workflows/check.yml` running `make check`
@@ -58,3 +59,13 @@ the tasks this way keeps every intermediate state green.
   `GOPRIVATE` and Git credentials for the host on every machine and in every CI job
   that installs the kit. Added the two tasks that carry that cost: the README note and
   the generated `check.yml`.
+- 2026-08-11 — cold `go install` from an empty `GOMODCACHE` verified working against
+  the private remote over the SSH rewrite. Two traps found doing it, both now in the
+  README: `GOPRIVATE` is a list that an existing shell `export` silently overrides, and
+  a `sum.golang.org` 404 quotes a git auth failure from *its* server, which reads like
+  a local credential problem but is not.
+- 2026-08-11 — the installed binary reports `kit dev`: `Version` is stamped only by the
+  Makefile's `-ldflags`, which `go install` does not apply, so tagging alone will not
+  make `kit version` report the tag. The module version is in the embedded build info.
+  Added a task to read it from there, ordered before the tag so `v0.1.0` is the first
+  release that reports itself correctly.
