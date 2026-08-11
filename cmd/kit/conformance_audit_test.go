@@ -91,6 +91,11 @@ var auditCases = []struct {
 		p.write("docs/INBOX.md",
 			"# Inbox\n\n- [ ] we should decide about 0001 at some point\n")
 	}},
+	{"inbox-unknown", func(p *project) {
+		p.write("docs/INBOX.md", fmt.Sprintf(
+			"# Inbox\n\n- [ ] %s · 0099 · BLOCKING · About a feature that never existed?\n",
+			daysAgo(1)))
+	}},
 	{"unchecked", func(p *project) {
 		p.write("docs/features/0002-bet.md", doc("0002", "A bet", "Accepted",
 			"check: "+daysAgo(5), "- [ ] Do the thing"))
@@ -340,6 +345,19 @@ func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
 	for _, code := range p.auditCodes() {
 		if code == "split-claim" {
 			t.Error("merged branches on a Shipped feature were reported as a split claim")
+		}
+	}
+}
+
+func TestInboxChecksStayQuietOnAWellFormedQuestion(t *testing.T) {
+	// A question written by `kit block` against a real feature is the normal case
+	// and must produce nothing.
+	p := cleanProject(t)
+	p.run("block", "0001", "Should this expire? Leaning: no.").ok()
+
+	for _, code := range p.auditCodes() {
+		if code == "inbox-unparsed" || code == "inbox-unknown" {
+			t.Errorf("a well-formed question was reported as %q", code)
 		}
 	}
 }

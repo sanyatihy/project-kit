@@ -64,6 +64,8 @@ var (
 		"frontmatter id: disagrees with the filename"}
 	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
 		"an INBOX.md line is not in the documented format, so it blocks by prose match"}
+	checkInboxUnknown = Check{"inbox-unknown", Medium,
+		"an INBOX.md question names a feature that does not exist, so it can never unblock one"}
 	checkNoTasks = Check{"no-tasks", Medium,
 		"Accepted or In progress with no ## Tasks boxes at all, so there is nothing to do"}
 	checkNoClaim = Check{"no-claim", Medium,
@@ -91,7 +93,7 @@ var (
 var Checks = []Check{
 	checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
-	checkMissingSection, checkIDMismatch, checkInboxUnparsed,
+	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
 	checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol,
 	checkDeadLink, checkNoTech, checkNoInbox,
@@ -242,12 +244,25 @@ func Audit(r *Repo, today time.Time) []Finding {
 			"delete the branch, or create the doc it claims with kit new")
 	}
 
+	knownID := map[string]bool{}
+	for _, f := range r.Features {
+		if f.ID != "" {
+			knownID[f.ID] = true
+		}
+	}
 	for _, q := range r.OpenQuestions() {
-		if q.Feature == "" {
+		switch {
+		case q.Feature == "":
 			report(checkInboxUnparsed, r.Rel(r.Inbox),
 				"not in the documented format: "+clip(q.Text, 60),
 				`use: kit block <id> "<question>", or match `+
 					`"YYYY-MM-DD `+inboxSep+` <id> `+inboxSep+` BLOCKING|FYI `+inboxSep+` <question>"`)
+		// A question against a feature that does not exist blocks nothing and waits
+		// forever. `kit block` refuses these, so one here was hand-written.
+		case !knownID[q.Feature]:
+			report(checkInboxUnknown, r.Rel(r.Inbox),
+				fmt.Sprintf("names feature %s, which has no doc: %s", q.Feature, clip(q.Text, 50)),
+				"correct the id, or delete the line if the feature is gone")
 		}
 		if q.When.IsZero() {
 			continue

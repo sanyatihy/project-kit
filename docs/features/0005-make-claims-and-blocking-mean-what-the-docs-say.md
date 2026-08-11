@@ -76,7 +76,7 @@ binary alone, cannot reach those four conclusions.
 - [x] Audit: `inbox-unparsed` — a line outside the documented format, found while fixing the parser
 - [x] Audit: claim consistency — `In progress` with no branch, branch with no doc, two branches for one doc, a branch on a `Draft`
 - [x] A feature with no task boxes reports that, in `next` and in `audit`, instead of "every task is ticked"
-- [ ] Audit: an INBOX question naming a feature ID that does not exist
+- [x] Audit: an INBOX question naming a feature ID that does not exist
 - [ ] Protocol: releasing a claim, rewriting a box, where urgent work is inserted, push before working
 - [ ] `kit ship <id>` — verify boxes, set status and `shipped:`, prompt the as-built migration
 - [ ] A `TECH.md` template, and `no-tech` pointing at it
