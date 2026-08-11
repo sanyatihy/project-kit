@@ -180,7 +180,7 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 kit new   <title...>                     next free ID, date filled in, status Draft
 kit next  [PATH ...] [--json]            warns above 2 features in progress
 kit audit [PATH ...] [--json] [--strict] --strict exits 1 on HIGH, for CI
-kit help  [protocol|template|conventions|checks]
+kit help  [protocol|template|conventions|checks|go-checklist|deployment]
 kit version
 ```
 
@@ -189,6 +189,14 @@ The binary documents itself: `kit help` explains the model and the four rules,
 and `kit help protocol|template|conventions` prints the embedded documents. An
 agent never needs this repository to use the tool. `kit <command> --help` describes
 the command, not just its flags.
+
+Two topics are standing engineering guidance rather than documentation of the kit:
+`kit help go-checklist` is a tiered checklist for Go projects, and
+`kit help deployment` holds the patterns and traps behind taking a project to
+production. Both are embedded rather than written into projects — `audit` cannot
+check either, so a copy per repo would be drift nothing could detect. Neither
+contains a `- [ ]`: in a kit project that syntax means work to do, and guidance that
+looked like a task list would be worked through.
 
 `next` and `audit` read only and never write. With no path they use the repo you are in, from any
 subdirectory; `kit next ~/code/*` surveys every project at once.

@@ -48,6 +48,7 @@ Topics:
   kit help conventions   how the features directory works
   kit help checks        every audit finding and what it means
   kit help go-checklist  engineering practices for Go projects, tiered
+  kit help deployment    patterns for going to production, and their traps
 
 Run "kit <command> --help" for a command's options.`
 
@@ -58,6 +59,7 @@ var topics = map[string]string{
 	"template":     "templates/features-TEMPLATE.md",
 	"conventions":  "templates/features-README.md",
 	"go-checklist": "templates/go-checklist.md",
+	"deployment":   "templates/deployment.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
