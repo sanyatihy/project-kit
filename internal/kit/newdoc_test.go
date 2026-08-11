@@ -1,0 +1,144 @@
+package kit
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"testing/fstest"
+)
+
+const templateDoc = `---
+id: NNNN
+title: <short imperative name>
+status: Draft        # Draft | Accepted
+created: YYYY-MM-DD
+shipped:
+---
+
+## Problem
+1-3 sentences.
+`
+
+func templateFS() fstest.MapFS {
+	return fstest.MapFS{
+		"templates/features-TEMPLATE.md": {Data: []byte(templateDoc)},
+	}
+}
+
+func TestSlug(t *testing.T) {
+	cases := map[string]string{
+		"Shorten URLs":           "shorten-urls",
+		"  TON payment rail  ":   "ton-payment-rail",
+		"Admin: grant & refund!": "admin-grant-refund",
+		"0007 Growth":            "0007-growth",
+		"---":                    "",
+	}
+	for in, want := range cases {
+		if got := Slug(in); got != want {
+			t.Errorf("Slug(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestNextIDSkipsGapsRatherThanReusing(t *testing.T) {
+	r := &Repo{Features: []*Feature{
+		{ID: "0001"}, {ID: "0002"}, {ID: "0007"},
+	}}
+	if got := NextID(r); got != "0008" {
+		t.Errorf("NextID = %q, want 0008 — reusing 0003 would make old commits cite the wrong doc", got)
+	}
+	if got := NextID(&Repo{}); got != "0001" {
+		t.Errorf("NextID(empty) = %q, want 0001", got)
+	}
+}
+
+func TestNewFeatureFillsFrontmatter(t *testing.T) {
+	dir := t.TempDir()
+	features := filepath.Join(dir, "docs", "features")
+	if err := os.MkdirAll(features, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	r := &Repo{Root: dir, FeaturesDir: features}
+
+	path, err := NewFeature(templateFS(), r, "Shorten URLs")
+	if err != nil {
+		t.Fatalf("NewFeature: %v", err)
+	}
+	if want := "0001-shorten-urls.md"; filepath.Base(path) != want {
+		t.Errorf("path = %q, want basename %q", path, want)
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fields, _ := ParseFrontmatter(string(raw))
+	if fields["id"] != "0001" {
+		t.Errorf("id = %q, want 0001", fields["id"])
+	}
+	if fields["title"] != "Shorten URLs" {
+		t.Errorf("title = %q, want the given title", fields["title"])
+	}
+	if ParseDate(fields["created"]).IsZero() {
+		t.Errorf("created = %q, want a real date", fields["created"])
+	}
+	if fields["status"] != "Draft" {
+		t.Errorf("status = %q, want Draft — a new doc is never pre-accepted", fields["status"])
+	}
+	if strings.Contains(string(raw), "NNNN") {
+		t.Error("placeholder NNNN survived into the written doc")
+	}
+}
+
+func TestNewFeatureRefusesToOverwrite(t *testing.T) {
+	dir := t.TempDir()
+	features := filepath.Join(dir, "docs", "features")
+	if err := os.MkdirAll(features, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	r := &Repo{Root: dir, FeaturesDir: features}
+
+	if _, err := NewFeature(templateFS(), r, "Shorten URLs"); err != nil {
+		t.Fatal(err)
+	}
+	// The repo model is stale here, exactly as it would be for a second agent
+	// racing on the same ID. It must fail rather than clobber.
+	if _, err := NewFeature(templateFS(), r, "Shorten URLs"); err == nil {
+		t.Error("second write succeeded; a racing agent would have lost its work")
+	}
+}
+
+func TestNewFeatureRejectsUnusableInput(t *testing.T) {
+	dir := t.TempDir()
+	r := &Repo{Root: dir, FeaturesDir: dir}
+	for _, title := range []string{"", "   ", "!!!"} {
+		if _, err := NewFeature(templateFS(), r, title); err == nil {
+			t.Errorf("NewFeature(%q) succeeded, want an error", title)
+		}
+	}
+}
+
+func TestNewFeatureNeedsAnInitialisedProject(t *testing.T) {
+	if _, err := NewFeature(templateFS(), &Repo{Root: t.TempDir()}, "Thing"); err == nil {
+		t.Error("succeeded without a features directory, want an error pointing at kit init")
+	}
+}
+
+func TestFYIQuestionsDoNotBlock(t *testing.T) {
+	dir := t.TempDir()
+	inbox := filepath.Join(dir, "INBOX.md")
+	if err := os.WriteFile(inbox, []byte(
+		"- [ ] 2026-08-11 · 0001 · BLOCKING · which acquirer?\n"+
+			"- [ ] 2026-08-11 · 0002 · FYI · heads up, the rate limit is lower\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := &Repo{Root: dir, Inbox: inbox}
+
+	if got := r.BlockersFor("0001"); len(got) != 1 {
+		t.Errorf("BlockersFor(0001) = %v, want the BLOCKING question", got)
+	}
+	if got := r.BlockersFor("0002"); len(got) != 0 {
+		t.Errorf("BlockersFor(0002) = %v, want none — FYI is a note, not a blocker", got)
+	}
+}

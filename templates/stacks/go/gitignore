@@ -1,0 +1,47 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/{{name}}
+bin/
+
+# Test binary and coverage output
+*.test
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Environments — ignore all .env variants except the committed template
+.env
+.env.*
+!.env.example
+
+# Secrets / credentials
+*.pem
+*.key
+secrets.yml
+**/vault.yml
+
+# Terraform — state holds secrets in plaintext and tfvars holds credentials.
+# Listed before any infra exists, so the first `terraform apply` cannot leak.
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+backend.hcl
+crash.log
+
+# Ansible — inventories are generated from infra output, never committed
+ansible/inventory/hosts.yml
+ansible/collections/
+
+.DS_Store
+.idea/
+venv/
