@@ -38,7 +38,7 @@ noisy check trains people to ignore the tool.
 - [x] `init`: fresh layout, never overwrites, appends vs refreshes the protocol, creates the repo, `--stack go`, no duplicate entry point
 - [x] `new`: next free ID, slug, frontmatter filled, refuses to overwrite
 - [x] `next`: topmost box, In progress before Accepted, branch claims, INBOX blocks, drafts, WIP warning
-- [ ] `audit`: every finding code fires, and each stays quiet on a clean project
+- [x] `audit`: every finding code fires, and each stays quiet on a clean project
 - [ ] Robustness: BOM/CRLF, missing frontmatter, unparseable dates, non-git dirs, `--json`, `--strict` exit codes
 - [ ] Put `conformance` back in `make check` and delete the missing-file guard
 
