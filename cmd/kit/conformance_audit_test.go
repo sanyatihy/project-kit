@@ -87,6 +87,10 @@ var auditCases = []struct {
 		p.write("docs/INBOX.md", fmt.Sprintf(
 			"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(10)))
 	}},
+	{"inbox-unparsed", func(p *project) {
+		p.write("docs/INBOX.md",
+			"# Inbox\n\n- [ ] we should decide about 0001 at some point\n")
+	}},
 	{"unchecked", func(p *project) {
 		p.write("docs/features/0002-bet.md", doc("0002", "A bet", "Accepted",
 			"check: "+daysAgo(5), "- [ ] Do the thing"))

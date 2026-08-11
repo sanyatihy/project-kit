@@ -155,3 +155,26 @@ func TestNextOnAnUnsetUpProjectSaysHowToFixIt(t *testing.T) {
 	p := newProject(t)
 	p.run("next").ok().has("not set up yet", "kit init")
 }
+
+func TestNextIsNotBlockedByAQuestionAboutAnotherFeature(t *testing.T) {
+	// The ID lives in a field of the line. Matching the whole line blocks any
+	// feature a question happens to name, and the cause is invisible in the output.
+	p := setUp(t)
+	feature(p, "0007", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	p.write("docs/INBOX.md",
+		"# Inbox\n\n- [ ] 2026-08-11 · 0012 · BLOCKING · Should this match what we did in 0007?\n")
+
+	p.run("next").ok().has("start here", "The POST handler")
+}
+
+func TestNextStillBlocksOnAMalformedLineThatNamesTheFeature(t *testing.T) {
+	// A line outside the format falls back to scanning the whole thing, which
+	// over-blocks. That is the safe direction: missing a blocker sends an agent
+	// into work a human has not cleared. `inbox-unparsed` makes the line visible.
+	p := setUp(t)
+	feature(p, "0007", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	p.write("docs/INBOX.md", "# Inbox\n\n- [ ] is 0007 really the right approach\n")
+
+	p.run("next").ok().has("blocked")
+	p.run("audit").ok().has("inbox-unparsed")
+}

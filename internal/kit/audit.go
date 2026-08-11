@@ -62,6 +62,8 @@ var (
 		"a non-Draft doc has an empty ## Problem, ## Design, or ## Log"}
 	checkIDMismatch = Check{"id-mismatch", Medium,
 		"frontmatter id: disagrees with the filename"}
+	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
+		"an INBOX.md line is not in the documented format, so it blocks by prose match"}
 	checkNoStatus   = Check{"no-status", Medium, "no status: in the frontmatter"}
 	checkBadStatus  = Check{"bad-status", Medium, "an unrecognised status:"}
 	checkNoProtocol = Check{"no-protocol", Medium,
@@ -79,7 +81,7 @@ var (
 var Checks = []Check{
 	checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
-	checkMissingSection, checkIDMismatch, checkNoStatus, checkBadStatus,
+	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkNoStatus, checkBadStatus,
 	checkNoProtocol,
 	checkDeadLink, checkNoTech, checkNoInbox,
 }
@@ -190,6 +192,12 @@ func Audit(r *Repo, today time.Time) []Finding {
 	}
 
 	for _, q := range r.OpenQuestions() {
+		if q.Feature == "" {
+			report(checkInboxUnparsed, r.Rel(r.Inbox),
+				"not in the documented format: "+clip(q.Text, 60),
+				`use: kit block <id> "<question>", or match `+
+					`"YYYY-MM-DD `+inboxSep+` <id> `+inboxSep+` BLOCKING|FYI `+inboxSep+` <question>"`)
+		}
 		if q.When.IsZero() {
 			continue
 		}
