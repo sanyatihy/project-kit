@@ -85,8 +85,14 @@ It never overwrites or deletes, so it is safe on a directory that already has fi
 
 With `--stack go` it also scaffolds the code layout: `Makefile`, `.gitignore`,
 `go.mod` (module path inferred from where the project sits on disk), `cmd/<name>/`,
-`internal/`, a `README.md`, and one CI workflow running `make check` and
-`kit audit --strict`.
+`internal/`, a `README.md`, and one CI workflow running `make check`.
+
+That workflow does not run `kit audit --strict`. Doing so would mean installing the
+kit in CI, and since the kit is a private module that means a credential in every
+project you scaffold — a secret to store and rotate per repo, and a first push that
+fails until someone sets it. Drift is caught locally instead, where `kit next` is
+already being run. Scaffolding stays zero-setup, which matters more than catching
+drift a few hours earlier.
 
 So every project answers the same three questions with the same three commands:
 `kit next` (what to work on), `kit audit` (what drifted), `make check` (is it

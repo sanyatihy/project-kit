@@ -1,8 +1,14 @@
 name: check
 
-# One gate: the same `make check` you run locally, plus the docs audit.
-# Deployment lives in its own workflow, added when the project has something
-# to deploy.
+# One gate: the same `make check` you run locally. Deployment lives in its own
+# workflow, added when the project has something to deploy.
+#
+# `kit audit --strict` deliberately does not run here. It would mean installing
+# the kit, which is a private module, which means a credential in every project
+# scaffolded from this template — one more secret to store and rotate in each
+# repo, and a first push that fails until someone sets it. Drift is cheap to
+# catch locally, where `kit next` is already being run; it is not worth that.
+# If the kit ever goes public, adding the two steps back costs nothing.
 
 on:
   pull_request:
@@ -32,7 +38,3 @@ jobs:
           version: latest
 
       - run: make check
-
-      # Fails the build when a doc claims something the repo contradicts.
-      - run: go install github.com/sanyatihy/project-kit/cmd/kit@latest
-      - run: kit audit . --strict

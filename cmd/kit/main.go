@@ -354,8 +354,10 @@ func printFindings(repos []*kit.Repo, all [][]kit.Finding, color bool) {
 func newFlagSet(name string) *flag.FlagSet {
 	fs := flag.NewFlagSet("kit "+name, flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Fprintln(fs.Output(), commandHelp[name])
-		fmt.Fprintln(fs.Output(), "\nOptions:")
+		// Nothing useful to do if printing help fails; the process is on its
+		// way out either way.
+		_, _ = fmt.Fprintln(fs.Output(), commandHelp[name])
+		_, _ = fmt.Fprintln(fs.Output(), "\nOptions:")
 		fs.PrintDefaults()
 	}
 	return fs
