@@ -39,7 +39,7 @@ noisy check trains people to ignore the tool.
 - [x] `new`: next free ID, slug, frontmatter filled, refuses to overwrite
 - [x] `next`: topmost box, In progress before Accepted, branch claims, INBOX blocks, drafts, WIP warning
 - [x] `audit`: every finding code fires, and each stays quiet on a clean project
-- [ ] Robustness: BOM/CRLF, missing frontmatter, unparseable dates, non-git dirs, `--json`, `--strict` exit codes
+- [x] Robustness: BOM/CRLF, missing frontmatter, unparseable dates, non-git dirs, `--json`, `--strict` exit codes
 - [ ] Put `conformance` back in `make check` and delete the missing-file guard
 
 ## Open questions
