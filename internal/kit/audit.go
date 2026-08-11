@@ -64,6 +64,14 @@ var (
 		"frontmatter id: disagrees with the filename"}
 	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
 		"an INBOX.md line is not in the documented format, so it blocks by prose match"}
+	checkNoClaim = Check{"no-claim", Medium,
+		"In progress but no branch claims it, so the doc says work is happening and nothing shows it"}
+	checkSplitClaim = Check{"split-claim", Medium,
+		"two branches claim one feature — two agents believe they own it"}
+	checkOrphanClaim = Check{"orphan-claim", Medium,
+		"a branch is named after a feature doc that does not exist"}
+	checkDraftClaimed = Check{"draft-claimed", Medium,
+		"a branch claims a Draft, so someone is building on a design nobody settled"}
 	checkNoStatus   = Check{"no-status", Medium, "no status: in the frontmatter"}
 	checkBadStatus  = Check{"bad-status", Medium, "an unrecognised status:"}
 	checkNoProtocol = Check{"no-protocol", Medium,
@@ -81,8 +89,9 @@ var (
 var Checks = []Check{
 	checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
-	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkNoStatus, checkBadStatus,
-	checkNoProtocol,
+	checkMissingSection, checkIDMismatch, checkInboxUnparsed,
+	checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
+	checkNoStatus, checkBadStatus, checkNoProtocol,
 	checkDeadLink, checkNoTech, checkNoInbox,
 }
 
@@ -176,6 +185,32 @@ func Audit(r *Repo, today time.Time) []Finding {
 			}
 		}
 
+		// The claim is a branch name and nothing else, so branches are the only
+		// place a claim can disagree with a doc.
+		//
+		// Only a feature still being worked can have a claim problem. Once it is
+		// Shipped its branches are merged leftovers, and reporting those would fire
+		// on every project where nobody deletes branches — which is most of them.
+		if f.ID != "" && (f.Status == StatusInProgress || f.Status == StatusAccepted ||
+			f.Status == StatusDraft) {
+			claims := r.Claims(f.ID)
+			switch {
+			case f.Status == StatusInProgress && len(claims) == 0:
+				report(checkNoClaim, at,
+					f.Name()+": In progress, but no branch claims it",
+					"branch and push it, or set the status back")
+			case len(claims) > 1:
+				report(checkSplitClaim, at,
+					fmt.Sprintf("%s: claimed by %s", f.Name(), strings.Join(claims, " and ")),
+					"one agent per feature — delete the branch that is not doing the work")
+			}
+			if f.Status == StatusDraft && len(claims) > 0 {
+				report(checkDraftClaimed, at,
+					fmt.Sprintf("%s: %s claims a Draft", f.Name(), claims[0]),
+					"settle the design and set status: Accepted, or stop work")
+			}
+		}
+
 		if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
 			report(checkIDMismatch, at,
 				fmt.Sprintf("id %q does not match filename %q", f.ID, prefix),
@@ -189,6 +224,12 @@ func Audit(r *Repo, today time.Time) []Finding {
 					"fix or remove the link")
 			}
 		}
+	}
+
+	for _, branch := range r.OrphanClaims() {
+		report(checkOrphanClaim, r.Name,
+			fmt.Sprintf("branch %q cites a feature that does not exist", branch),
+			"delete the branch, or create the doc it claims with kit new")
 	}
 
 	for _, q := range r.OpenQuestions() {

@@ -255,24 +255,76 @@ func (r *Repo) loadGit() {
 	sort.Strings(r.refs)
 }
 
+// branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
+// recognised as one branch rather than two claims on the same feature.
+func branchName(ref string) string {
+	if i := strings.Index(ref, "/"); i >= 0 && (strings.HasPrefix(ref, "origin/") ||
+		strings.HasPrefix(ref, "remotes/")) {
+		return ref[i+1:]
+	}
+	return ref
+}
+
+func isTrunk(name string) bool {
+	return name == "main" || name == "master" || name == "HEAD"
+}
+
+// Claims lists the distinct branches claiming a feature. More than one means two
+// agents believe they own it.
+func (r *Repo) Claims(id string) []string {
+	r.loadGit()
+	seen := map[string]bool{}
+	var out []string
+	for _, ref := range r.refs {
+		name := branchName(ref)
+		if isTrunk(name) || seen[name] || !Mentions(name, id) {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
+}
+
 // ClaimFor returns the branch claiming a feature, or "". The default branch
 // never counts as a claim.
 func (r *Repo) ClaimFor(id string) string {
-	r.loadGit()
-	for _, ref := range r.refs {
-		tail := ref
-		if i := strings.Index(ref, "/"); i >= 0 && (strings.HasPrefix(ref, "origin/") ||
-			strings.HasPrefix(ref, "remotes/")) {
-			tail = ref[i+1:]
-		}
-		if tail == "main" || tail == "master" || tail == "HEAD" {
-			continue
-		}
-		if Mentions(ref, id) {
-			return ref
-		}
+	if claims := r.Claims(id); len(claims) > 0 {
+		return claims[0]
 	}
 	return ""
+}
+
+// OrphanClaims lists branches named like a claim — a leading four-digit ID —
+// whose feature doc does not exist.
+//
+// Only branches that look like claims are considered. Ordinary working branches
+// cite no ID and must never be reported, or the check becomes noise.
+func (r *Repo) OrphanClaims() []string {
+	r.loadGit()
+	known := map[string]bool{}
+	for _, f := range r.Features {
+		if f.ID != "" {
+			known[f.ID] = true
+		}
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, ref := range r.refs {
+		name := branchName(ref)
+		if isTrunk(name) || seen[name] {
+			continue
+		}
+		m := idPrefixRe.FindStringSubmatch(name)
+		if m == nil || known[m[1]] {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // LastMentioned is the newest commit citing this ID, or the zero time.

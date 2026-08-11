@@ -131,6 +131,24 @@ var auditCases = []struct {
 	{"bad-status", func(p *project) {
 		feature(p, "0002", "odd", "Odd", "Marinating", "- [ ] Something")
 	}},
+	{"no-claim", func(p *project) {
+		feature(p, "0002", "working", "Working", "In progress", "- [ ] Something")
+	}},
+	{"split-claim", func(p *project) {
+		feature(p, "0002", "contested", "Contested", "Accepted", "- [ ] Something")
+		p.commitAll("the doc")
+		p.git("branch", "0002-contested")
+		p.git("branch", "0002-contested-again")
+	}},
+	{"orphan-claim", func(p *project) {
+		p.commitAll("something")
+		p.git("branch", "0099-long-gone")
+	}},
+	{"draft-claimed", func(p *project) {
+		feature(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
+		p.commitAll("the doc")
+		p.git("branch", "0002-unsettled")
+	}},
 	{"no-protocol", func(p *project) {
 		if err := os.Remove(p.path("AGENTS.md")); err != nil {
 			p.t.Fatalf("removing AGENTS.md: %v", err)
@@ -258,4 +276,67 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	}
 
 	cleanProject(t).run("audit", "--strict").ok()
+}
+
+// The claim checks read branch names, which is the one place this tool can
+// generate noise about work that is perfectly fine. Each of these is a situation
+// that must stay silent.
+func TestClaimChecksDoNotFireOnOrdinaryWork(t *testing.T) {
+	t.Run("an ordinary branch cites no feature", func(t *testing.T) {
+		p := cleanProject(t)
+		p.commitAll("something")
+		p.git("branch", "fix-the-typo")
+		p.git("branch", "spike/try-an-idea")
+		if codes := p.auditCodes(); len(codes) > 0 {
+			t.Errorf("ordinary branches were reported as claims: %v", codes)
+		}
+	})
+
+	t.Run("a local branch and its remote are one claim", func(t *testing.T) {
+		// origin/0001-thing and 0001-thing are the same claim. Counting them
+		// separately would report split-claim on every pushed branch.
+		p := cleanProject(t)
+		p.commitAll("the doc")
+		p.git("branch", "0001-thing")
+		bare := p.path("remote.git")
+		p.git("init", "--bare", "-q", bare)
+		p.git("remote", "add", "origin", bare)
+		p.git("push", "-q", "origin", "0001-thing")
+		p.git("fetch", "-q", "origin")
+
+		for _, code := range p.auditCodes() {
+			if code == "split-claim" {
+				t.Error("a pushed branch was reported as two claims")
+			}
+		}
+	})
+
+	t.Run("Accepted without a branch is not a missing claim", func(t *testing.T) {
+		// Only In progress asserts that work is happening.
+		p := cleanProject(t)
+		for _, code := range p.auditCodes() {
+			if code == "no-claim" {
+				t.Error("an unstarted Accepted feature was reported as unclaimed")
+			}
+		}
+	})
+}
+
+func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
+	// Found by running the check against this repo: 0001-publish-the-kit and
+	// 0001-ship both cite 0001, which is Shipped. Those are merged leftovers, not
+	// two agents competing, and most projects never delete merged branches.
+	p := cleanProject(t)
+	p.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
+		"shipped: "+daysAgo(2), "- [x] Finished"))
+	p.write("docs/TECH.md", "# As built\n")
+	p.commitAll("ship it")
+	p.git("branch", "0002-done")
+	p.git("branch", "0002-done-follow-up")
+
+	for _, code := range p.auditCodes() {
+		if code == "split-claim" {
+			t.Error("merged branches on a Shipped feature were reported as a split claim")
+		}
+	}
 }
