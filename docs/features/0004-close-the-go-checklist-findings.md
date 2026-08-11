@@ -1,9 +1,9 @@
 ---
 id: 0004
 title: Close the go-checklist findings
-status: Accepted
+status: Shipped
 created: 2026-08-11
-shipped:
+shipped: 2026-08-11
 check:
 checked:
 related: ./BACKLOG.md
@@ -51,7 +51,7 @@ enforces, in `kit help` and the README, and adds nothing new.
 ## Tasks
 - [x] Pass the date into `NewFeature` instead of reading the clock, and tighten the conformance date assertion
 - [x] Document the exit-code contract in `kit help` and the README
-- [ ] Harden the build: `toolchain` in go.mod, `govulncheck` in CI, reproducible build flags
+- [x] Harden the build: `toolchain` in go.mod, `govulncheck` in CI, reproducible build flags
 
 ## Open questions
 <!-- none -->
@@ -76,3 +76,10 @@ enforces, in `kit help` and the README, and adds nothing new.
   operation. Wrapping would repeat the path and add nothing. `%w` for `errors.Is/As`
   has no caller inspecting these errors, so adding it now is the pre-abstraction the
   checklist warns against. Reopen if a real failure is ever hard to read.
+- 2026-08-11 — shipped, three of four boxes done and one dropped. `govulncheck`
+  reports nothing affecting the module today, so adding it to CI costs nothing now
+  and is only useful later, which is the right time to add a gate rather than the
+  wrong one.
+- 2026-08-11 — checked that `-s -w` does not break `runtime/debug.ReadBuildInfo`,
+  because `kit version` depends on it for network installs (0001). Module info
+  survives stripping; two consecutive builds produce identical bytes.
