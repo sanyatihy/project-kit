@@ -178,3 +178,15 @@ func TestNextStillBlocksOnAMalformedLineThatNamesTheFeature(t *testing.T) {
 	p.run("next").ok().has("blocked")
 	p.run("audit").ok().has("inbox-unparsed")
 }
+
+func TestNextTellsAnEmptyPlanApartFromAFinishedOne(t *testing.T) {
+	// Both leave nothing to do, and the fixes are opposite: one needs the plan
+	// written, the other needs shipping.
+	never := setUp(t)
+	feature(never, "0001", "empty", "Empty", "Accepted", "")
+	never.run("next").ok().has("no task boxes yet")
+
+	finished := setUp(t)
+	feature(finished, "0001", "done", "Done", "Accepted", "- [x] All of it")
+	finished.run("next").ok().has("every task is ticked")
+}

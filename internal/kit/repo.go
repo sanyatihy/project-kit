@@ -66,6 +66,11 @@ func (f *Feature) Section(heading string) string { return f.sections[heading] }
 // OpenTasks lists unticked task boxes in document order.
 func (f *Feature) OpenTasks() []string { return Unticked(f.Section("Tasks")) }
 
+// TaskCount is the open and total box counts. A feature with no boxes at all has
+// nothing for an agent to do and needs different advice from one whose boxes are
+// all ticked.
+func (f *Feature) TaskCount() (open, total int) { return CountTasks(f.Section("Tasks")) }
+
 // NextTask is the one to do now. List order is the order of work.
 func (f *Feature) NextTask() string {
 	if tasks := f.OpenTasks(); len(tasks) > 0 {

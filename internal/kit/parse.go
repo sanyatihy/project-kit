@@ -14,6 +14,7 @@ var (
 	headingRe  = regexp.MustCompile(`(?m)^##\s+(.+?)\s*$`)
 	commentRe  = regexp.MustCompile(`(?s)<!--.*?-->`)
 	untickedRe = regexp.MustCompile(`^\s*[-*]\s*\[ \]\s*(.*)$`)
+	tickedRe   = regexp.MustCompile(`^\s*[-*]\s*\[[xX]\]\s*(.*)$`)
 	trailingRe = regexp.MustCompile(`\s+#.*$`)
 	dateRe     = regexp.MustCompile(`^\s*(\d{4}-\d{2}-\d{2})`)
 )
@@ -79,6 +80,32 @@ func ParseSections(body string) map[string]string {
 // documented example is never counted as real work.
 func Unticked(text string) []string {
 	var items []string
+	forEachBox(text, func(line string, done bool) {
+		if done {
+			return
+		}
+		if m := untickedRe.FindStringSubmatch(line); m != nil {
+			items = append(items, strings.TrimSpace(m[1]))
+		}
+	})
+	return items
+}
+
+// CountTasks counts task boxes, ignoring fenced examples. total includes boxes
+// already ticked, which is what tells "nothing left to do" apart from "no plan was
+// ever written" — two states that need different advice.
+func CountTasks(text string) (open, total int) {
+	forEachBox(text, func(_ string, done bool) {
+		total++
+		if !done {
+			open++
+		}
+	})
+	return open, total
+}
+
+// forEachBox walks the task boxes outside fenced blocks.
+func forEachBox(text string, visit func(line string, done bool)) {
 	fenced := false
 	for _, line := range strings.Split(text, "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "```") {
@@ -88,11 +115,13 @@ func Unticked(text string) []string {
 		if fenced {
 			continue
 		}
-		if m := untickedRe.FindStringSubmatch(line); m != nil {
-			items = append(items, strings.TrimSpace(m[1]))
+		switch {
+		case untickedRe.MatchString(line):
+			visit(line, false)
+		case tickedRe.MatchString(line):
+			visit(line, true)
 		}
 	}
-	return items
 }
 
 // ParseDate reads a leading YYYY-MM-DD, returning the zero time when absent.

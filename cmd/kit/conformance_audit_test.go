@@ -131,6 +131,9 @@ var auditCases = []struct {
 	{"bad-status", func(p *project) {
 		feature(p, "0002", "odd", "Odd", "Marinating", "- [ ] Something")
 	}},
+	{"no-tasks", func(p *project) {
+		feature(p, "0002", "empty", "Empty", "Accepted", "")
+	}},
 	{"no-claim", func(p *project) {
 		feature(p, "0002", "working", "Working", "In progress", "- [ ] Something")
 	}},

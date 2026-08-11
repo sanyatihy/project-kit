@@ -64,6 +64,8 @@ var (
 		"frontmatter id: disagrees with the filename"}
 	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
 		"an INBOX.md line is not in the documented format, so it blocks by prose match"}
+	checkNoTasks = Check{"no-tasks", Medium,
+		"Accepted or In progress with no ## Tasks boxes at all, so there is nothing to do"}
 	checkNoClaim = Check{"no-claim", Medium,
 		"In progress but no branch claims it, so the doc says work is happening and nothing shows it"}
 	checkSplitClaim = Check{"split-claim", Medium,
@@ -90,7 +92,7 @@ var Checks = []Check{
 	checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed,
-	checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
+	checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol,
 	checkDeadLink, checkNoTech, checkNoInbox,
 }
@@ -150,12 +152,20 @@ func Audit(r *Repo, today time.Time) []Finding {
 			}
 		}
 
-		// Work is finished but the doc still says otherwise.
-		if (f.Status == StatusInProgress || f.Status == StatusAccepted) &&
-			f.Section("Tasks") != "" && len(f.OpenTasks()) == 0 {
-			report(checkDoneNotShipped, at,
-				fmt.Sprintf("%s: every task is ticked but status is %s", f.Name(), f.Status),
-				"set status: Shipped and the shipped: date, or add the next task")
+		if f.Status == StatusInProgress || f.Status == StatusAccepted {
+			open, total := f.TaskCount()
+			switch {
+			// Claimable with nothing in it: an agent takes this and finds no work.
+			case total == 0:
+				report(checkNoTasks, at,
+					fmt.Sprintf("%s: %s with no ## Tasks boxes", f.Name(), f.Status),
+					`write the plan as PR-sized boxes, or set status: Draft until you can`)
+			// Work is finished but the doc still says otherwise.
+			case open == 0:
+				report(checkDoneNotShipped, at,
+					fmt.Sprintf("%s: every task is ticked but status is %s", f.Name(), f.Status),
+					"set status: Shipped and the shipped: date, or add the next task")
+			}
 		}
 
 		// Opt-in: only features that set check: are claiming to be measurable.
