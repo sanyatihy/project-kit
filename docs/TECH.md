@@ -72,6 +72,17 @@ Recorded so they are not re-litigated. Each was considered and settled.
   other.
 - **One job for `audit`:** find where the docs disagree with the repo. Resist adding
   a second.
+- **Standing guidance is embedded, never copied into projects.** `kit help
+  go-checklist` and `kit help deployment` carry engineering practice and deployment
+  patterns that are not documentation of the kit. They are `help` topics because
+  `audit` cannot check a word of either — so a copy in each repo would be drift with
+  nothing to notice it, which is the exact failure the kit exists to prevent. One
+  copy, updated on upgrade.
+- **Guidance must never use `- [ ]`.** In a kit project that syntax means "a
+  PR-sized unit of work, do the topmost one". Source material that uses it for "a
+  property to verify" gets converted to prose bullets, or an agent following protocol
+  rule 3 works through it as a task list. `TestNoTopicLooksLikeATaskList` pins this,
+  exempting the topics whose subject matter *is* the feature-doc format.
 
 ## Gotchas
 

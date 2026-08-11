@@ -58,6 +58,36 @@ func TestEveryTopicResolvesInTheBinary(t *testing.T) {
 	}
 }
 
+// showsTaskSyntax are the topics whose job is to demonstrate the feature-doc format,
+// so a `- [ ]` in them is the subject matter rather than a mistake.
+var showsTaskSyntax = map[string]bool{
+	"template":    true,
+	"conventions": true,
+}
+
+// In kit, `- [ ]` means "a PR-sized unit of work, do the topmost one" (protocol rule
+// 3). Guidance that uses the same syntax for "a property to verify" would be read as
+// a task list by an agent following the protocol, and it would work through it.
+func TestNoTopicLooksLikeATaskList(t *testing.T) {
+	for topic, path := range topics {
+		if showsTaskSyntax[topic] {
+			continue
+		}
+		raw, err := fs.ReadFile(templates, path)
+		if err != nil {
+			continue // TestEveryTopicResolvesInTheBinary reports this
+		}
+		for i, line := range strings.Split(string(raw), "\n") {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "- [ ]") || strings.HasPrefix(trimmed, "- [x]") {
+				t.Errorf("%s:%d in topic %q is a task box: %q\n"+
+					"an agent following rule 3 would try to work through these",
+					path, i+1, topic, trimmed)
+			}
+		}
+	}
+}
+
 func TestCheckRegistryIsSaneAndComplete(t *testing.T) {
 	seen := map[string]bool{}
 	for _, c := range kit.Checks {
