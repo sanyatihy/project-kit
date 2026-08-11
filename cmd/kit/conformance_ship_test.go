@@ -38,6 +38,26 @@ func TestShipStampsTheDate(t *testing.T) {
 	p.run("audit").ok().lacks("shipped-no-date", "unticked-shipped")
 }
 
+func TestShipFillsAnExistingEmptyDateKey(t *testing.T) {
+	// The template ships a bare "shipped:" line, so this is the common path — and
+	// it is a different branch from inserting one.
+	p := setUp(t)
+	p.write("docs/features/0007-templated.md",
+		"---\nid: 0007\ntitle: Templated\nstatus: Accepted\ncreated: 2026-01-01\nshipped:\n---\n\n"+
+			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [x] Done\n\n## Log\n- 2026-01-01 — x.\n")
+
+	p.run("ship", "0007").ok()
+
+	doc := p.read("docs/features/0007-templated.md")
+	if want := "shipped: " + time.Now().UTC().Format("2006-01-02"); !strings.Contains(doc, want) {
+		t.Errorf("the empty shipped: key was not filled, want %q:\n%s", want, doc)
+	}
+	if strings.Count(doc, "shipped:") != 1 {
+		t.Errorf("ship produced a duplicate shipped: key:\n%s", doc)
+	}
+	p.run("audit").ok().lacks("shipped-no-date")
+}
+
 func TestShipAddsTheDateKeyWhenTheDocHasNone(t *testing.T) {
 	// An older doc may have no shipped: line at all. Stamping has to insert one
 	// rather than silently do nothing.
