@@ -116,6 +116,11 @@ Each of these has already caused a bug.
   falls back to the module version Go embeds in the build info — the tag for
   `@v0.1.0`, a pseudo-version for `@latest` off an untagged branch. Without that, a
   tagged release reports `dev` and no one can tell what they are running.
+- **`CGO_ENABLED=0` must not reach `make test`.** The race detector requires cgo on
+  linux/amd64 but not on darwin/arm64, so a file-level `export` in the Makefile
+  passes every local run and fails CI with `-race requires cgo`. The build flags are
+  set per-recipe for this reason. More generally: a green `make check` on a Mac is
+  not evidence about the Linux runner.
 - **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.**
   A machine with an existing company `GOPRIVATE` must append, not replace; the `-w`
   write is silently inert when the variable is exported in a profile. Go warns about
