@@ -45,17 +45,23 @@ Never invent product decisions on the human's behalf. Ask in `docs/INBOX.md`.
 ## Changing the kit
 
 ```sh
-make check     # fmt-check, vet, go unit tests
+make check     # fmt-check, vet, unit tests, conformance suite
 make install   # go install ./cmd/kit
 ```
 
-The conformance suite (`./test`) that drove the binary end to end is currently
-missing and is tracked as work in `docs/features/`. Until it is back, `make check`
-is a weaker gate than it looks: the Go unit tests cover parsing and doc creation,
-but nothing exercises `init`, `next`, or `audit` as a user runs them.
+`make check` is the whole gate. The conformance suite lives in `cmd/kit` as
+`conformance*_test.go`: it builds the binary once and drives it against throwaway
+projects, so `init`, `next`, and `audit` are covered as a user runs them. It is a Go
+test on purpose — the previous suite was an external script outside the build, which
+is how it got deleted without anything noticing.
 
-If you add a check to `audit`, add a test that it fires, a test that it stays quiet
-when it should, and document the code in README.md.
+Note that `cmd/kit` coverage reads low and will stay there. The conformance tests
+drive a subprocess, so nothing they exercise is instrumented; the number is not a
+signal for this package.
+
+If you add a check to `audit`, add a test that it fires and a test that it stays
+quiet, and document the code in README.md. `TestEveryRegisteredCheckIsExercised`
+enforces the first half — a check with no conformance case fails the build.
 
 Two layout constraints that are easy to trip over:
 

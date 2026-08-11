@@ -1,9 +1,9 @@
 ---
 id: 0002
 title: Restore the conformance suite
-status: Accepted
+status: Shipped
 created: 2026-08-11
-shipped:
+shipped: 2026-08-11
 check:
 checked:
 related: ../../AGENTS.md
@@ -34,13 +34,13 @@ it stays quiet when it should. The quiet cases are the ones that matter, because
 noisy check trains people to ignore the tool.
 
 ## Tasks
-- [ ] Harness in `cmd/kit`: build the binary once, helpers to make a temp project and run subcommands
-- [ ] `init`: fresh layout, never overwrites, appends vs refreshes the protocol, creates the repo, `--stack go`, no duplicate entry point
-- [ ] `new`: next free ID, slug, frontmatter filled, refuses to overwrite
-- [ ] `next`: topmost box, In progress before Accepted, branch claims, INBOX blocks, drafts, WIP warning
-- [ ] `audit`: every finding code fires, and each stays quiet on a clean project
-- [ ] Robustness: BOM/CRLF, missing frontmatter, unparseable dates, non-git dirs, `--json`, `--strict` exit codes
-- [ ] Put `conformance` back in `make check` and delete the missing-file guard
+- [x] Harness in `cmd/kit`: build the binary once, helpers to make a temp project and run subcommands
+- [x] `init`: fresh layout, never overwrites, appends vs refreshes the protocol, creates the repo, `--stack go`, no duplicate entry point
+- [x] `new`: next free ID, slug, frontmatter filled, refuses to overwrite
+- [x] `next`: topmost box, In progress before Accepted, branch claims, INBOX blocks, drafts, WIP warning
+- [x] `audit`: every finding code fires, and each stays quiet on a clean project
+- [x] Robustness: BOM/CRLF, missing frontmatter, unparseable dates, non-git dirs, `--json`, `--strict` exit codes
+- [x] Put `conformance` back in `make check` and delete the missing-file guard
 
 ## Open questions
 <!-- none -->
@@ -49,3 +49,17 @@ noisy check trains people to ignore the tool.
 - 2026-08-11 — moving the suite in-tree as a Go test: the external Python script was
   a holdover from when the kit itself was Python, and it could be deleted without
   anything noticing because it was untracked and outside the build.
+- 2026-08-11 — shipped. 50 conformance test functions across six files in `cmd/kit`, one of
+  them a 16-case table over every audit check. `go test ./cmd/kit` reports 79 passes
+  including the existing unit tests, all under `make check`.
+  Each was verified by planting the regression it guards and confirming the suite
+  fails; the table is in the PR.
+- 2026-08-11 — two probes initially missed, and both were faults in the tests. A
+  fenced example sat under `## Design`, which `OpenTasks` never reads, and a
+  comment-stripping test asserted a doc's status instead. Both would have passed
+  forever while testing nothing. Planting the regression is what found them, which
+  is the argument for doing it on every case rather than on the ones that look
+  risky.
+- 2026-08-11 — `TestEveryRegisteredCheckIsExercised` turned AGENTS.md's "add a test
+  that it fires" from an honour-system rule into a build failure. That is the part
+  most likely to still be earning its keep in a year.
