@@ -15,11 +15,32 @@ dependencies.
 
 ## Install
 
+The repo is private, so the module proxy cannot serve it. Tell Go to skip the proxy
+for it, once per machine:
+
+```sh
+go env -w GOPRIVATE=github.com/sanyatihy/*
+```
+
+Go then fetches it with plain `git`, so that has to be able to authenticate to
+GitHub. If you use SSH keys, make `git` prefer them over HTTPS:
+
+```sh
+git config --global url."git@github.com:".insteadOf "https://github.com/"
+```
+
+Then:
+
 ```sh
 go install github.com/sanyatihy/project-kit/cmd/kit@latest
 ```
 
-Or from a clone: `make install`. Upgrading is the same command again.
+Or from a clone: `make install` — no `GOPRIVATE` needed, the source is already
+there. Upgrading is the same command again.
+
+A `410 Gone` or `404 Not Found` from `proxy.golang.org` means `GOPRIVATE` is not
+set; a git authentication prompt or `terminal prompts disabled` means it is set
+and the credentials are what is missing.
 
 ## Setup
 
