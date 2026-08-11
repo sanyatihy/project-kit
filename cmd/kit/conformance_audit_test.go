@@ -57,9 +57,7 @@ func (p *project) commitAllAt(message, isoDate string) {
 	p.git("add", "-A")
 	cmd := exec.Command("git", "commit", "-q", "-m", message)
 	cmd.Dir = p.Root
-	cmd.Env = append(os.Environ(),
-		"GIT_AUTHOR_NAME=kit tests", "GIT_AUTHOR_EMAIL=kit@example.invalid",
-		"GIT_COMMITTER_NAME=kit tests", "GIT_COMMITTER_EMAIL=kit@example.invalid",
+	cmd.Env = gitEnv(
 		"GIT_AUTHOR_DATE="+isoDate+"T12:00:00Z",
 		"GIT_COMMITTER_DATE="+isoDate+"T12:00:00Z",
 	)

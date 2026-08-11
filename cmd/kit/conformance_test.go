@@ -88,13 +88,8 @@ func (p *project) run(args ...string) *result {
 	p.t.Helper()
 	cmd := exec.Command(kitBinary(p.t), args...)
 	cmd.Dir = p.Root
-	// TERM=dumb keeps colour codes out of the assertions, and a git identity means
-	// a helper that commits does not fail on a machine with none configured.
-	cmd.Env = append(os.Environ(),
-		"TERM=dumb",
-		"GIT_AUTHOR_NAME=kit tests", "GIT_AUTHOR_EMAIL=kit@example.invalid",
-		"GIT_COMMITTER_NAME=kit tests", "GIT_COMMITTER_EMAIL=kit@example.invalid",
-	)
+	// TERM=dumb keeps colour codes out of the assertions.
+	cmd.Env = append(os.Environ(), "TERM=dumb")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 
@@ -112,12 +107,30 @@ func (p *project) run(args ...string) *result {
 	}
 }
 
+// gitEnv gives git a fixed identity and no ambient configuration.
+//
+// Both halves are load-bearing. A developer machine usually has an identity in
+// ~/.gitconfig and a CI runner does not, so inheriting it passes locally and fails
+// in CI. And any other setting a developer happens to have — init.defaultBranch,
+// commit.gpgsign, a template dir — would leak into the fixtures and make results
+// depend on whose machine ran them.
+func gitEnv(extra ...string) []string {
+	return append(append(os.Environ(),
+		// GIT_CONFIG_COUNT is a third mechanism that the two /dev/null settings do
+		// not cover, so it needs zeroing separately.
+		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null", "GIT_CONFIG_COUNT=0",
+		"GIT_AUTHOR_NAME=kit tests", "GIT_AUTHOR_EMAIL=kit@example.invalid",
+		"GIT_COMMITTER_NAME=kit tests", "GIT_COMMITTER_EMAIL=kit@example.invalid",
+	), extra...)
+}
+
 // git runs a git command in the project, for setting up states `kit init` would
 // otherwise create itself.
 func (p *project) git(args ...string) {
 	p.t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = p.Root
+	cmd.Env = gitEnv()
 	if out, err := cmd.CombinedOutput(); err != nil {
 		p.t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
 	}
