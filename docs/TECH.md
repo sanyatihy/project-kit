@@ -51,7 +51,16 @@ Recorded so they are not re-litigated. Each was considered and settled.
   `make install` runs.
 - **`go install`, not per-project vendoring.** Earlier versions copied the commands
   into each project's `.kit/`. A binary cannot be vendored as source, so projects now
-  depend on `kit` being installed, and generated CI installs it in a step.
+  depend on `kit` being installed on the machine that uses it.
+- **The repo is private, and that has a price.** `go install` works, but only with
+  `GOPRIVATE` covering `github.com/sanyatihy/*` and git credentials for the host —
+  see the README. It is why generated CI does not run `kit audit --strict`: doing so
+  means installing a private module, so every scaffolded project would carry a
+  credential to store and rotate and would fail its first push until someone set one.
+  Zero-setup scaffolding beat catching drift a few hours before `kit next` does. The
+  kit's own CI *does* audit, because it has the source and `go run ./cmd/kit` needs
+  nothing to authenticate. If the kit ever goes public, both costs vanish and the two
+  steps can go back into the template.
 - **PDCA was considered and rejected** as the organising frame. It comes from
   repeated manufacturing processes; software changes are mostly one-offs, so
   mandatory predictions became ceremony. What survived is an entirely **optional**
@@ -83,6 +92,15 @@ Each of these has already caused a bug.
   as bare strings.
 - **The installed binary is not the source.** Run `make install` after changes, or
   test against `./kit`.
+- **`go install` does not apply the Makefile's `-ldflags`,** so `main.Version` stays
+  at its compiled-in default for anyone installing over the network. `resolveVersion`
+  falls back to the module version Go embeds in the build info — the tag for
+  `@v0.1.0`, a pseudo-version for `@latest` off an untagged branch. Without that, a
+  tagged release reports `dev` and no one can tell what they are running.
+- **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.**
+  A machine with an existing company `GOPRIVATE` must append, not replace; the `-w`
+  write is silently inert when the variable is exported in a profile. Go warns about
+  the conflict, and the warning is easy to scroll past.
 
 ## Verifying
 
@@ -93,6 +111,10 @@ kit audit .    # the kit passes its own audit
 kit next .     # its own plan
 ```
 
+`.github/workflows/check.yml` runs `golangci-lint`, `make check`, and
+`go run ./cmd/kit audit . --strict` on every PR and every push to `main`. The audit
+step uses `go run` rather than an installed binary so it needs no credential.
+
 `make check` is currently weaker than it looks: the conformance suite that drove the
 binary end to end was deleted while untracked and is tracked as work in
 [features/0002-restore-the-conformance-suite.md](features/0002-restore-the-conformance-suite.md).
@@ -101,8 +123,13 @@ Unit tests cover parsing, doc creation, and help consistency; nothing yet exerci
 
 ## State of play
 
-**Nothing is committed.** The repo has no commits and no remote, which is why the
-documented `go install github.com/sanyatihy/project-kit/cmd/kit@latest` cannot
-resolve yet, and why the deleted suite was unrecoverable. That is
-[features/0001-publish-the-kit.md](features/0001-publish-the-kit.md), and it is the
-first thing `kit next` hands back.
+Published. `github.com/sanyatihy/project-kit` is a private repo tagged `v0.1.0`, and
+`go install github.com/sanyatihy/project-kit/cmd/kit@latest` resolves to that tag —
+verified from an empty `GOMODCACHE`, not just assumed. Setting up a new machine takes
+the two settings in the README's install section.
+
+The gap that remains is testing. `make check` covers parsing, doc creation, help
+consistency, and version resolution; nothing exercises `init`, `next`, or `audit` as
+a user runs them, because the conformance suite was deleted while untracked. That is
+[features/0002-restore-the-conformance-suite.md](features/0002-restore-the-conformance-suite.md),
+and it is what `kit next` hands back now.

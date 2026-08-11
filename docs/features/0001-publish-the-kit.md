@@ -1,9 +1,9 @@
 ---
 id: 0001
 title: Publish the kit so go install works
-status: In progress
+status: Shipped
 created: 2026-08-11
-shipped:
+shipped: 2026-08-11
 check:
 checked:
 related: ../../README.md
@@ -44,7 +44,7 @@ the tasks this way keeps every intermediate state green.
 - [x] Document `GOPRIVATE` in the README install section — a private module needs it on every machine
 - [x] Verify `go install github.com/sanyatihy/project-kit/cmd/kit@latest` from a clean `GOMODCACHE` with `GOPRIVATE` set
 - [x] `kit version` reports the module version from build info, not `dev`, when installed with `go install`
-- [ ] Tag `v0.1.0` so `@latest` pins a release rather than the branch
+- [x] Tag `v0.1.0` so `@latest` pins a release rather than the branch
 - [x] Drop `kit audit --strict` from the generated `--stack go` `check.yml` so scaffolding needs no credential
 - [x] Add the kit's own `.github/workflows/check.yml` running `make check`
 
@@ -80,3 +80,11 @@ the tasks this way keeps every intermediate state green.
   on a written file in `NewFeature`. A flush failure there would have `kit new`
   report a doc it had only half written. Fixed by reporting the `Close` error rather
   than deferring it.
+- 2026-08-11 — shipped. `v0.1.0` is tagged, and a cold `go install …@latest` against an
+  empty `GOMODCACHE` resolves to the tag and reports `kit v0.1.0`. Durable facts moved
+  to [TECH.md](../TECH.md).
+- 2026-08-11 — the work landed in two PRs, not one. The first was merged while the
+  branch still had two of five commits, so `main` briefly carried a `check.yml` that
+  installed a private module and a binary that reported `dev`. Nothing was lost, but it
+  is why the tag was checked against `main`'s content rather than the branch's: a
+  merged PR is not evidence that the branch is merged.
