@@ -35,7 +35,7 @@ noisy check trains people to ignore the tool.
 
 ## Tasks
 - [x] Harness in `cmd/kit`: build the binary once, helpers to make a temp project and run subcommands
-- [ ] `init`: fresh layout, never overwrites, appends vs refreshes the protocol, creates the repo, `--stack go`, no duplicate entry point
+- [x] `init`: fresh layout, never overwrites, appends vs refreshes the protocol, creates the repo, `--stack go`, no duplicate entry point
 - [ ] `new`: next free ID, slug, frontmatter filled, refuses to overwrite
 - [ ] `next`: topmost box, In progress before Accepted, branch claims, INBOX blocks, drafts, WIP warning
 - [ ] `audit`: every finding code fires, and each stays quiet on a clean project

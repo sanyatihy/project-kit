@@ -197,6 +197,16 @@ func (r *result) has(want ...string) *result {
 	return r
 }
 
+func (r *result) lacks(unwanted ...string) *result {
+	r.t.Helper()
+	for _, u := range unwanted {
+		if strings.Contains(r.out(), u) {
+			r.t.Errorf("%s mentioned %q and should not have%s", r.cmd(), u, r.context())
+		}
+	}
+	return r
+}
+
 func (r *result) outHas(want string) *result {
 	r.t.Helper()
 	if !strings.Contains(r.Stdout, want) {
