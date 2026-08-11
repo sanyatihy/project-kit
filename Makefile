@@ -2,11 +2,21 @@ GO ?= go
 PKG := ./...
 BIN := kit
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-LDFLAGS := -X main.Version=$(VERSION)
+
+# -s -w drop the symbol table and DWARF; -trimpath keeps build paths out of the
+# binary and CGO_ENABLED=0 keeps it static. Together they make the output depend on
+# the source and nothing about the machine that built it. Module build info
+# survives all of this, so `kit version` still resolves from it.
+#
+# CGO_ENABLED is set per-recipe rather than exported for the whole file: `test`
+# runs with -race, and the race detector requires cgo.
+LDFLAGS := -s -w -X main.Version=$(VERSION)
+BUILDFLAGS := -trimpath
+BUILDENV := CGO_ENABLED=0
 
 .PHONY: build
 build:
-	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/kit
+	$(BUILDENV) $(GO) build $(BUILDFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/kit
 
 # check is the gate, and it is whole: the conformance suite is a Go test in
 # cmd/kit, so `test` runs it. Keeping it in-tree is the point — the previous suite
@@ -39,9 +49,13 @@ lint:
 		|| echo "note: golangci-lint not installed, skipping"
 
 # install puts `kit` on your PATH via the Go toolchain.
+.PHONY: vuln
+vuln:
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@latest $(PKG)
+
 .PHONY: install
 install:
-	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/kit
+	$(BUILDENV) $(GO) install $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/kit
 	@echo "installed $(BIN) into $$($(GO) env GOBIN); if empty, $$($(GO) env GOPATH)/bin"
 
 .PHONY: help
@@ -55,3 +69,4 @@ help:
 	@echo "  fmt-check   - fail if anything is unformatted"
 	@echo "  vet         - go vet ./..."
 	@echo "  lint        - golangci-lint run (skipped if not installed)"
+	@echo "  vuln        - govulncheck against the module"

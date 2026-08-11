@@ -37,6 +37,20 @@ func TestOverviewListsEveryCommand(t *testing.T) {
 	}
 }
 
+// The exit codes are a contract that TestExitCodesAreDistinct enforces on the
+// binary. The binary also has to say what they mean, or the only statement of the
+// contract is a test the user cannot read.
+func TestOverviewDocumentsTheExitCodes(t *testing.T) {
+	if !strings.Contains(overview, "Exit codes") {
+		t.Error("the overview never mentions exit codes")
+	}
+	for _, code := range []string{"0", "1", "2"} {
+		if !strings.Contains(overview, "\n  "+code+"  ") {
+			t.Errorf("exit code %s is not documented in the overview", code)
+		}
+	}
+}
+
 func TestOverviewListsEveryTopic(t *testing.T) {
 	for _, topic := range topicNames() {
 		if !strings.Contains(overview, "kit help "+topic) {

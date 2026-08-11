@@ -6,7 +6,12 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 )
+
+// testDate is the clock these tests hand to NewFeature. A fixed date is the point
+// of passing it in: the assertion is exact rather than "whatever today is".
+var testDate = time.Date(2026, 3, 14, 15, 9, 26, 0, time.UTC)
 
 const templateDoc = `---
 id: NNNN
@@ -61,7 +66,7 @@ func TestNewFeatureFillsFrontmatter(t *testing.T) {
 	}
 	r := &Repo{Root: dir, FeaturesDir: features}
 
-	path, err := NewFeature(templateFS(), r, "Shorten URLs")
+	path, err := NewFeature(templateFS(), r, "Shorten URLs", testDate)
 	if err != nil {
 		t.Fatalf("NewFeature: %v", err)
 	}
@@ -80,8 +85,8 @@ func TestNewFeatureFillsFrontmatter(t *testing.T) {
 	if fields["title"] != "Shorten URLs" {
 		t.Errorf("title = %q, want the given title", fields["title"])
 	}
-	if ParseDate(fields["created"]).IsZero() {
-		t.Errorf("created = %q, want a real date", fields["created"])
+	if got, want := fields["created"], testDate.Format(DateLayout); got != want {
+		t.Errorf("created = %q, want %q — the date is the one passed in, not the clock's", got, want)
 	}
 	if fields["status"] != "Draft" {
 		t.Errorf("status = %q, want Draft — a new doc is never pre-accepted", fields["status"])
@@ -99,12 +104,12 @@ func TestNewFeatureRefusesToOverwrite(t *testing.T) {
 	}
 	r := &Repo{Root: dir, FeaturesDir: features}
 
-	if _, err := NewFeature(templateFS(), r, "Shorten URLs"); err != nil {
+	if _, err := NewFeature(templateFS(), r, "Shorten URLs", testDate); err != nil {
 		t.Fatal(err)
 	}
 	// The repo model is stale here, exactly as it would be for a second agent
 	// racing on the same ID. It must fail rather than clobber.
-	if _, err := NewFeature(templateFS(), r, "Shorten URLs"); err == nil {
+	if _, err := NewFeature(templateFS(), r, "Shorten URLs", testDate); err == nil {
 		t.Error("second write succeeded; a racing agent would have lost its work")
 	}
 }
@@ -113,14 +118,14 @@ func TestNewFeatureRejectsUnusableInput(t *testing.T) {
 	dir := t.TempDir()
 	r := &Repo{Root: dir, FeaturesDir: dir}
 	for _, title := range []string{"", "   ", "!!!"} {
-		if _, err := NewFeature(templateFS(), r, title); err == nil {
+		if _, err := NewFeature(templateFS(), r, title, testDate); err == nil {
 			t.Errorf("NewFeature(%q) succeeded, want an error", title)
 		}
 	}
 }
 
 func TestNewFeatureNeedsAnInitialisedProject(t *testing.T) {
-	if _, err := NewFeature(templateFS(), &Repo{Root: t.TempDir()}, "Thing"); err == nil {
+	if _, err := NewFeature(templateFS(), &Repo{Root: t.TempDir()}, "Thing", testDate); err == nil {
 		t.Error("succeeded without a features directory, want an error pointing at kit init")
 	}
 }

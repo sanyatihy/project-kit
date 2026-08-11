@@ -72,6 +72,14 @@ Recorded so they are not re-litigated. Each was considered and settled.
   other.
 - **One job for `audit`:** find where the docs disagree with the repo. Resist adding
   a second.
+- **Exit codes are a contract**, documented in `kit help` and the README and pinned
+  by `TestExitCodesAreDistinct`: `0` worked, `1` only ever means `audit --strict`
+  found something HIGH, `2` means the command could not run. An agent scripting the
+  kit has to tell a typo from a finding.
+- **Dates are passed in, never read inside.** Both `Audit` and `NewFeature` take
+  `today` from `main`. One of them used to read the clock, and the cost was a test
+  that could only assert "some date that looks like today" — which cannot catch an
+  off-by-one at a UTC midnight boundary.
 - **Standing guidance is embedded, never copied into projects.** `kit help
   go-checklist` and `kit help deployment` carry engineering practice and deployment
   patterns that are not documentation of the kit. They are `help` topics because
@@ -108,6 +116,11 @@ Each of these has already caused a bug.
   falls back to the module version Go embeds in the build info — the tag for
   `@v0.1.0`, a pseudo-version for `@latest` off an untagged branch. Without that, a
   tagged release reports `dev` and no one can tell what they are running.
+- **`CGO_ENABLED=0` must not reach `make test`.** The race detector requires cgo on
+  linux/amd64 but not on darwin/arm64, so a file-level `export` in the Makefile
+  passes every local run and fails CI with `-race requires cgo`. The build flags are
+  set per-recipe for this reason. More generally: a green `make check` on a Mac is
+  not evidence about the Linux runner.
 - **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.**
   A machine with an existing company `GOPRIVATE` must append, not replace; the `-w`
   write is silently inert when the variable is exported in a profile. Go warns about
@@ -117,12 +130,18 @@ Each of these has already caused a bug.
 
 ```sh
 make check     # fmt-check, vet, unit tests, conformance suite
+make vuln      # govulncheck against the module
 make install   # go install ./cmd/kit
 kit audit .    # the kit passes its own audit
 kit next .     # its own plan
 ```
 
-`.github/workflows/check.yml` runs `golangci-lint`, `make check`, and
+Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, and `-ldflags "-s -w"`, so
+the output depends on the source and nothing about the machine. Module build info
+survives the stripping, which matters because `kit version` falls back to it when
+the ldflags stamp is absent.
+
+`.github/workflows/check.yml` runs `golangci-lint`, `make check`, `make vuln`, and
 `go run ./cmd/kit audit . --strict` on every PR and every push to `main`. The audit
 step uses `go run` rather than an installed binary so it needs no credential.
 
@@ -160,9 +179,6 @@ The testing gap is closed. `make check` is now the whole gate: fmt, vet, unit te
 and the conformance suite that drives the commands end to end. The kit's own CI runs
 that plus `golangci-lint` and its own audit.
 
-What is left is written down rather than urgent —
-[features/BACKLOG.md](features/BACKLOG.md) holds four findings from reviewing the kit
-against `kit help go-checklist`, none scheduled. The sharpest is that `NewFeature`
-reads the clock inline while `Audit` takes an injected `today`; the conformance suite
-works around it with a loose date assertion, which is the cost of that
-inconsistency.
+The backlog is empty: the findings from reviewing the kit against
+`kit help go-checklist` were closed by
+[features/0004-close-the-go-checklist-findings.md](features/0004-close-the-go-checklist-findings.md).

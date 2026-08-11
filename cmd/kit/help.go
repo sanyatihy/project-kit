@@ -42,6 +42,11 @@ The four rules:
 Blocked on something only a human can decide? Write it to docs/INBOX.md with your
 leaning and move to another feature. Never guess, and never idle.
 
+Exit codes, so a script can tell these apart:
+  0  it worked
+  1  "kit audit --strict" found something HIGH. Only --strict ever exits 1
+  2  the command could not run: unknown command, bad flag, missing path
+
 Topics:
   kit help protocol      the rules agents follow, as written into AGENTS.md
   kit help template      the feature doc format, field by field
