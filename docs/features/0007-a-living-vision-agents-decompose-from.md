@@ -1,7 +1,7 @@
 ---
 id: 0007
 title: A living vision agents decompose from
-status: Draft
+status: In progress
 created: 2026-08-12
 shipped:
 check:
@@ -61,7 +61,7 @@ trusted.
 there is nothing to decompose and the finding would be noise on a fresh `kit init`.
 
 ## Tasks
-- [ ] `templates/VISION.md` — a stub with prompts, mutable, no lifecycle
+- [x] `templates/VISION.md` — a stub with prompts, mutable, no lifecycle
 - [ ] `kit init` writes it, and re-running never overwrites an existing one
 - [ ] `kit help vision` — a registered topic explaining what it is for and what it is not
 - [ ] Audit: `no-vision` (LOW), once a project has feature docs
