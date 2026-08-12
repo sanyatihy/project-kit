@@ -57,7 +57,7 @@ what anything else has to read to know about the plan.
 
 ## Tasks
 - [x] `draft-claimed` fires only when a Draft's branch carries work beyond the doc itself
-- [ ] `kit next` shows ticked-over-total per feature, in text and in `--json`
+- [x] `kit next` shows ticked-over-total per feature, in text and in `--json`
 
 ## Open questions
 <!-- none -->

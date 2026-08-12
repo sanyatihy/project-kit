@@ -1,6 +1,7 @@
 package kit
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -20,6 +21,8 @@ type Item struct {
 	Doc       string `json:"doc"`
 	Task      string `json:"task"`
 	Branch    string `json:"branch"`
+	Done      int    `json:"done"`  // boxes ticked
+	Total     int    `json:"total"` // boxes in all
 	ClaimedBy string `json:"claimed_by,omitempty"`
 	WaitingOn string `json:"waiting_on,omitempty"`
 	Mine      bool   `json:"mine,omitempty"`
@@ -64,6 +67,7 @@ func (p Plan) Empty() bool {
 func Survey(r *Repo) Plan {
 	plan := Plan{Branch: r.HeadBranch()}
 	for _, f := range r.ActiveFeatures() {
+		open, total := f.TaskCount()
 		item := Item{
 			ID:     f.ID,
 			Title:  f.Title,
@@ -71,6 +75,8 @@ func Survey(r *Repo) Plan {
 			Doc:    f.Rel,
 			Task:   f.NextTask(),
 			Branch: f.Branch(),
+			Done:   total - open,
+			Total:  total,
 		}
 		// The claim on this checkout's own HEAD is this agent's. Calling it taken
 		// would be the tool reporting a fact about the reader back to them as an
@@ -112,6 +118,16 @@ func Survey(r *Repo) Plan {
 		}
 	}
 	return plan
+}
+
+// Progress is "3/6", or "" for a feature with no boxes to count. It reports what
+// has been ticked and nothing more: boxes are not equal sizes, so anything read as
+// a forecast would be invented.
+func (i Item) Progress() string {
+	if i.Total == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d/%d", i.Done, i.Total)
 }
 
 // Drafts lists features still being designed, so an empty plan can say why.

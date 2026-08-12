@@ -350,7 +350,7 @@ func runNext(args []string) int {
 // that would be next in each.
 func listItems(items []kit.Item) {
 	for _, item := range items {
-		fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
+		fmt.Printf("    %s  %-5s %s\n", item.ID, item.Progress(), kit.Show(item.Title, 54))
 		fmt.Printf("          %s\n", kit.Show(item.Task, 64))
 	}
 }
@@ -366,7 +366,7 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 	if len(plan.Yours) > 0 {
 		mine := plan.Yours[0]
 		fmt.Printf("\n  %s\n", paint("yours — this checkout claims it", "1;32", color))
-		fmt.Printf("    %s  %s\n", mine.ID, kit.Show(mine.Title, 60))
+		fmt.Printf("    %s  %-5s %s\n", mine.ID, mine.Progress(), kit.Show(mine.Title, 54))
 		fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(mine.Task, 68))
 		fmt.Printf("       %s\n", mine.Doc)
 		listItems(plan.Yours[1:])
@@ -387,7 +387,7 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 			fmt.Printf("  its own, never here:  kit claim %s\n", first.ID)
 		} else {
 			fmt.Printf("\n  %s\n", paint("start here", "1;32", color))
-			fmt.Printf("    %s  %s\n", first.ID, kit.Show(first.Title, 60))
+			fmt.Printf("    %s  %-5s %s\n", first.ID, first.Progress(), kit.Show(first.Title, 54))
 			fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(first.Task, 68))
 			fmt.Printf("       %s\n", first.Doc)
 			// The claim comes before the worktree, and kit claim prints the worktree
@@ -404,7 +404,7 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 	if len(plan.Taken) > 0 {
 		fmt.Printf("\n  %s\n", paint("taken", "2", color))
 		for _, item := range plan.Taken {
-			fmt.Printf("    %s  %s — %s\n", item.ID, kit.Show(item.Title, 44), item.ClaimedBy)
+			fmt.Printf("    %s  %-5s %s — %s\n", item.ID, item.Progress(), kit.Show(item.Title, 38), item.ClaimedBy)
 		}
 	}
 
