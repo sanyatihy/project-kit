@@ -232,7 +232,7 @@ func runShip(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit ship: %v\n", err)
 		return 2
 	}
-	res, err := kit.Ship(repo, id, time.Now().UTC())
+	res, err := kit.Ship(templates, repo, id, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit ship: %v\n", err)
 		return 2
@@ -240,10 +240,11 @@ func runShip(args []string) int {
 
 	fmt.Printf("\n  shipped  %s  (was %s)\n", res.Doc, res.Was)
 	fmt.Printf("\nnext:\n")
+	if res.TechCreated {
+		fmt.Printf("  created %s — the as-built doc. See: kit help as-built\n", res.TechDoc)
+	}
 	if res.TechDoc != "" {
 		fmt.Printf("  move durable facts into %s — the feature doc is frozen history now\n", res.TechDoc)
-	} else {
-		fmt.Printf("  add docs/TECH.md and move durable facts into it\n")
 	}
 	if res.OpenLogs {
 		fmt.Printf("  ## Log is empty; record what was decided and why\n")

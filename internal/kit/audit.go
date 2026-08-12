@@ -291,7 +291,7 @@ func Audit(r *Repo, today time.Time) []Finding {
 	case r.Tech == "" && !newestShip.IsZero():
 		report(checkNoTech, r.Name,
 			"features have shipped but nothing describes the as-built system",
-			"add docs/TECH.md")
+			"kit ship writes one; for an existing project see: kit help as-built")
 	}
 
 	// Set up, work happening, nothing written down. This is what adoption

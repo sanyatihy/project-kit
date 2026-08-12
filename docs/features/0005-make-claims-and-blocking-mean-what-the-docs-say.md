@@ -79,7 +79,7 @@ binary alone, cannot reach those four conclusions.
 - [x] Audit: an INBOX question naming a feature ID that does not exist
 - [x] Protocol: releasing a claim, rewriting a box, where urgent work is inserted, push before working
 - [x] `kit ship <id>` — verify boxes, set status and `shipped:`, prompt the as-built migration
-- [ ] A `TECH.md` template, and `no-tech` pointing at it
+- [x] A `TECH.md` template, and `no-tech` pointing at it
 - [ ] Tighten `kit help` so the four things this review got wrong are answerable from the binary
 
 ## Open questions

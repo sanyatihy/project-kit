@@ -96,12 +96,48 @@ func TestShipRefusesAnUnknownFeature(t *testing.T) {
 func TestShipPointsAtTheAsBuiltDoc(t *testing.T) {
 	// Rule 10 says move durable facts across; nothing enforced it, so the prompt is
 	// the enforcement.
-	withTech := setUp(t)
-	feature(withTech, "0007", "done", "Done", "Accepted", "- [x] One")
-	withTech.write("docs/TECH.md", "# As built\n")
-	withTech.run("ship", "0007").ok().has("docs/TECH.md")
+	// The creation case is TestShipCreatesTheAsBuiltDocOnce; this is the reminder
+	// when the doc is already there.
+	p := setUp(t)
+	feature(p, "0007", "done", "Done", "Accepted", "- [x] One")
+	p.write("docs/TECH.md", "# As built\n")
 
-	without := setUp(t)
-	feature(without, "0007", "done", "Done", "Accepted", "- [x] One")
-	without.run("ship", "0007").ok().has("add docs/TECH.md")
+	r := p.run("ship", "0007").ok()
+	r.has("move durable facts", "docs/TECH.md")
+	r.lacks("created docs/TECH.md")
+}
+
+func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
+	// Rule 10 says move durable facts into the as-built doc. Until now nothing said
+	// what that doc looks like, and shipping is exactly when it first has to exist.
+	p := setUp(t)
+	feature(p, "0007", "first", "First", "Accepted", "- [x] Done")
+
+	p.run("ship", "0007").ok().has("created", "docs/TECH.md")
+	if !p.exists("docs/TECH.md") {
+		t.Fatal("shipping did not create the as-built doc")
+	}
+	// It answers no-tech, which is the finding it exists to resolve.
+	p.run("audit").ok().lacks("no-tech")
+
+	// A second ship must not overwrite whatever has been written into it.
+	p.write("docs/TECH.md", "# TECH\n\nReal content someone wrote.\n")
+	feature(p, "0008", "second", "Second", "Accepted", "- [x] Done")
+	p.run("ship", "0008").ok()
+	if got := p.read("docs/TECH.md"); !strings.Contains(got, "Real content someone wrote.") {
+		t.Errorf("shipping overwrote the as-built doc:\n%s", got)
+	}
+}
+
+func TestShipRespectsAnExistingAsBuiltDocUnderAnotherName(t *testing.T) {
+	// ARCHITECTURE.md is an accepted name. Creating docs/TECH.md alongside it would
+	// give the project two as-built docs and no way to tell which is true.
+	p := setUp(t)
+	feature(p, "0007", "first", "First", "Accepted", "- [x] Done")
+	p.write("docs/ARCHITECTURE.md", "# Architecture\n\nAlready here.\n")
+
+	p.run("ship", "0007").ok().has("docs/ARCHITECTURE.md")
+	if p.exists("docs/TECH.md") {
+		t.Error("shipping created a second as-built doc beside the existing one")
+	}
 }

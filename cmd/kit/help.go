@@ -56,6 +56,7 @@ Topics:
   kit help template      the feature doc format, field by field
   kit help conventions   how the features directory works
   kit help checks        every audit finding and what it means
+  kit help as-built      the docs/TECH.md shape, section by section
   kit help go-checklist  engineering practices for Go projects, tiered
   kit help deployment    patterns for going to production, and their traps
 
@@ -69,6 +70,7 @@ var topics = map[string]string{
 	"conventions":  "templates/features-README.md",
 	"go-checklist": "templates/go-checklist.md",
 	"deployment":   "templates/deployment.md",
+	"as-built":     "templates/TECH.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,

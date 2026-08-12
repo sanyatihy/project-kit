@@ -2,7 +2,9 @@ package kit
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -15,10 +17,11 @@ var (
 
 // ShipResult is what shipping changed, for reporting.
 type ShipResult struct {
-	Doc      string
-	Was      string
-	TechDoc  string // the as-built doc to migrate facts into, "" when there is none
-	OpenLogs bool   // whether ## Log looks like it was left untouched
+	Doc         string
+	Was         string
+	TechDoc     string // the as-built doc to migrate facts into
+	TechCreated bool   // whether shipping is what created it
+	OpenLogs    bool   // whether ## Log looks like it was left untouched
 }
 
 // Ship marks a feature shipped: it verifies every box is ticked, sets the status
@@ -27,7 +30,7 @@ type ShipResult struct {
 // The verification is the point. `unticked-shipped` and `shipped-no-date` are two
 // of the audit's findings and both come from doing this by hand, so doing it by
 // command removes the mistake rather than reporting it afterwards.
-func Ship(r *Repo, id string, today time.Time) (*ShipResult, error) {
+func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, error) {
 	var target *Feature
 	for _, f := range r.Features {
 		if f.ID == id {
@@ -73,9 +76,35 @@ func Ship(r *Repo, id string, today time.Time) (*ShipResult, error) {
 	}
 
 	res := &ShipResult{Doc: target.Rel, Was: target.Status}
-	if r.Tech != "" {
-		res.TechDoc = r.Rel(r.Tech)
+	res.TechDoc = r.Rel(r.Tech)
+	if r.Tech == "" {
+		// The as-built doc waits until something ships, which is now. Creating it
+		// here is what makes "move durable facts across" an instruction someone can
+		// actually follow.
+		if created, err := createTechDoc(templates, r); err == nil {
+			res.TechDoc, res.TechCreated = created, true
+		}
 	}
 	res.OpenLogs = strings.TrimSpace(target.Section("Log")) == ""
 	return res, nil
+}
+
+// createTechDoc writes the as-built template beside the feature docs, and never
+// over an existing file.
+func createTechDoc(templates fs.FS, r *Repo) (string, error) {
+	dest := filepath.Join(r.Root, "docs", "TECH.md")
+	if _, err := os.Stat(dest); err == nil {
+		return r.Rel(dest), nil
+	}
+	raw, err := fs.ReadFile(templates, "templates/TECH.md")
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(dest, raw, 0o644); err != nil {
+		return "", err
+	}
+	return r.Rel(dest), nil
 }
