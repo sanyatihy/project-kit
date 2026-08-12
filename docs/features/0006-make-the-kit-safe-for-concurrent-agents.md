@@ -1,9 +1,9 @@
 ---
 id: 0006
 title: Make the kit safe for concurrent agents
-status: In progress
+status: Shipped
 created: 2026-08-12
-shipped:
+shipped: 2026-08-12
 check:
 checked:
 related: 0005-make-claims-and-blocking-mean-what-the-docs-say.md
