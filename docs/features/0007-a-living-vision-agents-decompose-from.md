@@ -65,7 +65,7 @@ there is nothing to decompose and the finding would be noise on a fresh `kit ini
 - [x] `kit init` writes it, and re-running never overwrites an existing one
 - [x] `kit help vision` — a registered topic explaining what it is for and what it is not
 - [x] Audit: `no-vision` (LOW), once a project has feature docs
-- [ ] Protocol: read the vision before drafting, and decompose to one agent's reach
+- [x] Protocol: read the vision before drafting, and decompose to one agent's reach
 
 ## Open questions
 <!-- none -->
