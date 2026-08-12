@@ -120,7 +120,9 @@ func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
 	// It answers no-tech, which is the finding it exists to resolve.
 	p.run("audit").ok().lacks("no-tech")
 
-	// A second ship must not overwrite whatever has been written into it.
+	// A second ship must leave what has been written into it alone. Note this is
+	// enforced by the caller finding the doc already present, not by the create —
+	// once it exists, createTechDoc is never reached.
 	p.write("docs/TECH.md", "# TECH\n\nReal content someone wrote.\n")
 	feature(p, "0008", "second", "Second", "Accepted", "- [x] Done")
 	p.run("ship", "0008").ok()

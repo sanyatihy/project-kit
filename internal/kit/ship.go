@@ -89,13 +89,14 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	return res, nil
 }
 
-// createTechDoc writes the as-built template beside the feature docs, and never
-// over an existing file.
+// createTechDoc writes the as-built template beside the feature docs.
+//
+// Callers reach this only when the project has no as-built doc, so the O_EXCL is
+// not a second guard on that: it covers two agents shipping different features at
+// once, both finding none and both trying to create it. The loser fails the create
+// and simply does not report having made one.
 func createTechDoc(templates fs.FS, r *Repo) (string, error) {
 	dest := filepath.Join(r.Root, "docs", "TECH.md")
-	if _, err := os.Stat(dest); err == nil {
-		return r.Rel(dest), nil
-	}
 	raw, err := fs.ReadFile(templates, "templates/TECH.md")
 	if err != nil {
 		return "", err
@@ -103,7 +104,15 @@ func createTechDoc(templates fs.FS, r *Repo) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(dest, raw, 0o644); err != nil {
+	file, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return "", err
+	}
+	if _, err := file.Write(raw); err != nil {
+		_ = file.Close()
+		return "", err
+	}
+	if err := file.Close(); err != nil {
 		return "", err
 	}
 	return r.Rel(dest), nil
