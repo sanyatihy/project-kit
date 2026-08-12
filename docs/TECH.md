@@ -72,6 +72,20 @@ Recorded so they are not re-litigated. Each was considered and settled.
   other.
 - **One job for `audit`:** find where the docs disagree with the repo. Resist adding
   a second.
+- **Prevent before detecting.** `kit block` and `kit ship` exist because writing an
+  INBOX line and shipping a feature by hand were where four findings came from. A
+  command that makes the mistake impossible beats a check that reports it, and
+  `audit` stays the pressure valve rather than the destination.
+- **A claim is a branch name, and only for live work.** Local branches, remote
+  branches and worktrees all count, so a stale fetch hides someone else's claim.
+  The claim checks apply only to features still being worked: once a feature is
+  Shipped its branches are merged leftovers, and reporting those fires on every
+  project where nobody deletes branches, which is most of them.
+- **Blocking matches the id field of an INBOX line, never the prose.** A question
+  that merely mentions another feature used to stop work on it, invisibly. A line
+  outside the documented format falls back to matching the whole line, which
+  over-blocks — the safe direction, since missing a blocker sends an agent into work
+  a human has not cleared. `inbox-unparsed` makes those lines visible.
 - **Exit codes are a contract**, documented in `kit help` and the README and pinned
   by `TestExitCodesAreDistinct`: `0` worked, `1` only ever means `audit --strict`
   found something HIGH, `2` means the command could not run. An agent scripting the
@@ -121,6 +135,11 @@ Each of these has already caused a bug.
   passes every local run and fails CI with `-race requires cgo`. The build flags are
   set per-recipe for this reason. More generally: a green `make check` on a Mac is
   not evidence about the Linux runner.
+- **Guidance the binary does not print may as well not exist.** An outside review
+  reached four wrong conclusions about this tool, every one a fair reading of
+  `kit help`: the INBOX format was enforced by the parser and documented nowhere
+  reachable. `TestHelpAnswersWhatAnOutsideReviewGotWrong` and
+  `TestEveryTopicIsReachableFromTheOverview` keep that shut.
 - **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.**
   A machine with an existing company `GOPRIVATE` must append, not replace; the `-w`
   write is silently inert when the variable is exported in a profile. Go warns about

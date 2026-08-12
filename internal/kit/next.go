@@ -72,7 +72,13 @@ func Survey(r *Repo) Plan {
 				item.ClaimedBy = claim
 				plan.Taken = append(plan.Taken, item)
 			} else if item.Task == "" {
-				item.WaitingOn = "every task is ticked — ship it or add the next task"
+				// Nothing to do has two causes needing opposite fixes: the work is
+				// finished, or it was never planned.
+				if _, total := f.TaskCount(); total == 0 {
+					item.WaitingOn = "no task boxes yet — write the plan, or set status: Draft"
+				} else {
+					item.WaitingOn = "every task is ticked — ship it or add the next task"
+				}
 				plan.Blocked = append(plan.Blocked, item)
 			} else {
 				plan.Ready = append(plan.Ready, item)

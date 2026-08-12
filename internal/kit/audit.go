@@ -62,6 +62,20 @@ var (
 		"a non-Draft doc has an empty ## Problem, ## Design, or ## Log"}
 	checkIDMismatch = Check{"id-mismatch", Medium,
 		"frontmatter id: disagrees with the filename"}
+	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
+		"an INBOX.md line is not in the documented format, so it blocks by prose match"}
+	checkInboxUnknown = Check{"inbox-unknown", Medium,
+		"an INBOX.md question names a feature that does not exist, so it can never unblock one"}
+	checkNoTasks = Check{"no-tasks", Medium,
+		"Accepted or In progress with no ## Tasks boxes at all, so there is nothing to do"}
+	checkNoClaim = Check{"no-claim", Medium,
+		"In progress but no branch claims it, so the doc says work is happening and nothing shows it"}
+	checkSplitClaim = Check{"split-claim", Medium,
+		"two branches claim one feature — two agents believe they own it"}
+	checkOrphanClaim = Check{"orphan-claim", Medium,
+		"a branch is named after a feature doc that does not exist"}
+	checkDraftClaimed = Check{"draft-claimed", Medium,
+		"a branch claims a Draft, so someone is building on a design nobody settled"}
 	checkNoStatus   = Check{"no-status", Medium, "no status: in the frontmatter"}
 	checkBadStatus  = Check{"bad-status", Medium, "an unrecognised status:"}
 	checkNoProtocol = Check{"no-protocol", Medium,
@@ -79,8 +93,9 @@ var (
 var Checks = []Check{
 	checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
-	checkMissingSection, checkIDMismatch, checkNoStatus, checkBadStatus,
-	checkNoProtocol,
+	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
+	checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
+	checkNoStatus, checkBadStatus, checkNoProtocol,
 	checkDeadLink, checkNoTech, checkNoInbox,
 }
 
@@ -139,12 +154,20 @@ func Audit(r *Repo, today time.Time) []Finding {
 			}
 		}
 
-		// Work is finished but the doc still says otherwise.
-		if (f.Status == StatusInProgress || f.Status == StatusAccepted) &&
-			f.Section("Tasks") != "" && len(f.OpenTasks()) == 0 {
-			report(checkDoneNotShipped, at,
-				fmt.Sprintf("%s: every task is ticked but status is %s", f.Name(), f.Status),
-				"set status: Shipped and the shipped: date, or add the next task")
+		if f.Status == StatusInProgress || f.Status == StatusAccepted {
+			open, total := f.TaskCount()
+			switch {
+			// Claimable with nothing in it: an agent takes this and finds no work.
+			case total == 0:
+				report(checkNoTasks, at,
+					fmt.Sprintf("%s: %s with no ## Tasks boxes", f.Name(), f.Status),
+					`write the plan as PR-sized boxes, or set status: Draft until you can`)
+			// Work is finished but the doc still says otherwise.
+			case open == 0:
+				report(checkDoneNotShipped, at,
+					fmt.Sprintf("%s: every task is ticked but status is %s", f.Name(), f.Status),
+					"set status: Shipped and the shipped: date, or add the next task")
+			}
 		}
 
 		// Opt-in: only features that set check: are claiming to be measurable.
@@ -174,6 +197,32 @@ func Audit(r *Repo, today time.Time) []Finding {
 			}
 		}
 
+		// The claim is a branch name and nothing else, so branches are the only
+		// place a claim can disagree with a doc.
+		//
+		// Only a feature still being worked can have a claim problem. Once it is
+		// Shipped its branches are merged leftovers, and reporting those would fire
+		// on every project where nobody deletes branches — which is most of them.
+		if f.ID != "" && (f.Status == StatusInProgress || f.Status == StatusAccepted ||
+			f.Status == StatusDraft) {
+			claims := r.Claims(f.ID)
+			switch {
+			case f.Status == StatusInProgress && len(claims) == 0:
+				report(checkNoClaim, at,
+					f.Name()+": In progress, but no branch claims it",
+					"branch and push it, or set the status back")
+			case len(claims) > 1:
+				report(checkSplitClaim, at,
+					fmt.Sprintf("%s: claimed by %s", f.Name(), strings.Join(claims, " and ")),
+					"one agent per feature — delete the branch that is not doing the work")
+			}
+			if f.Status == StatusDraft && len(claims) > 0 {
+				report(checkDraftClaimed, at,
+					fmt.Sprintf("%s: %s claims a Draft", f.Name(), claims[0]),
+					"settle the design and set status: Accepted, or stop work")
+			}
+		}
+
 		if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
 			report(checkIDMismatch, at,
 				fmt.Sprintf("id %q does not match filename %q", f.ID, prefix),
@@ -189,7 +238,32 @@ func Audit(r *Repo, today time.Time) []Finding {
 		}
 	}
 
+	for _, branch := range r.OrphanClaims() {
+		report(checkOrphanClaim, r.Name,
+			fmt.Sprintf("branch %q cites a feature that does not exist", branch),
+			"delete the branch, or create the doc it claims with kit new")
+	}
+
+	knownID := map[string]bool{}
+	for _, f := range r.Features {
+		if f.ID != "" {
+			knownID[f.ID] = true
+		}
+	}
 	for _, q := range r.OpenQuestions() {
+		switch {
+		case q.Feature == "":
+			report(checkInboxUnparsed, r.Rel(r.Inbox),
+				"not in the documented format: "+clip(q.Text, 60),
+				`use: kit block <id> "<question>", or match `+
+					`"YYYY-MM-DD `+inboxSep+` <id> `+inboxSep+` BLOCKING|FYI `+inboxSep+` <question>"`)
+		// A question against a feature that does not exist blocks nothing and waits
+		// forever. `kit block` refuses these, so one here was hand-written.
+		case !knownID[q.Feature]:
+			report(checkInboxUnknown, r.Rel(r.Inbox),
+				fmt.Sprintf("names feature %s, which has no doc: %s", q.Feature, clip(q.Text, 50)),
+				"correct the id, or delete the line if the feature is gone")
+		}
 		if q.When.IsZero() {
 			continue
 		}
@@ -217,7 +291,7 @@ func Audit(r *Repo, today time.Time) []Finding {
 	case r.Tech == "" && !newestShip.IsZero():
 		report(checkNoTech, r.Name,
 			"features have shipped but nothing describes the as-built system",
-			"add docs/TECH.md")
+			"kit ship writes one; for an existing project see: kit help as-built")
 	}
 
 	// Set up, work happening, nothing written down. This is what adoption

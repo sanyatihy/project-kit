@@ -66,6 +66,11 @@ func (f *Feature) Section(heading string) string { return f.sections[heading] }
 // OpenTasks lists unticked task boxes in document order.
 func (f *Feature) OpenTasks() []string { return Unticked(f.Section("Tasks")) }
 
+// TaskCount is the open and total box counts. A feature with no boxes at all has
+// nothing for an agent to do and needs different advice from one whose boxes are
+// all ticked.
+func (f *Feature) TaskCount() (open, total int) { return CountTasks(f.Section("Tasks")) }
+
 // NextTask is the one to do now. List order is the order of work.
 func (f *Feature) NextTask() string {
 	if tasks := f.OpenTasks(); len(tasks) > 0 {
@@ -255,24 +260,76 @@ func (r *Repo) loadGit() {
 	sort.Strings(r.refs)
 }
 
+// branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
+// recognised as one branch rather than two claims on the same feature.
+func branchName(ref string) string {
+	if i := strings.Index(ref, "/"); i >= 0 && (strings.HasPrefix(ref, "origin/") ||
+		strings.HasPrefix(ref, "remotes/")) {
+		return ref[i+1:]
+	}
+	return ref
+}
+
+func isTrunk(name string) bool {
+	return name == "main" || name == "master" || name == "HEAD"
+}
+
+// Claims lists the distinct branches claiming a feature. More than one means two
+// agents believe they own it.
+func (r *Repo) Claims(id string) []string {
+	r.loadGit()
+	seen := map[string]bool{}
+	var out []string
+	for _, ref := range r.refs {
+		name := branchName(ref)
+		if isTrunk(name) || seen[name] || !Mentions(name, id) {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
+}
+
 // ClaimFor returns the branch claiming a feature, or "". The default branch
 // never counts as a claim.
 func (r *Repo) ClaimFor(id string) string {
-	r.loadGit()
-	for _, ref := range r.refs {
-		tail := ref
-		if i := strings.Index(ref, "/"); i >= 0 && (strings.HasPrefix(ref, "origin/") ||
-			strings.HasPrefix(ref, "remotes/")) {
-			tail = ref[i+1:]
-		}
-		if tail == "main" || tail == "master" || tail == "HEAD" {
-			continue
-		}
-		if Mentions(ref, id) {
-			return ref
-		}
+	if claims := r.Claims(id); len(claims) > 0 {
+		return claims[0]
 	}
 	return ""
+}
+
+// OrphanClaims lists branches named like a claim — a leading four-digit ID —
+// whose feature doc does not exist.
+//
+// Only branches that look like claims are considered. Ordinary working branches
+// cite no ID and must never be reported, or the check becomes noise.
+func (r *Repo) OrphanClaims() []string {
+	r.loadGit()
+	known := map[string]bool{}
+	for _, f := range r.Features {
+		if f.ID != "" {
+			known[f.ID] = true
+		}
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, ref := range r.refs {
+		name := branchName(ref)
+		if isTrunk(name) || seen[name] {
+			continue
+		}
+		m := idPrefixRe.FindStringSubmatch(name)
+		if m == nil || known[m[1]] {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // LastMentioned is the newest commit citing this ID, or the zero time.
@@ -302,9 +359,49 @@ func (r *Repo) LastTouched(path string) time.Time {
 }
 
 // OpenQuestion is one unticked inbox line.
+//
+// Feature is the ID from the line's second field, empty when the line does not
+// follow the documented format. Blocking decisions use it in preference to the
+// whole line, so a question that merely mentions another feature in passing does
+// not stop work on it.
 type OpenQuestion struct {
-	When time.Time
-	Text string
+	When    time.Time
+	Text    string
+	Feature string
+	FYI     bool
+}
+
+// inboxSep separates the fields of an inbox line:
+//
+//   - [ ] YYYY-MM-DD · <feature-id> · BLOCKING|FYI · <question>
+const inboxSep = "·"
+
+// parseInboxLine pulls the feature ID and the BLOCKING/FYI marker out of a line
+// in the documented format, reporting whether it was in that format at all.
+//
+// The question text is deliberately not validated: it is prose and may contain
+// anything, including the separator.
+func parseInboxLine(text string) (id string, fyi, ok bool) {
+	fields := strings.SplitN(text, inboxSep, 4)
+	if len(fields) < 3 {
+		return "", false, false
+	}
+	if ParseDate(strings.TrimSpace(fields[0])).IsZero() {
+		return "", false, false
+	}
+	marker := strings.TrimSpace(fields[2])
+	switch {
+	case strings.EqualFold(marker, "FYI"):
+		fyi = true
+	case strings.EqualFold(marker, "BLOCKING"):
+		fyi = false
+	default:
+		return "", false, false
+	}
+	if id = strings.TrimSpace(fields[1]); id == "" {
+		return "", false, false
+	}
+	return id, fyi, true
 }
 
 // OpenQuestions reads the inbox, skipping fenced examples.
@@ -318,9 +415,16 @@ func (r *Repo) OpenQuestions() []OpenQuestion {
 	}
 	var out []OpenQuestion
 	for _, text := range Unticked(Normalise(string(raw))) {
-		if text != "" {
-			out = append(out, OpenQuestion{When: ParseDate(text), Text: text})
+		if text == "" {
+			continue
 		}
+		q := OpenQuestion{When: ParseDate(text), Text: text}
+		if id, fyi, ok := parseInboxLine(text); ok {
+			q.Feature, q.FYI = id, fyi
+		} else {
+			q.FYI = isFYI(text)
+		}
+		out = append(out, q)
 	}
 	return out
 }
@@ -330,10 +434,24 @@ func (r *Repo) OpenQuestions() []OpenQuestion {
 // A line marked FYI is a note, not a blocker — it is recorded so the human sees
 // it, but work continues. Anything else blocks, because an unmarked question is
 // more likely to be a real one than a courtesy note.
+//
+// A line in the documented format is matched on its feature-ID field alone.
+// Anything else falls back to scanning the whole line, which over-blocks: a
+// question that names the ID only in passing will stop work. That is the safe
+// direction to be wrong in — over-blocking is visible and annoying, while missing
+// a blocker sends an agent into work a human has not cleared. `inbox-unparsed`
+// reports the lines that land here so they can be fixed rather than tolerated.
 func (r *Repo) BlockersFor(id string) []string {
 	var out []string
 	for _, q := range r.OpenQuestions() {
-		if Mentions(q.Text, id) && !isFYI(q.Text) {
+		if q.FYI {
+			continue
+		}
+		matched := Mentions(q.Text, id)
+		if q.Feature != "" {
+			matched = Mentions(q.Feature, id)
+		}
+		if matched {
 			out = append(out, q.Text)
 		}
 	}

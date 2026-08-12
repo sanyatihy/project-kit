@@ -9,7 +9,7 @@ import (
 )
 
 // subcommands must stay in step with the dispatcher in main.go.
-var subcommands = []string{"init", "new", "next", "audit"}
+var subcommands = []string{"init", "new", "block", "ship", "next", "audit"}
 
 func TestEveryCommandHasHelp(t *testing.T) {
 	for _, name := range subcommands {
@@ -77,6 +77,7 @@ func TestEveryTopicResolvesInTheBinary(t *testing.T) {
 var showsTaskSyntax = map[string]bool{
 	"template":    true,
 	"conventions": true,
+	"inbox":       true,
 }
 
 // In kit, `- [ ]` means "a PR-sized unit of work, do the topmost one" (protocol rule

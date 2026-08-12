@@ -96,3 +96,34 @@ func TestShowKeepsIdentifiersIntact(t *testing.T) {
 		t.Errorf("Show = %q, want %q", got, want)
 	}
 }
+
+// The feature ID lives in a fixed field of an inbox line. Matching the whole line
+// instead blocks any feature the question happens to mention, which halts work for
+// a reason nobody can see.
+func TestParseInboxLine(t *testing.T) {
+	for _, tc := range []struct {
+		name, line string
+		wantID     string
+		wantFYI    bool
+		wantOK     bool
+	}{
+		{"blocking", "2026-08-11 · 0007 · BLOCKING · Which encoding?", "0007", false, true},
+		{"fyi", "2026-08-11 · 0007 · FYI · Using base62.", "0007", true, true},
+		{"lowercase marker", "2026-08-11 · 0007 · blocking · Which?", "0007", false, true},
+		{"separator in the question", "2026-08-11 · 0007 · BLOCKING · A · B?", "0007", false, true},
+		{"no date", "someday · 0007 · BLOCKING · Which?", "", false, false},
+		{"unknown marker", "2026-08-11 · 0007 · MAYBE · Which?", "", false, false},
+		{"too few fields", "2026-08-11 · 0007", "", false, false},
+		{"free prose", "we should decide about 0007 at some point", "", false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			id, fyi, ok := parseInboxLine(tc.line)
+			if ok != tc.wantOK {
+				t.Fatalf("ok = %v, want %v — an unrecognised line must fall back, not parse wrongly", ok, tc.wantOK)
+			}
+			if id != tc.wantID || fyi != tc.wantFYI {
+				t.Errorf("id = %q, fyi = %v; want %q, %v", id, fyi, tc.wantID, tc.wantFYI)
+			}
+		})
+	}
+}

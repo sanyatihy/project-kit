@@ -17,8 +17,11 @@ const overview = `kit — bootstrap projects and run them with agents.
 Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
+  kit block <id> "<question>"         park a decision only a human can make
+  kit ship  <id>                      tick the last box: verify, stamp, freeze
   kit next  [PATH ...] [--json]       what should I work on?
-  kit audit [PATH ...] [--json]       where do the docs disagree with the repo?
+  kit audit [PATH ...] [--json] [--strict]
+                                      where do the docs disagree with the repo?
   kit help  [TOPIC]                   this, or a topic below
   kit version
 
@@ -33,14 +36,20 @@ How it works:
   work it unattended, which is why "kit next" never offers a Draft.
 
 The four rules:
-  1. In progress features come before Accepted ones. Finishing beats starting.
+  1. In progress features come before Accepted ones, then lowest ID first.
+     Finishing beats starting.
   2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
      order of work, so ordering needs no extra syntax.
-  3. One agent per feature. A branch named after the doc is the claim on it.
+  3. One agent per feature. A branch named after the doc is the claim on it —
+     local branches, remote branches and worktrees all count, so fetch first.
+     Push the branch before you start, or nobody else can see the claim.
   4. A feature named in an open docs/INBOX.md question is blocked until answered.
+     "Named" means the id field of the line, not a mention in the question text.
+     See "kit help inbox" for the format.
 
-Blocked on something only a human can decide? Write it to docs/INBOX.md with your
-leaning and move to another feature. Never guess, and never idle.
+Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
+which writes docs/INBOX.md in the format the tool parses, then move to another
+feature. Never guess, and never idle.
 
 Exit codes, so a script can tell these apart:
   0  it worked
@@ -52,6 +61,8 @@ Topics:
   kit help template      the feature doc format, field by field
   kit help conventions   how the features directory works
   kit help checks        every audit finding and what it means
+  kit help inbox         the docs/INBOX.md format, and what BLOCKING means
+  kit help as-built      the docs/TECH.md shape, section by section
   kit help go-checklist  engineering practices for Go projects, tiered
   kit help deployment    patterns for going to production, and their traps
 
@@ -65,6 +76,8 @@ var topics = map[string]string{
 	"conventions":  "templates/features-README.md",
 	"go-checklist": "templates/go-checklist.md",
 	"deployment":   "templates/deployment.md",
+	"as-built":     "templates/TECH.md",
+	"inbox":        "templates/INBOX.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
@@ -102,14 +115,52 @@ in docs/INBOX.md. Set status: Accepted when it is settled.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
 
+	"block": `kit block <id> "<question>" [--fyi]
+
+Blocked on something only a human can decide? Write it here and move on. Appends
+one line to docs/INBOX.md in the format the tool parses:
+
+  - [ ] YYYY-MM-DD · <id> · BLOCKING|FYI · <question>
+
+"kit next" then stops offering that feature until a human answers and deletes the
+line. With --fyi it is recorded without blocking, for anything work can continue
+without.
+
+Use this rather than editing INBOX.md by hand. A line that misses the format is
+matched by prose instead of by its id field, so it blocks whatever it happens to
+mention — "kit audit" reports those as inbox-unparsed.
+
+State a leaning. It turns most questions into a yes/no.
+
+  kit block 0007 "Should codes expire? Leaning: no, keep forever."
+  kit block 7 "Using base62 for slugs." --fyi`,
+
+	"ship": `kit ship <id>
+
+Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
+status: Shipped, and stamps shipped: with today's date.
+
+Doing this by hand is where two audit findings come from — unticked-shipped and
+shipped-no-date — so the command removes the mistake rather than reporting it
+afterwards.
+
+A Shipped doc is frozen history: durable facts belong in docs/TECH.md from then
+on, and the doc itself must not be edited again.
+
+  kit ship 0007
+  kit ship 7`,
+
 	"next": `kit next [PATH ...] [--json]
 
 What should I work on? Reads the feature docs and git, and names one task.
 
-Ranks In progress before Accepted, then by ID, and within a feature returns the
-topmost unticked "## Tasks" box. A feature whose doc is named in an open INBOX
-question is reported as blocked; one with a branch named after it is reported as
-taken. Prints the git worktree command to start.
+Ranks In progress before Accepted, then by lowest ID, and within a feature returns
+the topmost unticked "## Tasks" box.
+
+A feature is reported as taken when a branch cites its id — local branches, remote
+branches and worktrees all count, so a stale fetch hides someone else's claim. It
+is reported as blocked when an open docs/INBOX.md line carries its id in the id
+field. Prints the git worktree command to start.
 
 Reads only. With no PATH it uses the repo you are in, from any subdirectory.
 
