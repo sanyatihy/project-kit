@@ -357,6 +357,47 @@ func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
 	}
 }
 
+func TestTheThresholdsFireAtTheirBoundaryAndNotBefore(t *testing.T) {
+	// Retuning a threshold is only real if the boundary moved with the constant.
+	// Both are read from the package, so this keeps testing whatever they become.
+	t.Run("inbox-stale", func(t *testing.T) {
+		for _, tc := range []struct {
+			age  int
+			want bool
+		}{{kit.InboxStaleDays - 1, false}, {kit.InboxStaleDays, true}} {
+			p := cleanProject(t)
+			p.write("docs/INBOX.md", fmt.Sprintf(
+				"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(tc.age)))
+
+			if got := slices.Contains(p.auditCodes(), "inbox-stale"); got != tc.want {
+				t.Errorf("a question %d day(s) unanswered: reported=%v, want %v",
+					tc.age, got, tc.want)
+			}
+		}
+	})
+
+	t.Run("stalled", func(t *testing.T) {
+		for _, tc := range []struct {
+			idle int
+			want bool
+		}{{kit.StalledDays - 1, false}, {kit.StalledDays, true}} {
+			p := cleanProject(t)
+			feature(p, "0002", "stuck", "Stuck", "In progress", "- [ ] Never finished")
+			// Midnight-aligned, because audit compares against today truncated to a
+			// whole day. An mtime taken straight off the clock lands a few hours
+			// short of the boundary and reads as a day younger than it is.
+			when := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -tc.idle)
+			if err := os.Chtimes(p.path("docs/features/0002-stuck.md"), when, when); err != nil {
+				t.Fatalf("ageing the doc: %v", err)
+			}
+
+			if got := slices.Contains(p.auditCodes(), "stalled"); got != tc.want {
+				t.Errorf("idle for %d day(s): reported=%v, want %v", tc.idle, got, tc.want)
+			}
+		}
+	})
+}
+
 func TestDuplicateIDDoesNotFireOnDocsWithNoIDAtAll(t *testing.T) {
 	// The quiet half. Docs missing an id: share the empty string, and grouping on
 	// that would report them as duplicates of each other — a second, wrong finding

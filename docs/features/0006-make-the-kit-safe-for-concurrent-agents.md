@@ -97,10 +97,18 @@ calendar. `next` is already instant and needs no change; `audit` is the lagging 
 - [x] `kit claim <id>` — create and push the branch; a rejected push is a lost race and a non-zero exit
 - [x] `kit next` reports the claim on the current HEAD as yours, not as taken
 - [x] `kit next` will not headline a different feature in a checkout that is already claimed
-- [ ] `StalledDays` and `InboxStaleDays` retuned from weekly-human to agent cadence
+- [x] `StalledDays` and `InboxStaleDays` retuned from weekly-human to agent cadence
 - [ ] Protocol: the worktree is the isolation, the push is the claim, and where the ID race can still bite
 
 ## Log
+- 2026-08-12 — thresholds landed at 3 days stalled and 1 day inbox, both an order
+  of magnitude down. Three rather than one for stalled because a claim taken on a
+  Friday and picked up on a Monday is not a stall. One for the inbox because that is
+  the floor: an inbox line carries a date and not a time, so anything shorter cannot
+  be expressed without changing the documented format.
+- 2026-08-12 — retuning found the numbers restated in prose in three places, and two
+  of them would have kept the old figure. They are generated from the constants now,
+  and `kit help checks` lost its separate "Thresholds:" line as duplication.
 - 2026-08-12 — `kit next` now prints `kit claim <id>` where it used to print
   `git worktree add -b`. Not planned, but leaving it would have had the board
   recommending the one route that skips the step deciding who gets the work, and

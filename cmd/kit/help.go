@@ -249,8 +249,8 @@ func printChecks() {
 		}
 		fmt.Println()
 	}
-	fmt.Printf("Thresholds: stalled after %d days, inbox questions after %d.\n",
-		kit.StalledDays, kit.InboxStaleDays)
+	// The thresholds used to be restated here and drifted from the constants the
+	// moment they were retuned. Each check now carries its own in the line above.
 }
 
 func topicNames() []string {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
 	"strings"
 	"testing"
@@ -99,6 +100,31 @@ func TestNoTopicLooksLikeATaskList(t *testing.T) {
 					"an agent following rule 3 would try to work through these",
 					path, i+1, topic, trimmed)
 			}
+		}
+	}
+}
+
+// `kit help checks` is what an agent reads to know when a finding will appear, and
+// the two thresholds were restated in prose in three places. Retuning them left the
+// prose behind, so the numbers now come from the constants themselves.
+func TestThresholdProseCarriesTheRealNumbers(t *testing.T) {
+	for _, tc := range []struct {
+		code string
+		days int
+	}{{"stalled", kit.StalledDays}, {"inbox-stale", kit.InboxStaleDays}} {
+		want := fmt.Sprintf("%d day", tc.days)
+		found := false
+		for _, c := range kit.Checks {
+			if c.Code == tc.code {
+				found = true
+				if !strings.Contains(c.Means, want) {
+					t.Errorf("check %q says %q, which does not carry its threshold of %s",
+						tc.code, c.Means, want)
+				}
+			}
+		}
+		if !found {
+			t.Errorf("no check named %q", tc.code)
 		}
 	}
 }

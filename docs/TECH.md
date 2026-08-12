@@ -36,8 +36,9 @@ Mechanisms worth knowing before changing anything:
   the topmost unticked box. This replaced a dependency graph.
 - **The claim is a branch name.** A branch citing a feature ID means that feature is
   taken. Zero new state, visible across worktrees and — once pushed — machines.
-- **Blocking is an INBOX line naming the feature.** `next` skips it; `audit`
-  escalates it after 7 days.
+- **Blocking is an INBOX line naming the feature.** `next` skips it immediately;
+  `audit` escalates it after a day. Thresholds follow the cadence of what they
+  watch, not an operator's calendar, and an idle agent costs minutes.
 - **`audit` never writes.** An auditor that fixes things stops being read.
 
 ## Decisions and why

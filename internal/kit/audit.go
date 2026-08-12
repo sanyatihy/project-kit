@@ -10,11 +10,33 @@ import (
 	"time"
 )
 
-// Thresholds, tuned for a solo operator shipping weekly.
+// Thresholds, tuned to the cadence of the thing being watched rather than to an
+// operator's calendar. Both were an order of magnitude larger when the assumption
+// was one person shipping weekly.
+//
+// A claimed feature is held by something that commits in minutes, so days of
+// silence mean the agent died or the work was abandoned, not that it is going
+// slowly. An unanswered question costs every agent that could have taken the
+// feature, and only a human can clear it.
 const (
-	StalledDays    = 30 // 'In progress' with no sign of life
-	InboxStaleDays = 7  // an unanswered question this old means you are the bottleneck
+	// StalledDays is 'In progress' with no sign of life. Three rather than one
+	// because a claim taken on a Friday and resumed on a Monday is not a stall.
+	StalledDays = 3
+
+	// InboxStaleDays is an unanswered question this old, which means you are the
+	// bottleneck. One is the floor: an inbox line carries a date and not a time, so
+	// this is the shortest span the documented format can express at all.
+	InboxStaleDays = 1
 )
+
+// countDays renders a threshold or an age for a finding, so the text can never
+// disagree with the constant it came from — and never says "1 days".
+func countDays(n int) string {
+	if n == 1 {
+		return "1 day"
+	}
+	return fmt.Sprintf("%d days", n)
+}
 
 // Severity levels, worst first.
 const (
@@ -43,11 +65,12 @@ var (
 	checkDuplicateID = Check{"duplicate-id", High,
 		"two feature docs share one id:, so one branch claims both and one inbox line blocks both"}
 	checkStalled = Check{"stalled", High,
-		"In progress, but no commit cites it and nothing edited it for 30 days"}
+		"In progress, but no commit cites it and nothing edited it for " +
+			countDays(StalledDays)}
 	checkUntickedShipped = Check{"unticked-shipped", High,
 		"marked Shipped while ## Tasks still has open boxes"}
 	checkInboxStale = Check{"inbox-stale", High,
-		"a question in INBOX.md has gone unanswered for 7 days"}
+		"a question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkUnchecked = Check{"unchecked", High,
 		"a check: date passed and nobody recorded the outcome"}
 
@@ -172,7 +195,8 @@ func Audit(r *Repo, today time.Time) []Finding {
 			}
 			if idle := Days(newest, today); idle >= StalledDays {
 				report(checkStalled, at,
-					fmt.Sprintf("%s: In progress, nothing has happened in %d days", f.Name(), idle),
+					fmt.Sprintf("%s: In progress, nothing has happened in %s",
+						f.Name(), countDays(idle)),
 					"finish it, drop it, or move the blocker to docs/INBOX.md")
 			}
 		}
@@ -196,8 +220,8 @@ func Audit(r *Repo, today time.Time) []Finding {
 		// Opt-in: only features that set check: are claiming to be measurable.
 		if !f.Check.IsZero() && f.Checked.IsZero() && !f.Check.After(today) {
 			report(checkUnchecked, at,
-				fmt.Sprintf("%s: check was due %d days ago and never happened",
-					f.Name(), Days(f.Check, today)),
+				fmt.Sprintf("%s: check was due %s ago and never happened",
+					f.Name(), countDays(Days(f.Check, today))),
 				"look at the result, write it in ## Log, then set checked:")
 		}
 
@@ -292,7 +316,7 @@ func Audit(r *Repo, today time.Time) []Finding {
 		}
 		if age := Days(q.When, today); age >= InboxStaleDays {
 			report(checkInboxStale, r.Rel(r.Inbox),
-				fmt.Sprintf("unanswered for %d days: %s", age, clip(q.Text, 70)),
+				fmt.Sprintf("unanswered for %s: %s", countDays(age), clip(q.Text, 70)),
 				"answer it, or delete it if it stopped mattering")
 		}
 	}
