@@ -46,6 +46,13 @@ Mechanisms worth knowing before changing anything:
   a different feature to start in a checkout that is already claimed. Creating and
   removing worktrees is git's job and a launcher's; the kit only refuses to hand out
   work where there is already some.
+- **Three docs, three tenses, one owner each.** `docs/VISION.md` is what the project
+  is becoming, `docs/features/` is what is being done now, `docs/TECH.md` is what
+  exists. The vision and the as-built doc are both mutable and carry no status; they
+  differ in that the as-built doc must be true *now* while the vision is allowed to
+  be aspirational and is expected to move. `kit init` writes all of them and
+  overwrites none. `no-vision` is LOW and fires only once a project has feature docs,
+  since a project that has been set up and not yet planned has nothing to decompose.
 - **Blocking is an INBOX line naming the feature.** `next` skips it immediately;
   `audit` escalates it after a day. Thresholds follow the cadence of what they
   watch, not an operator's calendar, and an idle agent costs minutes.
