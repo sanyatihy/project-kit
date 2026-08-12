@@ -169,18 +169,24 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 
 ## The four rules
 
-1. `In progress` features come before `Accepted` ones. Finishing beats starting.
+1. `In progress` features come before `Accepted` ones, then lowest ID first.
+   Finishing beats starting.
 2. Within a feature, do the topmost unticked box. List order is the order of work.
-3. One agent per feature; a branch named after the doc is the claim.
-4. A feature named in an open `INBOX.md` question is blocked.
+3. One agent per feature; a branch named after the doc is the claim. Local
+   branches, remote branches and worktrees all count — push before you start, or
+   nobody can see the claim.
+4. A feature named in an open `INBOX.md` question is blocked. "Named" means the id
+   field of the line, which is why `kit block` writes it for you.
 
 ## Commands
 
 ```sh
 kit new   <title...>                     next free ID, date filled in, status Draft
+kit block <id> "<question>" [--fyi]      park a decision only a human can make
+kit ship  <id>                           verify every box, stamp the date, freeze
 kit next  [PATH ...] [--json]            warns above 2 features in progress
 kit audit [PATH ...] [--json] [--strict] --strict exits 1 on HIGH, for CI
-kit help  [protocol|template|conventions|checks|go-checklist|deployment]
+kit help  [protocol|template|conventions|checks|inbox|as-built|go-checklist|deployment]
 kit version
 ```
 
@@ -216,8 +222,13 @@ even when something goes wrong.
 
 - **HIGH** — `stalled`, `unticked-shipped`, `inbox-stale`, `unchecked`
 - **MEDIUM** — `no-plan`, `done-not-shipped`, `tech-drift`, `shipped-no-date`,
-  `missing-section`, `id-mismatch`, `no-status`, `bad-status`, `no-protocol`
+  `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`, `no-tasks`,
+  `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
+  `bad-status`, `no-protocol`
 - **LOW** — `dead-link`, `no-inbox`, `no-tech`
+
+`kit help checks` prints this list from the same registry `audit` reports from, so
+it cannot drift.
 
 Thresholds are constants in `internal/kit`.
 

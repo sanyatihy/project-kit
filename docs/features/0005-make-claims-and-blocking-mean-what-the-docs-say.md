@@ -1,9 +1,9 @@
 ---
 id: 0005
 title: Make claims and blocking mean what the docs say
-status: Accepted
+status: Shipped
 created: 2026-08-11
-shipped:
+shipped: 2026-08-12
 check:
 checked:
 related: ../../cmd/kit/help.go
@@ -96,3 +96,14 @@ binary alone, cannot reach those four conclusions.
 - 2026-08-11 — rejected auditing task quality. It is the one proposal that would make
   `audit` less trustworthy rather than more, and `audit` has no value other than being
   believed.
+- 2026-08-12 — shipped. Three bugs fixed, six audit checks added, two commands, six
+  protocol rules clarified or added. The registry is at 22 checks, all conformance
+  covered.
+- 2026-08-12 — the claim checks were the riskiest, because they read branch names
+  and ordinary correct behaviour looks like a violation. Running them against this
+  repo — the first with real branches — immediately produced a false positive that
+  no synthetic fixture had: two merged branches on a Shipped feature read as two
+  agents competing. Scoped to features still being worked.
+- 2026-08-12 — `kit block` and `kit ship` both remove a finding rather than report
+  it. That is the direction to keep pushing: `audit` is the pressure valve, not the
+  destination.
