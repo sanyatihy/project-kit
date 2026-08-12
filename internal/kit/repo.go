@@ -345,6 +345,40 @@ func (r *Repo) ClaimFor(id string) string {
 	return ""
 }
 
+// BranchBuildsOn reports whether a branch has changed anything beyond the one file
+// given — that is, whether somebody is building on it rather than only proposing it.
+//
+// This is what separates a claim from a draft awaiting review. Agents draft features
+// and leave them for a human, and nothing is committed to the default branch, so the
+// proposal has to live on a branch until it is accepted. A branch carrying only the
+// feature doc is that; a branch carrying code is work. Git already knows which, so
+// neither the doc nor the kit needs a new field to say so.
+//
+// Unknown answers false: with no trunk to compare against, or a branch that cannot be
+// resolved, the quiet answer is the safe one — this feeds a check, and a finding
+// invented from missing information is worse than a finding not made.
+func (r *Repo) BranchBuildsOn(branch, rel string) bool {
+	trunk := ""
+	for _, candidate := range []string{"main", "master"} {
+		if r.git("rev-parse", "--verify", "--quiet", candidate) != "" {
+			trunk = candidate
+			break
+		}
+	}
+	if trunk == "" || branch == "" {
+		return false
+	}
+	// Three dots: what the branch changed since it diverged, not what has landed on
+	// trunk meanwhile. Otherwise every branch looks busy as soon as trunk moves.
+	changed := r.git("diff", "--name-only", trunk+"..."+branch)
+	for _, line := range strings.Split(changed, "\n") {
+		if path := strings.TrimSpace(line); path != "" && path != rel {
+			return true
+		}
+	}
+	return false
+}
+
 // OrphanClaims lists branches named like a claim — a leading four-digit ID —
 // whose feature doc does not exist.
 //

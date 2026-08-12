@@ -56,7 +56,7 @@ it and nothing surfaces it. It goes in the text output where the eye lands and i
 what anything else has to read to know about the plan.
 
 ## Tasks
-- [ ] `draft-claimed` fires only when a Draft's branch carries work beyond the doc itself
+- [x] `draft-claimed` fires only when a Draft's branch carries work beyond the doc itself
 - [ ] `kit next` shows ticked-over-total per feature, in text and in `--json`
 
 ## Open questions
