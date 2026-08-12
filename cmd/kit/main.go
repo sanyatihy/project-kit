@@ -300,6 +300,16 @@ func runShip(args []string) int {
 	if res.OpenLogs {
 		fmt.Printf("  ## Log is empty; record what was decided and why\n")
 	}
+	// Said here because this decision is made at the end of a session and the
+	// protocol is read at the start of one. An agent that reaches this point with
+	// no instruction fills the gap by merging its own work, which is what happened
+	// the first time a real project ran the loop.
+	if res.HasRemote {
+		fmt.Printf("  push the branch and stop — reviewing and merging are not yours\n")
+	} else {
+		fmt.Printf("  this project has no remote, so there is nowhere to hand this off.\n")
+		fmt.Printf("  say so rather than merging it yourself — merging is not yours\n")
+	}
 	fmt.Printf("  kit next\n\n")
 	return 0
 }

@@ -49,6 +49,13 @@ make check     # fmt-check, vet, unit tests, conformance suite
 make install   # go install ./cmd/kit
 ```
 
+**Run `make install` after anything lands on `main`.** `kit` on `$PATH` is one
+binary shared by every project, so a merged change reaches none of them until it is
+reinstalled. This is not housekeeping: the first real project built with the kit ran
+against a binary two features behind, so it was scaffolded without `docs/VISION.md`,
+got a protocol with no rule about drafting from one, and never ran the secret check.
+Nothing reported anything wrong, because from inside that project nothing was.
+
 `make check` is the whole gate. The conformance suite lives in `cmd/kit` as
 `conformance*_test.go`: it builds the binary once and drives it against throwaway
 projects, so `init`, `next`, and `audit` are covered as a user runs them. It is a Go
@@ -129,6 +136,11 @@ whole model, and `kit help template` prints the feature doc format.
 11. **Never edit a doc with `status: Shipped`.** It is frozen history.
 12. **When the last box is ticked**, set `status: Shipped` and the `shipped:` date,
     and move durable facts into the as-built doc (`docs/TECH.md`).
+13. **Shipping is a handoff, not a finish.** Push the branch and stop there.
+    Reviewing and merging are not yours. If the project has no remote, the work
+    has nowhere to go — say so and leave it on the branch rather than merging it
+    yourself, which is how unreviewed work reaches `main` without anyone deciding
+    it should.
 
 ### Where two agents can still collide
 

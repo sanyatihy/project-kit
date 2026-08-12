@@ -52,6 +52,11 @@ whole model, and `kit help template` prints the feature doc format.
 11. **Never edit a doc with `status: Shipped`.** It is frozen history.
 12. **When the last box is ticked**, set `status: Shipped` and the `shipped:` date,
     and move durable facts into the as-built doc (`docs/TECH.md`).
+13. **Shipping is a handoff, not a finish.** Push the branch and stop there.
+    Reviewing and merging are not yours. If the project has no remote, the work
+    has nowhere to go — say so and leave it on the branch rather than merging it
+    yourself, which is how unreviewed work reaches `main` without anyone deciding
+    it should.
 
 ### Where two agents can still collide
 

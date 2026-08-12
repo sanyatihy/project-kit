@@ -57,9 +57,17 @@ Mechanisms worth knowing before changing anything:
   `audit` escalates it after a day. Thresholds follow the cadence of what they
   watch, not an operator's calendar, and an idle agent costs minutes.
 - **`audit` never writes.** An auditor that fixes things stops being read.
-- **`secret-in-doc` matches shapes, not entropy.** Eight formats whose issuer
+- **Shipping is a handoff.** `kit ship` ends the agent's part: push the branch and
+  stop, because reviewing and merging are not the agent's. It says so at the moment
+  of the decision rather than relying on the protocol alone, which is read at the
+  start of a session and not the end. With no remote it says there is nowhere to
+  hand off to — silence there is what let a first real run merge itself to `main`.
+- **`secret-in-doc` matches shapes, not entropy.** Seven formats whose issuer
   publishes a fixed prefix or envelope, over the documents the repo model already
-  opens — not the source, not history. HIGH because `--strict` is the only lever and
+  opens — not the source, not history. An eighth, a URL carrying userinfo, was
+  removed after it failed a real project's doc for correctly explaining that such
+  URLs are rejected: it was structural rather than issuer-anchored, so it never met
+  the admission rule the other seven do. HIGH because `--strict` is the only lever and
   a published credential is the one finding that late discovery cannot fix. The
   finding names the shape and the line and never the value, or the report becomes a
   second leak. The patterns live in `audit.go` and nowhere else: written into a
