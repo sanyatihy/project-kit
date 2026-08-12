@@ -271,7 +271,15 @@ templates/        what `kit init` writes, embedded into the binary
 
 ```sh
 make check     # fmt-check, vet, unit tests, conformance suite
+make install   # after anything lands on main
 ```
+
+`make install` is not optional housekeeping. `kit` on your `$PATH` is one binary
+shared by every project, so a merged change reaches none of them until you reinstall.
+The first real project built with the kit ran against a binary two features behind —
+it was scaffolded without a `VISION.md`, got a protocol missing the rule about
+drafting from one, and never ran the secret check. Nothing looked wrong from inside
+that project, because nothing was.
 
 The conformance suite is `cmd/kit/conformance*_test.go`. It builds the binary once
 and drives it against throwaway projects, so the commands are covered as a user runs

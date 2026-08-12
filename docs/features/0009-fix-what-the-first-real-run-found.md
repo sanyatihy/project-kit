@@ -74,7 +74,7 @@ kit — the two places someone working on the kit actually reads.
 ## Tasks
 - [x] `secret-in-doc` drops the URL shape, with the doc that broke it as the regression case
 - [x] Protocol and `kit ship`: shipping hands off, merging is not the agent's, and say when there is no remote
-- [ ] House rule: reinstall after merging, or every other project keeps running the old kit
+- [x] House rule: reinstall after merging, or every other project keeps running the old kit
 
 ## Open questions
 <!-- none -->

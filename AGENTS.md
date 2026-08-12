@@ -49,6 +49,13 @@ make check     # fmt-check, vet, unit tests, conformance suite
 make install   # go install ./cmd/kit
 ```
 
+**Run `make install` after anything lands on `main`.** `kit` on `$PATH` is one
+binary shared by every project, so a merged change reaches none of them until it is
+reinstalled. This is not housekeeping: the first real project built with the kit ran
+against a binary two features behind, so it was scaffolded without `docs/VISION.md`,
+got a protocol with no rule about drafting from one, and never ran the secret check.
+Nothing reported anything wrong, because from inside that project nothing was.
+
 `make check` is the whole gate. The conformance suite lives in `cmd/kit` as
 `conformance*_test.go`: it builds the binary once and drives it against throwaway
 projects, so `init`, `next`, and `audit` are covered as a user runs them. It is a Go
