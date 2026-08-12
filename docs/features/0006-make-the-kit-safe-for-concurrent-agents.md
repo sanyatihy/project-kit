@@ -109,3 +109,9 @@ calendar. `next` is already instant and needs no change; `audit` is the lagging 
 - 2026-08-12 — measured the board before retuning it. `kit next` surfaces a block
   immediately and `audit` waits seven days, so the fix is `audit`'s threshold alone.
   Worth recording because the assumption going in was that the board was slow.
+- 2026-08-12 — tested the terminal-to-editor handoff to see whether the kit owed it
+  anything. It does not: sessions and editor windows both bind by working directory,
+  so a worktree gets its own without being told. That is why worktree management
+  stays a non-goal — the isolation is git's and the tooling around it is a launcher
+  script's, and the only thing left for the kit is refusing to hand out work in a
+  checkout that is already occupied.
