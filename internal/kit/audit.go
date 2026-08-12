@@ -155,7 +155,11 @@ var secretShapes = []struct {
 	{"a Slack token", regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9-]{10,}`)},
 	{"a Google API key", regexp.MustCompile(`\bAIza[A-Za-z0-9_-]{35}\b`)},
 	{"an API key", regexp.MustCompile(`\bsk-(?:ant|proj|live)-[A-Za-z0-9_-]{20,}`)},
-	{"a URL with an inline password", regexp.MustCompile(`\b[a-z][a-z0-9+.-]*://[^\s:@/]+:[^\s@/]+@`)},
+	// A URL carrying userinfo was here and is deliberately gone. It is a structural
+	// shape rather than an issued one, so it matched any doc explaining that such
+	// URLs are rejected — which is a doc doing the right thing, failed at HIGH. The
+	// cost of removing it: a real password inside a connection string is no longer
+	// caught. Rule 10 already says this check is a backstop and not the rule.
 }
 
 // secretsIn reports the credential shapes found in a file, by name and line.

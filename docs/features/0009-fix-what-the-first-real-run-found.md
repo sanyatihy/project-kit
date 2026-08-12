@@ -72,7 +72,7 @@ in the kit's own `AGENTS.md` house rules and in `README.md`'s section on changin
 kit — the two places someone working on the kit actually reads.
 
 ## Tasks
-- [ ] `secret-in-doc` drops the URL shape, with the doc that broke it as the regression case
+- [x] `secret-in-doc` drops the URL shape, with the doc that broke it as the regression case
 - [ ] Protocol and `kit ship`: shipping hands off, merging is not the agent's, and say when there is no remote
 - [ ] House rule: reinstall after merging, or every other project keeps running the old kit
 

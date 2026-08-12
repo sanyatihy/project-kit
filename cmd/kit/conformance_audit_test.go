@@ -240,7 +240,6 @@ var fakeSecrets = []struct {
 	{"slack token", "xoxb-" + strings.Repeat("1", 12)},
 	{"google api key", "AIza" + strings.Repeat("D", 35)},
 	{"api key", "sk-ant-" + strings.Repeat("E", 24)},
-	{"url with password", "postgres://app:hunter2@db.example.com/prod"},
 }
 
 func TestSecretInDocFiresOnEveryShape(t *testing.T) {
@@ -264,6 +263,9 @@ func TestSecretInDocStaysQuietOnProseAboutSecrets(t *testing.T) {
 		"- [ ] Read GITHUB_TOKEN from the environment, never a ghp_ literal\n"+
 			"- [ ] Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in CI, not here\n"+
 			"- [ ] Connect with postgres://app@db.example.com/prod and a password from the vault\n"+
+			// The doc that actually broke this: prose quoting a userinfo URL in order
+			// to say such URLs are rejected. Correct documentation, failed at HIGH.
+			"- [ ] Reject userinfo URLs (https://user:pw@example.com is a phishing shape)\n"+
 			"- [ ] Rotate the AIza-prefixed key and the sk-ant one after launch"))
 	if codes := p.auditCodes(); slices.Contains(codes, "secret-in-doc") {
 		t.Errorf("secret-in-doc fired on prose that only names credentials: %v", codes)
