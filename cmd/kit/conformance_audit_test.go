@@ -179,6 +179,12 @@ var auditCases = []struct {
 		p.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
 			"shipped: "+daysAgo(1), "- [x] Done"))
 	}},
+	{"secret-in-doc", func(p *project) {
+		// The realistic path: an agent writes up a failed deploy and pastes what it
+		// was holding into the Log.
+		p.write("docs/features/0002-leaky.md", doc("0002", "Leaky thing", "Accepted", "",
+			"- [ ] Do it\n\n## Log\n- 2026-01-02 — deploy failed with "+fakeSecrets[0].value))
+	}},
 	{"no-vision", func(p *project) {
 		// A feature exists, so there is something that should have been decomposed
 		// from a vision, and nothing to decompose it from.
@@ -219,6 +225,61 @@ This way.
 ## Log
 - 2026-01-01 — started.
 `, id, title, status, extra, tasks)
+}
+
+// fakeSecrets are shape-correct and deliberately worthless: the payloads are runs of
+// one character, so nothing here could ever be mistaken for a live credential.
+var fakeSecrets = []struct {
+	what  string
+	value string
+}{
+	{"private key", "-----BEGIN RSA PRIVATE KEY-----"},
+	{"github token", "ghp_" + strings.Repeat("A", 36)},
+	{"github fine-grained", "github_pat_" + strings.Repeat("B", 30)},
+	{"aws key id", "AKIA" + strings.Repeat("C", 16)},
+	{"slack token", "xoxb-" + strings.Repeat("1", 12)},
+	{"google api key", "AIza" + strings.Repeat("D", 35)},
+	{"api key", "sk-ant-" + strings.Repeat("E", 24)},
+	{"url with password", "postgres://app:hunter2@db.example.com/prod"},
+}
+
+func TestSecretInDocFiresOnEveryShape(t *testing.T) {
+	for _, s := range fakeSecrets {
+		t.Run(s.what, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/INBOX.md", "- [ ] 2026-01-02 · 0001 · FYI · is "+s.value+" right?\n")
+			if codes := p.auditCodes(); !slices.Contains(codes, "secret-in-doc") {
+				t.Errorf("no finding for %s; audit reported %v", s.what, codes)
+			}
+		})
+	}
+}
+
+func TestSecretInDocStaysQuietOnProseAboutSecrets(t *testing.T) {
+	// Docs discuss credentials constantly — naming the variable is what the protocol
+	// asks for. A check that fires on the correct behaviour would train people to
+	// ignore it, and audit has nothing but being believed.
+	p := cleanProject(t)
+	p.write("docs/features/0002-talky.md", doc("0002", "Talky thing", "Accepted", "",
+		"- [ ] Read GITHUB_TOKEN from the environment, never a ghp_ literal\n"+
+			"- [ ] Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in CI, not here\n"+
+			"- [ ] Connect with postgres://app@db.example.com/prod and a password from the vault\n"+
+			"- [ ] Rotate the AIza-prefixed key and the sk-ant one after launch"))
+	if codes := p.auditCodes(); slices.Contains(codes, "secret-in-doc") {
+		t.Errorf("secret-in-doc fired on prose that only names credentials: %v", codes)
+	}
+}
+
+func TestSecretInDocNeverEchoesTheValue(t *testing.T) {
+	// Reporting the match would copy the secret into a terminal, a CI log, and
+	// anything consuming --json — turning the finding into a second leak.
+	p := cleanProject(t)
+	secret := "ghp_" + strings.Repeat("A", 36)
+	p.write("docs/INBOX.md", "- [ ] 2026-01-02 · 0001 · FYI · token "+secret+"\n")
+	out := p.run("audit").Stdout + p.run("audit", "--json").Stdout
+	if strings.Contains(out, secret) {
+		t.Error("audit printed the credential it found")
+	}
 }
 
 func TestAuditEveryCheckFires(t *testing.T) {

@@ -60,8 +60,8 @@ reason guidance topics carry no `- [ ]`. This feature doc describes the shapes i
 prose for the same reason.
 
 ## Tasks
-- [ ] Audit: `secret-in-doc` (HIGH) over the docs the repo model already reads
-- [ ] Conformance: it fires on each shape, and stays quiet on the prose that talks about them
+- [x] Audit: `secret-in-doc` (HIGH) over the docs the repo model already reads
+- [x] Conformance: it fires on each shape, and stays quiet on the prose that talks about them
 - [ ] `kit help checks`, README, and protocol rule 10 point at each other
 
 ## Open questions
