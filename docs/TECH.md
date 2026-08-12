@@ -34,8 +34,18 @@ Mechanisms worth knowing before changing anything:
 
 - **Ordering needs no syntax.** Task list order is dependency order; `next` returns
   the topmost unticked box. This replaced a dependency graph.
-- **The claim is a branch name.** A branch citing a feature ID means that feature is
-  taken. Zero new state, visible across worktrees and — once pushed — machines.
+- **The claim is a branch name, and the push is what decides.** A branch citing a
+  feature ID means that feature is taken. Zero new state, visible across worktrees
+  and — once pushed — machines. `kit claim` reads `git push --porcelain` and treats
+  only a *created* ref as a win, because a push to a branch the remote already has
+  at the commit being pushed says "Everything up-to-date" and exits 0; trusting the
+  exit code hands one feature to two agents. Creating the ref is a compare-and-swap
+  server-side, so simultaneous claimants produce exactly one winner.
+- **The checkout is the unit of isolation.** A worktree holds one feature. `kit next`
+  reports the claim on its own HEAD as *yours* rather than taken, and will not offer
+  a different feature to start in a checkout that is already claimed. Creating and
+  removing worktrees is git's job and a launcher's; the kit only refuses to hand out
+  work where there is already some.
 - **Blocking is an INBOX line naming the feature.** `next` skips it immediately;
   `audit` escalates it after a day. Thresholds follow the cadence of what they
   watch, not an operator's calendar, and an idle agent costs minutes.
@@ -103,8 +113,9 @@ Recorded so they are not re-litigated. Each was considered and settled.
   copy, updated on upgrade.
 - **Guidance must never use `- [ ]`.** In a kit project that syntax means "a
   PR-sized unit of work, do the topmost one". Source material that uses it for "a
-  property to verify" gets converted to prose bullets, or an agent following protocol
-  rule 3 works through it as a task list. `TestNoTopicLooksLikeATaskList` pins this,
+  property to verify" gets converted to prose bullets, or an agent following the
+  topmost-box rule works through it as a task list. `TestNoTopicLooksLikeATaskList`
+  pins this,
   exempting the topics whose subject matter *is* the feature-doc format.
 
 ## Gotchas

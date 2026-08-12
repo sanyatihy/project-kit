@@ -41,9 +41,10 @@ The four rules:
      Finishing beats starting.
   2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
      order of work, so ordering needs no extra syntax.
-  3. One agent per feature. A branch named after the doc is the claim on it —
-     local branches, remote branches and worktrees all count, so fetch first.
-     Push the branch before you start, or nobody else can see the claim.
+  3. One agent per feature, one feature per checkout. "kit claim <id>" pushes the
+     branch that claims it, and creating that ref on the remote is what decides:
+     exit 1 means another agent won it. Local branches, remote branches and
+     worktrees all count as claims. Work in the worktree it prints, not here.
   4. A feature named in an open docs/INBOX.md question is blocked until answered.
      "Named" means the id field of the line, not a mention in the question text.
      See "kit help inbox" for the format.

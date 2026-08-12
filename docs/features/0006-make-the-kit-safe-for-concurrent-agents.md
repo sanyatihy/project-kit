@@ -98,9 +98,20 @@ calendar. `next` is already instant and needs no change; `audit` is the lagging 
 - [x] `kit next` reports the claim on the current HEAD as yours, not as taken
 - [x] `kit next` will not headline a different feature in a checkout that is already claimed
 - [x] `StalledDays` and `InboxStaleDays` retuned from weekly-human to agent cadence
-- [ ] Protocol: the worktree is the isolation, the push is the claim, and where the ID race can still bite
+- [x] Protocol: the worktree is the isolation, the push is the claim, and where the ID race can still bite
 
 ## Log
+- 2026-08-12 — the protocol gained a rule and a section rather than an edit to
+  rule 1. Splitting "one agent per feature" from "one feature per checkout" was the
+  point: they used to be one rule and the second half was implicit, which is how a
+  checkout ended up being offered a second feature. Releasing a claim also had to
+  change — the branch is pushed now, so deleting only the local copy leaves the
+  feature taken for good.
+- 2026-08-12 — added `## Where two agents can still collide` to the protocol rather
+  than leaving the ID race in the code and the audit registry. An agent reads the
+  protocol before it does anything; a failure mode the tool cannot prevent belongs
+  where it will be read, along with what to do after a merge brings in docs written
+  elsewhere.
 - 2026-08-12 — thresholds landed at 3 days stalled and 1 day inbox, both an order
   of magnitude down. Three rather than one for stalled because a claim taken on a
   Friday and picked up on a Monday is not a stall. One for the inbox because that is
