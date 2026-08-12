@@ -36,11 +36,16 @@ How it works:
   work it unattended, which is why "kit next" never offers a Draft.
 
 The four rules:
-  1. In progress features come before Accepted ones. Finishing beats starting.
+  1. In progress features come before Accepted ones, then lowest ID first.
+     Finishing beats starting.
   2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
      order of work, so ordering needs no extra syntax.
-  3. One agent per feature. A branch named after the doc is the claim on it.
+  3. One agent per feature. A branch named after the doc is the claim on it —
+     local branches, remote branches and worktrees all count, so fetch first.
+     Push the branch before you start, or nobody else can see the claim.
   4. A feature named in an open docs/INBOX.md question is blocked until answered.
+     "Named" means the id field of the line, not a mention in the question text.
+     See "kit help inbox" for the format.
 
 Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
 which writes docs/INBOX.md in the format the tool parses, then move to another
@@ -56,6 +61,7 @@ Topics:
   kit help template      the feature doc format, field by field
   kit help conventions   how the features directory works
   kit help checks        every audit finding and what it means
+  kit help inbox         the docs/INBOX.md format, and what BLOCKING means
   kit help as-built      the docs/TECH.md shape, section by section
   kit help go-checklist  engineering practices for Go projects, tiered
   kit help deployment    patterns for going to production, and their traps
@@ -71,6 +77,7 @@ var topics = map[string]string{
 	"go-checklist": "templates/go-checklist.md",
 	"deployment":   "templates/deployment.md",
 	"as-built":     "templates/TECH.md",
+	"inbox":        "templates/INBOX.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
@@ -147,10 +154,13 @@ on, and the doc itself must not be edited again.
 
 What should I work on? Reads the feature docs and git, and names one task.
 
-Ranks In progress before Accepted, then by ID, and within a feature returns the
-topmost unticked "## Tasks" box. A feature whose doc is named in an open INBOX
-question is reported as blocked; one with a branch named after it is reported as
-taken. Prints the git worktree command to start.
+Ranks In progress before Accepted, then by lowest ID, and within a feature returns
+the topmost unticked "## Tasks" box.
+
+A feature is reported as taken when a branch cites its id — local branches, remote
+branches and worktrees all count, so a stale fetch hides someone else's claim. It
+is reported as blocked when an open docs/INBOX.md line carries its id in the id
+field. Prints the git worktree command to start.
 
 Reads only. With no PATH it uses the repo you are in, from any subdirectory.
 

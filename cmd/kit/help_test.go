@@ -77,6 +77,7 @@ func TestEveryTopicResolvesInTheBinary(t *testing.T) {
 var showsTaskSyntax = map[string]bool{
 	"template":    true,
 	"conventions": true,
+	"inbox":       true,
 }
 
 // In kit, `- [ ]` means "a PR-sized unit of work, do the topmost one" (protocol rule
