@@ -1,7 +1,9 @@
 package kit
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -77,6 +79,13 @@ func (f *Feature) NextTask() string {
 		return tasks[0]
 	}
 	return ""
+}
+
+// Branch is the branch name that claims this feature: the doc's filename without
+// its extension. The doc names the branch and the branch cites the doc, so either
+// one gives you the other and there is no mapping to keep in sync.
+func (f *Feature) Branch() string {
+	return strings.TrimSuffix(filepath.Base(f.Path), ".md")
 }
 
 // FilenamePrefix is the leading number of the filename, for the id cross-check.
@@ -216,6 +225,28 @@ func (r *Repo) git(args ...string) string {
 		return ""
 	}
 	return string(out)
+}
+
+// gitRun runs git and reports what went wrong, returning stdout either way.
+//
+// The reads above use git(), which treats a failure as "nothing found" because a
+// project with no commits and a project whose log could not be read look the same
+// to a report. Anything that changes state needs the opposite: a push that did not
+// happen must never be mistaken for one that found nothing to do.
+func (r *Repo) gitRun(args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	if err := cmd.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			detail = err.Error()
+		}
+		return stdout.String(), fmt.Errorf("git %s: %s", args[0], detail)
+	}
+	return stdout.String(), nil
 }
 
 func (r *Repo) loadGit() {

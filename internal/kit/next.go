@@ -1,7 +1,6 @@
 package kit
 
 import (
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -61,7 +60,7 @@ func Survey(r *Repo) Plan {
 			Status: f.Status,
 			Doc:    f.Rel,
 			Task:   f.NextTask(),
-			Branch: strings.TrimSuffix(filepath.Base(f.Path), ".md"),
+			Branch: f.Branch(),
 		}
 		switch questions := r.BlockersFor(f.ID); {
 		case len(questions) > 0:

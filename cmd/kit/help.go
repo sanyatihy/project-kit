@@ -17,6 +17,7 @@ const overview = `kit — bootstrap projects and run them with agents.
 Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
+  kit claim <id>                      take a feature: push the branch, win or lose
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
   kit next  [PATH ...] [--json]       what should I work on?
@@ -53,7 +54,8 @@ feature. Never guess, and never idle.
 
 Exit codes, so a script can tell these apart:
   0  it worked
-  1  "kit audit --strict" found something HIGH. Only --strict ever exits 1
+  1  it ran and the answer is no: "kit claim" lost the feature to another agent,
+     or "kit audit --strict" found something HIGH
   2  the command could not run: unknown command, bad flag, missing path
 
 Topics:
@@ -114,6 +116,30 @@ Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in
 in docs/INBOX.md. Set status: Accepted when it is settled.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
+
+	"claim": `kit claim <id>
+
+Take a feature. Creates the branch named after its doc and pushes it, and the push
+is what decides: creating the branch on the remote either succeeds or it does not,
+so of any number of agents claiming at once exactly one wins.
+
+  0  it is yours — a worktree command to start in is printed
+  1  it is not yours: another agent got there first, a branch already claims it, an
+     open INBOX question blocks it, or the doc is a Draft or already closed
+  2  it could not run: no such feature, no commits yet, several remotes and no origin
+
+Losing is normal. Run "kit next" and take something else.
+
+Nothing local is written unless the push wins, so a lost race leaves no branch
+behind. On a project with no remote the branch is still created and the command
+says so — that claim is invisible to everyone else.
+
+This does not fetch first and does not edit the doc. A stale view only ever costs
+you a clearer error, because the remote decides; set status: In progress yourself
+once you start.
+
+  kit claim 0007
+  kit claim 7`,
 
 	"block": `kit block <id> "<question>" [--fyi]
 

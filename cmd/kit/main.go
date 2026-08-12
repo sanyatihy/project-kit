@@ -10,6 +10,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -72,6 +73,8 @@ func run() int {
 		return runInit(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
+	case "claim":
+		return runClaim(os.Args[2:])
 	case "block":
 		return runBlock(os.Args[2:])
 	case "ship":
@@ -172,6 +175,54 @@ func runNew(args []string) int {
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
 	fmt.Printf("  set status: Accepted when it is settled, then run kit next.\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- claim
+
+func runClaim(args []string) int {
+	fs := newFlagSet("claim")
+	rest := parseArgs(fs, args)
+	if len(rest) != 1 {
+		fmt.Fprintf(os.Stderr, "kit claim: need one feature id\n\n%s\n", commandHelp["claim"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		return 2
+	}
+
+	claimed, err := kit.ClaimFeature(repo, id)
+	if err != nil {
+		// Losing is an answer, not a breakage, and it exits 1 so a script can tell
+		// "this one is not yours, take another" from "the command could not run".
+		var taken *kit.NotYours
+		if errors.As(err, &taken) {
+			fmt.Fprintf(os.Stderr, "\n  not claimed: %s\n", taken.Why)
+			fmt.Fprintf(os.Stderr, "  %s\n\n", taken.Then)
+			return 1
+		}
+		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  claimed  %s\n", claimed.Branch)
+	if claimed.Remote == "" {
+		fmt.Printf("\n  this project has no remote, so no other agent can see it.\n")
+		fmt.Printf("  The claim exists only here — add one before running a second agent.\n")
+	} else {
+		fmt.Printf("  pushed   %s/%s — the push is the claim, and you won it\n",
+			claimed.Remote, claimed.Branch)
+	}
+	fmt.Printf("\nnext:\n")
+	fmt.Printf("  git worktree add ../%s-%s %s\n", repo.Name, id, claimed.Branch)
+	fmt.Printf("  set status: In progress in the doc, and work there — not here\n\n")
 	return 0
 }
 

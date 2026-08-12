@@ -68,11 +68,18 @@ that fires is better than a scheme that pretends it cannot happen. The residue i
 leaves is affordable and worth stating: a collision caught at integration costs a
 file rename, one `id:` line, and a renamed and re-pushed claim branch.
 
-**The push is the claim.** `kit claim <id>` creates the branch and pushes it, and a
-rejected push means someone else got there first — reported as a non-zero exit, not
-a warning. This is the same guarantee `beads` gets from an atomic database write,
-taken from the ref store instead, and it needs no new state. It also makes rule 1
-enforceable rather than advisory: an agent that cannot push has not claimed anything.
+**The push is the claim.** `kit claim <id>` pushes the branch, and *creating the ref*
+is what decides — the remote updates a ref by compare-and-swap against the value it
+advertised, so of any number of simultaneous claimants exactly one creates it. This
+is the same guarantee `beads` gets from an atomic database write, taken from the ref
+store instead, and it needs no new state. It also makes rule 1 enforceable rather
+than advisory: an agent that did not create the ref has not claimed anything.
+
+What decides is the ref status, not the exit code. Measured: pushing a branch the
+remote already has, at the commit being pushed, prints "Everything up-to-date" and
+exits **0** — so a claim trusting the exit code hands one feature to both agents,
+which is the exact defect this box exists to remove. `--porcelain` marks the ref `*`
+created, `=` already there, `!` rejected, and only `*` is a win.
 
 **`next` reports the checkout it is standing in.** The claim on HEAD is *yours* —
 reporting it as taken is the same class of defect 0005 existed to fix, a tool saying
@@ -87,13 +94,25 @@ calendar. `next` is already instant and needs no change; `audit` is the lagging 
 
 ## Tasks
 - [x] Audit: `duplicate-id` — two feature docs sharing one `id:`, which merges clean and makes claims and blocking ambiguous
-- [ ] `kit claim <id>` — create and push the branch; a rejected push is a lost race and a non-zero exit
+- [x] `kit claim <id>` — create and push the branch; a rejected push is a lost race and a non-zero exit
 - [ ] `kit next` reports the claim on the current HEAD as yours, not as taken
 - [ ] `kit next` will not headline a different feature in a checkout that is already claimed
 - [ ] `StalledDays` and `InboxStaleDays` retuned from weekly-human to agent cadence
 - [ ] Protocol: the worktree is the isolation, the push is the claim, and where the ID race can still bite
 
 ## Log
+- 2026-08-12 — the plan said a rejected push means someone else got there first.
+  Measuring it before building on it showed that is only true when the two agents
+  differ: push a branch the remote already has, at the commit you are pushing, and
+  git says "Everything up-to-date" and exits 0. Two agents off the same base — the
+  normal case — would both have been told they won. The exit code was the wrong
+  instrument; `--porcelain`'s per-ref flag is the right one. Verified the rest by
+  racing four clones onto one ref 21 times: exactly one `[new branch]` every round,
+  so the compare-and-swap the design leans on is real.
+- 2026-08-12 — `kit claim` refuses an ID that two docs share, and exits 2 rather
+  than 1 for it. A lost race means "take another feature"; this means "the question
+  has no answer", and picking the first doc silently is how the ID quietly stops
+  being a primary key. It is the first place `duplicate-id` pays for itself.
 - 2026-08-12 — settled hash IDs as a no, deliberately rather than by default. The
   deciding argument was not migration cost but what hashes are for: they buy
   correctness without coordination, and this kit already has coordination. Written
