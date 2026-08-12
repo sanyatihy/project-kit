@@ -112,6 +112,8 @@ var (
 		"features have shipped but nothing describes the as-built system"}
 	checkNoInbox = Check{"no-inbox", Low,
 		"no INBOX.md, so a blocked agent has nowhere to put a question"}
+	checkNoVision = Check{"no-vision", Low,
+		"features are being planned but nothing says what the project is for"}
 )
 
 // Checks is every check audit can report, in reporting order.
@@ -121,7 +123,7 @@ var Checks = []Check{
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
 	checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol,
-	checkDeadLink, checkNoTech, checkNoInbox,
+	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision,
 }
 
 var requiredSections = []string{"Problem", "Design", "Log"}
@@ -359,6 +361,14 @@ func Audit(r *Repo, today time.Time) []Finding {
 		report(checkNoInbox, r.Name,
 			"no INBOX.md, so a blocked agent has nowhere to put a question",
 			"run: kit init .")
+	}
+	// Only once features exist. A project that has been set up and not yet planned
+	// has nothing to decompose, and a finding on a fresh `kit init` would be noise
+	// at the one moment the tool is being judged.
+	if r.Vision == "" && len(r.Features) > 0 {
+		report(checkNoVision, r.Name,
+			"features are being planned but nothing says what the project is for",
+			"run: kit init . — or see: kit help vision")
 	}
 
 	return found

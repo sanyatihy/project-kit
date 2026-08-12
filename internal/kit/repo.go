@@ -33,6 +33,7 @@ var notAFeature = map[string]bool{
 
 var featureDirs = []string{"docs/features", "features", "doc/features"}
 var techDocs = []string{"docs/TECH.md", "TECH.md", "docs/ARCHITECTURE.md", "ARCHITECTURE.md"}
+var visionDocs = []string{"docs/VISION.md", "VISION.md", "docs/PRODUCT.md"}
 var inboxes = []string{"docs/INBOX.md", "INBOX.md"}
 var protocols = []string{"AGENTS.md", "CLAUDE.md"}
 
@@ -104,6 +105,7 @@ type Repo struct {
 
 	FeaturesDir string // "" when the project is not set up
 	Tech        string
+	Vision      string
 	Inbox       string
 	Protocol    string
 
@@ -126,6 +128,7 @@ func Open(root string) (*Repo, error) {
 	r := &Repo{Root: abs, Name: filepath.Base(abs)}
 	r.FeaturesDir = r.firstDir(featureDirs)
 	r.Tech = r.firstFile(techDocs)
+	r.Vision = r.firstFile(visionDocs)
 	r.Inbox = r.firstFile(inboxes)
 	r.Protocol = r.firstFile(protocols)
 	r.loadFeatures()

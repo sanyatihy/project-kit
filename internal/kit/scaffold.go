@@ -19,6 +19,7 @@ const ProtocolMarker = "## Work protocol"
 
 // docLayout maps a template to its destination, relative to the project root.
 var docLayout = [][2]string{
+	{"templates/VISION.md", "docs/VISION.md"},
 	{"templates/features-README.md", "docs/features/README.md"},
 	{"templates/features-TEMPLATE.md", "docs/features/TEMPLATE.md"},
 	{"templates/BACKLOG.md", "docs/features/BACKLOG.md"},

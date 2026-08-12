@@ -65,6 +65,7 @@ Topics:
   kit help conventions   how the features directory works
   kit help checks        every audit finding and what it means
   kit help inbox         the docs/INBOX.md format, and what BLOCKING means
+  kit help vision        the docs/VISION.md shape, and what it is not for
   kit help as-built      the docs/TECH.md shape, section by section
   kit help go-checklist  engineering practices for Go projects, tiered
   kit help deployment    patterns for going to production, and their traps
@@ -79,6 +80,7 @@ var topics = map[string]string{
 	"conventions":  "templates/features-README.md",
 	"go-checklist": "templates/go-checklist.md",
 	"deployment":   "templates/deployment.md",
+	"vision":       "templates/VISION.md",
 	"as-built":     "templates/TECH.md",
 	"inbox":        "templates/INBOX.md",
 }
@@ -91,7 +93,8 @@ var commandHelp = map[string]string{
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes docs/features/{README,TEMPLATE,BACKLOG}.md, docs/INBOX.md, and AGENTS.md.
+and writes docs/VISION.md, docs/features/{README,TEMPLATE,BACKLOG}.md, docs/INBOX.md
+and AGENTS.md.
 With --stack it also scaffolds the code layout and one CI workflow.
 
 Your files are never overwritten or deleted, so it is safe to run on a populated

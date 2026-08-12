@@ -19,7 +19,7 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 	// Everything the binary can tell someone, in one place.
 	all := p.run("help").ok().Stdout
 	for _, topic := range []string{"protocol", "template", "conventions", "checks",
-		"inbox", "as-built", "go-checklist", "deployment"} {
+		"inbox", "vision", "as-built", "go-checklist", "deployment"} {
 		all += p.run("help", topic).ok().Stdout
 	}
 	for _, cmd := range subcommands {

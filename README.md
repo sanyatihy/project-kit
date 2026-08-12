@@ -80,7 +80,8 @@ to work on the kit's own plan. Bootstrap from the new project's parent directory
 from wherever you already are.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes `docs/features/{README,TEMPLATE}.md`, `docs/INBOX.md`, and `AGENTS.md`.
+and writes `docs/VISION.md`, `docs/features/{README,TEMPLATE}.md`, `docs/INBOX.md`,
+and `AGENTS.md`.
 It never overwrites or deletes, so it is safe on a directory that already has files.
 
 With `--stack go` it also scaffolds the code layout: `Makefile`, `.gitignore`,
@@ -228,7 +229,7 @@ even when something goes wrong.
   `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`
-- **LOW** — `dead-link`, `no-inbox`, `no-tech`
+- **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`
 
 `kit help checks` prints this list from the same registry `audit` reports from, so
 it cannot drift.
