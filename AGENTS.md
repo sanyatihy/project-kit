@@ -122,7 +122,10 @@ whole model, and `kit help template` prints the feature doc format.
    Do not guess, and do not idle. Use `--fyi` for anything work can continue
    without.
 10. **Never put a real secret in a doc.** Feature docs, `## Log`, and `docs/INBOX.md`
-   are committed. Name the variable and where the value lives — never the value.
+   are committed, and a pushed commit cannot be unpublished. Name the variable and
+   where the value lives — never the value. `audit` reports `secret-in-doc` at HIGH
+   for the shapes it can be certain about, which is a backstop and not the rule: a
+   password in prose matches nothing and is still a leak.
 11. **Never edit a doc with `status: Shipped`.** It is frozen history.
 12. **When the last box is ticked**, set `status: Shipped` and the `shipped:` date,
     and move durable facts into the as-built doc (`docs/TECH.md`).

@@ -57,6 +57,14 @@ Mechanisms worth knowing before changing anything:
   `audit` escalates it after a day. Thresholds follow the cadence of what they
   watch, not an operator's calendar, and an idle agent costs minutes.
 - **`audit` never writes.** An auditor that fixes things stops being read.
+- **`secret-in-doc` matches shapes, not entropy.** Eight formats whose issuer
+  publishes a fixed prefix or envelope, over the documents the repo model already
+  opens — not the source, not history. HIGH because `--strict` is the only lever and
+  a published credential is the one finding that late discovery cannot fix. The
+  finding names the shape and the line and never the value, or the report becomes a
+  second leak. The patterns live in `audit.go` and nowhere else: written into a
+  template or a help topic they would make the kit trip its own check, the same trap
+  that keeps `- [ ]` out of the guidance topics.
 
 ## Decisions and why
 

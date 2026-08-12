@@ -73,6 +73,8 @@ var (
 		"a question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkUnchecked = Check{"unchecked", High,
 		"a check: date passed and nobody recorded the outcome"}
+	checkSecretInDoc = Check{"secret-in-doc", High,
+		"a doc contains something shaped like a real credential"}
 
 	// MEDIUM — incomplete or drifting.
 	checkNoPlan = Check{"no-plan", Medium,
@@ -118,6 +120,7 @@ var (
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
+	checkSecretInDoc,
 	checkDuplicateID, checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
@@ -132,6 +135,47 @@ var (
 	linkRe   = regexp.MustCompile(`\[[^\]]*\]\(([^)]+)\)`)
 	schemeRe = regexp.MustCompile(`^[a-z][a-z0-9+.-]*:`)
 )
+
+// secretShapes are credential formats whose issuer publishes a fixed prefix or
+// envelope, so a match is a secret rather than a guess. Nothing generic belongs
+// here: no "password =", no long-base64, nothing that reads prose and infers.
+// Each entry names what it found, because "a secret" is not an actionable report.
+//
+// These patterns live in code and are never written into a template, a help topic,
+// or a doc — the kit's own documentation would otherwise trip its own check, the
+// same trap that keeps `- [ ]` out of the guidance topics.
+var secretShapes = []struct {
+	what string
+	re   *regexp.Regexp
+}{
+	{"a private key", regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----`)},
+	{"a GitHub token", regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9]{36}\b`)},
+	{"a GitHub fine-grained token", regexp.MustCompile(`\bgithub_pat_[A-Za-z0-9_]{22,}`)},
+	{"an AWS access key id", regexp.MustCompile(`\b(?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16}\b`)},
+	{"a Slack token", regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9-]{10,}`)},
+	{"a Google API key", regexp.MustCompile(`\bAIza[A-Za-z0-9_-]{35}\b`)},
+	{"an API key", regexp.MustCompile(`\bsk-(?:ant|proj|live)-[A-Za-z0-9_-]{20,}`)},
+	{"a URL with an inline password", regexp.MustCompile(`\b[a-z][a-z0-9+.-]*://[^\s:@/]+:[^\s@/]+@`)},
+}
+
+// secretsIn reports the credential shapes found in a file, by name and line.
+func secretsIn(path string) []string {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var found []string
+	for i, line := range strings.Split(Normalise(string(raw)), "\n") {
+		for _, s := range secretShapes {
+			if s.re.MatchString(line) {
+				// The value is never echoed. Reporting it would copy the secret
+				// into a terminal, a CI log, and anything scraping --json.
+				found = append(found, fmt.Sprintf("%s on line %d", s.what, i+1))
+			}
+		}
+	}
+	return found
+}
 
 // Finding is one place the docs and the repo disagree.
 type Finding struct {
@@ -362,6 +406,24 @@ func Audit(r *Repo, today time.Time) []Finding {
 			"no INBOX.md, so a blocked agent has nowhere to put a question",
 			"run: kit init .")
 	}
+	// Rule 10 has real blast radius: a doc is committed, and a pushed commit cannot
+	// be unpublished. Only the documents the repo model already opens — `audit` is
+	// not a repo-wide secret scanner and must not be mistaken for one.
+	docs := []string{r.Inbox, r.Vision, r.Tech, r.Protocol}
+	for _, f := range r.Features {
+		docs = append(docs, f.Path)
+	}
+	for _, path := range docs {
+		if path == "" {
+			continue
+		}
+		for _, what := range secretsIn(path) {
+			report(checkSecretInDoc, r.Rel(path),
+				fmt.Sprintf("%s — docs are committed, and a pushed commit cannot be unpublished", what),
+				"remove it, rotate the credential, and name the variable instead of the value")
+		}
+	}
+
 	// Only once features exist. A project that has been set up and not yet planned
 	// has nothing to decompose, and a finding on a fresh `kit init` would be noise
 	// at the one moment the tool is being judged.
