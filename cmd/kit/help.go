@@ -187,6 +187,10 @@ What should I work on? Reads the feature docs and git, and names one task.
 Ranks In progress before Accepted, then by lowest ID, and within a feature returns
 the topmost unticked "## Tasks" box.
 
+Each feature shows its ticked-over-total, as "2/4", and --json carries the same as
+"done" and "total". It is a count of boxes, not an estimate: boxes are not equal
+sizes, so nothing here should be read as how much time is left.
+
 A feature is reported as taken when a branch cites its id — local branches, remote
 branches and worktrees all count, so a stale fetch hides someone else's claim. The
 one exception is the branch this checkout is on: that claim is yours, and it is

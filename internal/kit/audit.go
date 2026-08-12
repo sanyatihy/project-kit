@@ -102,7 +102,7 @@ var (
 	checkOrphanClaim = Check{"orphan-claim", Medium,
 		"a branch is named after a feature doc that does not exist"}
 	checkDraftClaimed = Check{"draft-claimed", Medium,
-		"a branch claims a Draft, so someone is building on a design nobody settled"}
+		"a branch carries work on a Draft, so someone is building on a design nobody settled"}
 	checkNoStatus   = Check{"no-status", Medium, "no status: in the frontmatter"}
 	checkBadStatus  = Check{"bad-status", Medium, "an unrecognised status:"}
 	checkNoProtocol = Check{"no-protocol", Medium,
@@ -313,9 +313,13 @@ func Audit(r *Repo, today time.Time) []Finding {
 					fmt.Sprintf("%s: claimed by %s", f.Name(), strings.Join(claims, " and ")),
 					"one agent per feature — delete the branch that is not doing the work")
 			}
-			if f.Status == StatusDraft && len(claims) > 0 {
+			// A Draft on a branch is the normal way a proposal waits for a human:
+			// agents draft, nothing goes to the default branch, so it sits on a
+			// branch until someone accepts it. Only a branch carrying work beyond
+			// the doc is somebody building on a design nobody settled.
+			if f.Status == StatusDraft && len(claims) > 0 && r.BranchBuildsOn(claims[0], f.Rel) {
 				report(checkDraftClaimed, at,
-					fmt.Sprintf("%s: %s claims a Draft", f.Name(), claims[0]),
+					fmt.Sprintf("%s: %s is building on a Draft", f.Name(), claims[0]),
 					"settle the design and set status: Accepted, or stop work")
 			}
 		}

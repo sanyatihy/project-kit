@@ -140,6 +140,27 @@ func TestNextJSONSeparatesYoursFromTaken(t *testing.T) {
 	}
 }
 
+func TestNextReportsProgressThroughTheBoxes(t *testing.T) {
+	// With one feature the next box is the whole state. With several the question is
+	// which are moving, and only a count answers it. In --json too, because that is
+	// what anything watching the plan from outside has to read.
+	p := setUp(t)
+	feature(p, "0001", "part", "Partly done", "Accepted",
+		"- [x] One\n- [x] Two\n- [ ] Three\n- [ ] Four")
+	p.commitAll("a feature part-done")
+
+	p.run("next").ok().has("2/4")
+
+	plan := p.plan("next", "--json")
+	all := append(append([]kit.Item{}, plan.Yours...), plan.Ready...)
+	if len(all) != 1 {
+		t.Fatalf("expected one open feature, got %+v", all)
+	}
+	if all[0].Done != 2 || all[0].Total != 4 {
+		t.Errorf("done/total = %d/%d, want 2/4", all[0].Done, all[0].Total)
+	}
+}
+
 func TestNextIsBlockedByAnOpenBlockingQuestion(t *testing.T) {
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")

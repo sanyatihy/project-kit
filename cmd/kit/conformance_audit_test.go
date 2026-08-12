@@ -161,9 +161,14 @@ var auditCases = []struct {
 		p.git("branch", "0099-long-gone")
 	}},
 	{"draft-claimed", func(p *project) {
+		// Building on it, not merely proposing it: the branch carries code as well
+		// as the doc, which is what makes it a claim on an unsettled design.
 		feature(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
 		p.commitAll("the doc")
-		p.git("branch", "0002-unsettled")
+		p.git("checkout", "-q", "-b", "0002-unsettled")
+		p.write("internal/thing/thing.go", "package thing\n")
+		p.commitAll("start building")
+		p.git("checkout", "-q", "-")
 	}},
 	{"no-protocol", func(p *project) {
 		if err := os.Remove(p.path("AGENTS.md")); err != nil {
@@ -240,6 +245,22 @@ var fakeSecrets = []struct {
 	{"slack token", "xoxb-" + strings.Repeat("1", 12)},
 	{"google api key", "AIza" + strings.Repeat("D", 35)},
 	{"api key", "sk-ant-" + strings.Repeat("E", 24)},
+}
+
+func TestADraftAwaitingReviewOnABranchIsNotAClaim(t *testing.T) {
+	// The first step of the loop: an agent drafts a feature and leaves it for a
+	// human. Nothing goes to the default branch, so the proposal waits on a branch
+	// of its own. Reporting that as "someone is building on a design nobody settled"
+	// fires on correct behaviour, which is the one thing audit cannot afford.
+	p := cleanProject(t)
+	p.commitAll("baseline")
+	p.git("checkout", "-q", "-b", "0002-proposed")
+	feature(p, "0002", "proposed", "Proposed", "Draft", "- [ ] Something")
+	p.commitAll("draft 0002 for review")
+
+	if codes := p.auditCodes(); slices.Contains(codes, "draft-claimed") {
+		t.Errorf("draft-claimed fired on a doc-only branch awaiting review: %v", codes)
+	}
 }
 
 func TestSecretInDocFiresOnEveryShape(t *testing.T) {
