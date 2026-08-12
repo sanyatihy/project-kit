@@ -1,9 +1,9 @@
 ---
 id: 0008
 title: Put a check behind the secret rule
-status: In progress
+status: Shipped
 created: 2026-08-12
-shipped:
+shipped: 2026-08-12
 check:
 checked:
 related: 0005-make-claims-and-blocking-mean-what-the-docs-say.md
