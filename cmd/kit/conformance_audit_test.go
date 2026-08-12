@@ -179,6 +179,14 @@ var auditCases = []struct {
 		p.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
 			"shipped: "+daysAgo(1), "- [x] Done"))
 	}},
+	{"no-vision", func(p *project) {
+		// A feature exists, so there is something that should have been decomposed
+		// from a vision, and nothing to decompose it from.
+		feature(p, "0002", "planned", "Planned thing", "Accepted", "- [ ] Do it")
+		if err := os.Remove(p.path("docs/VISION.md")); err != nil {
+			p.t.Fatalf("removing VISION.md: %v", err)
+		}
+	}},
 	{"no-inbox", func(p *project) {
 		if err := os.Remove(p.path("docs/INBOX.md")); err != nil {
 			p.t.Fatalf("removing INBOX.md: %v", err)
@@ -233,6 +241,20 @@ func TestAuditIsQuietOnACleanProject(t *testing.T) {
 		t.Errorf("audit reported %v on a project with nothing wrong", codes)
 	}
 	p.run("audit").ok().has("docs and repo agree")
+}
+
+func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
+	// The baseline covers a project that has both. This pins the other half of the
+	// rule: with no features there is nothing to decompose, so a fresh `kit init`
+	// must not be greeted with a finding at the moment the tool is being judged.
+	p := newProject(t)
+	p.run("init").ok()
+	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
+		t.Fatalf("removing VISION.md: %v", err)
+	}
+	if codes := p.auditCodes(); slices.Contains(codes, "no-vision") {
+		t.Errorf("no-vision fired on a project with no features yet: %v", codes)
+	}
 }
 
 func TestEveryRegisteredCheckIsExercised(t *testing.T) {

@@ -229,7 +229,7 @@ even when something goes wrong.
   `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`
-- **LOW** — `dead-link`, `no-inbox`, `no-tech`
+- **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`
 
 `kit help checks` prints this list from the same registry `audit` reports from, so
 it cannot drift.
