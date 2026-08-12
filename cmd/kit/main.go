@@ -342,6 +342,20 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 			"finish one before starting another", n), "33", color))
 	}
 
+	// What this checkout already holds comes first: it is the answer to "what should
+	// I work on?" for the agent standing in it, and everything below is context.
+	if len(plan.Yours) > 0 {
+		mine := plan.Yours[0]
+		fmt.Printf("\n  %s\n", paint("yours — this checkout claims it", "1;32", color))
+		fmt.Printf("    %s  %s\n", mine.ID, kit.Show(mine.Title, 60))
+		fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(mine.Task, 68))
+		fmt.Printf("       %s\n", mine.Doc)
+		for _, item := range plan.Yours[1:] {
+			fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
+			fmt.Printf("          %s\n", kit.Show(item.Task, 64))
+		}
+	}
+
 	if len(plan.Ready) > 0 {
 		first := plan.Ready[0]
 		fmt.Printf("\n  %s\n", paint("start here", "1;32", color))

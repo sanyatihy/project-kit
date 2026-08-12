@@ -95,7 +95,7 @@ calendar. `next` is already instant and needs no change; `audit` is the lagging 
 ## Tasks
 - [x] Audit: `duplicate-id` — two feature docs sharing one `id:`, which merges clean and makes claims and blocking ambiguous
 - [x] `kit claim <id>` — create and push the branch; a rejected push is a lost race and a non-zero exit
-- [ ] `kit next` reports the claim on the current HEAD as yours, not as taken
+- [x] `kit next` reports the claim on the current HEAD as yours, not as taken
 - [ ] `kit next` will not headline a different feature in a checkout that is already claimed
 - [ ] `StalledDays` and `InboxStaleDays` retuned from weekly-human to agent cadence
 - [ ] Protocol: the worktree is the isolation, the push is the claim, and where the ID race can still bite

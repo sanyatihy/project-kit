@@ -305,6 +305,16 @@ func isTrunk(name string) bool {
 	return name == "main" || name == "master" || name == "HEAD"
 }
 
+// HeadBranch is the branch this checkout is on, empty when HEAD is detached or
+// there is no git repository.
+//
+// A worktree has its own HEAD, so in a worktree this is that worktree's branch —
+// which is the whole point: it is how the kit tells the checkout you are standing
+// in apart from the ones other agents are standing in.
+func (r *Repo) HeadBranch() string {
+	return strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short", "HEAD"))
+}
+
 // Claims lists the distinct branches claiming a feature. More than one means two
 // agents believe they own it.
 func (r *Repo) Claims(id string) []string {

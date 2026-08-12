@@ -5,9 +5,12 @@ package main
 // contract.
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/sanyatihy/project-kit/internal/kit"
 )
 
 // feature writes a minimal but valid feature doc. The template's full shape is
@@ -34,6 +37,22 @@ This way.
 ## Log
 - 2026-01-01 — started.
 `, id, title, status, tasks))
+}
+
+// plan runs `kit next --json` and returns this project's plan, for the assertions
+// that are about the structure rather than the printed page.
+func (p *project) plan(args ...string) kit.Plan {
+	p.t.Helper()
+	r := p.run(args...).ok()
+	var payload map[string]kit.Plan
+	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
+		p.t.Fatalf("next --json emitted invalid JSON: %v\n%s", err, r.Stdout)
+	}
+	for _, plan := range payload {
+		return plan
+	}
+	p.t.Fatalf("next --json reported no project at all:\n%s", r.Stdout)
+	return kit.Plan{}
 }
 
 func TestNextHandsBackTheTopmostUntickedBox(t *testing.T) {
@@ -77,6 +96,47 @@ func TestNextTreatsABranchAsAClaim(t *testing.T) {
 	// A taken feature must not also be offered as the thing to start.
 	if strings.Contains(r.Stdout, "start here") {
 		t.Errorf("a claimed feature was still offered as work:\n%s", r.Stdout)
+	}
+}
+
+func TestNextReportsThisCheckoutsOwnClaimAsYours(t *testing.T) {
+	// Measured before this existed: standing in the checkout that claims 0001,
+	// `next` reported 0001 as taken — by you — which is the tool stating a fact
+	// about the reader back to them as somebody else's.
+	p := setUp(t)
+	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	p.commitAll("add the feature doc")
+	p.git("checkout", "-q", "-b", "0001-shorten")
+
+	r := p.run("next").ok()
+	r.has("yours", "0001", "The POST handler")
+	if strings.Contains(r.Stdout, "taken") {
+		t.Errorf("the checkout's own claim was reported as taken:\n%s", r.Stdout)
+	}
+}
+
+func TestNextJSONSeparatesYoursFromTaken(t *testing.T) {
+	// --json is the interface agents actually read, so the distinction has to exist
+	// there and not only in the prose above it.
+	p := setUp(t)
+	feature(p, "0001", "mine", "Mine", "Accepted", "- [ ] Do it")
+	feature(p, "0002", "theirs", "Theirs", "Accepted", "- [ ] Do that")
+	p.commitAll("two features")
+	p.git("branch", "0002-theirs")
+	p.git("checkout", "-q", "-b", "0001-mine")
+
+	plan := p.plan("next", "--json")
+	if len(plan.Yours) != 1 || plan.Yours[0].ID != "0001" {
+		t.Errorf("yours = %+v, want just 0001", plan.Yours)
+	}
+	if !plan.Yours[0].Mine {
+		t.Error("the checkout's own claim is not flagged mine")
+	}
+	if len(plan.Taken) != 1 || plan.Taken[0].ID != "0002" {
+		t.Errorf("taken = %+v, want just 0002", plan.Taken)
+	}
+	if plan.Claiming != "0001" {
+		t.Errorf("claiming = %q, want 0001", plan.Claiming)
 	}
 }
 

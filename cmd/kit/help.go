@@ -184,9 +184,10 @@ Ranks In progress before Accepted, then by lowest ID, and within a feature retur
 the topmost unticked "## Tasks" box.
 
 A feature is reported as taken when a branch cites its id — local branches, remote
-branches and worktrees all count, so a stale fetch hides someone else's claim. It
-is reported as blocked when an open docs/INBOX.md line carries its id in the id
-field. Prints the git worktree command to start.
+branches and worktrees all count, so a stale fetch hides someone else's claim. The
+one exception is the branch this checkout is on: that claim is yours, and it is
+reported as "yours" and offered as the work to do. A feature is reported as blocked
+when an open docs/INBOX.md line carries its id in the id field.
 
 Reads only. With no PATH it uses the repo you are in, from any subdirectory.
 

@@ -22,20 +22,30 @@ type Item struct {
 	Branch    string `json:"branch"`
 	ClaimedBy string `json:"claimed_by,omitempty"`
 	WaitingOn string `json:"waiting_on,omitempty"`
+	Mine      bool   `json:"mine,omitempty"`
 }
 
-// Plan sorts the open features into what you can start, what is taken, and what
-// is blocked.
+// Plan sorts the open features into what is yours, what you can start, what is
+// taken, and what is blocked.
 type Plan struct {
+	// Yours is what the checkout you are standing in already claims. It is separate
+	// from Taken because a claim held by this checkout is not somebody else's, and
+	// reporting it as taken is the tool saying something untrue.
+	Yours   []Item `json:"yours"`
 	Ready   []Item `json:"ready"`
 	Taken   []Item `json:"taken"`
 	Blocked []Item `json:"blocked"`
+
+	// Branch is the checkout's own branch, and Claiming is the feature that branch
+	// claims, empty when it claims none.
+	Branch   string `json:"branch,omitempty"`
+	Claiming string `json:"claiming,omitempty"`
 }
 
 // InProgress counts features currently In progress, for the WIP warning.
 func (p Plan) InProgress() int {
 	n := 0
-	for _, group := range [][]Item{p.Ready, p.Taken, p.Blocked} {
+	for _, group := range [][]Item{p.Yours, p.Ready, p.Taken, p.Blocked} {
 		for _, item := range group {
 			if item.Status == StatusInProgress {
 				n++
@@ -47,12 +57,12 @@ func (p Plan) InProgress() int {
 
 // Empty reports whether there is nothing open at all.
 func (p Plan) Empty() bool {
-	return len(p.Ready) == 0 && len(p.Taken) == 0 && len(p.Blocked) == 0
+	return len(p.Yours) == 0 && len(p.Ready) == 0 && len(p.Taken) == 0 && len(p.Blocked) == 0
 }
 
 // Survey answers: what should I work on?
 func Survey(r *Repo) Plan {
-	var plan Plan
+	plan := Plan{Branch: r.HeadBranch()}
 	for _, f := range r.ActiveFeatures() {
 		item := Item{
 			ID:     f.ID,
@@ -62,12 +72,29 @@ func Survey(r *Repo) Plan {
 			Task:   f.NextTask(),
 			Branch: f.Branch(),
 		}
+		// The claim on this checkout's own HEAD is this agent's. Calling it taken
+		// would be the tool reporting a fact about the reader back to them as an
+		// obstacle, and it is what used to send an agent off to start a second
+		// feature in the first one's checkout.
+		//
+		// Membership, not the first claim: a feature with two claims may well list
+		// somebody else's first, and yours is still yours.
+		claims := r.Claims(f.ID)
+		claim := ""
+		if len(claims) > 0 {
+			claim = claims[0]
+		}
+		if item.Mine = contains(claims, plan.Branch); item.Mine {
+			plan.Claiming = f.ID
+		}
 		switch questions := r.BlockersFor(f.ID); {
 		case len(questions) > 0:
 			item.WaitingOn = questions[0]
 			plan.Blocked = append(plan.Blocked, item)
 		default:
-			if claim := r.ClaimFor(f.ID); claim != "" {
+			if item.Mine {
+				plan.Yours = append(plan.Yours, item)
+			} else if claim != "" {
 				item.ClaimedBy = claim
 				plan.Taken = append(plan.Taken, item)
 			} else if item.Task == "" {
