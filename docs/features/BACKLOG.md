@@ -12,6 +12,20 @@ The findings from reviewing the kit against `kit help go-checklist` were promote
 [0004](0004-close-the-go-checklist-findings.md) and closed — three fixed, one dropped
 once its premise turned out to be false.
 
+## What running several agents actually takes
+
+Standing up a fleet turned up four properties of the substrate, none guessable and
+each costing a debugging session: a pane title is not a handle, because the agent
+overwrites it; killing a pane leaves the agent running detached; working directory is
+the join key for both session storage and editor binding, which is why a worktree
+starts with no agent memory; and one installed binary serves every worktree, which
+bites hardest in a repo that builds the tool it is driven by.
+
+Worth doing as a `kit help agents` topic if a second operator needs it, or if the
+launcher these describe turns out to be the same script in every project. Until then
+it documents one person's tooling rather than the kit's model, and the kit is better
+kept light.
+
 ## `kit help deployment` stops where the traps start
 
 The topic is 94 lines of principle. Reviewing it against a working pipeline turned up
