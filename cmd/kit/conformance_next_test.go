@@ -201,14 +201,56 @@ func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
 
 func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
 	// The output is meant to be actionable without reading the docs first.
+	//
+	// The command is the claim, not the worktree. It used to print `git worktree add
+	// -b`, which builds somewhere to work before knowing the work is yours — and
+	// skips the only step that settles who gets it. `kit claim` prints the worktree
+	// command itself, once it has won.
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
 
-	p.run("next").ok().has(
-		"git worktree add",
-		"-b 0001-shorten",
-		"docs/features/0001-shorten.md",
-	)
+	r := p.run("next").ok()
+	r.has("kit claim 0001", "docs/features/0001-shorten.md")
+	if strings.Contains(r.Stdout, "worktree add") {
+		t.Errorf("next offered a worktree before the feature was claimed:\n%s", r.Stdout)
+	}
+}
+
+func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
+	// Measured before this existed: standing in 0001's checkout, `next` offered 0002
+	// under "start here". Followed literally that begins a second feature in the
+	// first one's branch, and the two ship as one.
+	p := setUp(t)
+	feature(p, "0001", "mine", "Mine", "In progress", "- [ ] Finish this")
+	feature(p, "0002", "other", "Other", "Accepted", "- [ ] A different thing")
+	p.commitAll("two features")
+	p.git("checkout", "-q", "-b", "0001-mine")
+
+	r := p.run("next").ok()
+	if strings.Contains(r.Stdout, "start here") {
+		t.Errorf("a claimed checkout was told to start another feature:\n%s", r.Stdout)
+	}
+	// The free work is still reported — the point is where to do it, not secrecy.
+	r.has("0002", "not in this checkout", "kit claim 0002")
+}
+
+func TestAClaimedCheckoutIsNotOfferedOtherWorkEvenWhenItsOwnIsBlocked(t *testing.T) {
+	// The suppression keys off what the checkout claims, not off whether that
+	// feature happens to be workable. A blocked feature is still the reason this
+	// branch exists, and starting a second one here would still be wrong.
+	p := setUp(t)
+	feature(p, "0001", "mine", "Mine", "In progress", "- [ ] Finish this")
+	feature(p, "0002", "other", "Other", "Accepted", "- [ ] A different thing")
+	p.commitAll("two features")
+	p.git("checkout", "-q", "-b", "0001-mine")
+	p.run("block", "0001", "Which way round?").ok()
+
+	r := p.run("next").ok()
+	r.has("blocked", "0001")
+	if strings.Contains(r.Stdout, "start here") {
+		t.Errorf("a claimed checkout with blocked work was told to start another "+
+			"feature:\n%s", r.Stdout)
+	}
 }
 
 func TestNextOnAnUnsetUpProjectSaysHowToFixIt(t *testing.T) {

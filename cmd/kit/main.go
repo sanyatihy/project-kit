@@ -336,6 +336,15 @@ func runNext(args []string) int {
 	return 0
 }
 
+// listItems prints features as a plain list: the ID and title, and the one task
+// that would be next in each.
+func listItems(items []kit.Item) {
+	for _, item := range items {
+		fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
+		fmt.Printf("          %s\n", kit.Show(item.Task, 64))
+	}
+}
+
 func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 	if n := plan.InProgress(); n > kit.WIPLimit {
 		fmt.Println(paint(fmt.Sprintf("  %d features in progress at once — "+
@@ -350,24 +359,34 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		fmt.Printf("    %s  %s\n", mine.ID, kit.Show(mine.Title, 60))
 		fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(mine.Task, 68))
 		fmt.Printf("       %s\n", mine.Doc)
-		for _, item := range plan.Yours[1:] {
-			fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
-			fmt.Printf("          %s\n", kit.Show(item.Task, 64))
-		}
+		listItems(plan.Yours[1:])
 	}
 
 	if len(plan.Ready) > 0 {
 		first := plan.Ready[0]
-		fmt.Printf("\n  %s\n", paint("start here", "1;32", color))
-		fmt.Printf("    %s  %s\n", first.ID, kit.Show(first.Title, 60))
-		fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(first.Task, 68))
-		fmt.Printf("       %s\n", first.Doc)
-		fmt.Printf("       git worktree add ../%s-%s -b %s\n", r.Name, first.ID, first.Branch)
-		if rest := plan.Ready[1:]; len(rest) > 0 {
-			fmt.Printf("\n  also free\n")
-			for _, item := range rest {
-				fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
-				fmt.Printf("          %s\n", kit.Show(item.Task, 64))
+		// A checkout that already claims a feature must never be handed a different
+		// one to start. Followed literally that is how two features end up sharing
+		// one branch: the reader is standing in 0006's worktree and has just been
+		// told to begin 0007 in it. What is free is still worth knowing; where to
+		// begin it is not here.
+		if plan.Claiming != "" {
+			fmt.Printf("\n  %s\n", paint("free, but not in this checkout", "2", color))
+			listItems(plan.Ready)
+			fmt.Printf("\n  this checkout claims %s. Take one of those in a worktree of\n",
+				plan.Claiming)
+			fmt.Printf("  its own, never here:  kit claim %s\n", first.ID)
+		} else {
+			fmt.Printf("\n  %s\n", paint("start here", "1;32", color))
+			fmt.Printf("    %s  %s\n", first.ID, kit.Show(first.Title, 60))
+			fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(first.Task, 68))
+			fmt.Printf("       %s\n", first.Doc)
+			// The claim comes before the worktree, and kit claim prints the worktree
+			// command once it has actually won. Printing it here instead would have
+			// the agent building somewhere to work before knowing the work is theirs.
+			fmt.Printf("       kit claim %s\n", first.ID)
+			if rest := plan.Ready[1:]; len(rest) > 0 {
+				fmt.Printf("\n  also free\n")
+				listItems(rest)
 			}
 		}
 	}

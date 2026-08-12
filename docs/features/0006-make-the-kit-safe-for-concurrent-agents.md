@@ -96,11 +96,20 @@ calendar. `next` is already instant and needs no change; `audit` is the lagging 
 - [x] Audit: `duplicate-id` — two feature docs sharing one `id:`, which merges clean and makes claims and blocking ambiguous
 - [x] `kit claim <id>` — create and push the branch; a rejected push is a lost race and a non-zero exit
 - [x] `kit next` reports the claim on the current HEAD as yours, not as taken
-- [ ] `kit next` will not headline a different feature in a checkout that is already claimed
+- [x] `kit next` will not headline a different feature in a checkout that is already claimed
 - [ ] `StalledDays` and `InboxStaleDays` retuned from weekly-human to agent cadence
 - [ ] Protocol: the worktree is the isolation, the push is the claim, and where the ID race can still bite
 
 ## Log
+- 2026-08-12 — `kit next` now prints `kit claim <id>` where it used to print
+  `git worktree add -b`. Not planned, but leaving it would have had the board
+  recommending the one route that skips the step deciding who gets the work, and
+  building somewhere to work before knowing the work is yours. `claim` prints the
+  worktree command itself once it has won, so the chain is next → claim → worktree.
+- 2026-08-12 — the suppression in a claimed checkout keys off what the checkout
+  claims, not off whether that feature is workable. A blocked claim is still the
+  reason the branch exists, so the checkout stays occupied and free work is reported
+  without a place to start it.
 - 2026-08-12 — the plan said a rejected push means someone else got there first.
   Measuring it before building on it showed that is only true when the two agents
   differ: push a branch the remote already has, at the commit you are pushing, and
