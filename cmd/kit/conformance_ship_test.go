@@ -93,6 +93,23 @@ func TestShipRefusesAnUnknownFeature(t *testing.T) {
 	p.run("ship", "0099").fails(2).errHas("no feature")
 }
 
+func TestShipSaysTheWorkIsHandedOffNotFinished(t *testing.T) {
+	// The first real project to run the loop reached the end of ship, found no
+	// instruction about what happens next, and merged its own work to main. The
+	// protocol is read at the start of a session; this decision is made at the end
+	// of one, so it has to be said here too.
+	p := setUp(t)
+	feature(p, "0007", "done", "Done", "Accepted", "- [x] One")
+
+	// No remote: there is nowhere to hand off to, which is the case that produced
+	// the unreviewed merge — so it must say so rather than staying silent.
+	p.run("ship", "0007").ok().has("no remote", "merging is not yours")
+
+	p.git("remote", "add", "origin", p.path(".git"))
+	feature(p, "0008", "next", "Next", "Accepted", "- [x] One")
+	p.run("ship", "0008").ok().has("push the branch and stop")
+}
+
 func TestShipPointsAtTheAsBuiltDoc(t *testing.T) {
 	// Rule 10 says move durable facts across; nothing enforced it, so the prompt is
 	// the enforcement.

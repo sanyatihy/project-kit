@@ -22,6 +22,7 @@ type ShipResult struct {
 	TechDoc     string // the as-built doc to migrate facts into
 	TechCreated bool   // whether shipping is what created it
 	OpenLogs    bool   // whether ## Log looks like it was left untouched
+	HasRemote   bool   // whether there is anywhere to hand the work off to
 }
 
 // Ship marks a feature shipped: it verifies every box is ticked, sets the status
@@ -75,7 +76,7 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 		return nil, err
 	}
 
-	res := &ShipResult{Doc: target.Rel, Was: target.Status}
+	res := &ShipResult{Doc: target.Rel, Was: target.Status, HasRemote: len(r.remotes()) > 0}
 	res.TechDoc = r.Rel(r.Tech)
 	if r.Tech == "" {
 		// The as-built doc waits until something ships, which is now. Creating it
