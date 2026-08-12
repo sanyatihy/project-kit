@@ -72,6 +72,14 @@ var auditCases = []struct {
 	code  string
 	setUp func(p *project)
 }{
+	{"duplicate-id", func(p *project) {
+		// Set up the way the race actually produces it: two agents off the same base
+		// each take the next free ID, and the differing slugs mean the two files have
+		// nothing for git to conflict on. The filename prefix matches the id in both,
+		// so this is a clean duplicate and not an id-mismatch wearing a disguise.
+		p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
+			"Accepted", "", "- [ ] Something"))
+	}},
 	{"stalled", func(p *project) {
 		feature(p, "0002", "stuck", "Stuck", "In progress", "- [ ] Never finished")
 		old := time.Now().AddDate(0, 0, -40)
@@ -347,6 +355,35 @@ func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
 			t.Error("merged branches on a Shipped feature were reported as a split claim")
 		}
 	}
+}
+
+func TestDuplicateIDDoesNotFireOnDocsWithNoIDAtAll(t *testing.T) {
+	// The quiet half. Docs missing an id: share the empty string, and grouping on
+	// that would report them as duplicates of each other — a second, wrong finding
+	// on top of the no-status one that is already telling the truth about them.
+	p := cleanProject(t)
+	for _, name := range []string{"0002-nameless", "0003-alsonameless"} {
+		p.write("docs/features/"+name+".md",
+			"---\ntitle: No id here\nstatus: Accepted\n---\n\n"+
+				"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] y\n\n## Log\n- 2026-01-01 — x.\n")
+	}
+
+	for _, code := range p.auditCodes() {
+		if code == "duplicate-id" {
+			t.Error("two docs with no id: were reported as sharing one")
+		}
+	}
+}
+
+func TestDuplicateIDNamesBothDocs(t *testing.T) {
+	// Naming one file is not actionable: the fix is to renumber a specific doc, and
+	// you cannot pick which without seeing both.
+	p := cleanProject(t)
+	p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
+		"Accepted", "", "- [ ] Something"))
+
+	p.run("audit").ok().has("duplicate-id",
+		"docs/features/0001-thing.md", "docs/features/0001-thing-as-well.md")
 }
 
 func TestInboxChecksStayQuietOnAWellFormedQuestion(t *testing.T) {

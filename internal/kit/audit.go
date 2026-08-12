@@ -40,6 +40,8 @@ type Check struct {
 // The checks. This is the whole vocabulary of the tool.
 var (
 	// HIGH — a doc says something untrue, or work is stuck and nobody noticed.
+	checkDuplicateID = Check{"duplicate-id", High,
+		"two feature docs share one id:, so one branch claims both and one inbox line blocks both"}
 	checkStalled = Check{"stalled", High,
 		"In progress, but no commit cites it and nothing edited it for 30 days"}
 	checkUntickedShipped = Check{"unticked-shipped", High,
@@ -91,7 +93,7 @@ var (
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
-	checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
+	checkDuplicateID, checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
 	checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
@@ -123,6 +125,27 @@ func Audit(r *Repo, today time.Time) []Finding {
 		found = append(found, Finding{c.Severity, c.Code, where, problem, fix})
 	}
 	statuses := strings.Join(AllStatuses, ", ")
+
+	// The ID is the primary key: branches claim by it, inbox lines block by it, and
+	// commits cite it. Two docs sharing one makes all three ambiguous — a single
+	// branch claims both features and a single question blocks both.
+	//
+	// This is the one disagreement git cannot surface on its own. Two agents off the
+	// same base both take the next free ID, and because the filenames differ there is
+	// nothing to conflict on: the merge is clean and every other check here still
+	// passes. It is reported first because they all assume an ID names one feature.
+	for _, id := range duplicateIDs(r.Features) {
+		var docs []string
+		for _, f := range r.Features {
+			if f.ID == id {
+				docs = append(docs, f.Rel)
+			}
+		}
+		report(checkDuplicateID, docs[0],
+			fmt.Sprintf("id %s is used by %s", id, strings.Join(docs, " and ")),
+			"give all but one a free id, rename their files to match, and rename any "+
+				"branch that claims them")
+	}
 
 	for _, f := range r.Features {
 		at := f.Rel
@@ -315,6 +338,23 @@ func Audit(r *Repo, today time.Time) []Finding {
 	}
 
 	return found
+}
+
+// duplicateIDs lists the IDs that more than one feature doc declares, in the
+// order they first appear. Docs with no id: at all are no-status's problem, not
+// this one, and would otherwise all collide with each other under "".
+func duplicateIDs(features []*Feature) []string {
+	count := map[string]int{}
+	var order []string
+	for _, f := range features {
+		if f.ID == "" {
+			continue
+		}
+		if count[f.ID]++; count[f.ID] == 2 {
+			order = append(order, f.ID)
+		}
+	}
+	return order
 }
 
 // linksIn lists relative markdown link targets, skipping URLs and pure anchors.

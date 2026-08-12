@@ -1,7 +1,7 @@
 ---
 id: 0006
 title: Make the kit safe for concurrent agents
-status: Draft
+status: In progress
 created: 2026-08-12
 shipped:
 check:
@@ -41,8 +41,12 @@ to build them is real usage rather than anticipation. That signal has arrived.
 
 ## Non-goals
 - **Hash IDs.** They would fix collisions by construction, which is what `beads`
-  does, but sequential IDs are load-bearing here: rule 1 orders by lowest ID, and
-  IDs are cited in commit messages and branch names. See `## Open questions`.
+  does. Rejected on what hashes are actually for: they buy correctness *without
+  coordination*, and there is already a point of coordination — the shared remote
+  every agent pushes to, which is the same thing that makes the claim below atomic.
+  The bill for hashes is paid every day, in branch names, commit subjects,
+  `related:` links, and rule 1's ordering, to avoid a rare collision that
+  `duplicate-id` catches.
 - **A database.** The alternative to convention is not a state store. Git already
   has an atomic primitive — creating a ref either succeeds or fails — and the whole
   claim protocol can be built on it without anything to keep in sync.
@@ -60,7 +64,9 @@ to build them is real usage rather than anticipation. That signal has arrived.
 what the merge cannot, and it goes first because everything else assumes the ID
 identifies one feature. It is also the honest fallback for allocation: whatever
 `kit new` does, two agents offline on two branches can always collide, and a check
-that fires is better than a scheme that pretends it cannot happen.
+that fires is better than a scheme that pretends it cannot happen. The residue it
+leaves is affordable and worth stating: a collision caught at integration costs a
+file rename, one `id:` line, and a renamed and re-pushed claim branch.
 
 **The push is the claim.** `kit claim <id>` creates the branch and pushes it, and a
 rejected push means someone else got there first — reported as a non-zero exit, not
@@ -80,24 +86,25 @@ calendar. `next` is already instant and needs no change; `audit` is the lagging 
 **Protocol last**, because the boxes above change what it has to say.
 
 ## Tasks
-- [ ] Audit: `duplicate-id` — two feature docs sharing one `id:`, which merges clean and makes claims and blocking ambiguous
+- [x] Audit: `duplicate-id` — two feature docs sharing one `id:`, which merges clean and makes claims and blocking ambiguous
 - [ ] `kit claim <id>` — create and push the branch; a rejected push is a lost race and a non-zero exit
 - [ ] `kit next` reports the claim on the current HEAD as yours, not as taken
 - [ ] `kit next` will not headline a different feature in a checkout that is already claimed
 - [ ] `StalledDays` and `InboxStaleDays` retuned from weekly-human to agent cadence
 - [ ] Protocol: the worktree is the isolation, the push is the claim, and where the ID race can still bite
 
-## Open questions
-- Should `kit new` try to avoid the collision at all, or only let `duplicate-id`
-  catch it? Fetching and reading remote branches' docs would narrow the window
-  without closing it, and it makes `new` a network operation. Leaning: no — keep
-  `new` offline and cheap, and let the check carry it.
-- Hash IDs would end the race outright but cost the ordering rule and stable
-  citation. Leaning: not worth it, but this is the one place `beads` is
-  straightforwardly right and it should be settled deliberately rather than by
-  default.
-
 ## Log
+- 2026-08-12 — settled hash IDs as a no, deliberately rather than by default. The
+  deciding argument was not migration cost but what hashes are for: they buy
+  correctness without coordination, and this kit already has coordination. Written
+  into `## Non-goals` so it reads as a decision.
+- 2026-08-12 — settled `kit new` as an offline command. A fetch there would be
+  advisory where `claim`'s push is atomic: it narrows the window, cannot close it,
+  and leaves `duplicate-id` needed anyway, which is the worst of the three
+  positions. Its failure branch has no good answer either — hard-failing breaks
+  offline capture, and warning-and-continuing pays the cost for no guarantee. The
+  distinction that settled it: `new` allocates a *name*, `claim` allocates the
+  *work*, and only the second is a race between agents in real time.
 - 2026-08-12 — the ID collision was found by running it rather than reasoning about
   it. The severity is in what the test showed and not in the collision itself: the
   merge is clean and `audit` reports agreement, so nothing in the system notices.
