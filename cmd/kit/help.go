@@ -91,7 +91,8 @@ var commandHelp = map[string]string{
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes docs/features/{README,TEMPLATE,BACKLOG}.md, docs/INBOX.md, and AGENTS.md.
+and writes docs/VISION.md, docs/features/{README,TEMPLATE,BACKLOG}.md, docs/INBOX.md
+and AGENTS.md.
 With --stack it also scaffolds the code layout and one CI workflow.
 
 Your files are never overwritten or deleted, so it is safe to run on a populated

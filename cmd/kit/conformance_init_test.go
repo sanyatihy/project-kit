@@ -13,6 +13,7 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 	p.run("init").ok()
 
 	for _, want := range []string{
+		"docs/VISION.md",
 		"docs/features/README.md",
 		"docs/features/TEMPLATE.md",
 		"docs/features/BACKLOG.md",
@@ -45,12 +46,18 @@ func TestInitCreatesAGitRepoButLeavesAnExistingOneAlone(t *testing.T) {
 func TestInitNeverOverwrites(t *testing.T) {
 	p := newProject(t)
 	p.write("docs/INBOX.md", "MINE — do not touch\n")
+	// A project that already states its vision is the common case for adopting the
+	// kit, and it is the one file here nobody could reconstruct.
+	p.write("docs/VISION.md", "# Why we are building this\n")
 	p.write("AGENTS.md", "# House rules\n\nKeep me.\n")
 
 	p.run("init").ok()
 
 	if got := p.read("docs/INBOX.md"); got != "MINE — do not touch\n" {
 		t.Errorf("init overwrote docs/INBOX.md: %q", got)
+	}
+	if got := p.read("docs/VISION.md"); got != "# Why we are building this\n" {
+		t.Errorf("init overwrote docs/VISION.md: %q", got)
 	}
 	if !strings.Contains(p.read("AGENTS.md"), "Keep me.") {
 		t.Error("init destroyed existing AGENTS.md content")
