@@ -62,7 +62,7 @@ prose for the same reason.
 ## Tasks
 - [x] Audit: `secret-in-doc` (HIGH) over the docs the repo model already reads
 - [x] Conformance: it fires on each shape, and stays quiet on the prose that talks about them
-- [ ] `kit help checks`, README, and protocol rule 10 point at each other
+- [x] `kit help checks`, README, and protocol rule 10 point at each other
 
 ## Open questions
 <!-- none -->
