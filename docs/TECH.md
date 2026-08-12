@@ -46,6 +46,21 @@ Mechanisms worth knowing before changing anything:
   a different feature to start in a checkout that is already claimed. Creating and
   removing worktrees is git's job and a launcher's; the kit only refuses to hand out
   work where there is already some.
+- **The kit owns the work, not the runtime.** What to build, who holds it, how far
+  along, what drifted. Where agents actually run — worktrees on disk, panes, starting
+  and prompting them, noticing one is blocked — belongs to a runtime like `herdr`,
+  which does all of it and persists across a reboot. Neither needs to know about the
+  other: an agent composes them, `kit claim` then the runtime's own commands. This is
+  what keeps the kit usable when the harness underneath changes, which is the one
+  thing it can be sure of.
+- **A branch holding only its feature doc is a proposal, not a claim.** Agents draft
+  and leave the doc for a human, and nothing is committed to the default branch, so
+  the proposal waits on a branch. `draft-claimed` compares the branch against trunk
+  and fires only when something other than the doc changed. The fact was already in
+  git, so neither the doc nor the tool needed a new field to carry it.
+- **`kit next` reports ticked-over-total.** A count of boxes and never an estimate —
+  boxes are not equal sizes. It is in `--json` as `done` and `total` because that is
+  the interface anything watching the plan from outside has to read.
 - **Three docs, three tenses, one owner each.** `docs/VISION.md` is what the project
   is becoming, `docs/features/` is what is being done now, `docs/TECH.md` is what
   exists. The vision and the as-built doc are both mutable and carry no status; they
