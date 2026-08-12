@@ -10,6 +10,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -72,6 +73,8 @@ func run() int {
 		return runInit(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
+	case "claim":
+		return runClaim(os.Args[2:])
 	case "block":
 		return runBlock(os.Args[2:])
 	case "ship":
@@ -172,6 +175,54 @@ func runNew(args []string) int {
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
 	fmt.Printf("  set status: Accepted when it is settled, then run kit next.\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- claim
+
+func runClaim(args []string) int {
+	fs := newFlagSet("claim")
+	rest := parseArgs(fs, args)
+	if len(rest) != 1 {
+		fmt.Fprintf(os.Stderr, "kit claim: need one feature id\n\n%s\n", commandHelp["claim"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		return 2
+	}
+
+	claimed, err := kit.ClaimFeature(repo, id)
+	if err != nil {
+		// Losing is an answer, not a breakage, and it exits 1 so a script can tell
+		// "this one is not yours, take another" from "the command could not run".
+		var taken *kit.NotYours
+		if errors.As(err, &taken) {
+			fmt.Fprintf(os.Stderr, "\n  not claimed: %s\n", taken.Why)
+			fmt.Fprintf(os.Stderr, "  %s\n\n", taken.Then)
+			return 1
+		}
+		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  claimed  %s\n", claimed.Branch)
+	if claimed.Remote == "" {
+		fmt.Printf("\n  this project has no remote, so no other agent can see it.\n")
+		fmt.Printf("  The claim exists only here — add one before running a second agent.\n")
+	} else {
+		fmt.Printf("  pushed   %s/%s — the push is the claim, and you won it\n",
+			claimed.Remote, claimed.Branch)
+	}
+	fmt.Printf("\nnext:\n")
+	fmt.Printf("  git worktree add ../%s-%s %s\n", repo.Name, id, claimed.Branch)
+	fmt.Printf("  set status: In progress in the doc, and work there — not here\n\n")
 	return 0
 }
 
@@ -285,24 +336,57 @@ func runNext(args []string) int {
 	return 0
 }
 
+// listItems prints features as a plain list: the ID and title, and the one task
+// that would be next in each.
+func listItems(items []kit.Item) {
+	for _, item := range items {
+		fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
+		fmt.Printf("          %s\n", kit.Show(item.Task, 64))
+	}
+}
+
 func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 	if n := plan.InProgress(); n > kit.WIPLimit {
 		fmt.Println(paint(fmt.Sprintf("  %d features in progress at once — "+
 			"finish one before starting another", n), "33", color))
 	}
 
+	// What this checkout already holds comes first: it is the answer to "what should
+	// I work on?" for the agent standing in it, and everything below is context.
+	if len(plan.Yours) > 0 {
+		mine := plan.Yours[0]
+		fmt.Printf("\n  %s\n", paint("yours — this checkout claims it", "1;32", color))
+		fmt.Printf("    %s  %s\n", mine.ID, kit.Show(mine.Title, 60))
+		fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(mine.Task, 68))
+		fmt.Printf("       %s\n", mine.Doc)
+		listItems(plan.Yours[1:])
+	}
+
 	if len(plan.Ready) > 0 {
 		first := plan.Ready[0]
-		fmt.Printf("\n  %s\n", paint("start here", "1;32", color))
-		fmt.Printf("    %s  %s\n", first.ID, kit.Show(first.Title, 60))
-		fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(first.Task, 68))
-		fmt.Printf("       %s\n", first.Doc)
-		fmt.Printf("       git worktree add ../%s-%s -b %s\n", r.Name, first.ID, first.Branch)
-		if rest := plan.Ready[1:]; len(rest) > 0 {
-			fmt.Printf("\n  also free\n")
-			for _, item := range rest {
-				fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
-				fmt.Printf("          %s\n", kit.Show(item.Task, 64))
+		// A checkout that already claims a feature must never be handed a different
+		// one to start. Followed literally that is how two features end up sharing
+		// one branch: the reader is standing in 0006's worktree and has just been
+		// told to begin 0007 in it. What is free is still worth knowing; where to
+		// begin it is not here.
+		if plan.Claiming != "" {
+			fmt.Printf("\n  %s\n", paint("free, but not in this checkout", "2", color))
+			listItems(plan.Ready)
+			fmt.Printf("\n  this checkout claims %s. Take one of those in a worktree of\n",
+				plan.Claiming)
+			fmt.Printf("  its own, never here:  kit claim %s\n", first.ID)
+		} else {
+			fmt.Printf("\n  %s\n", paint("start here", "1;32", color))
+			fmt.Printf("    %s  %s\n", first.ID, kit.Show(first.Title, 60))
+			fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(first.Task, 68))
+			fmt.Printf("       %s\n", first.Doc)
+			// The claim comes before the worktree, and kit claim prints the worktree
+			// command once it has actually won. Printing it here instead would have
+			// the agent building somewhere to work before knowing the work is theirs.
+			fmt.Printf("       kit claim %s\n", first.ID)
+			if rest := plan.Ready[1:]; len(rest) > 0 {
+				fmt.Printf("\n  also free\n")
+				listItems(rest)
 			}
 		}
 	}

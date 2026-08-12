@@ -172,9 +172,11 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 1. `In progress` features come before `Accepted` ones, then lowest ID first.
    Finishing beats starting.
 2. Within a feature, do the topmost unticked box. List order is the order of work.
-3. One agent per feature; a branch named after the doc is the claim. Local
-   branches, remote branches and worktrees all count — push before you start, or
-   nobody can see the claim.
+3. One agent per feature, one feature per checkout. `kit claim <id>` pushes the
+   branch named after the doc, and creating that ref on the remote is what decides
+   — exit 1 means another agent won it. Local branches, remote branches and
+   worktrees all count as claims. Work in the worktree it prints, not where you
+   stand.
 4. A feature named in an open `INBOX.md` question is blocked. "Named" means the id
    field of the line, which is why `kit block` writes it for you.
 
@@ -182,6 +184,7 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 
 ```sh
 kit new   <title...>                     next free ID, date filled in, status Draft
+kit claim <id>                           push the branch; exit 1 means you lost it
 kit block <id> "<question>" [--fyi]      park a decision only a human can make
 kit ship  <id>                           verify every box, stamp the date, freeze
 kit next  [PATH ...] [--json]            warns above 2 features in progress

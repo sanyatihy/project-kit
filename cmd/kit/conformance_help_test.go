@@ -41,6 +41,20 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 	}, {
 		concluded: "nothing exits non-zero when audit finds something HIGH",
 		needs:     []string{"--strict"},
+	}, {
+		// The protocol is what an agent reads before it does anything, so the three
+		// facts that make concurrency safe have to be in it and not only in the code.
+		concluded: "a hand-made branch claims a feature as well as the tool does",
+		needs:     []string{"kit claim"},
+	}, {
+		concluded: "a claimed checkout is a fine place to start the next feature",
+		needs:     []string{"One feature per checkout."},
+	}, {
+		concluded: "sequential IDs are handed out safely, so they cannot collide",
+		needs:     []string{"Where two agents can still collide", "duplicate-id"},
+	}, {
+		concluded: "deleting the local branch releases a claim",
+		needs:     []string{"git push origin --delete"},
 	}} {
 		t.Run(tc.concluded, func(t *testing.T) {
 			for _, need := range tc.needs {

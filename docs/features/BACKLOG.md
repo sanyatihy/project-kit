@@ -8,6 +8,27 @@ only on a real signal: someone asked, a metric moved, something else needs it.
 
 Keep each entry to a few lines: what it is, and what would make it worth doing.
 
-Currently empty. The findings from reviewing the kit against `kit help go-checklist`
-were promoted to [0004](0004-close-the-go-checklist-findings.md) and closed — three
-fixed, one dropped once its premise turned out to be false.
+The findings from reviewing the kit against `kit help go-checklist` were promoted to
+[0004](0004-close-the-go-checklist-findings.md) and closed — three fixed, one dropped
+once its premise turned out to be false.
+
+## `kit help deployment` stops where the traps start
+
+The topic is 94 lines of principle. Reviewing it against a working pipeline turned up
+the mechanics it omits, and they are the parts that cost an outage:
+
+- Path-filtered jobs make *skipped* indistinguishable from *green* to `needs:`, so
+  path filtering plus separate gates silently lets a publish run on a red gate. The
+  fix is one aggregate gate job that treats skipped as passing and failure as fatal.
+- A job whose condition uses a status function loses the implicit success check for
+  everything downstream, so a deploy can be skipped after a build that succeeded.
+- Gate the deploy on the artifact existing, not on the trigger that produced it.
+- Plan should be a real dependency of apply, not a preview a human is trusted to read.
+- The handoff between provision, configure, and deploy is remote state, not copy-paste.
+- Secrets belong in a generated vars file, never on a command line.
+- Validation must run without a credential, and at full strictness or not at all.
+- Assert in CI on any third-party signal an alert depends on.
+
+Worth doing when a project using the kit is actually going to production and this
+would be read rather than written. It is guidance, not machinery: `audit` cannot
+check any of it, which is why it stays in the binary and not in a scaffolded file.

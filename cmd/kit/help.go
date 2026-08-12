@@ -17,6 +17,7 @@ const overview = `kit — bootstrap projects and run them with agents.
 Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
+  kit claim <id>                      take a feature: push the branch, win or lose
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
   kit next  [PATH ...] [--json]       what should I work on?
@@ -40,9 +41,10 @@ The four rules:
      Finishing beats starting.
   2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
      order of work, so ordering needs no extra syntax.
-  3. One agent per feature. A branch named after the doc is the claim on it —
-     local branches, remote branches and worktrees all count, so fetch first.
-     Push the branch before you start, or nobody else can see the claim.
+  3. One agent per feature, one feature per checkout. "kit claim <id>" pushes the
+     branch that claims it, and creating that ref on the remote is what decides:
+     exit 1 means another agent won it. Local branches, remote branches and
+     worktrees all count as claims. Work in the worktree it prints, not here.
   4. A feature named in an open docs/INBOX.md question is blocked until answered.
      "Named" means the id field of the line, not a mention in the question text.
      See "kit help inbox" for the format.
@@ -53,7 +55,8 @@ feature. Never guess, and never idle.
 
 Exit codes, so a script can tell these apart:
   0  it worked
-  1  "kit audit --strict" found something HIGH. Only --strict ever exits 1
+  1  it ran and the answer is no: "kit claim" lost the feature to another agent,
+     or "kit audit --strict" found something HIGH
   2  the command could not run: unknown command, bad flag, missing path
 
 Topics:
@@ -115,6 +118,30 @@ in docs/INBOX.md. Set status: Accepted when it is settled.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
 
+	"claim": `kit claim <id>
+
+Take a feature. Creates the branch named after its doc and pushes it, and the push
+is what decides: creating the branch on the remote either succeeds or it does not,
+so of any number of agents claiming at once exactly one wins.
+
+  0  it is yours — a worktree command to start in is printed
+  1  it is not yours: another agent got there first, a branch already claims it, an
+     open INBOX question blocks it, or the doc is a Draft or already closed
+  2  it could not run: no such feature, no commits yet, several remotes and no origin
+
+Losing is normal. Run "kit next" and take something else.
+
+Nothing local is written unless the push wins, so a lost race leaves no branch
+behind. On a project with no remote the branch is still created and the command
+says so — that claim is invisible to everyone else.
+
+This does not fetch first and does not edit the doc. A stale view only ever costs
+you a clearer error, because the remote decides; set status: In progress yourself
+once you start.
+
+  kit claim 0007
+  kit claim 7`,
+
 	"block": `kit block <id> "<question>" [--fyi]
 
 Blocked on something only a human can decide? Write it here and move on. Appends
@@ -158,9 +185,10 @@ Ranks In progress before Accepted, then by lowest ID, and within a feature retur
 the topmost unticked "## Tasks" box.
 
 A feature is reported as taken when a branch cites its id — local branches, remote
-branches and worktrees all count, so a stale fetch hides someone else's claim. It
-is reported as blocked when an open docs/INBOX.md line carries its id in the id
-field. Prints the git worktree command to start.
+branches and worktrees all count, so a stale fetch hides someone else's claim. The
+one exception is the branch this checkout is on: that claim is yours, and it is
+reported as "yours" and offered as the work to do. A feature is reported as blocked
+when an open docs/INBOX.md line carries its id in the id field.
 
 Reads only. With no PATH it uses the repo you are in, from any subdirectory.
 
@@ -222,8 +250,8 @@ func printChecks() {
 		}
 		fmt.Println()
 	}
-	fmt.Printf("Thresholds: stalled after %d days, inbox questions after %d.\n",
-		kit.StalledDays, kit.InboxStaleDays)
+	// The thresholds used to be restated here and drifted from the constants the
+	// moment they were retuned. Each check now carries its own in the line above.
 }
 
 func topicNames() []string {

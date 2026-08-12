@@ -72,6 +72,14 @@ var auditCases = []struct {
 	code  string
 	setUp func(p *project)
 }{
+	{"duplicate-id", func(p *project) {
+		// Set up the way the race actually produces it: two agents off the same base
+		// each take the next free ID, and the differing slugs mean the two files have
+		// nothing for git to conflict on. The filename prefix matches the id in both,
+		// so this is a clean duplicate and not an id-mismatch wearing a disguise.
+		p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
+			"Accepted", "", "- [ ] Something"))
+	}},
 	{"stalled", func(p *project) {
 		feature(p, "0002", "stuck", "Stuck", "In progress", "- [ ] Never finished")
 		old := time.Now().AddDate(0, 0, -40)
@@ -347,6 +355,76 @@ func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
 			t.Error("merged branches on a Shipped feature were reported as a split claim")
 		}
 	}
+}
+
+func TestTheThresholdsFireAtTheirBoundaryAndNotBefore(t *testing.T) {
+	// Retuning a threshold is only real if the boundary moved with the constant.
+	// Both are read from the package, so this keeps testing whatever they become.
+	t.Run("inbox-stale", func(t *testing.T) {
+		for _, tc := range []struct {
+			age  int
+			want bool
+		}{{kit.InboxStaleDays - 1, false}, {kit.InboxStaleDays, true}} {
+			p := cleanProject(t)
+			p.write("docs/INBOX.md", fmt.Sprintf(
+				"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(tc.age)))
+
+			if got := slices.Contains(p.auditCodes(), "inbox-stale"); got != tc.want {
+				t.Errorf("a question %d day(s) unanswered: reported=%v, want %v",
+					tc.age, got, tc.want)
+			}
+		}
+	})
+
+	t.Run("stalled", func(t *testing.T) {
+		for _, tc := range []struct {
+			idle int
+			want bool
+		}{{kit.StalledDays - 1, false}, {kit.StalledDays, true}} {
+			p := cleanProject(t)
+			feature(p, "0002", "stuck", "Stuck", "In progress", "- [ ] Never finished")
+			// Midnight-aligned, because audit compares against today truncated to a
+			// whole day. An mtime taken straight off the clock lands a few hours
+			// short of the boundary and reads as a day younger than it is.
+			when := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -tc.idle)
+			if err := os.Chtimes(p.path("docs/features/0002-stuck.md"), when, when); err != nil {
+				t.Fatalf("ageing the doc: %v", err)
+			}
+
+			if got := slices.Contains(p.auditCodes(), "stalled"); got != tc.want {
+				t.Errorf("idle for %d day(s): reported=%v, want %v", tc.idle, got, tc.want)
+			}
+		}
+	})
+}
+
+func TestDuplicateIDDoesNotFireOnDocsWithNoIDAtAll(t *testing.T) {
+	// The quiet half. Docs missing an id: share the empty string, and grouping on
+	// that would report them as duplicates of each other — a second, wrong finding
+	// on top of the no-status one that is already telling the truth about them.
+	p := cleanProject(t)
+	for _, name := range []string{"0002-nameless", "0003-alsonameless"} {
+		p.write("docs/features/"+name+".md",
+			"---\ntitle: No id here\nstatus: Accepted\n---\n\n"+
+				"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] y\n\n## Log\n- 2026-01-01 — x.\n")
+	}
+
+	for _, code := range p.auditCodes() {
+		if code == "duplicate-id" {
+			t.Error("two docs with no id: were reported as sharing one")
+		}
+	}
+}
+
+func TestDuplicateIDNamesBothDocs(t *testing.T) {
+	// Naming one file is not actionable: the fix is to renumber a specific doc, and
+	// you cannot pick which without seeing both.
+	p := cleanProject(t)
+	p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
+		"Accepted", "", "- [ ] Something"))
+
+	p.run("audit").ok().has("duplicate-id",
+		"docs/features/0001-thing.md", "docs/features/0001-thing-as-well.md")
 }
 
 func TestInboxChecksStayQuietOnAWellFormedQuestion(t *testing.T) {
