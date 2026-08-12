@@ -1,9 +1,9 @@
 ---
 id: 0009
 title: Fix what the first real run found
-status: In progress
+status: Shipped
 created: 2026-08-12
-shipped:
+shipped: 2026-08-12
 check:
 checked:
 related: 0008-put-a-check-behind-the-secret-rule.md
