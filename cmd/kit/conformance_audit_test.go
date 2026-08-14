@@ -128,9 +128,10 @@ var auditCases = []struct {
 		feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
 	}},
 	{"missing-section", func(p *project) {
-		p.write("docs/features/0002-hollow.md",
-			"---\nid: 0002\ntitle: Hollow\nstatus: Accepted\n---\n\n"+
-				"## Problem\nReal.\n\n## Design\n\n## Tasks\n- [ ] Something\n\n## Log\n- 2026-01-01 — x.\n")
+		// Shipped only: an Accepted feature has nothing to log yet.
+		p.write("docs/features/0002-silent.md",
+			"---\nid: 0002\ntitle: Silent\nstatus: Shipped\nshipped: "+daysAgo(1)+"\n---\n\n"+
+				"## Problem\nReal.\n\n## Design\nThis way.\n\n## Tasks\n- [x] Done\n\n## Log\n")
 	}},
 	{"id-mismatch", func(p *project) {
 		p.write("docs/features/0002-confused.md", doc("0009", "Confused", "Accepted",
@@ -145,7 +146,20 @@ var auditCases = []struct {
 		feature(p, "0002", "odd", "Odd", "Marinating", "- [ ] Something")
 	}},
 	{"no-tasks", func(p *project) {
-		feature(p, "0002", "empty", "Empty", "Accepted", "")
+		// Prose where the boxes should be. A ## Tasks section that is empty outright is
+		// unfilled-template's, so this is the narrower case: somebody wrote about the
+		// work without ever writing a box an agent can do.
+		p.write("docs/features/0002-empty.md",
+			"---\nid: 0002\ntitle: Empty\nstatus: Accepted\ncreated: 2026-01-01\n---\n\n"+
+				"## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n"+
+				"## Tasks\nWe will figure the boxes out later.\n\n## Log\n- 2026-01-01 — started.\n")
+	}},
+	{"unfilled-template", func(p *project) {
+		// `kit new` and then nothing but the status flipped. The template's guidance is
+		// all comments, so every section it did not write reads as empty.
+		p.run("new", "Never written").ok()
+		path := "docs/features/0002-never-written.md"
+		p.write(path, strings.Replace(p.read(path), "status: Draft", "status: Accepted", 1))
 	}},
 	{"no-claim", func(p *project) {
 		feature(p, "0002", "working", "Working", "In progress", "- [ ] Something")

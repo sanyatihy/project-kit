@@ -63,7 +63,7 @@ func TestExamplesInFencedBlocksAreNotRealTasks(t *testing.T) {
 
 func TestASectionHoldingOnlyACommentCountsAsEmpty(t *testing.T) {
 	// Template guidance lives in HTML comments. If those counted as content, a doc
-	// nobody had written would look complete and missing-section would never fire.
+	// nobody had written would look complete and nothing would ever fire.
 	p := setUp(t)
 	p.write("docs/features/0001-hollow.md",
 		"---\nid: 0001\ntitle: Hollow\nstatus: Accepted\ncreated: 2026-01-01\n---\n\n"+
@@ -71,7 +71,7 @@ func TestASectionHoldingOnlyACommentCountsAsEmpty(t *testing.T) {
 			"## Design\n<!-- describe how it works -->\n\n"+
 			"## Tasks\n- [ ] Something\n\n## Log\n- 2026-01-01 — x.\n")
 
-	p.run("audit").ok().has("missing-section", "Design")
+	p.run("audit").ok().has("unfilled-template", "Design")
 }
 
 func TestNewDocsAreDraftsAndNotOffered(t *testing.T) {

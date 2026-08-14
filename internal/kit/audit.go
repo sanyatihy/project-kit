@@ -77,6 +77,12 @@ var (
 		"a doc contains something shaped like a real credential"}
 	checkNeedsCycle = Check{"needs-cycle", High,
 		"features need each other in a loop, so none of them can ever start"}
+	// HIGH because `kit claim` does not consult `audit`: this has to fail --strict to
+	// stop an agent being handed a design nobody wrote. It cannot misfire — the
+	// template's guidance lives in comments, which every parser here strips, so an
+	// empty section means the section was never written.
+	checkUnfilledTemplate = Check{"unfilled-template", High,
+		"a non-Draft doc has an empty ## Problem, ## Design, or ## Tasks — nobody wrote the plan"}
 
 	// MEDIUM — incomplete or drifting.
 	checkNoPlan = Check{"no-plan", Medium,
@@ -87,8 +93,10 @@ var (
 		"the as-built doc predates the most recent shipped: date"}
 	checkShippedNoDate = Check{"shipped-no-date", Medium,
 		"Shipped with no shipped: date"}
+	// Only at Shipped. An Accepted feature has nothing to log yet, and demanding one
+	// before work starts produced a fix line telling the author to set it back to Draft.
 	checkMissingSection = Check{"missing-section", Medium,
-		"a non-Draft doc has an empty ## Problem, ## Design, or ## Log"}
+		"a Shipped doc has an empty ## Log, so nothing records what was decided"}
 	checkIDMismatch = Check{"id-mismatch", Medium,
 		"frontmatter id: disagrees with the filename"}
 	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
@@ -128,7 +136,7 @@ var (
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
-	checkSecretInDoc, checkNeedsCycle,
+	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
 	checkDuplicateID, checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
@@ -137,7 +145,9 @@ var Checks = []Check{
 	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision,
 }
 
-var requiredSections = []string{"Problem", "Design", "Log"}
+// plannedSections are what an agent needs in order to work a feature at all. `Log` is
+// not among them: it is written as the work happens, so it is checked at Shipped only.
+var plannedSections = []string{"Problem", "Design", "Tasks"}
 
 var (
 	linkRe   = regexp.MustCompile(`\[[^\]]*\]\(([^)]+)\)`)
@@ -268,7 +278,9 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			open, total := f.TaskCount()
 			switch {
 			// Claimable with nothing in it: an agent takes this and finds no work.
-			case total == 0:
+			// A section that is empty outright is unfilled-template's, so one defect
+			// never produces two findings; this is the section with prose and no boxes.
+			case total == 0 && f.Section("Tasks") != "":
 				report(checkNoTasks, at,
 					fmt.Sprintf("%s: %s with no ## Tasks boxes", f.Name(), f.Status),
 					`write the plan as PR-sized boxes, or set status: Draft until you can`)
@@ -298,13 +310,18 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		}
 
 		if f.Status != StatusDraft {
-			for _, heading := range requiredSections {
+			for _, heading := range plannedSections {
 				if f.Section(heading) == "" {
-					report(checkMissingSection, at,
-						fmt.Sprintf("%s: ## %s is missing or empty", f.Name(), heading),
-						"fill it in, or set status: Draft until you can")
+					report(checkUnfilledTemplate, at,
+						fmt.Sprintf("%s: ## %s was never written", f.Name(), heading),
+						"write it, or set status: Draft until you can")
 				}
 			}
+		}
+		if f.Status == StatusShipped && f.Section("Log") == "" {
+			report(checkMissingSection, at,
+				f.Name()+": ## Log is empty",
+				"record what was decided and why — a Shipped doc is frozen history")
 		}
 
 		// The claim is a branch name and nothing else, so branches are the only

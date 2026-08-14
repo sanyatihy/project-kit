@@ -1,7 +1,7 @@
 ---
 id: 0016
 title: Make an unfinished doc fail the audit
-status: Draft        # Draft | Accepted | In progress | Shipped | Dropped | Superseded
+status: In progress  # Draft | Accepted | In progress | Shipped | Dropped | Superseded
 created: 2026-08-14
 shipped:             # fill the date when status flips to Shipped
 check:               # optional — date to check whether this worked. Only for bets.
@@ -90,14 +90,13 @@ A new check: a doc that is **not** `Draft` whose `## Problem`, `## Design`, or
 
 HIGH, and the severity is the point. `kit claim` does not consult `audit`, so this has
 to fail `--strict` in CI to stop an agent acting on a doc nobody wrote. It cannot
-produce a false positive: the comparison is against the template the same binary
-embeds, after `Normalise` and a trim, and `Draft` is exempt because an unfinished draft
-is the normal state of a draft.
+produce a false positive: with the guidance in comments, an empty section means the
+section was never written, and `Draft` is exempt because an unfinished draft is the
+normal state of a draft.
 
-The template comparison stays even though the comment change already makes an untouched
-doc empty. They catch different mistakes: empty catches `kit new` left alone, and the
-text match catches a doc copied by hand or a section pasted back, which rule 1 of
-bootstrapping already tells agents not to do and which nothing until now detected.
+`no-tasks` keeps the narrower case it is good at — a `## Tasks` section holding prose
+but no boxes — and stops firing on an empty one, so a single defect never produces two
+findings.
 
 ### `missing-section` gets one job
 
@@ -132,13 +131,12 @@ hand, which is exactly what `kit ship` exists to prevent and what `unticked-ship
 
 ## Tasks
 
-- [ ] Move every visible placeholder in `templates/features-TEMPLATE.md` into its HTML
+- [x] Move every visible placeholder in `templates/features-TEMPLATE.md` into its HTML
       comment, and assert a fresh `kit new` doc reports `0` task boxes and empty
       Problem/Design/Log sections.
-- [ ] Add `unfilled-template` at HIGH over Problem/Design/Tasks for non-Draft docs,
-      comparing against the embedded template; narrow `missing-section` to `## Log` at
-      `Shipped`. Conformance: fires on an accepted untouched doc, quiet on a filled one,
-      quiet on a Draft.
+- [x] Add `unfilled-template` at HIGH over Problem/Design/Tasks for non-Draft docs;
+      narrow `missing-section` to `## Log` at `Shipped`. Conformance: fires on an
+      accepted untouched doc, quiet on a filled one, quiet on a Draft.
 - [ ] Split `inbox-stale` (BLOCKING, 2 days, HIGH) from `fyi-stale` (FYI, 14 days, LOW),
       with a test that an FYI line does not fail `--strict`.
 - [ ] Add `BACKLOG.md` to the secret scan and point `done-not-shipped` at `kit ship`;
@@ -146,4 +144,14 @@ hand, which is exactly what `kit ship` exists to prevent and what `unticked-ship
 
 ## Log
 
-<!-- Dated, append-only conclusions. The argument lives in the PR. -->
+- 2026-08-14 — accepted on the human's instruction to fix everything the audit found,
+  rather than by a human editing the frontmatter. That instruction is the approval; the
+  command that should carry it does not exist yet, which is 0018.
+- 2026-08-14 — dropped the "or still matches the template's text" half of
+  `unfilled-template` before writing it. Once the guidance moved into comments, the
+  template's own sections parse as empty too, so the comparison could only ever restate
+  the emptiness check. The hand-copied doc it was meant to catch is already caught:
+  copying the template by hand leaves `id: NNNN`, which is `id-mismatch`.
+- 2026-08-14 — the first two boxes landed as one commit. Box 1's test asserts that an
+  untouched doc reports `unfilled-template`, which box 2 adds, so ticking them separately
+  would have meant committing a test for a check that did not exist yet.
