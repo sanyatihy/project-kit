@@ -46,6 +46,7 @@ type Feature struct {
 	ID       string
 	Title    string
 	Status   string
+	Needs    []string // feature ids that must ship before this can start
 	Shipped  time.Time
 	Check    time.Time
 	Checked  time.Time
@@ -198,6 +199,7 @@ func (r *Repo) readFeature(path string) *Feature {
 		ID:       fields["id"],
 		Title:    fields["title"],
 		Status:   fields["status"],
+		Needs:    ParseIDList(fields["needs"]),
 		Shipped:  ParseDate(fields["shipped"]),
 		Check:    ParseDate(fields["check"]),
 		Checked:  ParseDate(fields["checked"]),

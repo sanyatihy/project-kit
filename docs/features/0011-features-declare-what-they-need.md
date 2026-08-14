@@ -85,7 +85,7 @@ numbered files in a shared sequence. Migrations are the canonical case, and two
 features each adding the next number merge clean and break at runtime.
 
 ## Tasks
-- [ ] `needs:` parsed from the frontmatter and written into the template beside `related:`
+- [x] `needs:` parsed from the frontmatter and written into the template beside `related:`
 - [ ] `kit next` reports a feature with unshipped `needs:` as blocked, naming what it waits on
 - [ ] Audit: a `needs:` that can never be satisfied, a cycle, and shipping ahead of what you need
 - [ ] Protocol and template: what belongs in `needs:`, and the couplings that hide behind clean boundaries
