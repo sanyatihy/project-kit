@@ -1,7 +1,7 @@
 ---
 id: 0011
 title: Features declare what they need
-status: Draft
+status: In progress
 created: 2026-08-14
 shipped:
 check:
@@ -64,11 +64,18 @@ window where a dependency is Shipped but not yet on the trunk — small, and wor
 accepting rather than teaching the kit to read merge state, which would make the
 answer depend on how quickly somebody clicked a button.
 
-**Two checks, because there are two ways to be wrong.** A `needs:` naming an id that
-does not exist, or one that is Dropped or Superseded, can never be satisfied — the
-feature waits forever and `next` never says why. And a cycle means nothing in it can
+**Three checks, because there are three ways to be wrong.** A `needs:` naming an id
+that does not exist, or one that is Dropped or Superseded, can never be satisfied —
+the feature waits forever and `next` never says why. A cycle means nothing in it can
 ever start, which is stuck work rather than a typo, so it reads at the severity that
-fails a build.
+fails a build. And a feature Shipped while something it needs has not is the docs
+contradicting themselves: either the dependency was wrong or the work was built on a
+foundation that is not there, and both are worth knowing.
+
+Nothing beyond those three. A feature that needs nothing and that nothing needs is not
+a dead element, it is an independent feature — the case this whole field exists to make
+visible. And a chain hanging off an unsatisfiable need resolves when the one broken
+link is fixed, so reporting every doc downstream of it would be noise with one cause.
 
 **The guidance goes where the drafting happens.** The template's `needs:` prompt is
 what an agent reads while writing the doc, so that is where the hard part belongs: a
@@ -80,13 +87,17 @@ features each adding the next number merge clean and break at runtime.
 ## Tasks
 - [ ] `needs:` parsed from the frontmatter and written into the template beside `related:`
 - [ ] `kit next` reports a feature with unshipped `needs:` as blocked, naming what it waits on
-- [ ] Audit: a `needs:` that can never be satisfied, and a cycle
+- [ ] Audit: a `needs:` that can never be satisfied, a cycle, and shipping ahead of what you need
 - [ ] Protocol and template: what belongs in `needs:`, and the couplings that hide behind clean boundaries
 
 ## Open questions
 <!-- none -->
 
 ## Log
+- 2026-08-14 — added the third check after asking what a dead path in this graph would
+  be. Most candidates are not defects: a feature nothing needs is independent, which is
+  the point, and a chain below a broken link has one cause and one fix. Shipping ahead
+  of a dependency is the only remaining case where the docs disagree with themselves.
 - 2026-08-14 — reopened after three deferrals. What changed is not the design but who
   sequences the work: a human merging in order made dependencies invisible, and agents
   claiming unattended makes them the first thing to break.
