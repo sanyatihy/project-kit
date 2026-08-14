@@ -59,6 +59,46 @@ func ParseFrontmatter(text string) (map[string]string, string) {
 	return fields, rest
 }
 
+// FrontmatterBounds gives the byte range of the frontmatter block's body — what sits
+// between the opening `---` and the closing one — reporting false when there is none.
+func FrontmatterBounds(text string) (start, end int, ok bool) {
+	if !strings.HasPrefix(text, "---\n") {
+		return 0, 0, false
+	}
+	at := strings.Index(text[4:], "\n---")
+	if at == -1 {
+		return 0, 0, false
+	}
+	return 4, at + 4, true
+}
+
+// SetField rewrites one `key: value` line inside the frontmatter, adding it directly
+// after the `status:` line when it is absent. Reports false when there is no frontmatter
+// or no line to change.
+//
+// Confined to the frontmatter on purpose. The document-wide `(?m)^status:.*$` this
+// replaces would also rewrite a `status:` line inside a fenced example — and feature docs
+// for a tool whose whole subject is frontmatter quote frontmatter constantly.
+func SetField(text, key, value string) (string, bool) {
+	start, end, ok := FrontmatterBounds(text)
+	if !ok {
+		return text, false
+	}
+	block := text[start:end]
+	want := key + ": " + value
+	lines := strings.Split(block, "\n")
+	for i, line := range lines {
+		if k, _, found := strings.Cut(line, ":"); found && strings.TrimSpace(k) == key {
+			lines[i] = want
+			return text[:start] + strings.Join(lines, "\n") + text[end:], true
+		}
+	}
+	return text, false
+}
+
+// SetStatus rewrites the frontmatter's `status:`.
+func SetStatus(text, status string) (string, bool) { return SetField(text, "status", status) }
+
 // ParseSections maps `## Heading` to its content.
 //
 // HTML comments are stripped first, so an untouched template — whose guidance

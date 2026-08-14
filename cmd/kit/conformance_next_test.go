@@ -417,3 +417,32 @@ func TestNextTellsAnEmptyPlanApartFromAFinishedOne(t *testing.T) {
 	feature(finished, "0001", "done", "Done", "Accepted", "- [x] All of it")
 	finished.run("next").ok().has("every task is ticked")
 }
+
+func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
+	// `next` is the command the protocol tells agents to run at the start of every
+	// session; `audit` is not. One binary on $PATH serves every project and only
+	// `kit init` rewrites AGENTS.md, so a project keeps following whatever rules it was
+	// scaffolded with and nothing inside it can tell — the failure 0009 recorded, where a
+	// real run went two features behind and "nothing looked wrong from inside".
+	stale := setUp(t)
+	feature(stale, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	stale.write("AGENTS.md", "# House rules\n\nOurs.\n\n## Work protocol\n\nRules from an older kit.\n")
+
+	r := stale.run("next").ok() // never changes the exit code: the plan is still right
+	r.has("AGENTS.md is older than this kit", "kit init")
+	if !strings.Contains(r.out(), "start here") {
+		t.Errorf("the warning replaced the board instead of preceding it%s", r.context())
+	}
+	if !stale.plan("next", "--json").ProtocolStale {
+		t.Error("--json did not carry protocol_stale; agents read that format, not the prose")
+	}
+
+	// And silence when the protocol is current, or the line becomes noise nobody reads.
+	current := setUp(t)
+	feature(current, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	fresh := current.run("next").ok()
+	fresh.lacks("older than this kit")
+	if current.plan("next", "--json").ProtocolStale {
+		t.Error("a freshly scaffolded project was reported as stale")
+	}
+}

@@ -233,6 +233,28 @@ func writeProtocol(templates fs.FS, root string, res *Result) error {
 	return nil
 }
 
+// ProtocolIsStale reports whether the project's work-protocol section differs from the
+// one the running binary would write.
+//
+// Shared by `audit`, which reports it, and `next`, which warns about it. One binary on
+// `$PATH` serves every project and only `kit init` rewrites `AGENTS.md`, so a project runs
+// whatever rules it was scaffolded with and nothing inside it can tell — which is why the
+// command every session starts with has to say so, not only the one nobody is told to run.
+//
+// `protocol` is passed in because internal/kit cannot embed a parent directory.
+func ProtocolIsStale(r *Repo, protocol string) bool {
+	if r.Protocol == "" || protocol == "" {
+		return false
+	}
+	raw, err := os.ReadFile(r.Protocol)
+	if err != nil {
+		return false
+	}
+	current := Normalise(string(raw))
+	updated, ok := ReplaceSection(current, ProtocolMarker, protocol)
+	return ok && updated != current
+}
+
 // ReplaceSection swaps one `## Heading` section, leaving every other section
 // untouched. The protocol is kit-owned content inside a user-owned file, so it
 // is refreshed rather than left to rot — but only that section.

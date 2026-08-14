@@ -59,7 +59,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	case StatusAccepted, StatusInProgress:
 	case StatusDraft:
 		return nil, &NotYours{target.Name() + " is a Draft — nobody has settled the design",
-			"settle it and set status: Accepted, then claim it"}
+			"only a human accepts a design, with kit accept " + id + " — not you"}
 	case "":
 		return nil, &NotYours{target.Name() + " has no status:, so there is no work to claim",
 			"give it one: " + strings.Join(AllStatuses, ", ")}

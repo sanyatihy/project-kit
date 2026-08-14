@@ -12,7 +12,7 @@ import (
 )
 
 // subcommands must stay in step with the dispatcher in main.go.
-var subcommands = []string{"init", "new", "claim", "block", "ship", "next", "audit"}
+var subcommands = []string{"init", "new", "accept", "claim", "block", "ship", "next", "audit"}
 
 func TestEveryCommandHasHelp(t *testing.T) {
 	for _, name := range subcommands {

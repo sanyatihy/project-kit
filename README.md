@@ -149,19 +149,34 @@ Each box is one PR you can finish and verify without asking anyone. `- [ ] Build
 backend` is not a task. If you cannot say how you would check a box is done, it is
 too big — split it.
 
-Then set `status: Accepted` and run `kit next`. It hands you the first box and the
-command to start:
+Then accept it — this is the one decision the tool will never make for you, and the
+one command an agent must never run:
+
+```sh
+kit accept 0001                  # Draft -> Accepted
+```
+
+It refuses if `## Open questions` is still there or a `BLOCKING` inbox line names the
+feature, because both say the design is not settled. Run it on the draft's own branch so
+the acceptance lands in the same pull request as the draft.
+
+Land that pull request, and `kit next` hands you the first box and the command to start:
 
 ```
   start here
-    0001  Shorten URLs
+    0001  0/4   Shorten URLs
     → Schema + migration for links(id, url, created_at)
        docs/features/0001-shorten-urls.md
-       git worktree add ../url-shortener-0001 -b 0001-shorten-urls
+       kit claim 0001
 ```
 
-Do that one box, tick it, open a PR. Run `kit next` again for the next one. When the
-last box is ticked, set `status: Shipped` and the `shipped:` date.
+`kit claim` pushes the branch that takes the feature and prints the worktree to work in.
+It refuses if the plan is not committed on the default branch yet: the claim pushes
+`HEAD`, so an uncommitted doc would not travel with the branch you were sent to.
+
+Do that one box, tick it in the commit that implements it, and open a PR. Run `kit next`
+again for the next one. When the last box is ticked, `kit ship 0001` verifies every box,
+stamps the date, and freezes the doc.
 
 **When you get stuck on something only a human can decide**, add a line to
 `docs/INBOX.md` with your leaning and move on:
@@ -191,6 +206,7 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 
 ```sh
 kit new   <title...>                     next free ID, date filled in, status Draft
+kit accept <id>                          settle a Draft — the human's call, never an agent's
 kit claim <id>                           push the branch; exit 1 means you lost it
 kit block <id> "<question>" [--fyi]      park a decision only a human can make
 kit ship  <id>                           verify every box, stamp the date, freeze
