@@ -16,7 +16,9 @@ var (
 	untickedRe = regexp.MustCompile(`^\s*[-*]\s*\[ \]\s*(.*)$`)
 	tickedRe   = regexp.MustCompile(`^\s*[-*]\s*\[[xX]\]\s*(.*)$`)
 	trailingRe = regexp.MustCompile(`\s+#.*$`)
-	dateRe     = regexp.MustCompile(`^\s*(\d{4}-\d{2}-\d{2})`)
+	// Four digits, the shape of every feature id the kit allocates.
+	idListRe = regexp.MustCompile(`\b\d{4}\b`)
+	dateRe   = regexp.MustCompile(`^\s*(\d{4}-\d{2}-\d{2})`)
 )
 
 // Normalise strips a BOM and CRLF endings so parsing never depends on either.
@@ -122,6 +124,25 @@ func forEachBox(text string, visit func(line string, done bool)) {
 			visit(line, true)
 		}
 	}
+}
+
+// ParseIDList reads a frontmatter list of feature ids — "0002, 0003" or "0002 0003"
+// — into the ids themselves.
+//
+// Anything that is not an id is dropped rather than reported. The field is written by
+// hand as often as by a tool, and a stray bracket or a trailing comma should not
+// change what the board offers; the checks in `audit` are where a wrong id is
+// reported, and they can only run on ids that parsed.
+func ParseIDList(value string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, m := range idListRe.FindAllString(value, -1) {
+		if !seen[m] {
+			seen[m] = true
+			out = append(out, m)
+		}
+	}
+	return out
 }
 
 // ParseDate reads a leading YYYY-MM-DD, returning the zero time when absent.

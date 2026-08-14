@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -158,6 +159,42 @@ func TestNextReportsProgressThroughTheBoxes(t *testing.T) {
 	}
 	if all[0].Done != 2 || all[0].Total != 4 {
 		t.Errorf("done/total = %d/%d, want 2/4", all[0].Done, all[0].Total)
+	}
+}
+
+func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
+	// The whole point of the field: what is ready is the answer to "can these be
+	// worked at once", so it has to be right in both directions — refusing work that
+	// cannot start, and releasing it the moment the dependency ships.
+	p := setUp(t)
+	feature(p, "0001", "base", "Base", "Accepted", "- [ ] Do it")
+	p.write("docs/features/0002-store.md",
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+	p.commitAll("a chain of two")
+
+	plan := p.plan("next", "--json")
+	if len(plan.Ready) != 1 || plan.Ready[0].ID != "0001" {
+		t.Errorf("ready = %+v, want just 0001", plan.Ready)
+	}
+	if len(plan.Blocked) != 1 || plan.Blocked[0].ID != "0002" {
+		t.Fatalf("blocked = %+v, want just 0002", plan.Blocked)
+	}
+	if !slices.Contains(plan.Blocked[0].Needs, "0001") {
+		t.Errorf("blocked 0002 needs = %v, want it to name 0001", plan.Blocked[0].Needs)
+	}
+	p.run("next").ok().has("needs 0001 to ship first")
+
+	// Shipped is the bar, not merged.
+	p.write("docs/features/0001-base.md",
+		doc("0001", "Base", "Shipped", "shipped: 2026-01-02", "- [x] Do it"))
+	p.commitAll("ship 0001")
+
+	plan = p.plan("next", "--json")
+	if len(plan.Blocked) != 0 {
+		t.Errorf("blocked = %+v, want nothing once the dependency shipped", plan.Blocked)
+	}
+	if len(plan.Ready) != 1 || plan.Ready[0].ID != "0002" {
+		t.Errorf("ready = %+v, want 0002 released", plan.Ready)
 	}
 }
 

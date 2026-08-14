@@ -127,3 +127,34 @@ func TestParseInboxLine(t *testing.T) {
 		})
 	}
 }
+
+func TestParseIDList(t *testing.T) {
+	// Written by hand as often as by a tool, so the shapes people actually type all
+	// have to work, and junk has to be dropped rather than change the board.
+	for _, tc := range []struct {
+		in   string
+		want []string
+	}{
+		{"", nil},
+		{"0002", []string{"0002"}},
+		{"0002, 0003", []string{"0002", "0003"}},
+		{"0002 0003", []string{"0002", "0003"}},
+		{"[0002, 0003]", []string{"0002", "0003"}},
+		{"0002, 0002", []string{"0002"}},       // a repeat is one dependency
+		{"none", nil},                          // prose is not an id
+		{"see 0004 for why", []string{"0004"}}, // and an id inside prose still counts
+		{"12345", nil},                         // not the shape of an id
+	} {
+		got := ParseIDList(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("ParseIDList(%q) = %v, want %v", tc.in, got, tc.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != tc.want[i] {
+				t.Errorf("ParseIDList(%q) = %v, want %v", tc.in, got, tc.want)
+				break
+			}
+		}
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -46,6 +47,7 @@ type Feature struct {
 	ID       string
 	Title    string
 	Status   string
+	Needs    []string // feature ids that must ship before this can start
 	Shipped  time.Time
 	Check    time.Time
 	Checked  time.Time
@@ -198,6 +200,7 @@ func (r *Repo) readFeature(path string) *Feature {
 		ID:       fields["id"],
 		Title:    fields["title"],
 		Status:   fields["status"],
+		Needs:    ParseIDList(fields["needs"]),
 		Shipped:  ParseDate(fields["shipped"]),
 		Check:    ParseDate(fields["check"]),
 		Checked:  ParseDate(fields["checked"]),
@@ -208,6 +211,95 @@ func (r *Repo) readFeature(path string) *Feature {
 		f.Title = strings.TrimSuffix(filepath.Base(path), ".md")
 	}
 	return f
+}
+
+// FeatureByID finds a feature by its declared id, or nil.
+func (r *Repo) FeatureByID(id string) *Feature {
+	for _, f := range r.Features {
+		if f.ID == id {
+			return f
+		}
+	}
+	return nil
+}
+
+// UnmetNeeds lists the ids a feature is still waiting on, in declared order.
+//
+// Shipped is the bar rather than merged. `kit ship` is the moment the kit knows a
+// feature's work is done; merging is a human's and follows. Reading merge state
+// instead would make the board's answer depend on how quickly somebody clicked.
+//
+// An id that names nothing, or names a feature that was Dropped or Superseded, counts
+// as unmet: it can never be satisfied, so the work genuinely cannot start. `audit`
+// reports why; `next` only has to refuse to hand it out.
+func (r *Repo) UnmetNeeds(f *Feature) []string {
+	var unmet []string
+	for _, id := range f.Needs {
+		if id == f.ID {
+			continue // self-reference is a cycle, and audit says so
+		}
+		if dep := r.FeatureByID(id); dep == nil || dep.Status != StatusShipped {
+			unmet = append(unmet, id)
+		}
+	}
+	return unmet
+}
+
+// NeedsCycles lists loops in the needs: graph, each as the ids in the loop starting
+// and ending at the same one.
+//
+// Reported rather than merely avoided: a loop means every feature in it waits on
+// itself forever, so `next` would go quiet about all of them and never say why. One
+// finding per loop, not one per feature in it — the loop is the defect and it has one
+// fix.
+func (r *Repo) NeedsCycles() [][]string {
+	// Iterative depth-first search with an explicit path. `state` is the standard
+	// three-colour marking: unseen, on the current path, and finished. A node already
+	// finished cannot start a new cycle, which is what keeps a diamond-shaped graph
+	// from being walked exponentially.
+	const (
+		unseen = iota
+		onPath
+		done
+	)
+	state := map[string]int{}
+	var cycles [][]string
+	seen := map[string]bool{}
+
+	var walk func(id string, path []string)
+	walk = func(id string, path []string) {
+		state[id] = onPath
+		path = append(path, id)
+		f := r.FeatureByID(id)
+		if f != nil {
+			for _, next := range f.Needs {
+				if r.FeatureByID(next) == nil {
+					continue // a missing id is needs-unknown's business, not a loop
+				}
+				switch state[next] {
+				case onPath:
+					// Report from where the loop closes, so the output is the loop
+					// itself rather than the walk that happened to find it.
+					at := slices.Index(path, next)
+					loop := append(append([]string{}, path[at:]...), next)
+					if key := strings.Join(loop, ">"); !seen[key] {
+						seen[key] = true
+						cycles = append(cycles, loop)
+					}
+				case unseen:
+					walk(next, path)
+				}
+			}
+		}
+		state[id] = done
+	}
+
+	for _, f := range r.Features {
+		if f.ID != "" && state[f.ID] == unseen {
+			walk(f.ID, nil)
+		}
+	}
+	return cycles
 }
 
 // Rel makes a path relative to the project root, for display.

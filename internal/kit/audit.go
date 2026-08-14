@@ -75,6 +75,8 @@ var (
 		"a check: date passed and nobody recorded the outcome"}
 	checkSecretInDoc = Check{"secret-in-doc", High,
 		"a doc contains something shaped like a real credential"}
+	checkNeedsCycle = Check{"needs-cycle", High,
+		"features need each other in a loop, so none of them can ever start"}
 
 	// MEDIUM — incomplete or drifting.
 	checkNoPlan = Check{"no-plan", Medium,
@@ -93,6 +95,10 @@ var (
 		"an INBOX.md line is not in the documented format, so it blocks by prose match"}
 	checkInboxUnknown = Check{"inbox-unknown", Medium,
 		"an INBOX.md question names a feature that does not exist, so it can never unblock one"}
+	checkNeedsUnknown = Check{"needs-unknown", Medium,
+		"a needs: names a feature that does not exist or can never ship, so the wait never ends"}
+	checkShippedEarly = Check{"shipped-early", Medium,
+		"Shipped while something in its needs: has not shipped"}
 	checkNoTasks = Check{"no-tasks", Medium,
 		"Accepted or In progress with no ## Tasks boxes at all, so there is nothing to do"}
 	checkNoClaim = Check{"no-claim", Medium,
@@ -120,11 +126,11 @@ var (
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
-	checkSecretInDoc,
+	checkSecretInDoc, checkNeedsCycle,
 	checkDuplicateID, checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
-	checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
+	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol,
 	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision,
 }
@@ -414,6 +420,46 @@ func Audit(r *Repo, today time.Time) []Finding {
 			"no INBOX.md, so a blocked agent has nowhere to put a question",
 			"run: kit init .")
 	}
+	// The graph is only checked for the ways it can be *impossible*, never for
+	// whether the declared needs are the right ones. A missing dependency is a
+	// judgement call and no heuristic has it.
+	for _, f := range r.Features {
+		if f.ID == "" {
+			continue
+		}
+		for _, id := range f.Needs {
+			dep := r.FeatureByID(id)
+			switch {
+			case id == f.ID:
+				// A loop of one. Left to needs-cycle so a single defect produces a
+				// single finding with a single fix.
+			case dep == nil:
+				report(checkNeedsUnknown, f.Rel,
+					fmt.Sprintf("%s: needs %s, which does not exist", f.Name(), id),
+					"fix the id, or remove it from needs:")
+			case dep.Status == "Dropped" || dep.Status == "Superseded":
+				report(checkNeedsUnknown, f.Rel,
+					fmt.Sprintf("%s: needs %s, which is %s and will never ship", f.Name(), id, dep.Status),
+					"point at what replaced it, or remove it from needs:")
+			}
+		}
+		// Shipped while a dependency has not is the docs disagreeing with themselves:
+		// either the dependency was wrong, or this was built on a foundation that is
+		// not there. Both are worth knowing and neither is guessable from the text.
+		if f.Status == StatusShipped {
+			if unmet := r.UnmetNeeds(f); len(unmet) > 0 {
+				report(checkShippedEarly, f.Rel,
+					fmt.Sprintf("%s: Shipped, but needs %s which has not", f.Name(), strings.Join(unmet, ", ")),
+					"ship what it needs, or correct needs: to what was actually required")
+			}
+		}
+	}
+	for _, cycle := range r.NeedsCycles() {
+		report(checkNeedsCycle, r.Name,
+			"features need each other in a loop: "+strings.Join(cycle, " → "),
+			"break the loop — one of those needs is the wrong way round, or is not a need at all")
+	}
+
 	// Rule 10 has real blast radius: a doc is committed, and a pushed commit cannot
 	// be unpublished. Only the documents the repo model already opens — `audit` is
 	// not a repo-wide secret scanner and must not be mistaken for one.

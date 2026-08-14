@@ -94,7 +94,13 @@ whole model, and `kit help template` prints the feature doc format.
    project is for and what it is not; a feature that cannot be traced to it is the
    wrong feature, and saying so is cheaper than building it. Size the doc to one
    agent's reach — if a box cannot start until someone else's work lands, it belongs
-   in a different feature. Leave it `Draft`: accepting is a human's call.
+   in a different feature, and `needs:` is where you say so. Fill it in for every
+   draft: it is what lets `kit next` refuse work whose foundation is missing, and
+   several features with an empty `needs:` is what lets agents run at once. Judge it
+   by whether the work could *start* now — a shared composition root, a shared
+   router, or numbered files in one sequence such as migrations all make a feature
+   dependent however separate it looks. Leave the doc `Draft`: accepting is a
+   human's call.
 2. **One agent per feature. Take it with `kit claim <id>`.** That pushes the branch
    named after the doc, and creating that ref on the remote is what decides who
    gets the work: exit 0 is yours, exit 1 means another agent got there first — run
