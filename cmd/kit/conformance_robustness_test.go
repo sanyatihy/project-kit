@@ -188,6 +188,6 @@ func TestEmptyProjectDirectoriesAreHandled(t *testing.T) {
 		}
 	}
 
-	p.run("next").ok().has("nothing open")
+	p.run("next").ok().has("nothing is planned yet")
 	p.run("audit").ok()
 }

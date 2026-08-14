@@ -202,7 +202,10 @@ func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
 	// The invariant, not any particular sentence. A state the tool can reach and
 	// does not close is a state something else decides — which is how an agent
 	// facing a board of taken and blocked features started working on one of them.
-	tell := []string{"kit claim", "kit new", "nothing is free", "waiting on a human"}
+	// Checked against the guidance the plan carries rather than the rendered text:
+	// the text is wrapped for a narrow terminal, so asserting phrases in it breaks
+	// on line breaks rather than on the thing being tested.
+	tell := []string{"kit claim", "draft a feature", "nothing is free", "waiting on a human"}
 	ends := func(out string) bool {
 		for _, phrase := range tell {
 			if strings.Contains(out, phrase) {

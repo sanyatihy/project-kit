@@ -205,6 +205,11 @@ var auditCases = []struct {
 		p.write("docs/features/0002-leaky.md", doc("0002", "Leaky thing", "Accepted", "",
 			"- [ ] Do it\n\n## Log\n- 2026-01-02 — deploy failed with "+fakeSecrets[0].value))
 	}},
+	{"protocol-stale", func(p *project) {
+		// A project scaffolded by an older kit: agents there follow superseded rules
+		// and nothing inside the project can tell.
+		p.write("AGENTS.md", "# House rules\n\n## Work protocol\n\nAn older protocol.\n")
+	}},
 	{"no-vision", func(p *project) {
 		// A feature exists, so there is something that should have been decomposed
 		// from a vision, and nothing to decompose it from.
@@ -580,6 +585,32 @@ func TestInboxChecksStayQuietOnAWellFormedQuestion(t *testing.T) {
 	for _, code := range p.auditCodes() {
 		if code == "inbox-unparsed" || code == "inbox-unknown" {
 			t.Errorf("a well-formed question was reported as %q", code)
+		}
+	}
+}
+
+func TestNextNeverHandsOverWorkThatIsNotYours(t *testing.T) {
+	// `task` means "the box to do now". Attaching one to a feature the board has
+	// just reported as somebody else's is the payload contradicting the prose — and
+	// --json is the format agents are told to read, so it is the one that matters.
+	p := cleanProject(t)
+	p.write("docs/features/0002-waiting.md",
+		doc("0002", "Waiting", "Accepted", "needs: 0001", "- [ ] Do it"))
+	p.commitAll("two features")
+	p.git("branch", "0001-thing")
+
+	plan := p.plan("next", "--json")
+	if plan.Guidance == "" {
+		t.Error("--json carries no guidance, so a parsing agent gets a board and no conclusion")
+	}
+	for _, group := range []struct {
+		name  string
+		items []kit.Item
+	}{{"taken", plan.Taken}, {"blocked", plan.Blocked}} {
+		for _, item := range group.items {
+			if item.Task != "" {
+				t.Errorf("%s feature %s handed over a task: %q", group.name, item.ID, item.Task)
+			}
 		}
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -416,31 +417,25 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		}
 	}
 
-	// Every run ends with an instruction. A state the tool can reach and does not
-	// close is a state something else decides: an agent that found a board of taken
-	// and blocked features, no closing line, and a protocol saying "do not idle"
-	// concluded it should help with work somebody else had claimed.
-	switch drafts := kit.Drafts(r); {
-	case len(plan.Yours) > 0 || len(plan.Ready) > 0:
-		// Already told what to do, above.
-	case !plan.Empty():
-		fmt.Printf("\n  %s\n", paint("nothing is free", "33", color))
-		fmt.Printf("    every feature is claimed or waiting on something. A claimed\n")
-		fmt.Printf("    feature is not yours — do not work it, tick it, or help with it.\n")
-		fmt.Printf("    Stopping here is the right outcome: say so and wait.\n")
-	case len(drafts) > 0:
-		fmt.Printf("\n  nothing open, but there are drafts:\n")
-		for _, f := range drafts {
-			fmt.Printf("    %s  %s\n", f.ID, kit.Show(f.Title, 60))
-			fmt.Printf("          %s\n", f.Rel)
+	// The drafts listing is data the JSON payload does not carry, so it stays here.
+	// The conclusion under it does not: that comes from plan.Guidance, which --json
+	// carries too, so the two formats cannot end up saying different things.
+	if plan.Empty() {
+		if drafts := kit.Drafts(r); len(drafts) > 0 {
+			fmt.Printf("\n  nothing open, but there are drafts:\n")
+			for _, f := range drafts {
+				fmt.Printf("    %s  %s\n", f.ID, kit.Show(f.Title, 60))
+				fmt.Printf("          %s\n", f.Rel)
+			}
 		}
-		// Never "set status: Accepted": rule 1 makes that a human's call, and a tool
-		// that instructs an agent past the project's own gate makes the gate advisory.
-		fmt.Printf("\n  these are waiting on a human to accept them. Draft another if you\n")
-		fmt.Printf("  were asked to, otherwise stop and say they need a decision.\n")
-	default:
-		fmt.Printf("\n  nothing open — start a feature:\n")
-		fmt.Printf("    kit new \"<what the feature does>\"\n")
+	}
+	if plan.Guidance != "" && len(plan.Yours) == 0 && len(plan.Ready) == 0 {
+		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
+		// The command goes on its own line, unwrapped, so it can be copied. The
+		// guidance says what to do; this is the thing to run.
+		if plan.Empty() && len(kit.Drafts(r)) == 0 {
+			fmt.Printf("    kit new \"<what the feature does>\"\n")
+		}
 	}
 	fmt.Println()
 }
@@ -464,7 +459,7 @@ func runAudit(args []string) int {
 	for _, r := range repos {
 		var findings []kit.Finding
 		if r.FeaturesDir != "" {
-			findings = kit.Audit(r, today)
+			findings = kit.Audit(r, today, currentProtocol())
 		}
 		if findings == nil {
 			findings = []kit.Finding{}
@@ -628,4 +623,37 @@ func contains(list []string, want string) bool {
 		}
 	}
 	return false
+}
+
+// currentProtocol is the work-protocol section this binary would write, so `audit`
+// can tell a project it is running an older one. Empty on a read failure, which
+// simply skips the check rather than reporting a difference it could not verify.
+func currentProtocol() string {
+	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
+	if err != nil {
+		return ""
+	}
+	return string(raw)
+}
+
+// wrapAt breaks a sentence onto indented lines that fit a narrow terminal. The
+// guidance is written once, in internal/kit, so that both output formats carry the
+// same words; only its shape on screen belongs here.
+func wrapAt(text string, width int, indent string) string {
+	var lines []string
+	line := indent
+	for _, word := range strings.Fields(text) {
+		if len(line)+len(word)+1 > width && line != indent {
+			lines = append(lines, line)
+			line = indent
+		}
+		if line != indent {
+			line += " "
+		}
+		line += word
+	}
+	if line != indent {
+		lines = append(lines, line)
+	}
+	return strings.Join(lines, "\n")
 }

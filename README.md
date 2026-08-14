@@ -234,7 +234,7 @@ even when something goes wrong.
   `inbox-stale`, `unchecked`
 - **MEDIUM** — `no-plan`, `done-not-shipped`, `tech-drift`, `shipped-no-date`,
   `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`,
-  `needs-unknown`, `shipped-early`, `no-tasks`,
+  `needs-unknown`, `shipped-early`, `protocol-stale`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`
 - **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`

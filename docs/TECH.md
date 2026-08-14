@@ -96,6 +96,27 @@ Mechanisms worth knowing before changing anything:
   `audit` escalates it after a day. Thresholds follow the cadence of what they
   watch, not an operator's calendar, and an idle agent costs minutes.
 - **`audit` never writes.** An auditor that fixes things stops being read.
+- **Both output formats carry the same conclusion.** `Plan.Guidance` is decided once
+  in `internal/kit` and rendered by the text output and carried by `--json`, so they
+  cannot drift. `--json` is the format documented for agents, and it previously held
+  a board with no instruction — and attached the next box to features it had reported
+  as somebody else's. A feature that is taken or blocked now carries no `task` in
+  either format: `task` means "the box to do now", which for work that is not on offer
+  is a category error. Copyable commands stay out of the guidance sentence, because it
+  is wrapped and a wrapped command cannot be copied.
+- **A leftover draft branch is indistinguishable from a fresh claim.** Before a draft
+  merges, its branch carries the doc and a fresh claim carries nothing. Afterwards
+  both are identical to the trunk, so no inspection can separate them — which is why
+  the protocol deletes the branch when a draft is accepted, and why `kit claim` names
+  both possibilities instead of asserting a claim it cannot verify.
+- **`protocol-stale` compares the project's work-protocol section with the kit's.**
+  Shipping a protocol change does not deliver one: `AGENTS.md` is only rewritten by
+  `kit init`, so a project runs whatever rules it was scaffolded with until someone
+  re-runs it, and nothing inside that project can tell. The check is passed the
+  expected text because `internal/kit` cannot embed a parent directory.
+- **The protocol cites rules by name, never by number**, and a test enforces it.
+  Two cross-references pointed at the wrong rules for months because later features
+  inserted rules above them. Numbers in prose do not move when the list does.
 - **Every run of `kit next` ends with an instruction.** Four states — something is
   yours, something is free, nothing is free, nothing exists — and each closes with
   what to do. The invariant is the point rather than any sentence: three vacuums have

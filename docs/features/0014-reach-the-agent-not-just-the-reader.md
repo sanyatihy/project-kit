@@ -1,7 +1,8 @@
 ---
 id: 0014
 title: Reach the agent, not just the reader
-status: In progress
+status: Shipped
+shipped: 2026-08-14
 created: 2026-08-14
 needs:
 related: 0013-never-leave-an-agent-without-an-instruction.md
@@ -98,11 +99,11 @@ before it is `make check` and `kit audit --strict`. A protocol that describes th
 manual path for something the tool does is a protocol that teaches the mistake.
 
 ## Tasks
-- [ ] `kit claim` explains an existing branch it cannot attribute, and the protocol frees the name on acceptance
-- [ ] `--json` carries the conclusion, and no format attaches a task to a feature that is not yours
-- [ ] Audit: the project's protocol section differs from the installed kit's
-- [ ] Protocol: ship with `kit ship`, pass `make check` and `kit audit --strict` first
-- [ ] Protocol: cite rules by name, and fix the three contradictions
+- [x] `kit claim` explains an existing branch it cannot attribute, and the protocol frees the name on acceptance
+- [x] `--json` carries the conclusion, and no format attaches a task to a feature that is not yours
+- [x] Audit: the project's protocol section differs from the installed kit's
+- [x] Protocol: ship with `kit ship`, pass `make check` and `kit audit --strict` first
+- [x] Protocol: cite rules by name, and fix the three contradictions
 
 ## Open questions
 <!-- none -->
