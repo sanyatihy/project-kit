@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -64,6 +65,29 @@ func TestProtocolCitesRulesByNameNotNumber(t *testing.T) {
 	if m := regexp.MustCompile(`(?i)\brule \d+`).FindString(string(raw)); m != "" {
 		t.Errorf("the protocol cites %q — a rule inserted above it will silently "+
 			"misdirect the reader; cite the rule by its bolded name instead", m)
+	}
+}
+
+func TestNoCommandTellsAnAgentToAcceptADraft(t *testing.T) {
+	// Accepting is the human's gate, and a tool that instructs an agent past it
+	// makes the gate advisory. 0014 removed this from `kit next` and from the
+	// protocol text, and it survived in `init` and `new` because the test read the
+	// protocol rather than what the commands print — which is where an agent meets
+	// the instruction.
+	raw, err := os.ReadFile("main.go")
+	if err != nil {
+		t.Fatalf("reading the command surface: %v", err)
+	}
+	for _, line := range strings.Split(string(raw), "\n") {
+		if !strings.Contains(line, "fmt.Printf") && !strings.Contains(line, "fmt.Fprintf") {
+			continue
+		}
+		for _, banned := range []string{"set status: Accepted", "set it to Accepted", "mark it Accepted"} {
+			if strings.Contains(line, banned) {
+				t.Errorf("a command prints %q — that is the human's call:\n  %s",
+					banned, strings.TrimSpace(line))
+			}
+		}
 	}
 }
 

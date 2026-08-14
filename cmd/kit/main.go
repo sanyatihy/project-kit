@@ -135,10 +135,14 @@ func runInit(args []string) int {
 		fmt.Printf("  kept       %s\n", p)
 	}
 
+	// Singular here is what produced a plan with one feature covering a whole
+	// project: the tool asked for a feature and the agent wrote a feature. Bootstrap
+	// means the whole set, and accepting them is not the agent's to do.
 	fmt.Printf("\nnext:\n")
-	fmt.Printf("  kit new \"<what the feature does>\"\n")
-	fmt.Printf("  fill in Problem, Non-goals, Design, Tasks; set status: Accepted\n")
-	fmt.Printf("  kit next\n\n")
+	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
+	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
+	fmt.Printf("  each one a pull request a human can review in one sitting\n")
+	fmt.Printf("  leave them Draft — accepting them is the human's call\n\n")
 	return 0
 }
 
@@ -175,7 +179,8 @@ func runNew(args []string) int {
 	fmt.Printf("\n  fill in Problem, Non-goals, Design, and Tasks.\n")
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
-	fmt.Printf("  set status: Accepted when it is settled, then run kit next.\n\n")
+	fmt.Printf("  leave status: Draft — accepting it is the human's call, and\n")
+	fmt.Printf("  kit next will offer it once they have.\n\n")
 	return 0
 }
 

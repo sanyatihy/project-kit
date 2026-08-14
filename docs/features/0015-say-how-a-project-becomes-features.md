@@ -69,10 +69,10 @@ protocol to reading what every command prints, since the protocol was already ri
 both cases and the output was not.
 
 ## Tasks
-- [ ] Protocol: decompose the whole thing by default, from the vision's outcomes
-- [ ] Protocol: a feature is one PR, with the bound at each end
-- [ ] `kit init` stops asking for one feature, and neither it nor `kit new` tells an agent to accept
-- [ ] A test that no command output tells an agent to set a status a human owns
+- [x] Protocol: decompose the whole thing by default, from the vision's outcomes
+- [x] Protocol: a feature is one PR, with the bound at each end
+- [x] `kit init` stops asking for one feature, and neither it nor `kit new` tells an agent to accept
+- [x] A test that no command output tells an agent to set a status a human owns
 
 ## Open questions
 <!-- none -->
