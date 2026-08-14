@@ -299,7 +299,10 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			case open == 0:
 				report(checkDoneNotShipped, at,
 					fmt.Sprintf("%s: every task is ticked but status is %s", f.Name(), f.Status),
-					"set status: Shipped and the shipped: date, or add the next task")
+					// Naming the command, not the edit: hand-stamping the status and date
+					// is what `unticked-shipped` and `shipped-no-date` are the wreckage of,
+					// and telling an agent to do it here undoes the reason ship exists.
+					"run: kit ship "+f.ID+" — or add the next task")
 			}
 		}
 
@@ -518,7 +521,10 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 	// Rule 10 has real blast radius: a doc is committed, and a pushed commit cannot
 	// be unpublished. Only the documents the repo model already opens — `audit` is
 	// not a repo-wide secret scanner and must not be mistaken for one.
-	docs := []string{r.Inbox, r.Vision, r.Tech, r.Protocol}
+	// BACKLOG.md is here because rule 6 sends discovered work to it, so agents write to
+	// it as freely as to a feature doc. It was the only agent-writable document the scan
+	// did not open.
+	docs := []string{r.Inbox, r.Vision, r.Tech, r.Protocol, r.Backlog}
 	for _, f := range r.Features {
 		docs = append(docs, f.Path)
 	}

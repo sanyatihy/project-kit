@@ -337,6 +337,26 @@ func TestSecretInDocFiresOnEveryShape(t *testing.T) {
 	}
 }
 
+func TestSecretInDocScansEveryDocAgentsWriteTo(t *testing.T) {
+	// Rule 6 sends discovered work to BACKLOG.md, so agents write to it as freely as to
+	// a feature doc, and it is committed like everything else. It was the one
+	// agent-writable document the scan did not open.
+	for _, where := range []string{
+		"docs/features/BACKLOG.md",
+		"docs/INBOX.md",
+		"docs/VISION.md",
+		"docs/TECH.md",
+	} {
+		t.Run(where, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write(where, "# Notes\n\nit failed with "+fakeSecrets[0].value+"\n")
+			if codes := p.auditCodes(); !slices.Contains(codes, "secret-in-doc") {
+				t.Errorf("a credential in %s went unreported; audit said %v", where, codes)
+			}
+		})
+	}
+}
+
 func TestSecretInDocStaysQuietOnProseAboutSecrets(t *testing.T) {
 	// Docs discuss credentials constantly — naming the variable is what the protocol
 	// asks for. A check that fires on the correct behaviour would train people to
