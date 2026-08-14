@@ -270,18 +270,43 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			}
 		}
 
-		if f.Status == StatusInProgress {
-			newest := f.Modified
-			for _, signal := range []time.Time{r.LastMentioned(f.ID), r.LastTouched(f.Path)} {
-				if signal.After(newest) {
-					newest = signal
+		// Liveness comes from the claim, not only from a status. In a pull-request flow
+		// `In progress` is set on the feature branch and never reaches the trunk, so from
+		// the checkout a human or a supervising agent audits, the doc still reads
+		// `Accepted` — and stalled, the one check for an agent that died holding a
+		// feature, could not fire anywhere anybody was looking.
+		//
+		// A claim carrying no commits beyond the doc is deliberately not aged: a branch
+		// cut from the trunk's tip is identical to one whose pull request already merged,
+		// and neither carries a date to read. `next` reports those as taken.
+		if !terminal(f.Status) {
+			claim := r.ClaimFor(f.ID)
+			if f.Status == StatusInProgress || (claim != "" && r.BranchBuildsOn(claim, f.Rel)) {
+				// Not the doc's mtime. For a tracked file that records when git last
+				// wrote it out, which a merge or a checkout resets to now — so on the
+				// trunk checkout a freshly merged draft looked like activity and masked
+				// a claim that had been dead for a week. LastTouched already falls back
+				// to mtime for a doc that is untracked, which is the only case where the
+				// filesystem knows something git does not.
+				newest := time.Time{}
+				for _, signal := range []time.Time{r.LastMentioned(f.ID), r.LastTouched(f.Path)} {
+					if signal.After(newest) {
+						newest = signal
+					}
 				}
-			}
-			if idle := Days(newest, today); idle >= StalledDays {
-				report(checkStalled, at,
-					fmt.Sprintf("%s: In progress, nothing has happened in %s",
-						f.Name(), countDays(idle)),
-					"finish it, drop it, or move the blocker to docs/INBOX.md")
+				if newest.IsZero() {
+					continue // nothing to measure from; inventing an age is worse
+				}
+				if idle := Days(newest, today); idle >= StalledDays {
+					held := "In progress"
+					if f.Status != StatusInProgress {
+						held = f.Status + ", claimed by " + claim
+					}
+					report(checkStalled, at,
+						fmt.Sprintf("%s: %s, nothing has happened in %s",
+							f.Name(), held, countDays(idle)),
+						"finish it, drop it, or move the blocker to docs/INBOX.md")
+				}
 			}
 		}
 

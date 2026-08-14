@@ -483,6 +483,61 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	cleanProject(t).run("audit", "--strict").ok()
 }
 
+func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
+	// The failure this closes: `In progress` is set on the feature branch, so the trunk
+	// checkout — the only one a human or a supervising agent audits — sees `Accepted`
+	// and reported nothing. An agent that died holding a feature was indistinguishable
+	// from one hard at work, permanently, and the board just said "taken".
+	//
+	// Liveness now comes from the claim branch, so what is being asserted is both
+	// directions: active work is quiet, abandoned work is reported.
+	for _, tc := range []struct {
+		name string
+		age  int
+		want bool
+	}{
+		{"work committed today", 0, false},
+		{"work abandoned", kit.StalledDays + 1, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := newProject(t)
+			p.run("init").ok()
+			// Trunk carries the doc exactly as it looks after a draft PR merges.
+			feature(p, "0002", "widget", "Widget", "Accepted", "- [ ] Build it")
+			p.commitAllAt("the plan", daysAgo(tc.age))
+			trunk := p.headBranch()
+
+			// The claim branch carries the work, and the status only ever set there.
+			p.git("checkout", "-q", "-b", "0002-widget")
+			p.write("internal/widget.go", "package widget\n")
+			feature(p, "0002", "widget", "Widget", "In progress", "- [ ] Build it")
+			p.commitAllAt("0002: start building", daysAgo(tc.age))
+			p.git("checkout", "-q", trunk)
+
+			// Read from the trunk, where the doc still says Accepted.
+			if got := slices.Contains(p.auditCodes(), "stalled"); got != tc.want {
+				t.Errorf("work %d day(s) old, seen from %s: stalled=%v, want %v",
+					tc.age, trunk, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAClaimCarryingNoWorkIsNeverCalledStalled(t *testing.T) {
+	// A branch cut from the trunk's tip is byte-identical to one whose pull request
+	// merged, and neither carries a date the kit can read. Ageing it would invent a
+	// finding, so `next` reports it as taken and audit says nothing.
+	p := newProject(t)
+	p.run("init").ok()
+	feature(p, "0002", "widget", "Widget", "Accepted", "- [ ] Build it")
+	p.commitAllAt("the plan", daysAgo(60))
+	p.git("branch", "0002-widget")
+
+	if codes := p.auditCodes(); slices.Contains(codes, "stalled") {
+		t.Errorf("an empty claim off an old trunk was aged as if it were work: %v", codes)
+	}
+}
+
 func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
 	// The trunk used to be the first of `main`/`master` that resolved. A project whose
 	// default branch is neither had no trunk to compare against, so BranchBuildsOn

@@ -1,9 +1,9 @@
 ---
 id: 0017
 title: Read the board from real git state
-status: In progress  # Draft | Accepted | In progress | Shipped | Dropped | Superseded
+status: Shipped
 created: 2026-08-14
-shipped:             # fill the date when status flips to Shipped
+shipped: 2026-08-14
 check:               # optional — date to check whether this worked. Only for bets.
 checked:             # date you checked; write the outcome in ## Log
 needs: 0016          # both edit audit.go's check registry and README's check list
@@ -154,10 +154,23 @@ Needed here anyway — `BranchBuildsOn` decides whether a claim carries work, an
 - [x] `ClaimFeature` refuses when the doc is not in `HEAD`'s tree, with the bootstrap-PR
       message; `kit init` says to land the plan on `main` first. Conformance: claiming an
       uncommitted plan exits non-zero and pushes nothing.
-- [ ] `stalled` keys on a claim carrying work rather than local `In progress` status, and
+- [x] `stalled` keys on a claim carrying work rather than local `In progress` status, and
       `loadGit`/`LastTouched` read `--all`. Conformance: a feature worked on an unmerged
       branch is not stalled from the trunk checkout, and an abandoned one is.
 
 ## Log
 
-<!-- Dated, append-only conclusions. The argument lives in the PR. -->
+- 2026-08-14 — dropped the doc's mtime from the `stalled` signals, which the design did
+  not anticipate. For a tracked file mtime records when git last wrote it out, and a merge
+  or a checkout resets it to now — so on the trunk checkout a freshly merged draft masked a
+  claim that had been dead for a week. `LastTouched` already falls back to mtime for an
+  untracked doc, which is the only case where the filesystem knows something git does not.
+  The regression test failed on exactly this before the change.
+- 2026-08-14 — `Feature.Modified` went with it, since that was its only reader.
+- 2026-08-14 — trunk detection needed a fourth fallback the design missed: a project with
+  no remote *and* no `main`/`master` still has a default branch. It is taken from HEAD, but
+  only when HEAD is not claim-shaped, so a worktree can never decide it is the trunk.
+- 2026-08-14 — the deleted-branch case could in principle be detected locally, by testing
+  whether a claim ref is a strict ancestor of the trunk. Rejected: it is exact for merge
+  commits and wrong for squash merges, where the branch tip is an ancestor of nothing. The
+  remote is the only source that answers correctly for both.

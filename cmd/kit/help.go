@@ -206,7 +206,8 @@ Reads only. With no PATH it uses the repo you are in, from any subdirectory.
 
   kit next                       # this project
   kit next ~/code/*              # every project at once
-  kit next --json                # for agents`,
+  kit next --json                # for agents
+  kit next --offline             # do not ask the remote which branches exist`,
 
 	"audit": `kit audit [PATH ...] [--json] [--strict]
 
@@ -220,7 +221,8 @@ Reads only, and never edits a file. With no PATH it uses the repo you are in.
 
   kit audit                      # this project
   kit audit ~/code/*             # every project at once
-  kit audit . --strict           # exit 1 on any HIGH, for CI`,
+  kit audit . --strict           # exit 1 on any HIGH, for CI
+  kit audit --offline            # do not ask the remote which branches exist`,
 }
 
 // runHelp prints the overview, or one topic.

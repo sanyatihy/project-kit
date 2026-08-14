@@ -138,7 +138,37 @@ Mechanisms worth knowing before changing anything:
   merges, its branch carries the doc and a fresh claim carries nothing. Afterwards
   both are identical to the trunk, so no inspection can separate them — which is why
   the protocol deletes the branch when a draft is accepted, and why `kit claim` names
-  both possibilities instead of asserting a claim it cannot verify.
+  both possibilities instead of asserting a claim it cannot verify. It is also why a
+  claim carrying no work is never aged: `stalled` would be inventing a date.
+- **Claims are read from the remote, not from `refs/remotes/*`.** Those refs are a cache
+  of the last fetch and git prunes them on neither `fetch` nor `pull`, so a branch deleted
+  when its pull request merged stayed there and read as a live claim — permanently, on
+  every feature, in the exact loop the kit exists to run. `next` said to stop and wait,
+  `claim` reported a lost race against a branch that existed nowhere, `audit` said the
+  docs and the repo agreed, and the remedy printed was two commands that both error. One
+  `ls-remote` per remote answers it: no objects transferred, nothing written, bounded by
+  its own short timeout because `kit next ~/code/*` walks every project. `--offline`
+  keeps the old path for a network that is not there, and the cost is stated rather than
+  hidden. `claim` never takes it — a claim decided against a cache is not a claim.
+- **A claim must carry the plan.** The push is `HEAD:refs/heads/<branch>`, so anything
+  uncommitted does not travel with it. Without a check, claiming an uncommitted plan
+  reported a won claim, pushed a branch holding nothing, and sent the agent to a worktree
+  where `kit next` said the project was not set up — four steps, all exiting 0, and the
+  agent's whole context gone. `git cat-file -e HEAD:<doc>` before the push costs nothing
+  and leaves nothing behind.
+- **Liveness comes from the claim branch, not from `status: In progress`.** That status is
+  set on the feature branch and never reaches the trunk, so from the only checkout a human
+  audits the doc reads `Accepted` — and `stalled`, the one check for an agent that died
+  holding a feature, could not fire anywhere anyone was looking. The log is read with
+  `--all` for the same reason: every commit in a pull-request flow is on a branch that has
+  not merged. The doc's mtime is deliberately *not* a signal — for a tracked file it
+  records when git last wrote it out, which a merge resets to now, so a freshly merged
+  draft masked a claim that had been dead for a week.
+- **The trunk is asked for, not assumed.** `origin/HEAD`, then `main`, then `master`, then
+  a HEAD that is not claim-shaped. Hard-coding the two conventional names meant a project
+  whose default branch is neither had no trunk to diff against, so `BranchBuildsOn`
+  answered "nothing changed" for every branch and every check built on it went silently
+  quiet.
 - **`protocol-stale` compares the project's work-protocol section with the kit's.**
   Shipping a protocol change does not deliver one: `AGENTS.md` is only rewritten by
   `kit init`, so a project runs whatever rules it was scaffolded with until someone

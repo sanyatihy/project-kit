@@ -34,6 +34,12 @@ const (
 var AllStatuses = []string{StatusAccepted, StatusDraft, "Dropped", StatusInProgress,
 	StatusShipped, "Superseded"}
 
+// terminal reports whether a status is an end state, after which a branch bearing the
+// feature's name is a merged leftover rather than somebody's work in progress.
+func terminal(status string) bool {
+	return status == StatusShipped || status == "Dropped" || status == "Superseded"
+}
+
 var notAFeature = map[string]bool{
 	"TEMPLATE.md": true, "README.md": true, "BACKLOG.md": true, "INBOX.md": true,
 }
@@ -48,16 +54,15 @@ var idPrefixRe = regexp.MustCompile(`^(\d+)`)
 
 // Feature is one feature document.
 type Feature struct {
-	Path     string
-	Rel      string
-	ID       string
-	Title    string
-	Status   string
-	Needs    []string // feature ids that must ship before this can start
-	Shipped  time.Time
-	Check    time.Time
-	Checked  time.Time
-	Modified time.Time
+	Path    string
+	Rel     string
+	ID      string
+	Title   string
+	Status  string
+	Needs   []string // feature ids that must ship before this can start
+	Shipped time.Time
+	Check   time.Time
+	Checked time.Time
 
 	sections map[string]string
 }
@@ -208,10 +213,6 @@ func (r *Repo) readFeature(path string) *Feature {
 	if err != nil {
 		return nil // an unreadable file is a filesystem problem, not a doc problem
 	}
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil
-	}
 	fields, body := ParseFrontmatter(Normalise(string(raw)))
 	rel, err := filepath.Rel(r.Root, path)
 	if err != nil {
@@ -227,7 +228,6 @@ func (r *Repo) readFeature(path string) *Feature {
 		Shipped:  ParseDate(fields["shipped"]),
 		Check:    ParseDate(fields["check"]),
 		Checked:  ParseDate(fields["checked"]),
-		Modified: info.ModTime(),
 		sections: ParseSections(body),
 	}
 	if f.Title == "" {
@@ -373,7 +373,10 @@ func (r *Repo) loadGit() {
 	}
 	r.loaded = true
 
-	raw := r.git("log", "-n"+gitLogLimit, "--format=%cI\x1f%B\x1e")
+	// --all, because in a pull-request flow every commit is made on a branch that has
+	// not merged yet. Reading HEAD's log alone made the kit blind to all work in
+	// progress: a feature being actively built looked exactly like an abandoned one.
+	raw := r.git("log", "--all", "-n"+gitLogLimit, "--format=%cI\x1f%B\x1e")
 	for _, chunk := range strings.Split(raw, "\x1e") {
 		when, message, found := strings.Cut(strings.TrimSpace(chunk), "\x1f")
 		if !found {
@@ -658,7 +661,7 @@ func (r *Repo) LastMentioned(id string) time.Time {
 // untracked. A check that silently does nothing on an untracked file is worse
 // than no check at all.
 func (r *Repo) LastTouched(path string) time.Time {
-	if out := strings.TrimSpace(r.git("log", "-1", "--format=%cI", "--", path)); out != "" {
+	if out := strings.TrimSpace(r.git("log", "--all", "-1", "--format=%cI", "--", path)); out != "" {
 		if parsed, err := time.Parse(time.RFC3339, out); err == nil {
 			return parsed
 		}

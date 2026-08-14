@@ -63,6 +63,19 @@ func twoAgents(t *testing.T) (*project, *project) {
 	return a, projectAt(t, filepath.Join(base, "b"))
 }
 
+// headBranch is the branch this checkout is on. Read rather than assumed, because the
+// fixtures deliberately inherit no init.defaultBranch and so may start on either name.
+func (p *project) headBranch() string {
+	p.t.Helper()
+	cmd := exec.Command("git", "symbolic-ref", "--quiet", "--short", "HEAD")
+	cmd.Dir, cmd.Env = p.Root, gitEnv()
+	out, err := cmd.Output()
+	if err != nil {
+		p.t.Fatalf("reading HEAD: %v", err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
 // remoteBranches lists the remote-tracking refs this checkout has cached, which is the
 // state that goes stale and the reason these tests exist.
 func (p *project) remoteBranches() []string {
