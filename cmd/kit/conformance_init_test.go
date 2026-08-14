@@ -64,6 +64,46 @@ func TestInitNeverOverwrites(t *testing.T) {
 	}
 }
 
+func TestInitRefreshesTheDocsItOwnsAndNothingElse(t *testing.T) {
+	// The line this pins: a file the kit owns is one whose project copy nothing
+	// reads, so replacing it takes nothing away. Everything a project fills in is
+	// the only copy there is and must survive every re-run forever.
+	p := newProject(t)
+	p.run("init").ok()
+
+	// A project scaffolded by an older kit: its reference doc predates a format change.
+	p.write("docs/features/TEMPLATE.md", "# an older format\n")
+	// And its own documents, which are the whole point of the distinction.
+	p.write("docs/VISION.md", "MINE — what we are building\n")
+	p.write("docs/INBOX.md", "- [ ] 2026-01-02 · 0001 · FYI · mine\n")
+	p.write("docs/features/BACKLOG.md", "MINE — ideas\n")
+
+	second := p.run("init").ok()
+
+	if got := p.read("docs/features/TEMPLATE.md"); !strings.Contains(got, "needs:") {
+		t.Error("init did not refresh the template it owns")
+	}
+	second.has("refreshed", "TEMPLATE.md")
+
+	for _, mine := range []struct{ path, want string }{
+		{"docs/VISION.md", "MINE — what we are building\n"},
+		{"docs/INBOX.md", "- [ ] 2026-01-02 · 0001 · FYI · mine\n"},
+		{"docs/features/BACKLOG.md", "MINE — ideas\n"},
+	} {
+		if got := p.read(mine.path); got != mine.want {
+			t.Errorf("init touched %s, which the project owns: %q", mine.path, got)
+		}
+	}
+}
+
+func TestInitDoesNotClaimToRefreshWhatItDidNotChange(t *testing.T) {
+	// A refresh reported on every run makes the word meaningless in the output
+	// where it matters.
+	p := newProject(t)
+	p.run("init").ok()
+	p.run("init").ok().lacks("refreshed  docs/features/TEMPLATE.md")
+}
+
 func TestInitIsIdempotent(t *testing.T) {
 	// Re-running is the documented way to pick up protocol changes, so a second
 	// run must report keeping things rather than creating them again.
