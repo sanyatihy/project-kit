@@ -184,6 +184,21 @@ var auditCases = []struct {
 		p.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
 			"shipped: "+daysAgo(1), "- [x] Done"))
 	}},
+	{"needs-unknown", func(p *project) {
+		p.write("docs/features/0002-hopeful.md",
+			doc("0002", "Hopeful", "Accepted", "needs: 0099", "- [ ] Do it"))
+	}},
+	{"needs-cycle", func(p *project) {
+		p.write("docs/features/0002-chicken.md",
+			doc("0002", "Chicken", "Accepted", "needs: 0003", "- [ ] Do it"))
+		p.write("docs/features/0003-egg.md",
+			doc("0003", "Egg", "Accepted", "needs: 0002", "- [ ] Do it"))
+	}},
+	{"shipped-early", func(p *project) {
+		// 0001 from cleanProject is Accepted, so this shipped ahead of it.
+		p.write("docs/features/0002-ahead.md",
+			doc("0002", "Ahead", "Shipped", "needs: 0001\nshipped: "+daysAgo(1), "- [x] Done"))
+	}},
 	{"secret-in-doc", func(p *project) {
 		// The realistic path: an agent writes up a failed deploy and pastes what it
 		// was holding into the Log.
@@ -260,6 +275,29 @@ func TestADraftAwaitingReviewOnABranchIsNotAClaim(t *testing.T) {
 
 	if codes := p.auditCodes(); slices.Contains(codes, "draft-claimed") {
 		t.Errorf("draft-claimed fired on a doc-only branch awaiting review: %v", codes)
+	}
+}
+
+func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
+	// The shape every real project has: a chain, a diamond, and a feature depending
+	// on nothing. None of it is a defect, and a check that fired here would fire on
+	// almost every project that used the field at all.
+	p := cleanProject(t)
+	p.write("docs/features/0001-thing.md",
+		doc("0001", "A thing", "Shipped", "shipped: "+daysAgo(2), "- [x] Done"))
+	p.write("docs/features/0002-left.md",
+		doc("0002", "Left", "Accepted", "needs: 0001", "- [ ] Do it"))
+	p.write("docs/features/0003-right.md",
+		doc("0003", "Right", "Accepted", "needs: 0001", "- [ ] Do it"))
+	p.write("docs/features/0004-join.md",
+		doc("0004", "Join", "Accepted", "needs: 0002, 0003", "- [ ] Do it"))
+	p.write("docs/features/0005-alone.md",
+		doc("0005", "Alone", "Accepted", "", "- [ ] Do it"))
+
+	for _, code := range []string{"needs-unknown", "needs-cycle", "shipped-early"} {
+		if codes := p.auditCodes(); slices.Contains(codes, code) {
+			t.Errorf("%s fired on a valid graph: %v", code, codes)
+		}
 	}
 }
 

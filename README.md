@@ -224,9 +224,11 @@ even when something goes wrong.
 
 `audit` names the file, the problem, and the fix. It reports:
 
-- **HIGH** — `secret-in-doc`, `stalled`, `unticked-shipped`, `inbox-stale`, `unchecked`
+- **HIGH** — `secret-in-doc`, `needs-cycle`, `stalled`, `unticked-shipped`,
+  `inbox-stale`, `unchecked`
 - **MEDIUM** — `no-plan`, `done-not-shipped`, `tech-drift`, `shipped-no-date`,
-  `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`, `no-tasks`,
+  `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`,
+  `needs-unknown`, `shipped-early`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`
 - **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`
