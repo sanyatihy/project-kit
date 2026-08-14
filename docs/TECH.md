@@ -53,6 +53,21 @@ Mechanisms worth knowing before changing anything:
   other: an agent composes them, `kit claim` then the runtime's own commands. This is
   what keeps the kit usable when the harness underneath changes, which is the one
   thing it can be sure of.
+- **`needs:` is the only ordering the kit has, and it is declared, not inferred.**
+  A list of feature ids in the frontmatter; a feature is blocked until every one of
+  them is `Shipped`. ID order was considered and rejected — an id is an identity, so
+  a prerequisite discovered late already has a higher one and the ordering becomes
+  unrepresentable at the moment it matters. Shipped is the bar rather than merged,
+  which leaves a short window where a dependency is done but not on the trunk;
+  reading merge state instead would make the board depend on how fast somebody
+  clicked. Parsing is lenient and the checks are strict: junk in the field is
+  dropped so the board never changes shape over a stray comma, and `needs-unknown`,
+  `needs-cycle` and `shipped-early` report the three ways the graph can be
+  impossible. None of them judges whether the declared needs are the *right* ones —
+  that is the same judgement call `audit` has always refused.
+- **The ready set is the parallelism answer.** One ready feature means the work is a
+  chain and three means three agents can take one each. Nothing declares that
+  separately, so nothing can drift from it — it falls out of `needs:` and `Shipped`.
 - **A branch holding only its feature doc is a proposal, not a claim.** Agents draft
   and leave the doc for a human, and nothing is committed to the default branch, so
   the proposal waits on a branch. `draft-claimed` compares the branch against trunk
