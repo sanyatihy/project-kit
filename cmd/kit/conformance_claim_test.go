@@ -63,10 +63,23 @@ func twoAgents(t *testing.T) (*project, *project) {
 	return a, projectAt(t, filepath.Join(base, "b"))
 }
 
+// remoteBranches lists the remote-tracking refs this checkout has cached, which is the
+// state that goes stale and the reason these tests exist.
+func (p *project) remoteBranches() []string {
+	p.t.Helper()
+	return p.branchesWith("-r")
+}
+
 // branches lists the project's local branch names.
 func (p *project) branches() []string {
 	p.t.Helper()
-	cmd := exec.Command("git", "branch", "--format=%(refname:short)")
+	return p.branchesWith()
+}
+
+func (p *project) branchesWith(extra ...string) []string {
+	p.t.Helper()
+	cmd := exec.Command("git", append([]string{"branch"}, append(extra,
+		"--format=%(refname:short)")...)...)
 	cmd.Dir, cmd.Env = p.Root, gitEnv()
 	out, err := cmd.Output()
 	if err != nil {
@@ -207,4 +220,95 @@ func TestClaimUsageErrorsAreExitTwo(t *testing.T) {
 	a, _ := twoAgents(t)
 	a.run("claim").fails(2)
 	a.run("claim", "0099").fails(2).errHas("no feature")
+}
+
+func TestClaimRefusesWhenTheBranchWouldCarryNoPlan(t *testing.T) {
+	// The claim pushes HEAD, so a plan that is only in the working tree does not travel
+	// with it. This exited 0, reported a won claim, and sent the agent to a worktree
+	// holding nothing but the README — where `kit next` said the project was not set up.
+	a, _ := twoAgents(t)
+	feature(a, "0008", "uncommitted", "Uncommitted", "Accepted", "- [ ] Something")
+	// Deliberately not committed.
+
+	r := a.run("claim", "0008").fails(2)
+	r.errHas("not committed", "carries no plan")
+
+	// Exit 2 and not 1: nobody else holds this, so "take another" would be wrong advice.
+	// And nothing may be left behind, locally or on the remote.
+	for _, name := range a.branches() {
+		if strings.HasPrefix(name, "0008") {
+			t.Errorf("a refused claim still created branch %q", name)
+		}
+	}
+	cmd := exec.Command("git", "ls-remote", "--heads", "origin", "0008-uncommitted")
+	cmd.Dir, cmd.Env = a.Root, gitEnv()
+	if out, err := cmd.Output(); err != nil {
+		t.Fatalf("reading the remote: %v", err)
+	} else if strings.Contains(string(out), "0008") {
+		t.Errorf("a refused claim pushed a branch anyway: %q", out)
+	}
+}
+
+func TestAMergedAndDeletedBranchIsNotAClaim(t *testing.T) {
+	// The whole loop the kit exists to run: a draft is proposed on a branch, the pull
+	// request merges, and the branch is deleted. Git prunes remote-tracking refs on
+	// neither fetch nor pull, so the ref survived and the feature was taken for good —
+	// `next` said to stop and wait, `claim` reported a lost race against a branch that
+	// existed nowhere, and `audit` said the docs and the repo agreed.
+	a, b := twoAgents(t)
+
+	// b holds a fetched view of the branch; a is where the merge happens.
+	a.run("claim", "0007").ok()
+	b.git("fetch", "origin")
+	a.git("push", "origin", "--delete", "0007-widget")
+
+	// b pulls, as any agent would after a merge. `git pull` does not prune.
+	b.git("fetch", "origin")
+	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "0007-widget") {
+		t.Skip("this git prunes on fetch, so the stale ref cannot be set up")
+	}
+
+	if r := b.run("next").ok(); strings.Contains(r.out(), "taken") {
+		t.Errorf("a deleted branch was still reported as a claim%s", r.context())
+	}
+	b.run("claim", "0007").ok().has("claimed", "0007-widget")
+}
+
+func TestOfflineReadsTheMirrorAndAcceptsTheCost(t *testing.T) {
+	// --offline is the escape for a network that is not there, and the cost is stated
+	// rather than hidden: claims come from the last fetch, so a branch deleted since then
+	// still reads as one. Pinned so nobody "fixes" it into a silent network call.
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	b.git("fetch", "origin")
+	a.git("push", "origin", "--delete", "0007-widget")
+	b.git("fetch", "origin")
+	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "0007-widget") {
+		t.Skip("this git prunes on fetch, so the stale ref cannot be set up")
+	}
+
+	if r := b.run("next", "--offline").ok(); !strings.Contains(r.out(), "taken") {
+		t.Errorf("--offline did not read claims from the mirror%s", r.context())
+	}
+	if r := b.run("next").ok(); strings.Contains(r.out(), "taken") {
+		t.Errorf("without --offline the remote should have been asked%s", r.context())
+	}
+}
+
+func TestAnUnreachableRemoteNamesPruneRatherThanAPhantomDelete(t *testing.T) {
+	// When the remote cannot be asked, claims fall back to the mirror — and the mirror is
+	// what names branches nobody holds. The refusal has to say so, because the advice it
+	// used to print unconditionally (`git push --delete` then `git branch -d`) fails with
+	// two errors when the branch is already gone from both places.
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	b.git("fetch", "origin")
+	a.git("push", "origin", "--delete", "0007-widget")
+	b.git("fetch", "origin")
+	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "0007-widget") {
+		t.Skip("this git prunes on fetch, so the stale ref cannot be set up")
+	}
+	b.git("remote", "set-url", "origin", filepath.Join(b.Root, "does-not-exist.git"))
+
+	b.run("claim", "0007").fails(1).errHas("fetch --prune")
 }

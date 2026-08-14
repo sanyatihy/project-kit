@@ -22,6 +22,12 @@ const (
 
 	gitLogLimit = "500"
 	gitTimeout  = 30 * time.Second
+
+	// remoteTimeout bounds the one question the kit asks the network on a read. Short on
+	// purpose: `kit next ~/code/*` walks every project, and a board that hangs because
+	// one remote is unreachable is worse than a board that falls back to a stale mirror
+	// and says so.
+	remoteTimeout = 5 * time.Second
 )
 
 // AllStatuses is every status a feature doc may declare.
@@ -112,9 +118,19 @@ type Repo struct {
 	Protocol    string
 	Backlog     string // agents write to it, so the secret scan has to open it
 
+	// Offline stops the kit asking the remote anything, at the cost of reading claims
+	// from a mirror that may be stale.
+	Offline bool
+
 	commits []commit
 	refs    []string
+	trunk   string
 	loaded  bool
+
+	// refsAuthoritative records whether the claim refs came from the remote itself or
+	// from a past fetch. Only the second can produce a claim nobody holds, so only the
+	// second earns a message about pruning.
+	refsAuthoritative bool
 }
 
 type commit struct {
@@ -370,12 +386,24 @@ func (r *Repo) loadGit() {
 		r.commits = append(r.commits, commit{When: parsed, Message: message})
 	}
 
+	// Local branches and worktree branches are this machine's own state and cannot be
+	// stale. What the remote has is a different question, and `refs/remotes/*` is only a
+	// cache of the last fetch — git prunes it on neither fetch nor pull, so a branch
+	// deleted when its pull request merged stays there forever and reads as a live
+	// claim. Ask the remote instead; fall back to the cache only when it cannot answer.
 	seen := map[string]bool{}
-	for _, args := range [][]string{
-		{"branch", "--format=%(refname:short)"},
-		{"branch", "-r", "--format=%(refname:short)"},
-	} {
-		for _, line := range strings.Split(r.git(args...), "\n") {
+	for _, line := range strings.Split(r.git("branch", "--format=%(refname:short)"), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			seen[line] = true
+		}
+	}
+	if heads, ok := r.remoteHeads(); ok {
+		r.refsAuthoritative = true
+		for _, name := range heads {
+			seen[name] = true
+		}
+	} else {
+		for _, line := range strings.Split(r.git("branch", "-r", "--format=%(refname:short)"), "\n") {
 			if line = strings.TrimSpace(line); line != "" {
 				seen[line] = true
 			}
@@ -393,6 +421,43 @@ func (r *Repo) loadGit() {
 	sort.Strings(r.refs)
 }
 
+// remoteHeads lists the branch names every remote actually has right now, reporting
+// false when nothing could be asked: no remote, offline, or a call that failed.
+//
+// One `ls-remote` per remote. It transfers no objects and writes nothing — the kit still
+// never mutates refs behind an agent's back — and it is bounded by a short timeout of its
+// own, because `kit next ~/code/*` fans out over every project and one unreachable remote
+// must not hang the board.
+func (r *Repo) remoteHeads() ([]string, bool) {
+	if r.Offline {
+		return nil, false
+	}
+	var out []string
+	answered := false
+	for _, remote := range r.remotes() {
+		ctx, cancel := context.WithTimeout(context.Background(), remoteTimeout)
+		cmd := exec.CommandContext(ctx, "git", "-C", r.Root, "ls-remote", "--heads", remote)
+		raw, err := cmd.Output()
+		cancel()
+		if err != nil {
+			// One unreachable remote does not invalidate another's answer, but it does
+			// mean this one's branches are unknown, so nothing here can be authoritative.
+			return nil, false
+		}
+		answered = true
+		for _, line := range strings.Split(string(raw), "\n") {
+			_, ref, found := strings.Cut(strings.TrimSpace(line), "\t")
+			if !found {
+				continue
+			}
+			if name := strings.TrimPrefix(ref, "refs/heads/"); name != ref && name != "" {
+				out = append(out, name)
+			}
+		}
+	}
+	return out, answered
+}
+
 // branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
 // recognised as one branch rather than two claims on the same feature.
 func branchName(ref string) string {
@@ -403,8 +468,68 @@ func branchName(ref string) string {
 	return ref
 }
 
-func isTrunk(name string) bool {
-	return name == "main" || name == "master" || name == "HEAD"
+// Trunk is the project's default branch: whatever `origin/HEAD` points at, then `main`,
+// then `master`.
+//
+// Asked of the remote rather than assumed, because a project whose default branch is
+// neither of the two hard-coded names had every branch on it read as a claim. The answer
+// is cached: it cannot change under a single command, and both the claim checks and
+// BranchBuildsOn ask for it per feature.
+func (r *Repo) Trunk() string {
+	if r.trunk == "" {
+		r.trunk = r.findTrunk()
+	}
+	return r.trunk
+}
+
+func (r *Repo) findTrunk() string {
+	for _, remote := range r.remotes() {
+		ref := strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short",
+			"refs/remotes/"+remote+"/HEAD"))
+		if name := branchName(ref); name != "" && name != "HEAD" {
+			return name
+		}
+	}
+	for _, candidate := range []string{"main", "master"} {
+		if r.git("rev-parse", "--verify", "--quiet", candidate) != "" {
+			return candidate
+		}
+	}
+	// No remote to ask and neither conventional name: fall back to the branch this
+	// checkout is on, but only when it is not claim-shaped. A claim branch leads with its
+	// feature's ID, so refusing those is what stops a worktree deciding it is the trunk —
+	// and a wrong answer here would report every branch as carrying no work.
+	if head := r.HeadBranch(); head != "" && idPrefixRe.FindString(head) == "" {
+		return head
+	}
+	return ""
+}
+
+// isTrunk reports whether a branch is the default one, and so never a claim. The two
+// conventional names stay unconditional: a repo can carry both, and the one that is not
+// the default is still not somebody's feature branch.
+func (r *Repo) isTrunk(name string) bool {
+	return name == "main" || name == "master" || name == "HEAD" || name == r.Trunk()
+}
+
+// trunkRef is a revision for the trunk that git can actually resolve. A fresh clone has
+// `origin/main` and no local `main` until something checks it out, so comparing against
+// the bare name alone would silently answer "nothing changed" for every branch.
+func (r *Repo) trunkRef() string {
+	trunk := r.Trunk()
+	if trunk == "" {
+		return ""
+	}
+	candidates := []string{trunk}
+	for _, remote := range r.remotes() {
+		candidates = append(candidates, remote+"/"+trunk)
+	}
+	for _, ref := range candidates {
+		if r.git("rev-parse", "--verify", "--quiet", ref) != "" {
+			return ref
+		}
+	}
+	return ""
 }
 
 // HeadBranch is the branch this checkout is on, empty when HEAD is detached or
@@ -417,6 +542,21 @@ func (r *Repo) HeadBranch() string {
 	return strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short", "HEAD"))
 }
 
+// RefsAreAuthoritative reports whether the claim refs were read from the remotes
+// themselves rather than from the last fetch. Only the second can name a branch that no
+// longer exists, so only the second needs saying out loud.
+func (r *Repo) RefsAreAuthoritative() bool {
+	r.loadGit()
+	return r.refsAuthoritative
+}
+
+// TrackedAtHEAD reports whether a repo-relative path exists in the commit HEAD points
+// at — that is, whether it would travel with a branch pushed from here.
+func (r *Repo) TrackedAtHEAD(rel string) bool {
+	_, err := r.gitRun("cat-file", "-e", "HEAD:"+rel)
+	return err == nil
+}
+
 // Claims lists the distinct branches claiming a feature. More than one means two
 // agents believe they own it.
 func (r *Repo) Claims(id string) []string {
@@ -425,7 +565,7 @@ func (r *Repo) Claims(id string) []string {
 	var out []string
 	for _, ref := range r.refs {
 		name := branchName(ref)
-		if isTrunk(name) || seen[name] || !Mentions(name, id) {
+		if r.isTrunk(name) || seen[name] || !Mentions(name, id) {
 			continue
 		}
 		seen[name] = true
@@ -457,14 +597,8 @@ func (r *Repo) ClaimFor(id string) string {
 // resolved, the quiet answer is the safe one — this feeds a check, and a finding
 // invented from missing information is worse than a finding not made.
 func (r *Repo) BranchBuildsOn(branch, rel string) bool {
-	trunk := ""
-	for _, candidate := range []string{"main", "master"} {
-		if r.git("rev-parse", "--verify", "--quiet", candidate) != "" {
-			trunk = candidate
-			break
-		}
-	}
-	if trunk == "" || branch == "" {
+	trunk := r.trunkRef()
+	if trunk == "" || branch == "" || branch == r.Trunk() {
 		return false
 	}
 	// Three dots: what the branch changed since it diverged, not what has landed on
@@ -495,7 +629,7 @@ func (r *Repo) OrphanClaims() []string {
 	var out []string
 	for _, ref := range r.refs {
 		name := branchName(ref)
-		if isTrunk(name) || seen[name] {
+		if r.isTrunk(name) || seen[name] {
 			continue
 		}
 		m := idPrefixRe.FindStringSubmatch(name)

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -480,6 +481,49 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	}
 
 	cleanProject(t).run("audit", "--strict").ok()
+}
+
+func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
+	// The trunk used to be the first of `main`/`master` that resolved. A project whose
+	// default branch is neither had no trunk to compare against, so BranchBuildsOn
+	// answered "nothing changed" for every branch — and every check built on it went
+	// quiet. draft-claimed is the observable one: somebody building on an unsettled
+	// design was invisible for the whole class of repos that do not use those two names.
+	// Both ways a project can have one: read from the remote, which is the case that
+	// matters for anything hosted, and guessed from HEAD when there is no remote to ask.
+	for _, withRemote := range []bool{true, false} {
+		name := "local only"
+		if withRemote {
+			name = "origin/HEAD says develop"
+		}
+		t.Run(name, func(t *testing.T) {
+			p := newProject(t)
+			p.run("init").ok()
+			p.git("checkout", "-q", "-b", "develop")
+			feature(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
+			p.commitAll("a draft on develop")
+
+			if withRemote {
+				origin := filepath.Join(p.Root, "..", "origin.git")
+				gitIn(t, p.Root, "init", "-q", "--bare", "-b", "develop", origin)
+				p.git("remote", "add", "origin", origin)
+				p.git("push", "-q", "origin", "develop")
+				p.git("remote", "set-head", "origin", "develop")
+			}
+
+			// A branch carrying work beyond the doc, off a trunk called neither
+			// main nor master.
+			p.git("checkout", "-q", "-b", "0002-unsettled")
+			p.write("internal/thing.go", "package thing\n")
+			p.commitAll("0002: build on a design nobody settled")
+			p.git("checkout", "-q", "develop")
+
+			if codes := p.auditCodes(); !slices.Contains(codes, "draft-claimed") {
+				t.Errorf("work on a Draft went unreported because the trunk is called "+
+					"develop; audit said %v", codes)
+			}
+		})
+	}
 }
 
 func TestAnFYINeverFailsTheShipGate(t *testing.T) {

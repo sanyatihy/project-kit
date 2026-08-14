@@ -145,13 +145,13 @@ Needed here anyway — `BranchBuildsOn` decides whether a claim carries work, an
 
 ## Tasks
 
-- [ ] Trunk detection from `origin/HEAD` with the `main`/`master` fallback, used by both
+- [x] Trunk detection from `origin/HEAD` with the `main`/`master` fallback, used by both
       `isTrunk` and `BranchBuildsOn`; test a project whose default branch is neither.
-- [ ] `Claims`/`OrphanClaims` read remote heads via a cached, timeout-bounded
+- [x] `Claims`/`OrphanClaims` read remote heads via a cached, timeout-bounded
       `ls-remote` and ignore `refs/remotes/*` when it succeeds; `--offline` on `next` and
       `audit` keeps the old path. Conformance: merge a claim branch, delete it on the
       remote, and assert `next` offers the feature and `claim` wins it.
-- [ ] `ClaimFeature` refuses when the doc is not in `HEAD`'s tree, with the bootstrap-PR
+- [x] `ClaimFeature` refuses when the doc is not in `HEAD`'s tree, with the bootstrap-PR
       message; `kit init` says to land the plan on `main` first. Conformance: claiming an
       uncommitted plan exits non-zero and pushes nothing.
 - [ ] `stalled` keys on a claim carrying work rather than local `In progress` status, and
