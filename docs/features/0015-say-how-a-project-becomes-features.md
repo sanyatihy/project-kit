@@ -1,7 +1,8 @@
 ---
 id: 0015
 title: Say how a project becomes features
-status: In progress
+status: Shipped
+shipped: 2026-08-14
 created: 2026-08-14
 needs:
 related: 0007-a-living-vision-agents-decompose-from.md
