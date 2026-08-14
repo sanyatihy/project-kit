@@ -195,7 +195,12 @@ A feature is reported as taken when a branch cites its id — local branches, re
 branches and worktrees all count, so a stale fetch hides someone else's claim. The
 one exception is the branch this checkout is on: that claim is yours, and it is
 reported as "yours" and offered as the work to do. A feature is reported as blocked
-when an open docs/INBOX.md line carries its id in the id field.
+when an open docs/INBOX.md line carries its id in the id field, or when something in
+its "needs:" has not shipped yet.
+
+What is ready is therefore the answer to how much can happen at once: one ready
+feature means the work is a chain, three means three agents can take one each. That
+falls out of what the docs already declare rather than being planned separately.
 
 Reads only. With no PATH it uses the repo you are in, from any subdirectory.
 

@@ -179,7 +179,9 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
    worktrees all count as claims. Work in the worktree it prints, not where you
    stand.
 4. A feature named in an open `INBOX.md` question is blocked. "Named" means the id
-   field of the line, which is why `kit block` writes it for you.
+   field of the line, which is why `kit block` writes it for you. So is one whose
+   `needs:` has not shipped — and what is left ready is how many agents can work at
+   once.
 
 ## Commands
 
@@ -245,6 +247,14 @@ is the board. Frontmatter carries `id`, `title`, `status`
 (`Draft → Accepted → In progress → Shipped`, exits `Dropped`/`Superseded`), `created`,
 `shipped`. Sections: `Problem`, `Non-goals`, `Design`, `Tasks`, `Open questions`
 (optional), `Log`.
+
+`needs:` lists the feature ids that must ship before this one can start, and is the
+only field that changes what `kit next` offers. Empty means it can start now, which
+is the common case — and several empty ones at once is what lets agents work in
+parallel. Judge it by whether the work could *start*, not by what it touches: a
+shared composition root, a shared router, or numbered files in one sequence such as
+migrations all make a feature dependent however separate its boundary looks.
+`related:` is unaffected by any of this — it stays reading material.
 
 Two things that keep it honest: `## Log` holds dated conclusions, never debate — the
 argument lives in the PR. And blockers belong in `INBOX.md`, not in prose; a box that
