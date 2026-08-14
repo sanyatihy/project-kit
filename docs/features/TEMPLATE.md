@@ -26,24 +26,27 @@ related:             # other docs worth reading first
 
 
 ## Problem
-1-3 sentences. What is broken or missing, and why now.
+<!-- 1-3 sentences. What is broken or missing, and why now. -->
 
 ## Non-goals
-- What this deliberately does not do, and where that lives instead.
+<!-- What this deliberately does not do, and where that lives instead. -->
 
 ## Design
-The design. Call out data-model, migration, API, and config changes explicitly.
+<!-- The design. Call out data-model, migration, API, and config changes explicitly. -->
 
 ## Tasks
-Each box is one PR-sized outcome you can verify without asking anyone.
+<!-- Each box is one PR-sized outcome you can verify without asking anyone, in the
+     order they should be done:
+       - [ ] the outcome, not the activity
 
-- [ ] …
-- [ ] …
+     Guidance lives in comments here on purpose. A box written inside one is invisible
+     to the tool, so an unwritten plan counts as unwritten: `no-tasks` says the plan is
+     missing instead of `kit next` handing an agent a placeholder to build. -->
 
 ## Open questions
 <!-- Optional. Delete when empty. Each with a leaning if you have one. -->
-- …
 
 ## Log
-<!-- Dated, append-only conclusions. The argument lives in the PR. -->
-- YYYY-MM-DD — decided X over Y because … (#PR)
+<!-- Dated, append-only conclusions. The argument lives in the PR:
+       - YYYY-MM-DD — decided X over Y because … (#PR) -->
+

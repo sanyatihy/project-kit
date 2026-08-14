@@ -1,9 +1,9 @@
 ---
 id: 0016
 title: Make an unfinished doc fail the audit
-status: In progress  # Draft | Accepted | In progress | Shipped | Dropped | Superseded
+status: Shipped
 created: 2026-08-14
-shipped:             # fill the date when status flips to Shipped
+shipped: 2026-08-14
 check:               # optional — date to check whether this worked. Only for bets.
 checked:             # date you checked; write the outcome in ## Log
 needs:               # nothing — this is templates and audit.go, and it lands first
@@ -75,8 +75,8 @@ sees them either. So guidance inside `<!-- -->` is invisible to every count and 
 check while staying in front of the author who opens the file. The template's visible
 placeholders move inside the comments they belong to:
 
-- `## Tasks` loses `- [ ] …` twice. A fresh doc then genuinely has zero boxes, so
-  `no-tasks` fires on an unplanned feature instead of `kit next` handing out `…`.
+- `## Tasks` loses `- [ ] …` twice. A fresh doc then genuinely has zero boxes, so an
+  unplanned feature is reported as unplanned instead of `kit next` handing out `…`.
 - `## Problem`, `## Design` and `## Non-goals` lose their instruction sentences.
 - `## Log` loses `- YYYY-MM-DD — decided X over Y because … (#PR)`.
 
@@ -86,7 +86,7 @@ and it is the reason the check below can be exact rather than fuzzy.
 ### `unfilled-template`, at HIGH
 
 A new check: a doc that is **not** `Draft` whose `## Problem`, `## Design`, or
-`## Tasks` is empty, or still matches the embedded template's own text for that section.
+`## Tasks` is empty.
 
 HIGH, and the severity is the point. `kit claim` does not consult `audit`, so this has
 to fail `--strict` in CI to stop an agent acting on a doc nobody wrote. It cannot
