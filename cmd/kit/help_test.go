@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -48,6 +49,35 @@ func TestOverviewDocumentsTheExitCodes(t *testing.T) {
 	for _, code := range []string{"0", "1", "2"} {
 		if !strings.Contains(overview, "\n  "+code+"  ") {
 			t.Errorf("exit code %s is not documented in the overview", code)
+		}
+	}
+}
+
+func TestProtocolCitesRulesByNameNotNumber(t *testing.T) {
+	// Two cross-references pointed at the wrong rules for months, because 0007 and
+	// 0009 inserted rules above them and numbers in prose do not move. Naming the
+	// rule removes the class rather than the two instances.
+	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
+	if err != nil {
+		t.Fatalf("reading the protocol: %v", err)
+	}
+	if m := regexp.MustCompile(`(?i)\brule \d+`).FindString(string(raw)); m != "" {
+		t.Errorf("the protocol cites %q — a rule inserted above it will silently "+
+			"misdirect the reader; cite the rule by its bolded name instead", m)
+	}
+}
+
+func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
+	// A protocol that describes the manual path for something the tool does is a
+	// protocol that teaches the mistake. `kit ship` exists because setting the
+	// status and date by hand is where two audit findings came from.
+	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
+	if err != nil {
+		t.Fatalf("reading the protocol: %v", err)
+	}
+	for _, want := range []string{"kit claim", "kit block", "kit ship", "make check", "kit audit --strict"} {
+		if !strings.Contains(string(raw), want) {
+			t.Errorf("the protocol never mentions %q, so an agent following it does that step by hand", want)
 		}
 	}
 }

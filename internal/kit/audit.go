@@ -109,8 +109,10 @@ var (
 		"a branch is named after a feature doc that does not exist"}
 	checkDraftClaimed = Check{"draft-claimed", Medium,
 		"a branch carries work on a Draft, so someone is building on a design nobody settled"}
-	checkNoStatus   = Check{"no-status", Medium, "no status: in the frontmatter"}
-	checkBadStatus  = Check{"bad-status", Medium, "an unrecognised status:"}
+	checkNoStatus      = Check{"no-status", Medium, "no status: in the frontmatter"}
+	checkBadStatus     = Check{"bad-status", Medium, "an unrecognised status:"}
+	checkProtocolStale = Check{"protocol-stale", Medium,
+		"AGENTS.md carries an older work protocol than the installed kit, so agents follow superseded rules"}
 	checkNoProtocol = Check{"no-protocol", Medium,
 		"no AGENTS.md, so agents have no protocol and will invent one"}
 
@@ -131,7 +133,7 @@ var Checks = []Check{
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
-	checkNoStatus, checkBadStatus, checkNoProtocol,
+	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
 	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision,
 }
 
@@ -198,7 +200,12 @@ type Finding struct {
 
 // Audit reports every place a project's written state and real state have come
 // apart. It never writes.
-func Audit(r *Repo, today time.Time) []Finding {
+//
+// `protocol` is the work-protocol section the installed kit would write. It is
+// passed in because internal/kit cannot embed a parent directory, and a project
+// running superseded rules is invisible from inside that project — which is how two
+// agents followed a protocol that had already been fixed.
+func Audit(r *Repo, today time.Time, protocol string) []Finding {
 	var found []Finding
 	report := func(c Check, where, problem, fix string) {
 		found = append(found, Finding{c.Severity, c.Code, where, problem, fix})
@@ -414,6 +421,16 @@ func Audit(r *Repo, today time.Time) []Finding {
 		report(checkNoProtocol, r.Name,
 			"no AGENTS.md, so agents have no protocol and will invent one",
 			"run: kit init .")
+	}
+	if r.Protocol != "" && protocol != "" {
+		if raw, err := os.ReadFile(r.Protocol); err == nil {
+			current := Normalise(string(raw))
+			if updated, ok := ReplaceSection(current, ProtocolMarker, protocol); ok && updated != current {
+				report(checkProtocolStale, r.Rel(r.Protocol),
+					"the work protocol here is older than the installed kit's, so agents are following superseded rules",
+					"run: kit init .")
+			}
+		}
 	}
 	if r.Inbox == "" {
 		report(checkNoInbox, r.Name,

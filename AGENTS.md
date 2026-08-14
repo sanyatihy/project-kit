@@ -100,7 +100,10 @@ whole model, and `kit help template` prints the feature doc format.
    by whether the work could *start* now — a shared composition root, a shared
    router, or numbered files in one sequence such as migrations all make a feature
    dependent however separate it looks. Leave the doc `Draft`: accepting is a
-   human's call.
+   human's call. A draft waits on a branch of its own — nothing is ever committed to
+   `main` — and **that branch is deleted when the draft is accepted and merged**. Its
+   name is the claim name, so leaving it behind makes the feature unclaimable: every
+   agent is then told it is taken, by nobody.
 2. **One agent per feature. Take it with `kit claim <id>`.** That pushes the branch
    named after the doc, and creating that ref on the remote is what decides who
    gets the work: exit 0 is yours, exit 1 means another agent got there first — run
@@ -124,8 +127,9 @@ whole model, and `kit help template` prints the feature doc format.
 4. **Read the feature doc for the design.** Never restate or re-derive design
    anywhere else.
 5. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the
-   order of work. Tick it in the same PR that implements it. Among features of
-   equal status, `kit next` goes by ID, lowest first.
+   order of work. Tick it in the same commit that implements it — you do not open the
+   PR, so the commit is the unit that has to be honest. Among features of equal
+   status, `kit next` goes by ID, lowest first.
 6. **Discovered work** becomes a new `## Tasks` box, a new feature doc
    (`kit new "<title>"`), or a line in `docs/features/BACKLOG.md` if it is real but
    not now. Never a `TODO` in the code. Append it unless it genuinely blocks the
@@ -143,15 +147,19 @@ whole model, and `kit help template` prints the feature doc format.
    `kit block <id> "<question, with your leaning>"`, then move to another feature.
    Do not guess. Use `--fyi` for anything work can continue without. "Do not idle"
    means do not sit on a question you could have filed — it is not licence to take
-   work that is not yours; see rule 2 for when stopping is correct.
+   work that is not yours; see **One agent per feature** for when stopping is correct.
 10. **Never put a real secret in a doc.** Feature docs, `## Log`, and `docs/INBOX.md`
    are committed, and a pushed commit cannot be unpublished. Name the variable and
    where the value lives — never the value. `audit` reports `secret-in-doc` at HIGH
    for the shapes it can be certain about, which is a backstop and not the rule: a
    password in prose matches nothing and is still a leak.
 11. **Never edit a doc with `status: Shipped`.** It is frozen history.
-12. **When the last box is ticked**, set `status: Shipped` and the `shipped:` date,
-    and move durable facts into the as-built doc (`docs/TECH.md`).
+12. **When the last box is ticked, run `make check` and `kit audit --strict`, then
+    `kit ship <id>`.** Those two are the gate: green means the code holds and the docs
+    and the repo agree. `kit ship` verifies every box is ticked, sets the status and
+    stamps the date — doing that by hand is where `unticked-shipped` and
+    `shipped-no-date` come from, which is why the command exists. Then move durable
+    facts into the as-built doc (`docs/TECH.md`).
 13. **Shipping is a handoff, not a finish.** Push the branch and stop there.
     Reviewing and merging are not yours. If the project has no remote, the work
     has nowhere to go — say so and leave it on the branch rather than merging it
@@ -181,14 +189,15 @@ over speed on anything non-trivial. Use judgement on trivial tasks.
 - **Think before coding.** State assumptions out loud. Where a request is ambiguous,
   name the readings rather than silently picking one. Push back when a simpler
   approach exists, and stop when confused — say what is unclear instead of guessing
-  past it. Rule 8 is where a question goes when only a human can settle it.
+  past it. **Blocked on a decision only a human can make** is where a question goes
+  when only a human can settle it.
 - **Simplicity first.** The minimum code that solves the problem. Nothing
   speculative, no features beyond the box you are on, no abstraction for a single
   use. If a senior engineer would call it overcomplicated, it is.
 - **Surgical changes.** Touch only what the task requires. Do not improve adjacent
   code, comments, or formatting, and do not refactor what is not broken — match the
   style already there. Clean up your own mess and nobody else's. Unrelated problems
-  you spot are rule 4's business, not this PR's.
+  you spot are **Discovered work**'s business, not this change's.
 - **Define success, then loop.** Say what "done" looks like before starting, and
   verify it yourself rather than reporting completion and hoping. A box you cannot
   check the truth of was too big; split it.

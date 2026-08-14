@@ -78,9 +78,21 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	// Cheap and fallible, and worth doing anyway: a claim already visible locally
 	// gets a message naming the branch instead of a push rejection naming a ref.
 	if claims := r.Claims(id); len(claims) > 0 {
+		// The branch that held a draft is named after the doc, which is also the
+		// claim. Before the draft merges the two differ — a draft branch carries the
+		// doc, a fresh claim carries nothing — but afterwards both are identical to
+		// the trunk, so nothing here can tell them apart. Saying which fixes apply
+		// beats reporting a claim that may have nobody behind it.
+		then := "the branch is the claim — fetch first if you think it is stale"
+		if len(claims) == 1 && !r.BranchBuildsOn(claims[0], target.Rel) {
+			then = "that branch carries no work. If an agent just took it, leave it alone.\n" +
+				"  If it is the branch a draft waited on, it should have been deleted when the\n" +
+				"  draft was accepted: git push origin --delete " + claims[0] +
+				" && git branch -d " + claims[0] + ", then claim again"
+		}
 		return nil, &NotYours{
 			fmt.Sprintf("%s is already claimed by %s", target.Name(), strings.Join(claims, " and ")),
-			"the branch is the claim — fetch first if you think it is stale"}
+			then}
 	}
 
 	branch := target.Branch()

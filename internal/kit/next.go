@@ -44,6 +44,12 @@ type Plan struct {
 	// claims, empty when it claims none.
 	Branch   string `json:"branch,omitempty"`
 	Claiming string `json:"claiming,omitempty"`
+
+	// Guidance is what to do about all of the above, and it ships in both formats.
+	// The conclusion used to exist only in the rendered text, so an agent reading
+	// --json — the output documented for agents — got a board and no instruction,
+	// and worked a feature the text output would have told it to leave alone.
+	Guidance string `json:"guidance"`
 }
 
 // InProgress counts features currently In progress, for the WIP warning.
@@ -125,7 +131,41 @@ func Survey(r *Repo) Plan {
 			}
 		}
 	}
+	// `task` means "the box to do now". A feature that is somebody else's, or that
+	// cannot start, has no such box, and handing one over is the board contradicting
+	// itself in the format that gets parsed rather than read.
+	for _, group := range [][]Item{plan.Taken, plan.Blocked} {
+		for i := range group {
+			group[i].Task = ""
+		}
+	}
+	plan.Guidance = guidanceFor(r, plan)
 	return plan
+}
+
+// guidanceFor is the single decision behind both outputs, so they cannot drift.
+// Every state closes with something a reader can act on: three vacuums have been
+// fixed by adding a sentence, and each time an agent had reached the end of the
+// documented path, found nothing, and decided for itself.
+func guidanceFor(r *Repo, plan Plan) string {
+	switch {
+	case len(plan.Yours) > 0:
+		return "work the box named under yours, in this checkout. It is already claimed by you."
+	case len(plan.Ready) > 0:
+		return "take one with kit claim <id>, then work it in the worktree it prints."
+	case !plan.Empty():
+		return "nothing is free: every feature is claimed or waiting on something. " +
+			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
+			"Stopping here is the right outcome: say so and wait."
+	case len(Drafts(r)) > 0:
+		return "these drafts are waiting on a human to accept them. " +
+			"Draft another if you were asked to, otherwise stop and say they need a decision."
+	default:
+		// No command inside the sentence: guidance is wrapped for a narrow terminal,
+		// and a wrapped command is one nobody can copy. The caller prints the command
+		// on its own line.
+		return "nothing is planned yet. Read docs/VISION.md and draft a feature, or stop."
+	}
 }
 
 // Progress is "3/6", or "" for a feature with no boxes to count. It reports what
