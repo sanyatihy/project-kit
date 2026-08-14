@@ -791,3 +791,70 @@ func TestNextNeverHandsOverWorkThatIsNotYours(t *testing.T) {
 		}
 	}
 }
+
+func TestADraftOnItsOwnBranchIsNotAnOrphan(t *testing.T) {
+	// The protocol requires exactly this: a draft waits on a branch of its own and
+	// nothing is committed to the trunk. Audited from the trunk, the doc is missing —
+	// and the kit reported the protocol being followed as two MEDIUM defects, one
+	// advising a fix (delete the branch) that destroys the draft.
+	p := newProject(t)
+	p.run("init").ok()
+	p.commitAll("bootstrap")
+	trunk := p.headBranch()
+
+	p.git("checkout", "-q", "-b", "0001-a-feature")
+	p.run("new", "A feature").ok()
+	p.commitAll("Plan 0001")
+	p.git("checkout", "-q", trunk)
+
+	codes := p.auditCodes()
+	for _, unwanted := range []string{"orphan-claim", "no-plan"} {
+		if slices.Contains(codes, unwanted) {
+			t.Errorf("following the protocol was reported as %q; audit said %v", unwanted, codes)
+		}
+	}
+}
+
+func TestOrphanClaimStillFiresOnABranchWithNoDoc(t *testing.T) {
+	// The check has to keep working, or standing it down for in-flight features would
+	// have bought silence rather than accuracy. A branch citing an ID nobody wrote means
+	// a doc was deleted or renamed and that ID is now unclaimable.
+	p := cleanProject(t)
+	p.commitAll("the plan")
+	p.git("branch", "0099-never-written")
+
+	if codes := p.auditCodes(); !slices.Contains(codes, "orphan-claim") {
+		t.Errorf("a branch citing a feature nobody wrote went unreported: %v", codes)
+	}
+}
+
+func TestABranchThatCannotBeResolvedIsNotJudged(t *testing.T) {
+	// A branch on a remote nobody has fetched cannot have its tree read, so nothing is
+	// known about whether it carries a doc. Reporting it would be a guess, and the guess
+	// that costs the most is the one that says "delete this".
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+
+	// Delete the doc in b, so 0007-widget cites an ID b knows nothing about and the
+	// branch reaches the resolution path rather than being skipped as known.
+	if err := os.Remove(b.path("docs/features/0007-widget.md")); err != nil {
+		t.Fatalf("removing the doc: %v", err)
+	}
+	b.commitAll("drop the doc")
+
+	// b sees the branch exists on the remote — 0017 made claims authoritative — but has
+	// never fetched it, so there is no ref whose tree could be read.
+	if b.resolves("refs/remotes/origin/0007-widget") {
+		t.Skip("this clone already has the branch fetched, so it can be judged")
+	}
+	if codes := b.auditCodes(); slices.Contains(codes, "orphan-claim") {
+		t.Errorf("an unfetched remote branch was judged as an orphan: %v", codes)
+	}
+
+	// Once fetched, its tree is readable and it does carry the doc — so still no finding,
+	// now for the other reason.
+	b.git("fetch", "origin")
+	if codes := b.auditCodes(); slices.Contains(codes, "orphan-claim") {
+		t.Errorf("a branch carrying its own doc was reported as an orphan: %v", codes)
+	}
+}

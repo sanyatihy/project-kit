@@ -63,6 +63,15 @@ func twoAgents(t *testing.T) (*project, *project) {
 	return a, projectAt(t, filepath.Join(base, "b"))
 }
 
+// resolves reports whether a ref exists in this checkout, for tests that turn on the
+// difference between knowing a branch's name and having its objects.
+func (p *project) resolves(ref string) bool {
+	p.t.Helper()
+	cmd := exec.Command("git", "rev-parse", "--verify", "--quiet", ref)
+	cmd.Dir, cmd.Env = p.Root, gitEnv()
+	return cmd.Run() == nil
+}
+
 // headBranch is the branch this checkout is on. Read rather than assumed, because the
 // fixtures deliberately inherit no init.defaultBranch and so may start on either name.
 func (p *project) headBranch() string {
