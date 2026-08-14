@@ -212,6 +212,38 @@ func (r *Repo) readFeature(path string) *Feature {
 	return f
 }
 
+// FeatureByID finds a feature by its declared id, or nil.
+func (r *Repo) FeatureByID(id string) *Feature {
+	for _, f := range r.Features {
+		if f.ID == id {
+			return f
+		}
+	}
+	return nil
+}
+
+// UnmetNeeds lists the ids a feature is still waiting on, in declared order.
+//
+// Shipped is the bar rather than merged. `kit ship` is the moment the kit knows a
+// feature's work is done; merging is a human's and follows. Reading merge state
+// instead would make the board's answer depend on how quickly somebody clicked.
+//
+// An id that names nothing, or names a feature that was Dropped or Superseded, counts
+// as unmet: it can never be satisfied, so the work genuinely cannot start. `audit`
+// reports why; `next` only has to refuse to hand it out.
+func (r *Repo) UnmetNeeds(f *Feature) []string {
+	var unmet []string
+	for _, id := range f.Needs {
+		if id == f.ID {
+			continue // self-reference is a cycle, and audit says so
+		}
+		if dep := r.FeatureByID(id); dep == nil || dep.Status != StatusShipped {
+			unmet = append(unmet, id)
+		}
+	}
+	return unmet
+}
+
 // Rel makes a path relative to the project root, for display.
 func (r *Repo) Rel(path string) string {
 	rel, err := filepath.Rel(r.Root, path)

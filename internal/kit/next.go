@@ -15,17 +15,18 @@ var markupRe = regexp.MustCompile("[`*]")
 
 // Item is one feature as `next` sees it.
 type Item struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Status    string `json:"status"`
-	Doc       string `json:"doc"`
-	Task      string `json:"task"`
-	Branch    string `json:"branch"`
-	Done      int    `json:"done"`  // boxes ticked
-	Total     int    `json:"total"` // boxes in all
-	ClaimedBy string `json:"claimed_by,omitempty"`
-	WaitingOn string `json:"waiting_on,omitempty"`
-	Mine      bool   `json:"mine,omitempty"`
+	ID        string   `json:"id"`
+	Title     string   `json:"title"`
+	Status    string   `json:"status"`
+	Doc       string   `json:"doc"`
+	Task      string   `json:"task"`
+	Branch    string   `json:"branch"`
+	Done      int      `json:"done"`            // boxes ticked
+	Total     int      `json:"total"`           // boxes in all
+	Needs     []string `json:"needs,omitempty"` // ids this is still waiting on
+	ClaimedBy string   `json:"claimed_by,omitempty"`
+	WaitingOn string   `json:"waiting_on,omitempty"`
+	Mine      bool     `json:"mine,omitempty"`
 }
 
 // Plan sorts the open features into what is yours, what you can start, what is
@@ -93,9 +94,16 @@ func Survey(r *Repo) Plan {
 		if item.Mine = contains(claims, plan.Branch); item.Mine {
 			plan.Claiming = f.ID
 		}
-		switch questions := r.BlockersFor(f.ID); {
+		// Both are "cannot start yet, and here is why", reported the same way. A
+		// question comes first because a human already has to answer it, so the
+		// dependency is not the thing standing in the way.
+		switch questions, unmet := r.BlockersFor(f.ID), r.UnmetNeeds(f); {
 		case len(questions) > 0:
 			item.WaitingOn = questions[0]
+			plan.Blocked = append(plan.Blocked, item)
+		case len(unmet) > 0:
+			item.Needs = unmet
+			item.WaitingOn = "needs " + strings.Join(unmet, ", ") + " to ship first"
 			plan.Blocked = append(plan.Blocked, item)
 		default:
 			if item.Mine {
