@@ -6,17 +6,30 @@ whole model, and `kit help template` prints the feature doc format.
 
 ### Picking and finishing work
 
-1. **Asked to plan something? Read `docs/VISION.md`, then draft.** It says what the
-   project is for and what it is not; a feature that cannot be traced to it is the
-   wrong feature, and saying so is cheaper than building it. Size the doc to one
-   agent's reach — if a box cannot start until someone else's work lands, it belongs
-   in a different feature, and `needs:` is where you say so. Fill it in for every
-   draft: it is what lets `kit next` refuse work whose foundation is missing, and
-   several features with an empty `needs:` is what lets agents run at once. Judge it
-   by whether the work could *start* now — a shared composition root, a shared
-   router, or numbered files in one sequence such as migrations all make a feature
-   dependent however separate it looks. Leave the doc `Draft`: accepting is a
-   human's call. A draft waits on a branch of its own — nothing is ever committed to
+1. **Asked to plan something? Read `docs/VISION.md`, then draft — all of it.**
+   It says what the project is for and what it is not; a feature that cannot be
+   traced to it is the wrong feature, and saying so is cheaper than building it.
+   Bootstrapping a project means producing the **whole set** of features it needs,
+   not the first one. Do not wait to be asked to decompose.
+
+   **Split by the vision's `## What done looks like`.** Each observable outcome there
+   is at least one feature; that list is where the boundaries come from.
+
+   **A feature is one pull request** — you push a branch and a human reads it, so the
+   feature is the unit of review. Too big is a PR nobody can review in one sitting:
+   config, storage, the API and the CLI together is a project, not a feature. Too
+   small is one that changes nothing anyone can observe and exists only so the next
+   can start — that is a task box, not a doc.
+
+   **Say what each one waits on in `needs:`**, and fill it in for every draft: it is
+   what lets `kit next` refuse work whose foundation is missing, and several features
+   with an empty `needs:` is what lets agents run at once. Judge it by whether the
+   work could *start* now — a shared composition root, a shared router, or numbered
+   files in one sequence such as migrations all make a feature dependent however
+   separate it looks.
+
+   **Leave every doc `Draft`: accepting is a human's call.** A draft waits on a
+   branch of its own — nothing is ever committed to
    `main` — and **that branch is deleted when the draft is accepted and merged**. Its
    name is the claim name, so leaving it behind makes the feature unclaimable: every
    agent is then told it is taken, by nobody.

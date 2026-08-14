@@ -76,6 +76,14 @@ Mechanisms worth knowing before changing anything:
 - **`kit next` reports ticked-over-total.** A count of boxes and never an estimate —
   boxes are not equal sizes. It is in `--json` as `done` and `total` because that is
   the interface anything watching the plan from outside has to read.
+- **A feature is one pull request, and that is what decides the decomposition.** The
+  agent pushes a branch and a human reads it, so the feature is the unit of review:
+  too big is a PR nobody can review in one sitting, too small is one that changes
+  nothing observable and exists only so the next can start. This was the missing
+  tie-breaker — "one agent's reach" is satisfied both by seven features and by one
+  covering a whole project, which is how the same prompt produced both. Boundaries
+  come from the vision's `## What done looks like`, and bootstrapping means producing
+  the whole set rather than the first one.
 - **Three docs, three tenses, one owner each.** `docs/VISION.md` is what the project
   is becoming, `docs/features/` is what is being done now, `docs/TECH.md` is what
   exists. The vision and the as-built doc are both mutable and carry no status; they
