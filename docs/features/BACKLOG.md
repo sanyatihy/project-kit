@@ -78,6 +78,34 @@ cosmetic version.
 
 Promote when: a feature is claimed whose dependency was real and undeclared.
 
+## `kit accept` could refuse a doc nobody wrote
+
+It refuses a non-Draft, open questions, and a BLOCKING inbox line — every way the *doc*
+says the design is not settled. It does not refuse a doc where `## Problem`, `## Design`
+and `## Tasks` are all empty, which is the strongest such signal there is. Replaying the
+lifecycle found it: `kit accept` succeeded on a doc straight out of `kit new`.
+
+The consequences are mostly already covered — `unfilled-template` reports it at HIGH,
+`--strict` fails on it, and `kit next` refuses to hand it out — so what is left is an
+agent that claims by ID without consulting `next`. Reusing the same emptiness test in
+`Accept` would close it in about three lines.
+
+Promote when: touching `accept` for any other reason, or if an agent is seen claiming an
+unwritten feature.
+
+## A claim can carry a doc without carrying the latest edits to it
+
+`TrackedAtHEAD` asks whether the feature doc exists in `HEAD`'s tree, which is what stops
+a claim pushing a branch with no plan on it at all. It does not ask whether the working
+tree's version matches, so claiming with uncommitted edits to the doc pushes the committed
+one — the plan travels, the last changes to it do not.
+
+Much milder than the failure it replaced (the agent gets a real doc, just a stale one) and
+`git diff --quiet HEAD -- <doc>` would close it. What needs thinking about first is whether
+that would refuse claims people legitimately make mid-edit.
+
+Promote when: a worktree is found holding an older doc than the one that was claimed.
+
 ## Frontmatter values are truncated at ` #`
 
 `trailingRe` strips ` # comment` from every frontmatter value so template scaffolding

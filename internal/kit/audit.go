@@ -74,7 +74,7 @@ var (
 	checkDuplicateID = Check{"duplicate-id", High,
 		"two feature docs share one id:, so one branch claims both and one inbox line blocks both"}
 	checkStalled = Check{"stalled", High,
-		"In progress, but no commit cites it and nothing edited it for " +
+		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
 	checkUntickedShipped = Check{"unticked-shipped", High,
 		"marked Shipped while ## Tasks still has open boxes"}
@@ -389,7 +389,7 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			if f.Status == StatusDraft && len(claims) > 0 && r.BranchBuildsOn(claims[0], f.Rel) {
 				report(checkDraftClaimed, at,
 					fmt.Sprintf("%s: %s is building on a Draft", f.Name(), claims[0]),
-					"settle the design and set status: Accepted, or stop work")
+					"stop work until a human runs kit accept "+f.ID+", or drop the branch")
 			}
 		}
 

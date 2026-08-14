@@ -120,7 +120,8 @@ of one silently losing its work.
 
 Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in
 ## Open questions and the doc stays Draft; anything only a human can answer goes
-in docs/INBOX.md. Set status: Accepted when it is settled.
+in docs/INBOX.md. A human settles it with "kit accept"; never set the status
+yourself.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
 
