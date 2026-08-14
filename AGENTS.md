@@ -117,6 +117,16 @@ whole model, and `kit help template` prints the feature doc format.
    `main` — and **that branch is deleted when the draft is accepted and merged**. Its
    name is the claim name, so leaving it behind makes the feature unclaimable: every
    agent is then told it is taken, by nobody.
+
+   The human accepts with **`kit accept <id>`, run on the draft's own branch**, so the
+   acceptance lands in the same pull request as the draft: one review and one merge per
+   feature. Never run it yourself and never edit `status:` by hand — that is the only
+   gate in this model, and a tool that steps through it makes the gate advisory.
+
+   **The plan has to be on `main` before anything can be claimed.** A claim pushes
+   `HEAD`, so a doc that is only in the working tree does not travel with the branch an
+   agent is sent to work in. On a project that has just been set up, that means one pull
+   request landing the scaffold and the whole set of drafts.
 2. **One agent per feature. Take it with `kit claim <id>`.** That pushes the branch
    named after the doc, and creating that ref on the remote is what decides who
    gets the work: exit 0 is yours, exit 1 means another agent got there first — run

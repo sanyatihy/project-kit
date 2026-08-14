@@ -1,9 +1,9 @@
 ---
 id: 0018
 title: Give the human an accept command
-status: In progress  # Draft | Accepted | In progress | Shipped | Dropped | Superseded
+status: Shipped
 created: 2026-08-14
-shipped:             # fill the date when status flips to Shipped
+shipped: 2026-08-14
 check:               # optional — date to check whether this worked. Only for bets.
 checked:             # date you checked; write the outcome in ## Log
 needs: 0016, 0017    # all three edit AGENTS-section.md and README.md
