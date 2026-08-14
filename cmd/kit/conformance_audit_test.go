@@ -95,6 +95,11 @@ var auditCases = []struct {
 		p.write("docs/INBOX.md", fmt.Sprintf(
 			"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(10)))
 	}},
+	{"fyi-stale", func(p *project) {
+		p.write("docs/INBOX.md", fmt.Sprintf(
+			"# Inbox\n\n- [ ] %s · 0001 · FYI · Something you may want to know?\n",
+			daysAgo(kit.FYIStaleDays+1)))
+	}},
 	{"inbox-unparsed", func(p *project) {
 		p.write("docs/INBOX.md",
 			"# Inbox\n\n- [ ] we should decide about 0001 at some point\n")
@@ -457,6 +462,29 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	cleanProject(t).run("audit", "--strict").ok()
 }
 
+func TestAnFYINeverFailsTheShipGate(t *testing.T) {
+	// `kit block --fyi` promises the feature is not blocked and work continues.
+	// BlockersFor kept that promise and inbox-stale broke it anyway: FYI was reported at
+	// HIGH, so rule 12's `kit audit --strict` refused to let anything ship over a note
+	// whose whole point was that it needed no answer.
+	p := cleanProject(t)
+	p.write("docs/INBOX.md", fmt.Sprintf(
+		"# Inbox\n\n- [ ] %s · 0001 · FYI · Which host runs this? Leaning: decide later.\n",
+		daysAgo(365)))
+
+	r := p.run("audit", "--strict").ok()
+	if !strings.Contains(r.Stdout, "fyi-stale") {
+		t.Error("a year-old FYI was not reported at all; LOW still means visible")
+	}
+
+	// And the blocking case still does fail it, or the split bought nothing.
+	blocking := cleanProject(t)
+	blocking.write("docs/INBOX.md", fmt.Sprintf(
+		"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Which host runs this?\n",
+		daysAgo(kit.InboxStaleDays)))
+	blocking.run("audit", "--strict").fails(1)
+}
+
 // The claim checks read branch names, which is the one place this tool can
 // generate noise about work that is perfectly fine. Each of these is a situation
 // that must stay silent.
@@ -534,6 +562,22 @@ func TestTheThresholdsFireAtTheirBoundaryAndNotBefore(t *testing.T) {
 
 			if got := slices.Contains(p.auditCodes(), "inbox-stale"); got != tc.want {
 				t.Errorf("a question %d day(s) unanswered: reported=%v, want %v",
+					tc.age, got, tc.want)
+			}
+		}
+	})
+
+	t.Run("fyi-stale", func(t *testing.T) {
+		for _, tc := range []struct {
+			age  int
+			want bool
+		}{{kit.FYIStaleDays - 1, false}, {kit.FYIStaleDays, true}} {
+			p := cleanProject(t)
+			p.write("docs/INBOX.md", fmt.Sprintf(
+				"# Inbox\n\n- [ ] %s · 0001 · FYI · Just so you know?\n", daysAgo(tc.age)))
+
+			if got := slices.Contains(p.auditCodes(), "fyi-stale"); got != tc.want {
+				t.Errorf("an FYI %d day(s) undrained: reported=%v, want %v",
 					tc.age, got, tc.want)
 			}
 		}

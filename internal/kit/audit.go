@@ -23,10 +23,19 @@ const (
 	// because a claim taken on a Friday and resumed on a Monday is not a stall.
 	StalledDays = 3
 
-	// InboxStaleDays is an unanswered question this old, which means you are the
-	// bottleneck. One is the floor: an inbox line carries a date and not a time, so
-	// this is the shortest span the documented format can express at all.
-	InboxStaleDays = 1
+	// InboxStaleDays is an unanswered BLOCKING question this old, which means you are
+	// the bottleneck.
+	//
+	// Two, not one. An inbox line carries a date and no time, so ages are measured from
+	// midnight UTC on the day it was filed: at a threshold of one day a question filed
+	// at 23:00 was HIGH an hour later. A check that can fire before a human could
+	// plausibly have answered is a check nobody believes.
+	InboxStaleDays = 2
+
+	// FYIStaleDays is an FYI note nobody has drained. Long, and LOW, because FYI means
+	// work was explicitly cleared to continue without an answer — enough to say the
+	// notes are piling up, never enough to fail a build.
+	FYIStaleDays = 14
 )
 
 // countDays renders a threshold or an age for a finding, so the text can never
@@ -70,7 +79,7 @@ var (
 	checkUntickedShipped = Check{"unticked-shipped", High,
 		"marked Shipped while ## Tasks still has open boxes"}
 	checkInboxStale = Check{"inbox-stale", High,
-		"a question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
+		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkUnchecked = Check{"unchecked", High,
 		"a check: date passed and nobody recorded the outcome"}
 	checkSecretInDoc = Check{"secret-in-doc", High,
@@ -132,6 +141,8 @@ var (
 		"no INBOX.md, so a blocked agent has nowhere to put a question"}
 	checkNoVision = Check{"no-vision", Low,
 		"features are being planned but nothing says what the project is for"}
+	checkFYIStale = Check{"fyi-stale", Low,
+		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
 )
 
 // Checks is every check audit can report, in reporting order.
@@ -142,7 +153,7 @@ var Checks = []Check{
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
-	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision,
+	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
 }
 
 // plannedSections are what an agent needs in order to work a feature at all. `Log` is
@@ -398,7 +409,17 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		if q.When.IsZero() {
 			continue
 		}
-		if age := Days(q.When, today); age >= InboxStaleDays {
+		// The marker decides both the fuse and the severity. `kit block --fyi` promises
+		// work continues without an answer, and BlockersFor keeps that promise — an FYI
+		// reported at HIGH broke it anyway by failing the --strict gate rule 12 puts in
+		// front of `kit ship`.
+		age := Days(q.When, today)
+		switch {
+		case q.FYI && age >= FYIStaleDays:
+			report(checkFYIStale, r.Rel(r.Inbox),
+				fmt.Sprintf("undrained for %s: %s", countDays(age), clip(q.Text, 70)),
+				"answer it, or delete it if it stopped mattering")
+		case !q.FYI && age >= InboxStaleDays:
 			report(checkInboxStale, r.Rel(r.Inbox),
 				fmt.Sprintf("unanswered for %s: %s", countDays(age), clip(q.Text, 70)),
 				"answer it, or delete it if it stopped mattering")

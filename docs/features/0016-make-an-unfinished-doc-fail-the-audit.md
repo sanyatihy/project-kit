@@ -137,7 +137,7 @@ hand, which is exactly what `kit ship` exists to prevent and what `unticked-ship
 - [x] Add `unfilled-template` at HIGH over Problem/Design/Tasks for non-Draft docs;
       narrow `missing-section` to `## Log` at `Shipped`. Conformance: fires on an
       accepted untouched doc, quiet on a filled one, quiet on a Draft.
-- [ ] Split `inbox-stale` (BLOCKING, 2 days, HIGH) from `fyi-stale` (FYI, 14 days, LOW),
+- [x] Split `inbox-stale` (BLOCKING, 2 days, HIGH) from `fyi-stale` (FYI, 14 days, LOW),
       with a test that an FYI line does not fail `--strict`.
 - [ ] Add `BACKLOG.md` to the secret scan and point `done-not-shipped` at `kit ship`;
       update the check list in README.md.
