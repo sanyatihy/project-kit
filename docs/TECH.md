@@ -126,6 +126,28 @@ Mechanisms worth knowing before changing anything:
   `--strict` gate the protocol puts in front of `kit ship` — a note explicitly cleared
   to wait stopped everything from shipping.
 - **`audit` never writes.** An auditor that fixes things stops being read.
+- **Accepting is a command, and only a human runs it.** `Draft -> Accepted` is the one
+  transition that belongs to a person, and it was the only one with no command — so it was
+  a hand edit, which is what `kit ship` exists to stop doing at the other end of the
+  lifecycle and what `unticked-shipped` and `shipped-no-date` are the wreckage of.
+  `kit accept` refuses a non-Draft, a doc whose `## Open questions` is not empty, and one a
+  BLOCKING inbox line names — the last via `BlockersFor`, so `accept` and `next` cannot
+  disagree about what is blocked. It stamps no date: `created:` already says when the
+  feature was proposed. And it says where to commit, because the protocol never settled
+  that: on the draft's own branch, so the acceptance lands in the draft's pull request
+  rather than needing a second one for a one-line change.
+- **`next` reports a stale protocol; `audit` alone was not enough.** The protocol tells
+  agents to run `next` at the start of every session and says nothing about running
+  `audit`, so a project following superseded rules had no moment at which anything would
+  say so. It prints above the board — an agent that has read the plan and started work has
+  walked past anything printed after it — and never changes the exit code, because the plan
+  is still right and it is the rules around it that drifted. `--json` carries it as a field
+  instead, since that is the format agents parse.
+- **A status rewrite is confined to the frontmatter.** `(?m)^status:.*$` over the whole
+  document also rewrote a `status:` line inside a fenced example, and feature docs for a
+  tool whose subject is frontmatter quote frontmatter constantly. `SetField` edits only
+  between the `---` fences and is shared by `accept` and `ship`, so neither can drift from
+  the other.
 - **Both output formats carry the same conclusion.** `Plan.Guidance` is decided once
   in `internal/kit` and rendered by the text output and carried by `--json`, so they
   cannot drift. `--json` is the format documented for agents, and it previously held

@@ -5,14 +5,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
-)
-
-var (
-	statusLineRe  = regexp.MustCompile(`(?m)^status:.*$`)
-	shippedLineRe = regexp.MustCompile(`(?m)^shipped:.*$`)
 )
 
 // ShipResult is what shipping changed, for reporting.
@@ -61,16 +55,17 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	body := Normalise(string(raw))
 	stamped := today.UTC().Format(DateLayout)
 
-	updated := statusLineRe.ReplaceAllString(body, "status: "+StatusShipped)
-	if shippedLineRe.MatchString(updated) {
-		updated = shippedLineRe.ReplaceAllString(updated, "shipped: "+stamped)
+	updated, ok := SetStatus(body, StatusShipped)
+	if !ok {
+		return nil, fmt.Errorf("%s has no status: line in its frontmatter to set",
+			target.Name())
+	}
+	if stampedDoc, ok := SetField(updated, "shipped", stamped); ok {
+		updated = stampedDoc
 	} else {
 		// No shipped: key at all — put one directly after the status.
 		updated = strings.Replace(updated, "status: "+StatusShipped,
 			"status: "+StatusShipped+"\nshipped: "+stamped, 1)
-	}
-	if updated == body {
-		return nil, fmt.Errorf("%s has no status: line to set", target.Name())
 	}
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err

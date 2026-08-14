@@ -45,6 +45,11 @@ type Plan struct {
 	Branch   string `json:"branch,omitempty"`
 	Claiming string `json:"claiming,omitempty"`
 
+	// ProtocolStale says the project's AGENTS.md is older than the binary reading it, so
+	// the rules the agent is about to follow are not the rules this kit expects. Set by
+	// the caller, which is the only layer that can see the embedded protocol.
+	ProtocolStale bool `json:"protocol_stale,omitempty"`
+
 	// Guidance is what to do about all of the above, and it ships in both formats.
 	// The conclusion used to exist only in the rendered text, so an agent reading
 	// --json — the output documented for agents — got a board and no instruction,

@@ -115,22 +115,31 @@ because its name is the claim name.
 
 ## Tasks
 
-- [ ] `internal/kit/accept.go`: `Accept` flips a `Draft` and refuses on a non-Draft, on
+- [x] `internal/kit/accept.go`: `Accept` flips a `Draft` and refuses on a non-Draft, on
       non-empty `## Open questions`, and on a BLOCKING inbox line, reusing `BlockersFor`;
       unit tests for all four paths.
-- [ ] `kit accept` wired into `main.go` with `commandHelp`, the overview, and exit codes
+- [x] `kit accept` wired into `main.go` with `commandHelp`, the overview, and exit codes
       matching the rest (2 for a refusal, since accepting is not a race); conformance for
       the happy path and each refusal.
-- [ ] `kit next` prints the stale-protocol line above the board and carries it in
+- [x] `kit next` prints the stale-protocol line above the board and carries it in
       `--json`; conformance that it appears with an old AGENTS.md, is absent with a
       current one, and never changes the exit code.
-- [ ] Confine the status rewrite to the frontmatter. `statusLineRe` is `(?m)^status:.*$`
+- [x] Confine the status rewrite to the frontmatter. `statusLineRe` is `(?m)^status:.*$`
       applied to the whole document, so a `status:` line inside a fenced example is
       rewritten too. Found while designing `Accept`, which would otherwise be a second
       writer inheriting the same defect; shared with `Ship` rather than duplicated.
-- [ ] Protocol and README: the human accepts with `kit accept` on the draft branch so it
+- [x] Protocol and README: the human accepts with `kit accept` on the draft branch so it
       lands in that PR, and the new command appears in README's command list.
 
 ## Log
 
-<!-- Dated, append-only conclusions. The argument lives in the PR. -->
+- 2026-08-14 — the status rewrite became a fifth box rather than a silent fix. `Accept`
+  needed a writer and the existing one was `(?m)^status:.*$` over the whole document, which
+  also rewrites a `status:` line inside a fenced example. Duplicating a known defect into a
+  second command was the only alternative, so `SetField` is shared by both and the
+  conformance test drives `accept` and `ship` over the same doc.
+- 2026-08-14 — `accept` reuses `BlockersFor` rather than reading the inbox again, so it and
+  `kit next` cannot come to different conclusions about what is blocked. That also means
+  `--fyi` is honoured for free, which has its own test.
+- 2026-08-14 — no `accepted:` date. `created:` already records when the feature was
+  proposed, and the second date would have had no reader.

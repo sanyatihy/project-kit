@@ -17,11 +17,13 @@ const overview = `kit — bootstrap projects and run them with agents.
 Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
+  kit accept <id>                     settle a Draft — the human's call, not an agent's
   kit claim <id>                      take a feature: push the branch, win or lose
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
-  kit next  [PATH ...] [--json]       what should I work on?
-  kit audit [PATH ...] [--json] [--strict]
+  kit next  [PATH ...] [--json] [--offline]
+                                      what should I work on?
+  kit audit [PATH ...] [--json] [--strict] [--offline]
                                       where do the docs disagree with the repo?
   kit help  [TOPIC]                   this, or a topic below
   kit version
@@ -34,7 +36,8 @@ How it works:
     Draft -> Accepted -> In progress -> Shipped   (exits: Dropped, Superseded)
 
   Draft is where a human settles the design. Once a doc is Accepted an agent can
-  work it unattended, which is why "kit next" never offers a Draft.
+  work it unattended, which is why "kit next" never offers a Draft. "kit accept" is
+  how a human makes that call; nothing an agent runs will do it.
 
 The four rules:
   1. In progress features come before Accepted ones, then lowest ID first.
@@ -120,6 +123,26 @@ Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in
 in docs/INBOX.md. Set status: Accepted when it is settled.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
+
+	"accept": `kit accept <id>
+
+Settle a Draft: set status to Accepted. This is the human's call and the only
+transition in the model that is — an agent drafts the whole set and stops.
+
+Refuses when there is nothing to settle, or when the doc says the design is not
+settled yet:
+
+  the status is not Draft          nothing to accept; the message names what it is
+  ## Open questions is not empty   that section is what Draft is for
+  a BLOCKING inbox line names it   a human already owes an answer, so answer that
+
+Run it on the draft's own branch, so the acceptance lands in the same pull request
+as the draft. Accepting after that request merges means a second one for a one-line
+change.
+
+No date is stamped. "created:" already records when the feature was proposed.
+
+  kit accept 3                   # ids may be typed without leading zeros`,
 
 	"claim": `kit claim <id>
 

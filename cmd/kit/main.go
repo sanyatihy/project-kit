@@ -74,6 +74,8 @@ func run() int {
 		return runInit(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
+	case "accept":
+		return runAccept(os.Args[2:])
 	case "claim":
 		return runClaim(os.Args[2:])
 	case "block":
@@ -187,6 +189,46 @@ func runNew(args []string) int {
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
 	fmt.Printf("  leave status: Draft — accepting it is the human's call, and\n")
 	fmt.Printf("  kit next will offer it once they have.\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- accept
+
+func runAccept(args []string) int {
+	fs := newFlagSet("accept")
+	rest := parseArgs(fs, args)
+	if len(rest) != 1 {
+		fmt.Fprintf(os.Stderr, "kit accept: need one feature id\n\n%s\n", commandHelp["accept"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit accept: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit accept: %v\n", err)
+		return 2
+	}
+	res, err := kit.Accept(repo, id)
+	if err != nil {
+		// Exit 2 throughout: unlike `claim`, none of these is another agent holding the
+		// feature, so "take something else" would be the wrong instruction.
+		fmt.Fprintf(os.Stderr, "kit accept: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  accepted  %s  (was Draft)\n", res.Doc)
+	fmt.Printf("\nnext:\n")
+	// Where the edit lands is the whole reason this prints anything. Accepting inside the
+	// draft's own pull request is one review and one merge per feature; accepting after it
+	// merges is a second pull request for a one-line change, which is what the protocol
+	// left undefined and a human had to guess at every time.
+	fmt.Printf("  commit this on %s so it lands in the same pull request as the draft\n",
+		res.Branch)
+	fmt.Printf("  the branch is deleted on merge — its name is the claim name\n")
+	fmt.Printf("  kit next\n\n")
 	return 0
 }
 
@@ -339,10 +381,18 @@ func runNext(args []string) int {
 		return code
 	}
 
+	// surveyed keeps the staleness check next to the plan it belongs to, so both output
+	// formats carry the same fact and cannot drift.
+	surveyed := func(r *kit.Repo) kit.Plan {
+		plan := kit.Survey(r)
+		plan.ProtocolStale = kit.ProtocolIsStale(r, currentProtocol())
+		return plan
+	}
+
 	if *asJSON {
 		payload := map[string]kit.Plan{}
 		for _, r := range repos {
-			payload[r.Name] = kit.Survey(r)
+			payload[r.Name] = surveyed(r)
 		}
 		return emit(payload)
 	}
@@ -354,7 +404,7 @@ func runNext(args []string) int {
 			fmt.Printf("  not set up yet — run:  kit init %s\n\n", r.Root)
 			continue
 		}
-		printPlan(r, kit.Survey(r), color)
+		printPlan(r, surveyed(r), color)
 	}
 	return 0
 }
@@ -369,6 +419,13 @@ func listItems(items []kit.Item) {
 }
 
 func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
+	// Above the board, because an agent that has read the plan and started working has
+	// already walked past anything printed after it. Never changes the exit code: the plan
+	// is still right, it is the rules around it that drifted.
+	if plan.ProtocolStale {
+		fmt.Println(paint("  ! AGENTS.md is older than this kit, so the protocol below it "+
+			"is superseded — run kit init . before following it", "33", color))
+	}
 	if n := plan.InProgress(); n > kit.WIPLimit {
 		fmt.Println(paint(fmt.Sprintf("  %d features in progress at once — "+
 			"finish one before starting another", n), "33", color))

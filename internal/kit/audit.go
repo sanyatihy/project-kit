@@ -488,15 +488,10 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			"no AGENTS.md, so agents have no protocol and will invent one",
 			"run: kit init .")
 	}
-	if r.Protocol != "" && protocol != "" {
-		if raw, err := os.ReadFile(r.Protocol); err == nil {
-			current := Normalise(string(raw))
-			if updated, ok := ReplaceSection(current, ProtocolMarker, protocol); ok && updated != current {
-				report(checkProtocolStale, r.Rel(r.Protocol),
-					"the work protocol here is older than the installed kit's, so agents are following superseded rules",
-					"run: kit init .")
-			}
-		}
+	if ProtocolIsStale(r, protocol) {
+		report(checkProtocolStale, r.Rel(r.Protocol),
+			"the work protocol here is older than the installed kit's, so agents are following superseded rules",
+			"run: kit init .")
 	}
 	if r.Inbox == "" {
 		report(checkNoInbox, r.Name,
