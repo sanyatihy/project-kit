@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -480,6 +481,104 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	}
 
 	cleanProject(t).run("audit", "--strict").ok()
+}
+
+func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
+	// The failure this closes: `In progress` is set on the feature branch, so the trunk
+	// checkout — the only one a human or a supervising agent audits — sees `Accepted`
+	// and reported nothing. An agent that died holding a feature was indistinguishable
+	// from one hard at work, permanently, and the board just said "taken".
+	//
+	// Liveness now comes from the claim branch, so what is being asserted is both
+	// directions: active work is quiet, abandoned work is reported.
+	for _, tc := range []struct {
+		name string
+		age  int
+		want bool
+	}{
+		{"work committed today", 0, false},
+		{"work abandoned", kit.StalledDays + 1, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := newProject(t)
+			p.run("init").ok()
+			// Trunk carries the doc exactly as it looks after a draft PR merges.
+			feature(p, "0002", "widget", "Widget", "Accepted", "- [ ] Build it")
+			p.commitAllAt("the plan", daysAgo(tc.age))
+			trunk := p.headBranch()
+
+			// The claim branch carries the work, and the status only ever set there.
+			p.git("checkout", "-q", "-b", "0002-widget")
+			p.write("internal/widget.go", "package widget\n")
+			feature(p, "0002", "widget", "Widget", "In progress", "- [ ] Build it")
+			p.commitAllAt("0002: start building", daysAgo(tc.age))
+			p.git("checkout", "-q", trunk)
+
+			// Read from the trunk, where the doc still says Accepted.
+			if got := slices.Contains(p.auditCodes(), "stalled"); got != tc.want {
+				t.Errorf("work %d day(s) old, seen from %s: stalled=%v, want %v",
+					tc.age, trunk, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAClaimCarryingNoWorkIsNeverCalledStalled(t *testing.T) {
+	// A branch cut from the trunk's tip is byte-identical to one whose pull request
+	// merged, and neither carries a date the kit can read. Ageing it would invent a
+	// finding, so `next` reports it as taken and audit says nothing.
+	p := newProject(t)
+	p.run("init").ok()
+	feature(p, "0002", "widget", "Widget", "Accepted", "- [ ] Build it")
+	p.commitAllAt("the plan", daysAgo(60))
+	p.git("branch", "0002-widget")
+
+	if codes := p.auditCodes(); slices.Contains(codes, "stalled") {
+		t.Errorf("an empty claim off an old trunk was aged as if it were work: %v", codes)
+	}
+}
+
+func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
+	// The trunk used to be the first of `main`/`master` that resolved. A project whose
+	// default branch is neither had no trunk to compare against, so BranchBuildsOn
+	// answered "nothing changed" for every branch — and every check built on it went
+	// quiet. draft-claimed is the observable one: somebody building on an unsettled
+	// design was invisible for the whole class of repos that do not use those two names.
+	// Both ways a project can have one: read from the remote, which is the case that
+	// matters for anything hosted, and guessed from HEAD when there is no remote to ask.
+	for _, withRemote := range []bool{true, false} {
+		name := "local only"
+		if withRemote {
+			name = "origin/HEAD says develop"
+		}
+		t.Run(name, func(t *testing.T) {
+			p := newProject(t)
+			p.run("init").ok()
+			p.git("checkout", "-q", "-b", "develop")
+			feature(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
+			p.commitAll("a draft on develop")
+
+			if withRemote {
+				origin := filepath.Join(p.Root, "..", "origin.git")
+				gitIn(t, p.Root, "init", "-q", "--bare", "-b", "develop", origin)
+				p.git("remote", "add", "origin", origin)
+				p.git("push", "-q", "origin", "develop")
+				p.git("remote", "set-head", "origin", "develop")
+			}
+
+			// A branch carrying work beyond the doc, off a trunk called neither
+			// main nor master.
+			p.git("checkout", "-q", "-b", "0002-unsettled")
+			p.write("internal/thing.go", "package thing\n")
+			p.commitAll("0002: build on a design nobody settled")
+			p.git("checkout", "-q", "develop")
+
+			if codes := p.auditCodes(); !slices.Contains(codes, "draft-claimed") {
+				t.Errorf("work on a Draft went unreported because the trunk is called "+
+					"develop; audit said %v", codes)
+			}
+		})
+	}
 }
 
 func TestAnFYINeverFailsTheShipGate(t *testing.T) {

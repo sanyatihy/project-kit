@@ -142,7 +142,13 @@ func runInit(args []string) int {
 	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
 	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
 	fmt.Printf("  each one a pull request a human can review in one sitting\n")
-	fmt.Printf("  leave them Draft — accepting them is the human's call\n\n")
+	fmt.Printf("  leave them Draft — accepting them is the human's call\n")
+	// Said here because this is where a bootstrap run reads what to do next, and the
+	// omission is what let `kit claim` win a branch carrying no plan: a claim pushes
+	// HEAD, so a plan that is only in the working tree does not travel with it.
+	fmt.Printf("  then land all of it on the default branch — a pull request, if that\n")
+	fmt.Printf("  branch is protected. A claim pushes HEAD, so nothing uncommitted\n")
+	fmt.Printf("  reaches the branch an agent is sent to work in\n\n")
 	return 0
 }
 
@@ -325,9 +331,10 @@ func runShip(args []string) int {
 func runNext(args []string) int {
 	fs := newFlagSet("next")
 	asJSON := fs.Bool("json", false, "machine-readable output")
+	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
 	paths := parseArgs(fs, args)
 
-	repos, code := openAll(paths, "kit next")
+	repos, code := openAll(paths, "kit next", *offline)
 	if code != 0 {
 		return code
 	}
@@ -451,9 +458,10 @@ func runAudit(args []string) int {
 	fs := newFlagSet("audit")
 	asJSON := fs.Bool("json", false, "machine-readable output")
 	strict := fs.Bool("strict", false, "exit 1 if anything HIGH is found")
+	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
 	paths := parseArgs(fs, args)
 
-	repos, code := openAll(paths, "kit audit")
+	repos, code := openAll(paths, "kit audit", *offline)
 	if code != 0 {
 		return code
 	}
@@ -569,7 +577,7 @@ func parseArgs(fs *flag.FlagSet, args []string) []string {
 	}
 }
 
-func openAll(paths []string, who string) ([]*kit.Repo, int) {
+func openAll(paths []string, who string, offline bool) ([]*kit.Repo, int) {
 	if len(paths) == 0 {
 		paths = []string{kit.ProjectRoot(".")}
 	}
@@ -585,6 +593,7 @@ func openAll(paths []string, who string) ([]*kit.Repo, int) {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", who, err)
 			return nil, 2
 		}
+		r.Offline = offline
 		repos = append(repos, r)
 	}
 	return repos, 0

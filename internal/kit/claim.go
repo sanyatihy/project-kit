@@ -75,30 +75,20 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"only a human can answer that, in " + r.Rel(r.Inbox)}
 	}
 
-	// Cheap and fallible, and worth doing anyway: a claim already visible locally
-	// gets a message naming the branch instead of a push rejection naming a ref.
-	if claims := r.Claims(id); len(claims) > 0 {
-		// The branch that held a draft is named after the doc, which is also the
-		// claim. Before the draft merges the two differ — a draft branch carries the
-		// doc, a fresh claim carries nothing — but afterwards both are identical to
-		// the trunk, so nothing here can tell them apart. Saying which fixes apply
-		// beats reporting a claim that may have nobody behind it.
-		then := "the branch is the claim — fetch first if you think it is stale"
-		if len(claims) == 1 && !r.BranchBuildsOn(claims[0], target.Rel) {
-			then = "that branch carries no work. If an agent just took it, leave it alone.\n" +
-				"  If it is the branch a draft waited on, it should have been deleted when the\n" +
-				"  draft was accepted: git push origin --delete " + claims[0] +
-				" && git branch -d " + claims[0] + ", then claim again"
-		}
-		return nil, &NotYours{
-			fmt.Sprintf("%s is already claimed by %s", target.Name(), strings.Join(claims, " and ")),
-			then}
-	}
-
 	branch := target.Branch()
 	if !r.HasHistory() {
 		return nil, fmt.Errorf("this project has no commits, so a branch has nothing " +
 			"to point at — commit first, then claim")
+	}
+
+	// The claim pushes HEAD under the feature's name, so whatever HEAD does not carry,
+	// the claim does not carry either. Without this the push reports a won claim, the
+	// worktree it prints is empty, and `kit next` there says the project is not set up —
+	// every step exiting 0 while the agent loses the plan it was sent to build.
+	if !r.TrackedAtHEAD(target.Rel) {
+		return nil, fmt.Errorf("%s is not committed on %s, so the branch this would push "+
+			"carries no plan.\nLand the plan first — a pull request, if the default branch "+
+			"is protected — then claim", target.Rel, orTrunk(r.Trunk()))
 	}
 
 	remotes := r.remotes()
@@ -116,6 +106,29 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 		return nil, fmt.Errorf("this project has several remotes and no origin (%s), "+
 			"and a claim must not guess which one other agents read",
 			strings.Join(remotes, ", "))
+	}
+
+	// Cheap and fallible, and worth doing anyway: a claim already visible locally
+	// gets a message naming the branch instead of a push rejection naming a ref.
+	if claims := r.Claims(id); len(claims) > 0 {
+		// The branch that held a draft is named after the doc, which is also the
+		// claim. Before the draft merges the two differ — a draft branch carries the
+		// doc, a fresh claim carries nothing — but afterwards both are identical to
+		// the trunk, so nothing here can tell them apart. Saying which fixes apply
+		// beats reporting a claim that may have nobody behind it.
+		then := "the branch is the claim"
+		switch {
+		case !r.RefsAreAuthoritative():
+			then = "this was read from the last fetch, not from the remote, so it may name a\n" +
+				"  branch that no longer exists — run git fetch --prune, then claim again"
+		case len(claims) == 1 && !r.BranchBuildsOn(claims[0], target.Rel):
+			then = "that branch carries no work. If an agent just took it, leave it alone.\n" +
+				"  If it is a leftover from a draft that already merged, remove it and claim\n" +
+				"  again: " + deleteHint(r, remote, claims[0])
+		}
+		return nil, &NotYours{
+			fmt.Sprintf("%s is already claimed by %s", target.Name(), strings.Join(claims, " and ")),
+			then}
 	}
 
 	if remote != "" {
@@ -149,6 +162,33 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 		_, _ = r.gitRun("branch", "--set-upstream-to="+remote+"/"+branch, branch)
 	}
 	return &Claimed{Branch: branch, Remote: remote}, nil
+}
+
+// orTrunk names the default branch, or says "the current branch" when there is no trunk
+// to name. A message that says "not committed on " reads as a bug.
+func orTrunk(trunk string) string {
+	if trunk == "" {
+		return "this branch"
+	}
+	return trunk
+}
+
+// deleteHint names the commands that would actually remove a branch, which depends on
+// where the branch is. Naming `git push --delete` for a ref the remote does not have —
+// which is what the old message did unconditionally — produces two errors and no
+// progress, and the agent reading it has no way to know the advice was wrong.
+func deleteHint(r *Repo, remote, branch string) string {
+	var parts []string
+	if heads, ok := r.remoteHeads(); ok && remote != "" && contains(heads, branch) {
+		parts = append(parts, "git push "+remote+" --delete "+branch)
+	}
+	if r.git("rev-parse", "--verify", "--quiet", "refs/heads/"+branch) != "" {
+		parts = append(parts, "git branch -D "+branch)
+	}
+	if len(parts) == 0 {
+		return "git fetch --prune"
+	}
+	return strings.Join(parts, " && ")
 }
 
 // Status flags from `git push --porcelain`, which prefixes each ref's line with

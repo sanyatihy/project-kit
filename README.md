@@ -194,8 +194,9 @@ kit new   <title...>                     next free ID, date filled in, status Dr
 kit claim <id>                           push the branch; exit 1 means you lost it
 kit block <id> "<question>" [--fyi]      park a decision only a human can make
 kit ship  <id>                           verify every box, stamp the date, freeze
-kit next  [PATH ...] [--json]            warns above 2 features in progress
-kit audit [PATH ...] [--json] [--strict] --strict exits 1 on HIGH, for CI
+kit next  [PATH ...] [--json] [--offline] warns above 2 features in progress
+kit audit [PATH ...] [--json] [--strict] [--offline]
+                                         --strict exits 1 on HIGH, for CI
 kit help  [protocol|template|conventions|checks|inbox|as-built|go-checklist|deployment]
 kit version
 ```
