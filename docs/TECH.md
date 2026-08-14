@@ -83,6 +83,15 @@ Mechanisms worth knowing before changing anything:
   be aspirational and is expected to move. `kit init` writes all of them and
   overwrites none. `no-vision` is LOW and fires only once a project has feature docs,
   since a project that has been set up and not yet planned has nothing to decompose.
+- **A file is the kit's to refresh when nothing reads the project's copy.** That test,
+  not who wrote it first, sorts the scaffold: `docs/features/TEMPLATE.md` and
+  `docs/features/README.md` are read by nothing — `kit new` writes from the embedded
+  template — so `kit init` replaces them on every run and they cannot describe a
+  format the tool no longer produces. Everything a project fills in is the only copy
+  there is and is never touched; house rules have their own space above the marker in
+  `AGENTS.md`. A refresh that changes nothing reports as kept, or the word stops
+  meaning anything. Schema versioning was considered and deferred: every format change
+  so far has been additive, and the trigger to revisit is the first one that cannot be.
 - **Blocking is an INBOX line naming the feature.** `next` skips it immediately;
   `audit` escalates it after a day. Thresholds follow the cadence of what they
   watch, not an operator's calendar, and an idle agent costs minutes.

@@ -1,7 +1,8 @@
 ---
 id: 0012
 title: kit init refreshes the docs it owns
-status: Accepted
+status: Shipped
+shipped: 2026-08-14
 created: 2026-08-14
 needs:
 related: 0011-features-declare-what-they-need.md
@@ -60,8 +61,8 @@ protocol section and `kept` for everything else, so the existing output says whi
 happened without inventing a vocabulary.
 
 ## Tasks
-- [ ] `kit init` refreshes the reference docs it owns, and reports it the way it already reports the protocol
-- [ ] A project's own documents are never touched, pinned by a test that fails if that line moves
+- [x] `kit init` refreshes the reference docs it owns, and reports it the way it already reports the protocol
+- [x] A project's own documents are never touched, pinned by a test that fails if that line moves
 
 ## Open questions
 <!-- none -->
