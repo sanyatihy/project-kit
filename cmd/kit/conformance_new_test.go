@@ -6,6 +6,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -75,6 +76,29 @@ func TestNewFillsTheFrontmatter(t *testing.T) {
 	// nobody has settled.
 	if strings.Contains(doc, "status: Accepted") {
 		t.Error("a new doc must not be Accepted")
+	}
+}
+
+func TestANewDocIsEmptyToTheToolNotJustToTheReader(t *testing.T) {
+	// The template's guidance lives in HTML comments, which every parser here strips.
+	// When it lived in visible prose and two `- [ ] …` boxes, a doc nobody had written
+	// read as a plan: `next` counted 0/2 and handed out `…` as the task to build, and
+	// `audit` said the docs and the repo agreed.
+	p := setUp(t)
+	p.run("new", "Untouched").ok()
+	p.write("docs/features/0001-untouched.md",
+		strings.Replace(p.read("docs/features/0001-untouched.md"),
+			"status: Draft", "status: Accepted", 1))
+
+	// Nothing to hand out, and the audit says why rather than nothing.
+	r := p.run("next").ok()
+	r.lacks("…")
+	p.run("audit").ok().has("unfilled-template")
+
+	// One defect, one finding: an empty ## Tasks is unfilled-template's and not also
+	// no-tasks', which covers the narrower case of prose with no boxes in it.
+	if codes := p.auditCodes(); slices.Contains(codes, "no-tasks") {
+		t.Errorf("an unwritten doc reported both unfilled-template and no-tasks: %v", codes)
 	}
 }
 

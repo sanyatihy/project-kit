@@ -23,10 +23,19 @@ const (
 	// because a claim taken on a Friday and resumed on a Monday is not a stall.
 	StalledDays = 3
 
-	// InboxStaleDays is an unanswered question this old, which means you are the
-	// bottleneck. One is the floor: an inbox line carries a date and not a time, so
-	// this is the shortest span the documented format can express at all.
-	InboxStaleDays = 1
+	// InboxStaleDays is an unanswered BLOCKING question this old, which means you are
+	// the bottleneck.
+	//
+	// Two, not one. An inbox line carries a date and no time, so ages are measured from
+	// midnight UTC on the day it was filed: at a threshold of one day a question filed
+	// at 23:00 was HIGH an hour later. A check that can fire before a human could
+	// plausibly have answered is a check nobody believes.
+	InboxStaleDays = 2
+
+	// FYIStaleDays is an FYI note nobody has drained. Long, and LOW, because FYI means
+	// work was explicitly cleared to continue without an answer — enough to say the
+	// notes are piling up, never enough to fail a build.
+	FYIStaleDays = 14
 )
 
 // countDays renders a threshold or an age for a finding, so the text can never
@@ -70,13 +79,19 @@ var (
 	checkUntickedShipped = Check{"unticked-shipped", High,
 		"marked Shipped while ## Tasks still has open boxes"}
 	checkInboxStale = Check{"inbox-stale", High,
-		"a question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
+		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkUnchecked = Check{"unchecked", High,
 		"a check: date passed and nobody recorded the outcome"}
 	checkSecretInDoc = Check{"secret-in-doc", High,
 		"a doc contains something shaped like a real credential"}
 	checkNeedsCycle = Check{"needs-cycle", High,
 		"features need each other in a loop, so none of them can ever start"}
+	// HIGH because `kit claim` does not consult `audit`: this has to fail --strict to
+	// stop an agent being handed a design nobody wrote. It cannot misfire — the
+	// template's guidance lives in comments, which every parser here strips, so an
+	// empty section means the section was never written.
+	checkUnfilledTemplate = Check{"unfilled-template", High,
+		"a non-Draft doc has an empty ## Problem, ## Design, or ## Tasks — nobody wrote the plan"}
 
 	// MEDIUM — incomplete or drifting.
 	checkNoPlan = Check{"no-plan", Medium,
@@ -87,8 +102,10 @@ var (
 		"the as-built doc predates the most recent shipped: date"}
 	checkShippedNoDate = Check{"shipped-no-date", Medium,
 		"Shipped with no shipped: date"}
+	// Only at Shipped. An Accepted feature has nothing to log yet, and demanding one
+	// before work starts produced a fix line telling the author to set it back to Draft.
 	checkMissingSection = Check{"missing-section", Medium,
-		"a non-Draft doc has an empty ## Problem, ## Design, or ## Log"}
+		"a Shipped doc has an empty ## Log, so nothing records what was decided"}
 	checkIDMismatch = Check{"id-mismatch", Medium,
 		"frontmatter id: disagrees with the filename"}
 	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
@@ -124,20 +141,24 @@ var (
 		"no INBOX.md, so a blocked agent has nowhere to put a question"}
 	checkNoVision = Check{"no-vision", Low,
 		"features are being planned but nothing says what the project is for"}
+	checkFYIStale = Check{"fyi-stale", Low,
+		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
 )
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
-	checkSecretInDoc, checkNeedsCycle,
+	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
 	checkDuplicateID, checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
 	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
-	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision,
+	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
 }
 
-var requiredSections = []string{"Problem", "Design", "Log"}
+// plannedSections are what an agent needs in order to work a feature at all. `Log` is
+// not among them: it is written as the work happens, so it is checked at Shipped only.
+var plannedSections = []string{"Problem", "Design", "Tasks"}
 
 var (
 	linkRe   = regexp.MustCompile(`\[[^\]]*\]\(([^)]+)\)`)
@@ -268,7 +289,9 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			open, total := f.TaskCount()
 			switch {
 			// Claimable with nothing in it: an agent takes this and finds no work.
-			case total == 0:
+			// A section that is empty outright is unfilled-template's, so one defect
+			// never produces two findings; this is the section with prose and no boxes.
+			case total == 0 && f.Section("Tasks") != "":
 				report(checkNoTasks, at,
 					fmt.Sprintf("%s: %s with no ## Tasks boxes", f.Name(), f.Status),
 					`write the plan as PR-sized boxes, or set status: Draft until you can`)
@@ -276,7 +299,10 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			case open == 0:
 				report(checkDoneNotShipped, at,
 					fmt.Sprintf("%s: every task is ticked but status is %s", f.Name(), f.Status),
-					"set status: Shipped and the shipped: date, or add the next task")
+					// Naming the command, not the edit: hand-stamping the status and date
+					// is what `unticked-shipped` and `shipped-no-date` are the wreckage of,
+					// and telling an agent to do it here undoes the reason ship exists.
+					"run: kit ship "+f.ID+" — or add the next task")
 			}
 		}
 
@@ -298,13 +324,18 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		}
 
 		if f.Status != StatusDraft {
-			for _, heading := range requiredSections {
+			for _, heading := range plannedSections {
 				if f.Section(heading) == "" {
-					report(checkMissingSection, at,
-						fmt.Sprintf("%s: ## %s is missing or empty", f.Name(), heading),
-						"fill it in, or set status: Draft until you can")
+					report(checkUnfilledTemplate, at,
+						fmt.Sprintf("%s: ## %s was never written", f.Name(), heading),
+						"write it, or set status: Draft until you can")
 				}
 			}
+		}
+		if f.Status == StatusShipped && f.Section("Log") == "" {
+			report(checkMissingSection, at,
+				f.Name()+": ## Log is empty",
+				"record what was decided and why — a Shipped doc is frozen history")
 		}
 
 		// The claim is a branch name and nothing else, so branches are the only
@@ -381,7 +412,17 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		if q.When.IsZero() {
 			continue
 		}
-		if age := Days(q.When, today); age >= InboxStaleDays {
+		// The marker decides both the fuse and the severity. `kit block --fyi` promises
+		// work continues without an answer, and BlockersFor keeps that promise — an FYI
+		// reported at HIGH broke it anyway by failing the --strict gate rule 12 puts in
+		// front of `kit ship`.
+		age := Days(q.When, today)
+		switch {
+		case q.FYI && age >= FYIStaleDays:
+			report(checkFYIStale, r.Rel(r.Inbox),
+				fmt.Sprintf("undrained for %s: %s", countDays(age), clip(q.Text, 70)),
+				"answer it, or delete it if it stopped mattering")
+		case !q.FYI && age >= InboxStaleDays:
 			report(checkInboxStale, r.Rel(r.Inbox),
 				fmt.Sprintf("unanswered for %s: %s", countDays(age), clip(q.Text, 70)),
 				"answer it, or delete it if it stopped mattering")
@@ -480,7 +521,10 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 	// Rule 10 has real blast radius: a doc is committed, and a pushed commit cannot
 	// be unpublished. Only the documents the repo model already opens — `audit` is
 	// not a repo-wide secret scanner and must not be mistaken for one.
-	docs := []string{r.Inbox, r.Vision, r.Tech, r.Protocol}
+	// BACKLOG.md is here because rule 6 sends discovered work to it, so agents write to
+	// it as freely as to a feature doc. It was the only agent-writable document the scan
+	// did not open.
+	docs := []string{r.Inbox, r.Vision, r.Tech, r.Protocol, r.Backlog}
 	for _, f := range r.Features {
 		docs = append(docs, f.Path)
 	}

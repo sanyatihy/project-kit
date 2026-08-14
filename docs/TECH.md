@@ -100,9 +100,31 @@ Mechanisms worth knowing before changing anything:
   `AGENTS.md`. A refresh that changes nothing reports as kept, or the word stops
   meaning anything. Schema versioning was considered and deferred: every format change
   so far has been additive, and the trigger to revisit is the first one that cannot be.
+- **The feature template's guidance lives in HTML comments, and that is load-bearing.**
+  `ParseSections` strips comments and `forEachBox` never sees them, so anything inside
+  `<!-- -->` reaches the author and not the tool. Moving guidance out of comments would
+  silently restore the worst behaviour this kit has had: with visible prose in every
+  section and two `- [ ] …` boxes under `## Tasks`, a doc nobody had written parsed as a
+  finished plan — `kit next` counted `0/2` and handed an agent `…` as the box to build,
+  `kit audit` said the docs and the repo agreed, and the only finding went to the author
+  who tidied the placeholder out of `## Log`. The gate was anti-correlated with the work.
+  `unfilled-template` is HIGH on the back of that: because an unwritten section now
+  parses as empty, the check cannot misfire, and `kit claim` does not consult `audit`, so
+  `--strict` is the only thing standing between an unwritten doc and an agent acting on
+  it. `missing-section` keeps only `## Log` and only at `Shipped`, since an Accepted
+  feature has nothing to log yet.
 - **Blocking is an INBOX line naming the feature.** `next` skips it immediately;
-  `audit` escalates it after a day. Thresholds follow the cadence of what they
-  watch, not an operator's calendar, and an idle agent costs minutes.
+  `audit` escalates it after two days. Thresholds follow the cadence of what they
+  watch, not an operator's calendar, and an idle agent costs minutes. Two days rather
+  than one because a line carries a date and no time, so ages run from midnight UTC on
+  the day of filing and a one-day fuse could burn out an hour after a question was
+  asked.
+- **The BLOCKING/FYI marker decides the severity, not just whether work stops.** An
+  unanswered BLOCKING question is `inbox-stale` at HIGH; an undrained FYI note is
+  `fyi-stale` at LOW after a fortnight. One severity cannot serve both: `--fyi` promises
+  the feature is not blocked, and reporting it at HIGH broke that promise by way of the
+  `--strict` gate the protocol puts in front of `kit ship` — a note explicitly cleared
+  to wait stopped everything from shipping.
 - **`audit` never writes.** An auditor that fixes things stops being read.
 - **Both output formats carry the same conclusion.** `Plan.Guidance` is decided once
   in `internal/kit` and rendered by the text output and carried by `--json`, so they
@@ -140,7 +162,9 @@ Mechanisms worth knowing before changing anything:
   hand off to — silence there is what let a first real run merge itself to `main`.
 - **`secret-in-doc` matches shapes, not entropy.** Seven formats whose issuer
   publishes a fixed prefix or envelope, over the documents the repo model already
-  opens — not the source, not history. An eighth, a URL carrying userinfo, was
+  opens — the feature docs, the inbox, the vision, the as-built doc, the protocol, and
+  `BACKLOG.md`, which rule 6 makes as agent-writable as any of them. Not the source, not
+  history. An eighth, a URL carrying userinfo, was
   removed after it failed a real project's doc for correctly explaining that such
   URLs are rejected: it was structural rather than issuer-anchored, so it never met
   the admission rule the other seven do. HIGH because `--strict` is the only lever and

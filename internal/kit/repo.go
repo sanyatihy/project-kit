@@ -110,6 +110,7 @@ type Repo struct {
 	Vision      string
 	Inbox       string
 	Protocol    string
+	Backlog     string // agents write to it, so the secret scan has to open it
 
 	commits []commit
 	refs    []string
@@ -133,6 +134,12 @@ func Open(root string) (*Repo, error) {
 	r.Vision = r.firstFile(visionDocs)
 	r.Inbox = r.firstFile(inboxes)
 	r.Protocol = r.firstFile(protocols)
+	if r.FeaturesDir != "" {
+		p := filepath.Join(r.FeaturesDir, "BACKLOG.md")
+		if info, err := os.Stat(p); err == nil && !info.IsDir() {
+			r.Backlog = p
+		}
+	}
 	r.loadFeatures()
 	return r, nil
 }

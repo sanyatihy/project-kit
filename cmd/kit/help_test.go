@@ -165,7 +165,11 @@ func TestThresholdProseCarriesTheRealNumbers(t *testing.T) {
 	for _, tc := range []struct {
 		code string
 		days int
-	}{{"stalled", kit.StalledDays}, {"inbox-stale", kit.InboxStaleDays}} {
+	}{
+		{"stalled", kit.StalledDays},
+		{"inbox-stale", kit.InboxStaleDays},
+		{"fyi-stale", kit.FYIStaleDays},
+	} {
 		want := fmt.Sprintf("%d day", tc.days)
 		found := false
 		for _, c := range kit.Checks {
