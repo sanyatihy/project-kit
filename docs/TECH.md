@@ -96,6 +96,14 @@ Mechanisms worth knowing before changing anything:
   `audit` escalates it after a day. Thresholds follow the cadence of what they
   watch, not an operator's calendar, and an idle agent costs minutes.
 - **`audit` never writes.** An auditor that fixes things stops being read.
+- **Every run of `kit next` ends with an instruction.** Four states — something is
+  yours, something is free, nothing is free, nothing exists — and each closes with
+  what to do. The invariant is the point rather than any sentence: three vacuums have
+  now been fixed the same way (who merges, where a draft lives, what to do when the
+  board is full but none of it is yours), and each time an agent reached the end of
+  the documented path, found nothing, and decided sensibly and wrongly. `next` also
+  never tells an agent to accept a Draft — a tool that instructs past the project's
+  own gate makes the gate advisory.
 - **Shipping is a handoff.** `kit ship` ends the agent's part: push the branch and
   stop, because reviewing and merging are not the agent's. It says so at the moment
   of the decision rather than relying on the protocol alone, which is read at the

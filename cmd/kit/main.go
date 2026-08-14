@@ -416,18 +416,31 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		}
 	}
 
-	if plan.Empty() {
-		if drafts := kit.Drafts(r); len(drafts) > 0 {
-			fmt.Printf("\n  nothing open, but there are drafts:\n")
-			for _, f := range drafts {
-				fmt.Printf("    %s  %s\n", f.ID, kit.Show(f.Title, 60))
-				fmt.Printf("          %s\n", f.Rel)
-			}
-			fmt.Printf("\n  settle the design, then set status: Accepted\n")
-		} else {
-			fmt.Printf("\n  nothing open — start a feature:\n")
-			fmt.Printf("    kit new \"<what the feature does>\"\n")
+	// Every run ends with an instruction. A state the tool can reach and does not
+	// close is a state something else decides: an agent that found a board of taken
+	// and blocked features, no closing line, and a protocol saying "do not idle"
+	// concluded it should help with work somebody else had claimed.
+	switch drafts := kit.Drafts(r); {
+	case len(plan.Yours) > 0 || len(plan.Ready) > 0:
+		// Already told what to do, above.
+	case !plan.Empty():
+		fmt.Printf("\n  %s\n", paint("nothing is free", "33", color))
+		fmt.Printf("    every feature is claimed or waiting on something. A claimed\n")
+		fmt.Printf("    feature is not yours — do not work it, tick it, or help with it.\n")
+		fmt.Printf("    Stopping here is the right outcome: say so and wait.\n")
+	case len(drafts) > 0:
+		fmt.Printf("\n  nothing open, but there are drafts:\n")
+		for _, f := range drafts {
+			fmt.Printf("    %s  %s\n", f.ID, kit.Show(f.Title, 60))
+			fmt.Printf("          %s\n", f.Rel)
 		}
+		// Never "set status: Accepted": rule 1 makes that a human's call, and a tool
+		// that instructs an agent past the project's own gate makes the gate advisory.
+		fmt.Printf("\n  these are waiting on a human to accept them. Draft another if you\n")
+		fmt.Printf("  were asked to, otherwise stop and say they need a decision.\n")
+	default:
+		fmt.Printf("\n  nothing open — start a feature:\n")
+		fmt.Printf("    kit new \"<what the feature does>\"\n")
 	}
 	fmt.Println()
 }

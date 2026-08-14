@@ -198,6 +198,65 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 	}
 }
 
+func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
+	// The invariant, not any particular sentence. A state the tool can reach and
+	// does not close is a state something else decides — which is how an agent
+	// facing a board of taken and blocked features started working on one of them.
+	tell := []string{"kit claim", "kit new", "nothing is free", "waiting on a human"}
+	ends := func(out string) bool {
+		for _, phrase := range tell {
+			if strings.Contains(out, phrase) {
+				return true
+			}
+		}
+		return false
+	}
+
+	t.Run("nothing exists", func(t *testing.T) {
+		p := setUp(t)
+		if out := p.run("next").ok().Stdout; !ends(out) {
+			t.Errorf("no instruction:\n%s", out)
+		}
+	})
+	t.Run("only drafts", func(t *testing.T) {
+		p := setUp(t)
+		feature(p, "0001", "idea", "Idea", "Draft", "- [ ] Do it")
+		out := p.run("next").ok().Stdout
+		if !ends(out) {
+			t.Errorf("no instruction:\n%s", out)
+		}
+		// Accepting is a human's call, so the tool must not tell an agent to do it.
+		if strings.Contains(out, "set status: Accepted") {
+			t.Errorf("next told an agent to take the human's gate:\n%s", out)
+		}
+	})
+	t.Run("something ready", func(t *testing.T) {
+		p := setUp(t)
+		feature(p, "0001", "go", "Go", "Accepted", "- [ ] Do it")
+		if out := p.run("next").ok().Stdout; !ends(out) {
+			t.Errorf("no instruction:\n%s", out)
+		}
+	})
+	t.Run("everything taken or blocked", func(t *testing.T) {
+		// The state that actually failed: one feature claimed by somebody else, the
+		// rest waiting on it. Nothing for this agent, and it must be told so.
+		p := setUp(t)
+		feature(p, "0001", "taken", "Taken", "Accepted", "- [ ] Do it")
+		p.write("docs/features/0002-waiting.md",
+			doc("0002", "Waiting", "Accepted", "needs: 0001", "- [ ] Do it"))
+		p.commitAll("two features")
+		p.git("branch", "0001-taken")
+
+		out := p.run("next").ok().Stdout
+		if !strings.Contains(out, "nothing is free") {
+			t.Errorf("the state that broke it does not close:\n%s", out)
+		}
+		if !strings.Contains(out, "not yours") {
+			t.Errorf("nothing tells the agent the claimed feature is off limits:\n%s", out)
+		}
+	})
+}
+
 func TestNextIsBlockedByAnOpenBlockingQuestion(t *testing.T) {
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
@@ -234,12 +293,17 @@ func TestNextBlocksAFeatureWithEveryBoxTicked(t *testing.T) {
 func TestNextExplainsDraftsRatherThanSayingNothingIsOpen(t *testing.T) {
 	// `next` never offers a Draft — that is where a human settles the design — but
 	// silence would look like there is no work at all.
+	//
+	// This used to assert the output said "Accepted", which was the tool telling an
+	// agent to take the human's gate. Naming who the drafts are waiting on is the
+	// same information without the instruction to overstep it.
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 
 	r := p.run("next").ok()
-	r.has("drafts", "0001", "Accepted")
+	r.has("drafts", "0001", "waiting on a human")
 	r.lacks("start here")
+	r.lacks("set status: Accepted")
 }
 
 func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
