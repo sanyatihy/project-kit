@@ -1,7 +1,8 @@
 ---
 id: 0013
 title: Never leave an agent without an instruction
-status: In progress
+status: Shipped
+shipped: 2026-08-14
 created: 2026-08-14
 needs:
 related: 0011-features-declare-what-they-need.md
@@ -68,10 +69,10 @@ valid end — an agent that stops and says so is behaving correctly, which rule 
 "do not idle" currently reads as forbidding.
 
 ## Tasks
-- [ ] `kit next` closes the state where nothing is free, and says stopping is right
-- [ ] `kit next` stops telling an agent to accept a Draft
-- [ ] Protocol: a claimed feature is never yours, and having nothing to do is a valid end
-- [ ] A test that every state `next` can reach ends with an instruction
+- [x] `kit next` closes the state where nothing is free, and says stopping is right
+- [x] `kit next` stops telling an agent to accept a Draft
+- [x] Protocol: a claimed feature is never yours, and having nothing to do is a valid end
+- [x] A test that every state `next` can reach ends with an instruction
 
 ## Open questions
 <!-- none -->

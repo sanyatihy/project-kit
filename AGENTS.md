@@ -107,6 +107,15 @@ whole model, and `kit help template` prints the feature doc format.
    `kit next` and take something else. Losing is normal and costs nothing. Never
    create the claim branch by hand: a branch only you can see is not a claim, and a
    push that reports "up to date" found somebody else's.
+
+   **A feature `kit next` lists as taken is not yours.** Not to work on, not to tick
+   a box in, not to "help with" because it looked slow. One agent per feature means
+   one, and two agents in one feature produce one branch nobody can review.
+
+   **If nothing is free, stop.** Everything claimed or waiting is a real answer and
+   the right one — say so and wait for a human. Do not pick up claimed work, do not
+   start a feature nobody accepted, and do not invent something to be useful. An
+   idle agent costs nothing; two agents in one feature costs the feature.
 3. **One feature per checkout. Work in the worktree `kit claim` prints.** The
    worktree is the isolation and git provides it; the kit only refuses to hand out
    work in a checkout that is occupied. Run in one, `kit next` reports that feature
@@ -132,8 +141,9 @@ whole model, and `kit help template` prints the feature doc format.
    every future agent around it.
 9. **Blocked on a decision only a human can make?** Run
    `kit block <id> "<question, with your leaning>"`, then move to another feature.
-   Do not guess, and do not idle. Use `--fyi` for anything work can continue
-   without.
+   Do not guess. Use `--fyi` for anything work can continue without. "Do not idle"
+   means do not sit on a question you could have filed — it is not licence to take
+   work that is not yours; see rule 2 for when stopping is correct.
 10. **Never put a real secret in a doc.** Feature docs, `## Log`, and `docs/INBOX.md`
    are committed, and a pushed commit cannot be unpublished. Name the variable and
    where the value lives — never the value. `audit` reports `secret-in-doc` at HIGH
