@@ -615,11 +615,19 @@ func (r *Repo) BranchBuildsOn(branch, rel string) bool {
 	return false
 }
 
-// OrphanClaims lists branches named like a claim — a leading four-digit ID —
-// whose feature doc does not exist.
+// OrphanClaims lists branches named like a claim — a leading four-digit ID — that cite a
+// feature doc nobody wrote.
 //
 // Only branches that look like claims are considered. Ordinary working branches
 // cite no ID and must never be reported, or the check becomes noise.
+//
+// A finding here needs positive evidence, not absence. The protocol puts a draft on a
+// branch of its own and commits nothing to the trunk, so from the trunk the doc is
+// *always* missing while the feature is in flight — and this reported every open feature
+// as an orphan, advising a fix that deletes the draft. So a branch is reported only when
+// its own tree can be read and confirms the doc is not there. An unresolvable branch — one
+// that exists on a remote nobody has fetched — is passed over: missing a real orphan until
+// someone fetches costs far less than telling an agent to delete work it cannot see.
 func (r *Repo) OrphanClaims() []string {
 	r.loadGit()
 	known := map[string]bool{}
@@ -640,10 +648,60 @@ func (r *Repo) OrphanClaims() []string {
 			continue
 		}
 		seen[name] = true
+		if rev := r.resolveBranch(name); rev == "" || r.BranchCarriesItsDoc(name) {
+			continue
+		}
 		out = append(out, name)
 	}
 	sort.Strings(out)
 	return out
+}
+
+// HasClaimShapedBranch reports whether any branch leads with a feature ID.
+//
+// Enough to know somebody is writing a plan somewhere, which is all `no-plan` needs: its
+// job is to catch a project with commits and nothing written down, and a branch named
+// `0001-…` is not that even when the trunk holds no doc yet.
+func (r *Repo) HasClaimShapedBranch() bool {
+	r.loadGit()
+	for _, ref := range r.refs {
+		name := branchName(ref)
+		if !r.isTrunk(name) && idPrefixRe.FindString(name) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// BranchCarriesItsDoc reports whether a branch holds the feature doc it is named after.
+// The doc names the branch and the branch cites the doc, so the filename is derivable and
+// no mapping has to be kept.
+func (r *Repo) BranchCarriesItsDoc(branch string) bool {
+	rev := r.resolveBranch(branch)
+	if rev == "" {
+		return false
+	}
+	dir := "docs/features"
+	if r.FeaturesDir != "" {
+		dir = r.Rel(r.FeaturesDir)
+	}
+	_, err := r.gitRun("cat-file", "-e", rev+":"+dir+"/"+branch+".md")
+	return err == nil
+}
+
+// resolveBranch finds a revision for a branch name, widening from the local ref to each
+// remote-tracking one, and returns "" when nothing resolves.
+func (r *Repo) resolveBranch(branch string) string {
+	candidates := []string{"refs/heads/" + branch}
+	for _, remote := range r.remotes() {
+		candidates = append(candidates, "refs/remotes/"+remote+"/"+branch)
+	}
+	for _, ref := range candidates {
+		if r.git("rev-parse", "--verify", "--quiet", ref) != "" {
+			return ref
+		}
+	}
+	return ""
 }
 
 // LastMentioned is the newest commit citing this ID, or the zero time.

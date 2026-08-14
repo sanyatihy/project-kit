@@ -477,7 +477,10 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 	// Set up, work happening, nothing written down. This is what adoption
 	// failing looks like, and "docs and repo agree" would otherwise be true
 	// only because there are no docs to disagree.
-	if len(r.Features) == 0 && r.HasHistory() {
+	// A claim-shaped branch stands this down: the protocol puts a draft on a branch of
+	// its own, so a trunk with no docs and a branch named after a feature is the protocol
+	// working, not adoption failing.
+	if len(r.Features) == 0 && r.HasHistory() && !r.HasClaimShapedBranch() {
 		report(checkNoPlan, r.Name,
 			"the project has commits but not one feature doc — nothing records the plan",
 			`run: kit new "<what the feature does>"`)

@@ -186,6 +186,15 @@ Mechanisms worth knowing before changing anything:
   not merged. The doc's mtime is deliberately *not* a signal — for a tracked file it
   records when git last wrote it out, which a merge resets to now, so a freshly merged
   draft masked a claim that had been dead for a week.
+- **A claim finding needs positive evidence, not absence.** The protocol puts a draft on a
+  branch of its own and commits nothing to the trunk, so from the trunk the doc is *always*
+  missing while a feature is in flight — and `orphan-claim` reported every open feature as
+  a branch citing a doc nobody wrote, advising a fix that deletes the draft, while
+  `no-plan` said the project had commits and no plan. Both now reason from what can be
+  proved: a branch is an orphan only if its own tree can be read and confirms the doc is
+  absent, and `no-plan` stands down when any claim-shaped branch exists. A branch nobody
+  has fetched is passed over rather than guessed at — missing a real orphan until someone
+  fetches is far cheaper than telling an agent to delete work it cannot see.
 - **The trunk is asked for, not assumed.** `origin/HEAD`, then `main`, then `master`, then
   a HEAD that is not claim-shaped. Hard-coding the two conventional names meant a project
   whose default branch is neither had no trunk to diff against, so `BranchBuildsOn`
