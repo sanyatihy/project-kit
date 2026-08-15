@@ -11,139 +11,87 @@ related: 0018-give-the-human-an-accept-command.md, 0014-reach-the-agent-not-just
 ---
 
 ## Problem
-The drafting half of the protocol was designed for a review flow the operator does not
-run, and it has now failed twice in the field.
-
-**The board goes blind on the repo that adopts the kit.** In a real project that took the
-kit on, five features were drafted and each was pushed to a branch of its own, exactly as
-written. None merged, because none was worth a pull request on its own. The result:
+The drafting rules were written for a per-feature review flow the operator does not run,
+and they blind the board. In a real project that adopted the kit, five features were
+drafted onto five branches exactly as documented, none merged, and:
 
 ```
 $ kit next /…/observer
   nothing is planned yet. Read docs/VISION.md and draft a feature, or stop.
 ```
 
-Five features exist. The board reads `main`, the plan is not on `main`, and the tool whose
-stated job is answering *what should I work on* in every repo answers it wrongly in the
-repo most recently set up. Forty other branches make the five drafts invisible by eye too.
+The protocol also contradicts itself three lines apart in `AGENTS-section.md`: a draft
+*"waits on a branch of its own"* and *"one review and one merge per feature"*, but a
+project just set up gets *"one pull request landing the scaffold and the whole set of
+drafts"*.
 
-**The protocol contradicts itself, three lines apart.** `templates/AGENTS-section.md` says
-a draft *"waits on a branch of its own"* and *"one review and one merge per feature"*, then
-says that for a project just set up this means *"one pull request landing the scaffold and
-the whole set of drafts"*. Batching is already the rule for a new project and per-feature
-branches the rule for an existing one, and nothing says why. The agent in that repo
-followed the second and was right to.
-
-**The gate is in the wrong place.** `status: Accepted` blocks every agent until a human
-transitions it, on the theory that nobody should build a design nobody settled. In
-practice the operator brainstorms a handful of drafts, refines them across later agentic
-sessions, and reviews the implementation pull request — which is a review either way. The
-gate does not add a review; it adds a stop before one. Meanwhile the thing that genuinely
-signals *unsettled* is not `status:` at all: it is an open `## Open questions` section, or
-a BLOCKING line in the inbox, and both are already machine-readable.
-
-**A branch named after a doc is a claim, so a draft on one is a claim.** `Branch()` derives
-the branch from the filename, which 0006 made the claim. 0014 had to patch the fallout with
-a rule that the draft branch is deleted on merge or the feature becomes permanently
-unclaimable. That rule is a workaround for two meanings sharing one name.
+Underneath both: `status: Accepted` gates every agent, while the facts that actually mean
+*unsettled* — an open `## Open questions` section, a BLOCKING inbox line — are already
+machine-readable and ignored by `claim`. And because `Branch()` derives the claim from the
+filename, a draft on its own branch is a claim, which 0014 had to patch with a
+delete-the-branch rule.
 
 ## Non-goals
-- **Removing the human from the loop.** `kit accept` stays, and so does the inbox. What
-  changes is that acceptance stops being a *precondition for work* and becomes a
-  *statement of confidence* that orders the board. The operator still reviews every
-  implementation pull request, which is the review that was always going to happen.
-- **Letting an agent past a question only the operator can answer.** A BLOCKING line in
-  `docs/INBOX.md` still refuses a claim, unchanged. That is the gate that survives,
-  because it is the one that marks work a human genuinely has to unblock.
-- **Auto-managing `status:` on claim.** Whether claiming should stamp `In progress` is a
-  real question and a separate one; nothing here changes who writes that field.
-- **Reserving IDs over the network.** Batching makes `duplicate-id` more likely, not less
-  — see `## Open questions`. The mechanism is already scoped in `BACKLOG.md` and is its
-  own feature.
-- **A review workflow of any kind.** No approvals, no forge API, no state outside markdown
-  and git. Unchanged from 0018.
+- **Removing the human.** `kit accept` stays; it stops being a precondition for work and
+  becomes a statement of confidence that orders the board. The implementation pull request
+  is still reviewed.
+- **Letting an agent past a question only the operator can answer.** A BLOCKING inbox line
+  still refuses a claim. That is the gate that survives.
+- **Auto-stamping `status:` on claim.** Real question, separate feature.
+- **Reserving IDs over the network.** Batching makes `duplicate-id` likelier; the fix is
+  already scoped in `BACKLOG.md` and is its own feature.
+- **Any review workflow.** No approvals, no forge API. Unchanged from 0018.
 
 ## Design
+**Drafting produces a plan round, not a branch per feature.** A session's drafts land on
+one branch named `plan/<something>` — never a leading four-digit ID, which `Mentions` would
+read as a claim. The operator iterates locally, accepts what they want to bless, merges
+once. Docs reach `main` at whatever status they reached.
 
-**Drafting produces a plan round, not a branch per feature.** A session's drafts land
-together on one branch whose name is not claim-shaped — `plan/<something>`, never a leading
-four-digit ID, because `Mentions` matches an ID token anywhere in a branch name and would
-read it as a claim. The operator iterates locally, accepts what they want to bless, and
-merges once. Docs reach `main` at whatever status they reached, `Draft` included.
-
-This deletes the collision rather than patching it: a draft never sits on a
-feature-named branch, so the branch name means *claim* and nothing else, and 0014's
-delete-the-draft-branch rule can go.
+This deletes the name collision rather than patching it, so 0014's delete-the-branch rule
+goes with it.
 
 **`status:` orders the board instead of gating it.** `ActiveFeatures` already ranks
-`In progress` before `Accepted`; `Draft` joins below them:
+In progress before Accepted; Draft joins below:
 
-| status | `kit next` offers it | means |
+| status | offered | means |
 |---|---|---|
 | In progress | first | someone is on it |
-| Accepted | next | the operator blessed it — work it hard |
-| Draft | last | invented, not blessed — take it, expect to think |
-
-Autonomy falls out of the sort. Accepting several at once is how the operator says *these
-are settled, go*, which is the case they already described wanting; nothing forces them to
-do it before work can start.
+| Accepted | next | blessed — work it hard |
+| Draft | last | invented, not blessed — expect to think |
 
 **`kit claim` accepts a Draft, and refuses an empty one.** This is the load-bearing half.
-`unfilled-template` deliberately exempts `Draft` today, and that exemption is only safe
-*because* Drafts cannot be claimed. Lift the gate without closing it and `claim` will hand
-an agent a doc straight out of `kit new` with three empty sections. So `claim` reuses the
-same emptiness test `Accept` should have — empty `## Problem`, `## Design` or `## Tasks`
-is refused as `NotYours`, naming what is missing.
+`unfilled-template` exempts Draft only because Drafts cannot be claimed today; lift the
+gate without closing that and `claim` hands an agent a doc straight out of `kit new`. So
+`claim` reuses the emptiness test on `## Problem`, `## Design` and `## Tasks`.
 
-What still refuses a claim: a BLOCKING inbox line, a duplicate ID, a terminal status, and
-now an unwritten plan. What no longer refuses one: `status: Draft`.
+Still refuses a claim: a BLOCKING inbox line, a duplicate ID, a terminal status, an
+unwritten plan. No longer refuses: `status: Draft`.
 
-**`## Open questions` stops meaning "stop" and starts meaning "settle these first".** The
-protocol already splits the two — questions an agent could not decide go in the section,
-questions only the operator can decide go in the inbox — and only the second is a genuine
-block. An agent claiming a draft with open questions is expected to settle them, or move
-what only a human can answer to the inbox with `kit block`. That is the refine-then-build
-loop, and it needs no new machinery.
+**`## Open questions` means "settle these first", not "stop".** An agent claiming such a
+draft settles them, or moves what only a human can answer to the inbox with `kit block`.
+That is the refine-then-build loop, with no new machinery.
 
-**`draft-claimed` is re-pointed rather than deleted.** It currently reports building on a
-design nobody settled, which under this model is the normal flow and would fire on healthy
-projects. The real defect it was reaching for survives: building on a doc whose
-`## Open questions` are still open. Same check, honest again.
+**`draft-claimed` is re-pointed** at building on a doc whose `## Open questions` are still
+open — the defect it was reaching for, now that Draft-plus-work is the normal flow.
 
-**`kit drop <id>`** retires a doc that will not be built. Drafts now live on `main`
-permanently, so an abandoned one stays on the board for ever; under the old model it was a
-branch you deleted. `ship` and `accept` exist because hand-stamping frontmatter is what
-`unticked-shipped` and `shipped-no-date` are the wreckage of, and this is the same edit
-with the same failure mode.
-
-**The protocol section is rewritten around the plan round**, and the contradiction goes
-with it.
+**`kit drop <id>`** retires a doc that will not be built, since drafts now live on `main`
+permanently instead of being a branch you delete.
 
 ## Tasks
-- [ ] `kit claim` allows `Draft`, and refuses any doc with an empty Problem, Design or
-      Tasks — with a conformance case for each half
-- [ ] `ActiveFeatures` ranks Draft below Accepted, and `kit next` offers drafts as work
-      rather than as a note that drafts exist
-- [ ] `draft-claimed` re-pointed at open questions, with a fires case and a stays-quiet case
+- [ ] `kit claim` allows Draft and refuses an empty doc, with a conformance case each
+- [ ] `ActiveFeatures` ranks Draft below Accepted; `kit next` offers drafts as work
+- [ ] `draft-claimed` re-pointed at open questions, with fires and stays-quiet cases
 - [ ] `kit drop <id>`, refusing a Shipped doc, with `kit help` and README entries
-- [ ] Rewrite the drafting rules in `templates/AGENTS-section.md` around the plan round;
-      delete the per-feature-branch rule and 0014's delete-the-branch rule
-- [ ] `kit help` topics and README updated to describe status as priority, not permission
-
-## Open questions
-- **Does the plan round make `duplicate-id` bite often enough to fix now?** `NextID` reads
-  only the current checkout, so a plan branch in flight is invisible to the next session
-  and a batch collides five IDs where a single draft collided one. `BACKLOG.md` already
-  scopes the fix — reserve `refs/kit/ids/<id>` with the same compare-and-swap `claim` uses
-  — and its promote-when is "a second agent starts drafting in parallel for real", which
-  this model makes routine. Leaning: ship this first and promote that next, because the
-  cost is a rename and the fix deserves its own feature rather than a corner of this one.
-- **How does a Draft already on `main` get accepted later?** `accept` edits the doc, and
-  `main` takes changes by pull request, so blessing one afterwards costs a pull request per
-  feature — the per-feature review this feature exists to remove, relocated to acceptance.
-  Leaning: accept in rounds too, one small pull request touching only `status:` lines for
-  several features at once. Worth confirming before the protocol says it.
+- [ ] Rewrite the drafting rules in `AGENTS-section.md` around the plan round, deleting the
+      per-feature-branch rule and 0014's delete-the-branch rule
+- [ ] `kit help` and README describe status as priority, not permission
 
 ## Log
-- 2026-08-15 — measured `kit next` against a real project that adopted the kit: five drafts
-  on five branches, board reports nothing planned. Scoped from that.
+- 2026-08-15 — measured `kit next` against a project that adopted the kit: five drafts on
+  five branches, board reports nothing planned.
+- 2026-08-15 — accepting happens in rounds too: one small pull request touching only
+  `status:` lines, so blessing a Draft already on `main` does not reintroduce a
+  per-feature review.
+- 2026-08-15 — ship this before ID reservation. Batching collides five IDs where one
+  collided before, but the cost is a rename and the fix deserves its own feature.
