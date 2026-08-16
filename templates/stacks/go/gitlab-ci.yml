@@ -1,0 +1,38 @@
+# One gate: the same `make check` you run locally. Deployment lives in its own
+# pipeline, added when the project has something to deploy.
+#
+# `kit audit --strict` deliberately does not run here. It would mean installing
+# the kit, which is a private module, which means a credential in every project
+# scaffolded from this template — one more secret to store and rotate in each
+# repo, and a first pipeline that fails until someone sets it. Drift is cheap to
+# catch locally, where `kit next` is already being run; it is not worth that.
+#
+# Two things are yours to set, because no template can guess them and they differ
+# between one GitLab instance and the next:
+#
+#   image  — a public golang image works on gitlab.com. A self-hosted instance
+#            usually pulls from an internal registry mirror instead.
+#   tags   — the runner tags this project is allowed to use. Delete the key
+#            entirely if the instance has untagged shared runners.
+
+stages: [check]
+
+variables:
+  GOTOOLCHAIN: local
+
+check:
+  stage: check
+  image: golang:{{goversion}}
+  tags: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  cache:
+    key:
+      files: [go.sum]
+    paths: [.cache/go-build, .cache/go-mod]
+  variables:
+    GOCACHE: $CI_PROJECT_DIR/.cache/go-build
+    GOMODCACHE: $CI_PROJECT_DIR/.cache/go-mod
+  script:
+    - make check

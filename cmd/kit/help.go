@@ -91,23 +91,32 @@ var topics = map[string]string{
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
 // above the flag list.
 var commandHelp = map[string]string{
-	"init": `kit init [PATH] [--stack STACK]
+	"init": `kit init [PATH] [--stack STACK] [--forge FORGE]
 
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
 and writes docs/VISION.md, docs/features/{README,TEMPLATE,BACKLOG}.md, docs/INBOX.md
 and AGENTS.md.
-With --stack it also scaffolds the code layout and one CI workflow.
+With --stack it also scaffolds the code layout and one CI pipeline.
+
+Which CI file that is depends on where the project is hosted, and it is worked out
+from the first thing that actually says: a .gitlab-ci.yml or .github/workflows the
+project already has, then the remote's host, then the directory layout when it
+names a forge (~/code/gitlab.example.com/team/thing). When nothing says, no CI
+file is written and the run tells you so — a missing pipeline is visible, and one
+for the wrong forge is not. --forge settles it outright.
 
 Your files are never overwritten or deleted, so it is safe to run on a populated
 directory and safe to re-run. Re-running is how a project picks up protocol
-changes: only the "## Work protocol" section of AGENTS.md is refreshed.
+changes: only the "## Work protocol" section of AGENTS.md is refreshed, and it is
+also how a project gets its CI file once it has a remote.
 
 Deployment scaffolding is deliberately not generated. Add it when the project has
 something to deploy.
 
   kit init ~/code/github.com/you/thing --stack go
+  kit init . --stack go --forge gitlab
   kit init .                     # fill in what is missing here`,
 
 	"new": `kit new <title...>
@@ -137,7 +146,7 @@ settled yet:
   ## Open questions is not empty   that section is what Draft is for
   a BLOCKING inbox line names it   a human already owes an answer, so answer that
 
-Run it on the draft's own branch, so the acceptance lands in the same pull request
+Run it on the draft's own branch, so the acceptance lands in the same review
 as the draft. Accepting after that request merges means a second one for a one-line
 change.
 

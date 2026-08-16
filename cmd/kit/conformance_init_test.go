@@ -183,7 +183,9 @@ func TestInitRespectsAnExistingFeaturesLayout(t *testing.T) {
 
 func TestInitStackGoScaffoldsTheCodeLayout(t *testing.T) {
 	p := newProject(t)
-	p.run("init", "--stack", "go").ok()
+	// --forge because a temp directory names no forge, and the CI file is the one part
+	// of a stack that depends on where the project is hosted.
+	p.run("init", "--stack", "go", "--forge", "github").ok()
 
 	for _, want := range []string{
 		"Makefile", ".gitignore", "go.mod", "README.md",
@@ -243,4 +245,71 @@ func TestInitRejectsAnUnknownStack(t *testing.T) {
 	r.errHas("unknown stack")
 	// The message has to say what is available, or the user is left guessing.
 	r.errHas("go")
+}
+
+// The forge decides one file, and getting it wrong is silent: a GitHub workflow in a
+// GitLab project never runs and nothing reports it. These four cases are the ladder.
+
+func TestInitBelievesTheProjectsOwnCIFile(t *testing.T) {
+	// Rung 1. A hostname cannot tell a self-hosted GitLab from a Gitea; the CI file the
+	// project already carries can, and it outranks everything below it.
+	p := newProject(t)
+	p.write(".gitlab-ci.yml", "stages: [check]\n")
+	p.run("init", "--stack", "go").ok()
+
+	if p.exists(".github/workflows/check.yml") {
+		t.Error("wrote a GitHub workflow into a project carrying .gitlab-ci.yml")
+	}
+	// And it kept theirs: place() never overwrites a file the project already has.
+	if got := p.read(".gitlab-ci.yml"); !strings.Contains(got, "stages: [check]") {
+		t.Errorf("the project's own pipeline was replaced:\n%s", got)
+	}
+}
+
+func TestInitReadsTheForgeFromTheRemote(t *testing.T) {
+	// Rung 2.
+	p := newProject(t)
+	p.git("init", "-q")
+	p.git("remote", "add", "origin", "https://github.com/owner/thing.git")
+	p.run("init", "--stack", "go").ok()
+
+	if !p.exists(".github/workflows/check.yml") {
+		t.Error("a github.com remote did not produce a workflow")
+	}
+}
+
+func TestInitWritesNoCIFileWhenNothingNamesAForge(t *testing.T) {
+	// Rung 4, and the reason the whole ladder exists: a missing pipeline is visible,
+	// and a pipeline for the wrong forge is not. The closing line has to give an agent
+	// both ways out, because the forge is a discoverable fact and not a human's call.
+	p := newProject(t)
+	r := p.run("init", "--stack", "go").ok()
+
+	if p.exists(".github/workflows/check.yml") || p.exists(".gitlab-ci.yml") {
+		t.Error("guessed a forge when nothing named one")
+	}
+	r.has("no CI file")
+	r.has("git remote add")
+	r.has("--forge")
+}
+
+func TestInitForgeOverridesDetection(t *testing.T) {
+	p := newProject(t)
+	p.git("init", "-q")
+	p.git("remote", "add", "origin", "https://github.com/owner/thing.git")
+	p.run("init", "--stack", "go", "--forge", "gitlab").ok()
+
+	if !p.exists(".gitlab-ci.yml") {
+		t.Error("--forge did not override the remote")
+	}
+	if p.exists(".github/workflows/check.yml") {
+		t.Error("--forge gitlab still wrote a GitHub workflow")
+	}
+}
+
+func TestInitRejectsAnUnknownForge(t *testing.T) {
+	p := newProject(t)
+	r := p.run("init", "--forge", "bitbucket").fails(2)
+	r.errHas("unknown forge")
+	r.errHas("gitlab")
 }

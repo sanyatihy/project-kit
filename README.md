@@ -71,6 +71,7 @@ worked and setting 2 is what is missing.
 ```sh
 kit init /path/to/project              # docs only
 kit init /path/to/project --stack go   # also Makefile, go.mod, cmd/, CI
+kit init /path/to/project --stack go --forge gitlab   # when nothing says which
 ```
 
 Run this from anywhere — `kit` is on your `$PATH`, so you never need to be inside
@@ -86,9 +87,32 @@ It never overwrites or deletes, so it is safe on a directory that already has fi
 
 With `--stack go` it also scaffolds the code layout: `Makefile`, `.gitignore`,
 `go.mod` (module path inferred from where the project sits on disk), `cmd/<name>/`,
-`internal/`, a `README.md`, and one CI workflow running `make check`.
+`internal/`, a `README.md`, and one CI pipeline running `make check`.
 
-That workflow does not run `kit audit --strict`. Doing so would mean installing the
+Which CI file that is depends on where the project is hosted, and the kit works it
+out from the first thing that actually says so:
+
+| | evidence |
+|---|---|
+| 1 | a `.gitlab-ci.yml` or `.github/workflows/` the project already has |
+| 2 | the remote's host — `github.com`, or anything containing `gitlab` |
+| 3 | the directory layout, when it names a forge: `~/code/gitlab.example.com/team/thing` |
+| 4 | nothing — **no CI file is written** |
+
+A hostname cannot tell a self-hosted GitLab from a Gitea, so the file the project
+already carries outranks it, and a host the kit does not recognise falls through
+rather than defaulting. Rung 3 is the only one that answers on a fresh `git init`
+with no remote yet.
+
+When nothing says, the run tells you so and names both ways to fix it: add a remote
+and re-run, or pass `--forge github|gitlab`, which settles it outright. A missing
+pipeline is visible; one for the wrong forge is not.
+
+Runner tags and the build image in a generated `.gitlab-ci.yml` are left for you —
+they differ between one GitLab instance and the next, and the file is never
+overwritten once it exists.
+
+That pipeline does not run `kit audit --strict`. Doing so would mean installing the
 kit in CI, and since the kit is a private module that means a credential in every
 project you scaffold — a secret to store and rotate per repo, and a first push that
 fails until someone sets it. Drift is caught locally instead, where `kit next` is

@@ -23,9 +23,10 @@ func TestAcceptSettlesADraftAndNextThenOffersIt(t *testing.T) {
 	if !strings.Contains(p.read(path), "status: Accepted") {
 		t.Errorf("accept did not set the status:\n%s", p.read(path))
 	}
-	// Where the edit lands is the ambiguity this closes: inside the draft's own pull
-	// request, not a second one after it merges.
-	if !strings.Contains(r.out(), "same pull request") {
+	// Where the edit lands is the ambiguity this closes: inside the draft's own review,
+	// not a second one after it merges. Worded without naming a forge — the same repo
+	// is a pull request on one host and a merge request on another.
+	if !strings.Contains(r.out(), "same review") {
 		t.Errorf("accept did not say where to commit it%s", r.context())
 	}
 

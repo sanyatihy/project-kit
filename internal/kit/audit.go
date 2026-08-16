@@ -180,6 +180,13 @@ var secretShapes = []struct {
 	{"a private key", regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----`)},
 	{"a GitHub token", regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9]{36}\b`)},
 	{"a GitHub fine-grained token", regexp.MustCompile(`\bgithub_pat_[A-Za-z0-9_]{22,}`)},
+	// GitLab issues one prefix per token kind and they are all `glXXX-`. Listed by kind
+	// rather than as one loose pattern so the report names what leaked: a personal token
+	// and a runner registration token are not the same incident.
+	{"a GitLab personal access token", regexp.MustCompile(`\bglpat-[A-Za-z0-9_-]{20,}`)},
+	{"a GitLab deploy token", regexp.MustCompile(`\bgldt-[A-Za-z0-9_-]{20,}`)},
+	{"a GitLab runner token", regexp.MustCompile(`\bglrt-[A-Za-z0-9_-]{20,}`)},
+	{"a GitLab CI job token", regexp.MustCompile(`\bglcbt-[A-Za-z0-9_-]{20,}`)},
 	{"an AWS access key id", regexp.MustCompile(`\b(?:AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16}\b`)},
 	{"a Slack token", regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9-]{10,}`)},
 	{"a Google API key", regexp.MustCompile(`\bAIza[A-Za-z0-9_-]{35}\b`)},

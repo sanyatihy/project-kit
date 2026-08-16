@@ -87,7 +87,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	// every step exiting 0 while the agent loses the plan it was sent to build.
 	if !r.TrackedAtHEAD(target.Rel) {
 		return nil, fmt.Errorf("%s is not committed on %s, so the branch this would push "+
-			"carries no plan.\nLand the plan first — a pull request, if the default branch "+
+			"carries no plan.\nLand the plan first — a pull or merge request, if the default branch "+
 			"is protected — then claim", target.Rel, orTrunk(r.Trunk()))
 	}
 

@@ -265,6 +265,24 @@ Recorded so they are not re-litigated. Each was considered and settled.
   write and verify code, never terraform/ansible/images. That is the fastest-rotting
   part and is not needed on day one. Going to production is a feature doc like any
   other.
+- **The forge is detected at `init`, materialised as a file, and never consulted
+  again.** `DetectForge` (`internal/kit/forge.go`) takes the first rung with positive
+  evidence: the project's own `.gitlab-ci.yml` or `.github/workflows/`, then the
+  remote's host, then the host segment `ModulePath` extracts from the directory
+  layout — and only when that segment names a recognised forge, so an unrecognised
+  host falls through instead of defaulting. `ciLayout` keys the CI file by forge;
+  everything else in a stack is forge-independent.
+
+  Unknown writes **no CI file** and says so with both ways out. A missing pipeline is
+  visible and one for the wrong forge is not: a GitHub workflow in a GitLab repo never
+  runs and no check can report it, because a repo mirrored to both forges carries both
+  files legitimately.
+
+  This is deliberately not configuration. There is no settings file and no per-host
+  profile, so nothing can drift — the answer becomes a file on disk at init, and
+  `next` and `audit` never detect anything. Per-instance CI values (runner tags,
+  internal registry mirrors) are left in the generated file for the project to fill
+  in, because they differ between two instances of the same forge.
 - **One job for `audit`:** find where the docs disagree with the repo. Resist adding
   a second.
 - **Prevent before detecting.** `kit block` and `kit ship` exist because writing an
