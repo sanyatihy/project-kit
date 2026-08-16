@@ -1,9 +1,9 @@
 ---
 id: 0020
 title: Work on the forge the project is actually on
-status: Draft
+status: Shipped
 created: 2026-08-15
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs:
