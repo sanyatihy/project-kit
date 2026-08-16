@@ -126,6 +126,25 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"is protected — then claim", target.Rel, orTrunk(r.Trunk()))
 	}
 
+	// The trunk is where a claim has to branch from, and the check above does not say so:
+	// a doc committed on the plan branch is in HEAD's tree, so the claim passes and the
+	// branch it pushes is a child of that plan branch. Integrating any of it then means
+	// merging into the branch its own author coordinated. That is how four features came
+	// to be merged by their builder with no branch ever pushed for review.
+	//
+	// An ordinary error rather than NotYours: nothing on an unlanded round is claimable,
+	// so an agent told to take something else meets the same wall at the next id.
+	//
+	// A project with one branch and no remote resolves no trunk, and there this is
+	// skipped — there is nothing for the doc to be absent from, and refusing would break
+	// the first claim of every new project.
+	if trunk := r.trunkRef(); trunk != "" && !r.trackedAt(trunk, target.Rel) {
+		return nil, fmt.Errorf("%s is not on %s, so this claim would branch off the plan "+
+			"round instead of the trunk, and only its own author could merge it.\n"+
+			"Land the round first — a pull or merge request, if the default branch is "+
+			"protected — then claim", target.Rel, r.Trunk())
+	}
+
 	remotes := r.remotes()
 	remote := ""
 	switch {

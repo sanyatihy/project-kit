@@ -577,7 +577,12 @@ func (r *Repo) RefsAreAuthoritative() bool {
 // TrackedAtHEAD reports whether a repo-relative path exists in the commit HEAD points
 // at — that is, whether it would travel with a branch pushed from here.
 func (r *Repo) TrackedAtHEAD(rel string) bool {
-	_, err := r.gitRun("cat-file", "-e", "HEAD:"+rel)
+	return r.trackedAt("HEAD", rel)
+}
+
+// trackedAt reports whether a repo-relative path exists in a revision's tree.
+func (r *Repo) trackedAt(rev, rel string) bool {
+	_, err := r.gitRun("cat-file", "-e", rev+":"+rel)
 	return err == nil
 }
 

@@ -1,7 +1,7 @@
 ---
 id: 0027
 title: Refuse a claim on a plan that has not landed
-status: Draft
+status: In progress
 created: 2026-08-16
 shipped:
 check:
@@ -58,7 +58,7 @@ not travel with the pushed branch — because the trunk check does not cover it:
 can be on the trunk and edited-but-uncommitted here.
 
 ## Tasks
-- [ ] `ClaimFeature` requires the doc on `trunkRef()`, exit 2, naming the round to land
+- [x] `ClaimFeature` requires the doc on `trunkRef()`, exit 2, naming the round to land
 - [ ] The no-trunk case is skipped, with a conformance case claiming in a fresh
       single-branch project
 - [ ] Conformance: claiming from an unmerged plan branch is refused; claiming the same
