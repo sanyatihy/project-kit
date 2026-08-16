@@ -102,7 +102,7 @@ func Survey(r *Repo) Plan {
 		if len(claims) > 0 {
 			claim = claims[0]
 		}
-		if item.Mine = contains(claims, plan.Branch); item.Mine {
+		if item.Mine = r.Mine(f.ID); item.Mine {
 			plan.Claiming = f.ID
 		}
 		// Both are "cannot start yet, and here is why", reported the same way. A
@@ -114,7 +114,7 @@ func Survey(r *Repo) Plan {
 			plan.Blocked = append(plan.Blocked, item)
 		case len(unmet) > 0:
 			item.Needs = unmet
-			item.WaitingOn = "needs " + strings.Join(unmet, ", ") + " to ship first"
+			item.WaitingOn = waitingOnNeeds(r, unmet)
 			plan.Blocked = append(plan.Blocked, item)
 		default:
 			if item.Mine {
@@ -154,6 +154,34 @@ func Survey(r *Repo) Plan {
 	}
 	plan.Guidance = guidanceFor(r, plan)
 	return plan
+}
+
+// waitingOnNeeds says what an unmet needs: is waiting for.
+//
+// A dependency that is Dropped or Superseded can never ship, so "to ship first" is a
+// promise the board cannot keep: the agent reads it as a wait that ends, and it does not.
+// The two need opposite answers — one ends on its own, the other only when somebody edits
+// the field — so the line has to say which. `audit` already tells them apart; this is the
+// board saying the same thing, and the board is what agents read.
+func waitingOnNeeds(r *Repo, unmet []string) string {
+	var pending, dead []string
+	for _, id := range unmet {
+		if dep := r.FeatureByID(id); dep != nil &&
+			(dep.Status == "Dropped" || dep.Status == "Superseded") {
+			dead = append(dead, id+" ("+dep.Status+")")
+			continue
+		}
+		pending = append(pending, id)
+	}
+	var parts []string
+	if len(pending) > 0 {
+		parts = append(parts, "needs "+strings.Join(pending, ", ")+" to ship first")
+	}
+	if len(dead) > 0 {
+		parts = append(parts, "needs "+strings.Join(dead, ", ")+
+			", which can never ship — edit needs:")
+	}
+	return strings.Join(parts, "; ")
 }
 
 // guidanceFor is the single decision behind both outputs, so they cannot drift.

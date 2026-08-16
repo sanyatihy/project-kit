@@ -97,15 +97,15 @@ that is Dropped or Superseded, the line says so instead of *"to ship first"* —
 `audit` already distinguishes these two cases, and the board is what agents read.
 
 ## Tasks
-- [ ] `ClaimFeature` refuses unmet `needs:` as `NotYours`, naming the ids, with a
+- [x] `ClaimFeature` refuses unmet `needs:` as `NotYours`, naming the ids, with a
       conformance case for the refusal and one for a met dependency claiming fine
-- [ ] `Ship` refuses unmet `needs:`, exit 2, naming the ids; conformance both ways
-- [ ] `Ship` refuses a feature claimed by another checkout's branch, naming rule 8;
+- [x] `Ship` refuses unmet `needs:`, exit 2, naming the ids; conformance both ways
+- [x] `Ship` refuses a feature claimed by another checkout's branch, naming rule 8;
       conformance for the refusal and for shipping from the holding worktree
-- [ ] `Drop` reports features whose `needs:` name the dropped id; conformance case
-- [ ] `Drop` creates `## Log` when it is absent rather than discarding the reason;
+- [x] `Drop` reports features whose `needs:` name the dropped id; conformance case
+- [x] `Drop` creates `## Log` when it is absent rather than discarding the reason;
       conformance case on a doc with no Log section
-- [ ] `Survey` distinguishes a dependency that can never ship from one not yet
+- [x] `Survey` distinguishes a dependency that can never ship from one not yet
       shipped, and says which; conformance case
 - [ ] README and `kit help` for claim, ship and drop describe the new refusals
 

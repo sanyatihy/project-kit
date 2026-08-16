@@ -87,6 +87,17 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"only a human can answer that, in " + r.Rel(r.Inbox)}
 	}
 
+	// The same call `Survey` makes, so the board and the command cannot disagree. Without
+	// it `next` said 0002 was waiting on 0001 and `claim 0002` took it anyway, which sends
+	// an agent to build on a foundation that is not there. `NotYours` because the agent is
+	// meant to take something else — the same instruction a lost race carries.
+	if unmet := r.UnmetNeeds(target); len(unmet) > 0 {
+		return nil, &NotYours{
+			fmt.Sprintf("%s waits on %s: not shipped yet", target.Name(),
+				strings.Join(unmet, ", ")),
+			"claim something kit next offers"}
+	}
+
 	branch := target.Branch()
 	if !r.HasHistory() {
 		return nil, fmt.Errorf("this project has no commits, so a branch has nothing " +

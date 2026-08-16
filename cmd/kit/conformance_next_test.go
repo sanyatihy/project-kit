@@ -217,6 +217,38 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 	}
 }
 
+func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
+	// The board promised a wait that never ends: "waiting on: needs 0001 to ship first"
+	// about a feature that is Dropped. The two states need opposite fixes — one ends on
+	// its own, the other only when somebody edits needs: — so the line has to say which.
+	dead := setUp(t)
+	dead.write("docs/features/0001-base.md", doc("0001", "Base", "Dropped", "", "- [ ] Do it"))
+	dead.write("docs/features/0002-store.md",
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+
+	r := dead.run("next").ok()
+	r.has("blocked", "0002", "can never ship")
+	r.lacks("to ship first")
+
+	// The whole sentence, read from --json rather than the page: the printed line is
+	// clipped for a narrow terminal, and agents read this format.
+	blocked := dead.plan("next", "--json").Blocked
+	if len(blocked) != 1 {
+		t.Fatalf("blocked = %+v, want just 0002", blocked)
+	}
+	if !strings.Contains(blocked[0].WaitingOn, "Dropped") {
+		t.Errorf("waiting_on = %q, want it to name the status that can never ship",
+			blocked[0].WaitingOn)
+	}
+
+	// And a dependency that simply has not shipped yet keeps the wait that does end.
+	pending := setUp(t)
+	feature(pending, "0001", "base", "Base", "Accepted", "- [ ] Do it")
+	pending.write("docs/features/0002-store.md",
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+	pending.run("next").ok().has("needs 0001 to ship first").lacks("can never ship")
+}
+
 func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
 	// The invariant, not any particular sentence. A state the tool can reach and
 	// does not close is a state something else decides — which is how an agent

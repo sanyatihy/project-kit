@@ -48,6 +48,26 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 			target.Name(), open, clip(target.OpenTasks()[0], 60))
 	}
 
+	// The same call `Survey` makes, so the board and the command cannot disagree.
+	// Shipping here mints `shipped-early` on a doc the protocol then forbids anyone to
+	// edit — prevent before detecting. An ordinary error and not `NotYours`: nobody else
+	// holds this, the work is done and the plan is wrong, so the operator has to look.
+	if unmet := r.UnmetNeeds(target); len(unmet) > 0 {
+		return nil, fmt.Errorf("%s waits on %s: not shipped yet\n"+
+			"ship those first, or correct needs: to what was actually required",
+			target.Name(), strings.Join(unmet, ", "))
+	}
+
+	// Shipping is the claim-holder's to do. From any other checkout it freezes work in
+	// flight: `status: Shipped` is history the protocol forbids anyone to edit, so the
+	// agent actually holding the branch can no longer touch its own doc. `Survey` calls
+	// the same question Mine, and reports what it answers as yours.
+	if claims := r.Claims(id); len(claims) > 0 && !r.Mine(id) {
+		return nil, fmt.Errorf("%s is claimed by %s, which is not this checkout\n"+
+			"ship it from that worktree. If the branch is a leftover of yours, release "+
+			"the claim first — rule 8", target.Name(), strings.Join(claims, " and "))
+	}
+
 	raw, err := os.ReadFile(target.Path)
 	if err != nil {
 		return nil, err

@@ -599,6 +599,16 @@ func (r *Repo) Claims(id string) []string {
 	return out
 }
 
+// Mine reports whether the branch this checkout is on is one of the branches claiming a
+// feature — that is, whether the claim is this agent's rather than somebody else's.
+//
+// One definition for two callers: `next` reports it as yours, and `ship` requires it.
+// Shipping from the worktree holding the claim is the documented path; shipping from
+// anywhere else is one agent freezing another's work.
+func (r *Repo) Mine(id string) bool {
+	return contains(r.Claims(id), r.HeadBranch())
+}
+
 // ClaimFor returns the branch claiming a feature, or "". The default branch
 // never counts as a claim.
 func (r *Repo) ClaimFor(id string) string {
