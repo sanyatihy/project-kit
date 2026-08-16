@@ -217,6 +217,12 @@ Land the round, and `kit next` hands you the first box and the command to start:
 It refuses if the plan is not committed on the default branch yet: the claim pushes
 `HEAD`, so an uncommitted doc would not travel with the branch you were sent to.
 
+Every refusal `claim` makes is one `kit next` already makes — an unmet `needs:`, a
+BLOCKING inbox line, a doc nobody wrote. Claiming by id without reading the board
+cannot get you further than the board would. `kit ship` refuses the same way, and
+also refuses a feature claimed by a branch that is not your checkout's: `Shipped` is
+history nobody may edit, so shipping someone else's claim freezes their work.
+
 Do that one box, tick it in the commit that implements it, and open a PR. Run `kit next`
 again for the next one. When the last box is ticked, `kit ship 0001` verifies every box,
 stamps the date, and freezes the doc.
@@ -277,7 +283,9 @@ contains a `- [ ]`: in a kit project that syntax means work to do, and guidance 
 looked like a task list would be worked through.
 
 `next` and `audit` read only and never write. With no path they use the repo you are in, from any
-subdirectory; `kit next ~/code/*` surveys every project at once.
+subdirectory; `kit next ~/code/*` surveys every project at once. A path in that list
+that cannot be read is reported in place and sets the exit code to 2, and every other
+project still reports — one tidied directory must not blank the board.
 
 Exit codes are a contract, so a script can tell a typo from a finding:
 
@@ -293,9 +301,10 @@ even when something goes wrong.
 `audit` names the file, the problem, and the fix. It reports:
 
 - **HIGH** — `secret-in-doc`, `needs-cycle`, `unfilled-template`, `stalled`,
-  `unticked-shipped`, `inbox-stale`, `unchecked`
+  `unticked-shipped`, `inbox-stale`, `unchecked`, `id-mismatch`
 - **MEDIUM** — `no-plan`, `done-not-shipped`, `tech-drift`, `shipped-no-date`,
-  `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`,
+  `unfilled-vision`,
+  `missing-section`, `inbox-unparsed`, `inbox-unknown`,
   `needs-unknown`, `shipped-early`, `protocol-stale`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`

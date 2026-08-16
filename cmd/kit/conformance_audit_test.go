@@ -24,8 +24,27 @@ func cleanProject(t *testing.T) *project {
 	t.Helper()
 	p := newProject(t)
 	p.run("init").ok()
+	writeVision(p)
 	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
 	return p
+}
+
+// writeVision answers the stub `kit init` leaves behind. A project still carrying that
+// stub is a real finding — unfilled-vision — so a fixture that keeps it is not a
+// project with nothing wrong.
+func writeVision(p *project) {
+	p.t.Helper()
+	p.write("docs/VISION.md", "# VISION\n\n## What this is\nA thing that does the thing.\n")
+}
+
+// visionStub puts back the stub `kit init` writes, rather than an imitation of it, so
+// the cases below run against the template as it actually ships.
+func visionStub(p *project) {
+	p.t.Helper()
+	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
+		p.t.Fatalf("removing VISION.md: %v", err)
+	}
+	p.run("init").ok()
 }
 
 func (p *project) auditCodes() []string {
@@ -34,13 +53,13 @@ func (p *project) auditCodes() []string {
 	if r.Code > 1 {
 		p.t.Fatalf("audit --json failed: %s", r.context())
 	}
-	var payload map[string][]kit.Finding
+	var payload map[string]audited
 	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
 		p.t.Fatalf("audit --json emitted invalid JSON: %v\n%s", err, r.Stdout)
 	}
 	var codes []string
-	for _, findings := range payload {
-		for _, f := range findings {
+	for _, one := range payload {
+		for _, f := range one.Findings {
 			codes = append(codes, f.Code)
 		}
 	}
@@ -239,6 +258,11 @@ var auditCases = []struct {
 			p.t.Fatalf("removing VISION.md: %v", err)
 		}
 	}},
+	{"unfilled-vision", func(p *project) {
+		// A fresh `kit init` and nothing else. The template's guidance is all
+		// comments, so every section under its headings reads as empty.
+		visionStub(p)
+	}},
 	{"no-inbox", func(p *project) {
 		if err := os.Remove(p.path("docs/INBOX.md")); err != nil {
 			p.t.Fatalf("removing INBOX.md: %v", err)
@@ -429,6 +453,41 @@ func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
 	}
 }
 
+func TestUnfilledVisionStaysQuietOnAPartlyWrittenVision(t *testing.T) {
+	// One written section is somebody having started, and a check that nags at work in
+	// progress is one people learn to ignore. Only the untouched stub is reported.
+	p := cleanProject(t)
+	visionStub(p)
+	stub := p.read("docs/VISION.md")
+	written := strings.Replace(stub, "## What done looks like\n",
+		"## What done looks like\nSomebody can shorten a URL and follow it.\n", 1)
+	if written == stub {
+		t.Fatal("the stub's headings changed; this test no longer writes a section")
+	}
+	p.write("docs/VISION.md", written)
+
+	if codes := p.auditCodes(); slices.Contains(codes, "unfilled-vision") {
+		t.Errorf("unfilled-vision fired on a vision somebody had started: %v", codes)
+	}
+}
+
+func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
+	// The missing-file case belongs to no-vision, which is LOW and unchanged. Reporting
+	// both would make one gap produce two findings with two different fixes.
+	p := cleanProject(t)
+	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
+		t.Fatalf("removing VISION.md: %v", err)
+	}
+
+	codes := p.auditCodes()
+	if slices.Contains(codes, "unfilled-vision") {
+		t.Errorf("unfilled-vision fired on a project with no VISION.md: %v", codes)
+	}
+	if !slices.Contains(codes, "no-vision") {
+		t.Errorf("no-vision stopped firing on a missing VISION.md: %v", codes)
+	}
+}
+
 func TestEveryRegisteredCheckIsExercised(t *testing.T) {
 	// AGENTS.md requires a test that a new check fires and one that it stays quiet.
 	// This is what makes that enforceable rather than aspirational.
@@ -486,6 +545,23 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	}
 
 	cleanProject(t).run("audit", "--strict").ok()
+}
+
+func TestIDMismatchFailsStrict(t *testing.T) {
+	// Raised from MEDIUM. A doc whose id: and filename disagree is not untidy: the
+	// branch comes from the filename and the board looks for the id, so the feature's
+	// own claim is invisible and it keeps being handed out. --strict is rule 12's
+	// gate, so this is what stops it being left sitting while agents run.
+	mismatched := cleanProject(t)
+	mismatched.write("docs/features/0002-confused.md",
+		doc("0009", "Confused", "Accepted", "", "- [ ] Something"))
+	mismatched.run("audit", "--strict").fails(1).has("id-mismatch")
+
+	// The quiet half: agreeing is the normal case and must not fail anything.
+	agreed := cleanProject(t)
+	agreed.write("docs/features/0002-agreed.md",
+		doc("0002", "Agreed", "Accepted", "", "- [ ] Something"))
+	agreed.run("audit", "--strict").ok().lacks("id-mismatch")
 }
 
 func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
@@ -881,4 +957,72 @@ func TestBuildingOnASettledDraftIsNotAFinding(t *testing.T) {
 	if codes := p.auditCodes(); slices.Contains(codes, "draft-claimed") {
 		t.Errorf("draft-claimed fired on work against a settled Draft: %v", codes)
 	}
+}
+
+func TestAuditSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
+	// Same failure as `next`, and the same reason it matters: an operator auditing a
+	// fleet got an error about the path they did not care about and silence about the
+	// projects they did.
+	for _, last := range []bool{true, false} {
+		name := "the unusable path last"
+		if !last {
+			name = "the unusable path first"
+		}
+		t.Run(name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+				"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+			gone := filepath.Join(p.Root, "gone")
+
+			args := []string{"audit", gone, p.Root}
+			if last {
+				args = []string{"audit", p.Root, gone}
+			}
+			r := p.run(args...).fails(2)
+
+			r.outHas("unticked-shipped", gone, "not a directory")
+			r.errHas("kit audit: not a directory: " + gone)
+
+			found, failure := strings.Index(r.Stdout, "unticked-shipped"), strings.Index(r.Stdout, "not a directory")
+			if last != (found < failure) {
+				t.Errorf("the report reordered the paths it was given:\n%s", r.Stdout)
+			}
+		})
+	}
+}
+
+func TestAuditJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
+	p := cleanProject(t)
+	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	gone := filepath.Join(p.Root, "gone")
+
+	r := p.run("audit", p.Root, gone, "--json").fails(2)
+	var payload map[string]audited
+	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
+		t.Fatalf("--json stopped being parseable when a path was unreadable: %v\n%s",
+			err, r.Stdout)
+	}
+	if healthy := payload[filepath.Base(p.Root)]; len(healthy.Findings) == 0 {
+		t.Errorf("--json lost the audited project: %+v", payload)
+	}
+	if payload[gone].Error == "" {
+		t.Errorf("--json never said %s could not be read: %+v", gone, payload)
+	}
+}
+
+func TestAuditRanksAnUnreadablePathAboveAStrictFinding(t *testing.T) {
+	// The two codes mean different things to the script running them: 1 is "the audit
+	// found something HIGH", 2 is "the command could not do what it was asked". A path
+	// that could not be read is the second, and reporting it as the first would have a
+	// CI gate treat a vanished project as a finding it could go and fix.
+	p := cleanProject(t)
+	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	gone := filepath.Join(p.Root, "gone")
+
+	// The HIGH finding on its own is still 1.
+	p.run("audit", "--strict", p.Root).fails(1)
+	// With a path it could not read, 2 — and the finding is still reported.
+	p.run("audit", "--strict", p.Root, gone).fails(2).has("unticked-shipped")
 }

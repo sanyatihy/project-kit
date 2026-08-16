@@ -308,6 +308,42 @@ Recorded so they are not re-litigated. Each was considered and settled.
   INBOX line and shipping a feature by hand were where four findings came from. A
   command that makes the mistake impossible beats a check that reports it, and
   `audit` stays the pressure valve rather than the destination.
+- **The commands refuse exactly what the board refuses.** `Survey`, `ClaimFeature`
+  and `Ship` all call `UnmetNeeds`, and `Ship` reuses `Repo.Mine` — the predicate the
+  board computes to tell your own claim from somebody else's. Before this they
+  disagreed: `next` withheld a feature whose `needs:` had not shipped and `claim`
+  handed it over, and `ship` would freeze a feature another checkout held, which
+  `status: Shipped` then made unfixable because the doc is frozen history.
+
+  The rule generalises: any check `next` performs is a check the command that acts on
+  it must perform too, or an agent that skips the board gets further than one that
+  reads it. `shipped-early` is what the gap looked like from the audit side — a
+  finding minted by the kit's own command, on a doc it then forbade anyone to edit.
+- **An `id:` that disagrees with its filename is HIGH, not tidiness.** The branch is
+  named after the file and the claim is looked up by the id, so nothing connects
+  them: the holder works, the board keeps offering the feature, and the second agent
+  used to get a raw git error at exit 2 — the code meaning "could not run", which
+  reads as a broken invocation rather than taken. `claim` now refuses before touching
+  git, `Claims` matches the filename prefix as well so a claim made before the fix
+  stays visible, and `next` blocks the doc rather than offering what `claim` refuses.
+- **One unreadable path must not blank the fleet board.** `next` and `audit` survey
+  every path given and report failures in place, in order. Same argument as
+  `remoteTimeout`: the surveyed projects are independent, so one being gone says
+  nothing about the others, and `kit next ~/code/*` is the documented survey.
+
+  A bad path exits 2 and outranks `--strict`'s 1 — a project you asked about and did
+  not get is a worse answer than findings you did. `next --json` keeps its shape (a
+  Plan can carry its own `error`); **`audit --json` changed shape** to
+  `{"findings": [...], "error": "..."}`, because a bare list has nowhere to say why
+  it is empty and a synthetic finding would mean a code outside the registry
+  `kit help checks` prints from. That is a breaking change for anything parsing it.
+- **`unfilled-vision` closes the same gap `unfilled-template` did, one file over.**
+  `kit init` writes a VISION stub, and `no-vision` only fired when the file was
+  *missing* — so the run that created the stub silenced the check while answering
+  nothing. It found a live instance in the kit's own fixtures: `cleanProject` kept
+  the stub, so "audit is quiet on a clean project" had been asserting against a
+  project carrying a real defect. A vision with no `##` headings at all stays quiet:
+  that is prose somebody wrote, not the stub.
 - **A claim is a branch name, and only for live work.** Local branches, remote
   branches and worktrees all count, so a stale fetch hides someone else's claim.
   The claim checks apply only to features still being worked: once a feature is

@@ -50,6 +50,12 @@ type Plan struct {
 	// the caller, which is the only layer that can see the embedded protocol.
 	ProtocolStale bool `json:"protocol_stale,omitempty"`
 
+	// Error says this path could not be surveyed at all — missing, or not a directory —
+	// so everything above it is empty because nothing was read, not because there is
+	// nothing to do. Set by the caller: a fleet board reports the path it could not read
+	// beside the projects it could, rather than reporting none of them.
+	Error string `json:"error,omitempty"`
+
 	// Guidance is what to do about all of the above, and it ships in both formats.
 	// The conclusion used to exist only in the rendered text, so an agent reading
 	// --json — the output documented for agents — got a board and no instruction,
@@ -102,7 +108,7 @@ func Survey(r *Repo) Plan {
 		if len(claims) > 0 {
 			claim = claims[0]
 		}
-		if item.Mine = contains(claims, plan.Branch); item.Mine {
+		if item.Mine = r.Mine(f.ID); item.Mine {
 			plan.Claiming = f.ID
 		}
 		// Both are "cannot start yet, and here is why", reported the same way. A
@@ -114,7 +120,7 @@ func Survey(r *Repo) Plan {
 			plan.Blocked = append(plan.Blocked, item)
 		case len(unmet) > 0:
 			item.Needs = unmet
-			item.WaitingOn = "needs " + strings.Join(unmet, ", ") + " to ship first"
+			item.WaitingOn = waitingOnNeeds(r, unmet)
 			plan.Blocked = append(plan.Blocked, item)
 		default:
 			if item.Mine {
@@ -122,6 +128,16 @@ func Survey(r *Repo) Plan {
 			} else if claim != "" {
 				item.ClaimedBy = claim
 				plan.Taken = append(plan.Taken, item)
+			} else if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
+				// `claim` refuses this, so offering it is the board sending an agent to a
+				// command that turns it away — the loop 0013 exists to stop. The branch
+				// would be named after the file and the claim looked up by the id, so
+				// nothing would connect them.
+				// Short enough to survive the board's 56-column clip: an instruction cut
+				// off halfway is one nobody can follow.
+				item.WaitingOn = "filename says " + prefix + " but id: says " + f.ID +
+					" — rename one"
+				plan.Blocked = append(plan.Blocked, item)
 			} else if unplanned := without(f.Unwritten(), "Tasks"); len(unplanned) > 0 {
 				// `claim` refuses a doc nobody wrote, so offering one here would send an
 				// agent to a command that turns it away. An empty ## Tasks is left to the
@@ -154,6 +170,34 @@ func Survey(r *Repo) Plan {
 	}
 	plan.Guidance = guidanceFor(r, plan)
 	return plan
+}
+
+// waitingOnNeeds says what an unmet needs: is waiting for.
+//
+// A dependency that is Dropped or Superseded can never ship, so "to ship first" is a
+// promise the board cannot keep: the agent reads it as a wait that ends, and it does not.
+// The two need opposite answers — one ends on its own, the other only when somebody edits
+// the field — so the line has to say which. `audit` already tells them apart; this is the
+// board saying the same thing, and the board is what agents read.
+func waitingOnNeeds(r *Repo, unmet []string) string {
+	var pending, dead []string
+	for _, id := range unmet {
+		if dep := r.FeatureByID(id); dep != nil &&
+			(dep.Status == "Dropped" || dep.Status == "Superseded") {
+			dead = append(dead, id+" ("+dep.Status+")")
+			continue
+		}
+		pending = append(pending, id)
+	}
+	var parts []string
+	if len(pending) > 0 {
+		parts = append(parts, "needs "+strings.Join(pending, ", ")+" to ship first")
+	}
+	if len(dead) > 0 {
+		parts = append(parts, "needs "+strings.Join(dead, ", ")+
+			", which can never ship — edit needs:")
+	}
+	return strings.Join(parts, "; ")
 }
 
 // guidanceFor is the single decision behind both outputs, so they cannot drift.

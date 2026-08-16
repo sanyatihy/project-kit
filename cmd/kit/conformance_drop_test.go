@@ -48,6 +48,53 @@ func TestDropRefusesAShippedDoc(t *testing.T) {
 	p.run("drop", "0001", "changed my mind").fails(2).errHas("frozen history")
 }
 
+func TestDropReportsWhoWasWaitingOnIt(t *testing.T) {
+	// Dropping stranded every feature declaring the id in needs: without a word — `audit`
+	// said needs-unknown afterwards and `next` went on promising a wait that can never
+	// end. Reported and not refused: this is exactly when you want to know who was waiting.
+	stranding := setUp(t)
+	feature(stranding, "0001", "base", "Base", "Draft", "- [ ] Something")
+	stranding.write("docs/features/0002-store.md",
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+
+	r := stranding.run("drop", "0001", "not worth it").ok()
+	r.has("still needed by", "0002", "needs:")
+
+	// And silence when nobody was waiting, or the line becomes noise nobody reads.
+	alone := setUp(t)
+	feature(alone, "0001", "base", "Base", "Draft", "- [ ] Something")
+	alone.run("drop", "0001", "not worth it").ok().lacks("still needed by")
+}
+
+func TestDropCreatesTheLogWhenTheDocHasNone(t *testing.T) {
+	// Measured: on a doc with no ## Log the reason was discarded. AppendToSection reports
+	// that the heading was absent and Drop ignored the answer, while the one warning it
+	// prints fires only when *no* reason was given — so the operator who supplied one was
+	// never told. Recording the reason is what the command is for.
+	missing := setUp(t)
+	missing.write("docs/features/0001-nolog.md",
+		"---\nid: 0001\ntitle: No log\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
+			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] Something\n")
+
+	missing.run("drop", "0001", "superseded by a better idea").ok()
+
+	got := missing.read("docs/features/0001-nolog.md")
+	if !strings.Contains(got, "## Log") {
+		t.Errorf("drop did not create the ## Log it had to write into:\n%s", got)
+	}
+	if !strings.Contains(got, "superseded by a better idea") {
+		t.Errorf("the reason was discarded:\n%s", got)
+	}
+
+	// A doc that already has one gets the entry appended to it, not a second heading.
+	present := setUp(t)
+	feature(present, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] Something")
+	present.run("drop", "0001", "not worth it").ok()
+	if got := present.read("docs/features/0001-shorten.md"); strings.Count(got, "## Log") != 1 {
+		t.Errorf("drop added a second ## Log:\n%s", got)
+	}
+}
+
 func TestDropReportsALeftoverClaimRatherThanDeletingIt(t *testing.T) {
 	// The doc is this command's to retire and the branch is not. A branch named after
 	// the doc still reads as a claim, so the board would show work nobody is doing.

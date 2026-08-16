@@ -3,14 +3,16 @@ package kit
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
 // DropResult is what dropping changed, for reporting.
 type DropResult struct {
-	Doc    string
-	Was    string
-	Claims []string // branches still named after the doc, which nothing here deletes
+	Doc        string
+	Was        string
+	Claims     []string // branches still named after the doc, which nothing here deletes
+	Dependants []string // features declaring this id in needs:, which nothing here edits
 }
 
 // Drop retires a feature that will not be built.
@@ -59,13 +61,47 @@ func Drop(r *Repo, id, why string, today time.Time) (*DropResult, error) {
 	// A dropped feature with no reason is the same defect as a shipped one with no log:
 	// the next person reads a dead doc and cannot tell whether it was wrong or forgotten.
 	if why != "" {
-		if logged, ok := AppendToSection(updated, "Log",
-			"- "+today.UTC().Format(DateLayout)+" — dropped: "+why); ok {
-			updated = logged
+		entry := "- " + today.UTC().Format(DateLayout) + " — dropped: " + why
+		logged, ok := AppendToSection(updated, "Log", entry)
+		if !ok {
+			// No ## Log to append to, and the reason is what the command is for. This
+			// used to ignore the answer and drop the line on the floor, while the only
+			// warning printed fires when *no* reason was given — so the operator who
+			// supplied one was never told it had been thrown away.
+			logged = strings.TrimRight(updated, "\n") + "\n\n## Log\n" + entry + "\n"
 		}
+		updated = logged
 	}
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err
 	}
-	return &DropResult{Doc: target.Rel, Was: target.Status, Claims: r.Claims(id)}, nil
+	return &DropResult{
+		Doc:        target.Rel,
+		Was:        target.Status,
+		Claims:     r.Claims(id),
+		Dependants: dependants(r, id),
+	}, nil
+}
+
+// dependants names the features declaring this id in needs:.
+//
+// Reported rather than refused: a feature that will not be built is exactly when you want
+// to know who was waiting on it, and refusing would leave the dropped doc stuck open.
+// Nothing here edits them — what replaces a dropped plan is a judgement the kit does not
+// have — but leaving it unsaid is how they got stranded: `audit` reported `needs-unknown`
+// afterwards and `next` went on promising a wait that can never end.
+func dependants(r *Repo, id string) []string {
+	var out []string
+	for _, f := range r.Features {
+		if f.ID == id {
+			continue
+		}
+		for _, need := range f.Needs {
+			if need == id {
+				out = append(out, f.Name())
+				break
+			}
+		}
+	}
+	return out
 }

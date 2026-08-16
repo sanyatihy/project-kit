@@ -11,7 +11,11 @@ before drafting one.
 
      Write as much as necessary and no more. Everything here is read before every
      draft, so length is a tax paid repeatedly — and a vision too vague to reject a
-     feature is not doing its job either. A screen is about right. -->
+     feature is not doing its job either. A screen is about right.
+
+     Left as written here, `kit audit` reports `unfilled-vision`: a stub silences the
+     question rather than answering it, and every draft is meant to trace back to
+     this file. Answering one section is enough to stop the finding. -->
 
 ## What this is
 

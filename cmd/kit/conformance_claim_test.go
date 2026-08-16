@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/sanyatihy/project-kit/internal/kit"
 )
 
 // projectAt wraps a directory that is not the one t.TempDir handed out, so a test
@@ -229,6 +231,120 @@ func TestClaimRefusesAnIDTwoDocsShare(t *testing.T) {
 	a.run("claim", "0007").fails(2).errHas("share id 0007")
 }
 
+func TestClaimRefusesADocWhoseIDAndFilenameDisagree(t *testing.T) {
+	// Exit 1 and before any git call. `Branch()` comes from the filename and the board
+	// looks a claim up by the id:, so claiming this creates a branch nothing connects
+	// to the feature — the board goes on offering it and the next agent gets a raw git
+	// error about a branch that already exists. One rename fixes it, so this is
+	// NotYours: take something else meanwhile, the same instruction a lost race carries.
+	a, _ := twoAgents(t)
+	a.write("docs/features/0002-confused.md",
+		doc("0009", "Confused", "Draft", "", "- [ ] Something"))
+	a.commitAll("a doc whose id and filename disagree")
+
+	r := a.run("claim", "0009").fails(1)
+	r.errHas("not claimed", "0009", "0002")
+
+	// Nothing left behind under either number, locally or on the remote — the branch
+	// this would have created is the one the board cannot see.
+	for _, name := range a.branches() {
+		if strings.HasPrefix(name, "0002") || strings.HasPrefix(name, "0009") {
+			t.Errorf("a refused claim still created branch %q", name)
+		}
+	}
+	cmd := exec.Command("git", "ls-remote", "--heads", "origin")
+	cmd.Dir, cmd.Env = a.Root, gitEnv()
+	if out, err := cmd.Output(); err != nil {
+		t.Fatalf("reading the remote: %v", err)
+	} else if strings.Contains(string(out), "confused") {
+		t.Errorf("a refused claim pushed a branch anyway: %q", out)
+	}
+
+	// The quiet half, in the same project: a doc whose two agree still claims fine.
+	a.run("claim", "0007").ok().has("claimed", "0007-widget")
+}
+
+func TestAClaimMadeBeforeTheFixStaysVisible(t *testing.T) {
+	// Belt and braces for docs already in this state. `claim` refuses to create such a
+	// claim now, so the branch here is made the way the old `claim` made it: named from
+	// the filename, mentioning nothing the board searched for. Matching the filename
+	// prefix as well as the id is what keeps it visible rather than orphaning it.
+	p := cleanProject(t)
+	p.write("docs/features/0002-confused.md",
+		doc("0009", "Confused", "Draft", "", "- [ ] Something"))
+	p.commitAll("a doc whose id and filename disagree")
+
+	// The quiet half first: with no branch there is no claim, and matching the prefix
+	// must not invent one out of a feature nobody has taken. Blocked, not ready — the
+	// board withholds a mismatched doc because `claim` refuses it — but the point here
+	// is that it is not reported as *taken*.
+	if got := boardGroup(p.plan("next", "--json"), "0009"); got != "blocked" {
+		t.Errorf("with no branch, 0009 is %s on the board, want blocked", got)
+	}
+
+	p.git("branch", "0002-confused")
+
+	plan := p.plan("next", "--json")
+	if got := boardGroup(plan, "0009"); got != "taken" {
+		t.Errorf("0009 is %s on the board while 0002-confused holds it, want taken", got)
+	}
+	for _, item := range plan.Taken {
+		if item.ID == "0009" && item.ClaimedBy != "0002-confused" {
+			t.Errorf("the board names %q as the claimant, want 0002-confused", item.ClaimedBy)
+		}
+	}
+}
+
+// boardGroup says which group `next` put a feature in, which is the whole question a
+// claim being visible turns on. Read from --json because that is the format agents
+// parse, and because "ready" and "taken" are one word apart in the rendered page.
+func boardGroup(plan kit.Plan, id string) string {
+	for _, group := range []struct {
+		name  string
+		items []kit.Item
+	}{
+		{"yours", plan.Yours}, {"ready", plan.Ready},
+		{"taken", plan.Taken}, {"blocked", plan.Blocked},
+	} {
+		for _, item := range group.items {
+			if item.ID == id {
+				return group.name
+			}
+		}
+	}
+	return "absent"
+}
+
+func TestAMismatchedFeatureIsNeverHandedOutTwice(t *testing.T) {
+	// The whole scenario, as measured: `claim 0009` created `0002-confused`, `next` went
+	// on saying "start here 0009", and the second agent got exit 2 with a raw git error —
+	// the code documented as "it could not run", so it escalates instead of moving on.
+	//
+	// The first agent's claim is made by hand because `claim` now refuses to make one;
+	// what is asserted is that from here nobody is handed the feature a second time.
+	a, b := twoAgents(t)
+	a.write("docs/features/0002-confused.md",
+		doc("0009", "Confused", "Draft", "", "- [ ] Something"))
+	a.commitAll("a doc whose id and filename disagree")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/main")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/0002-confused")
+	b.git("fetch", "-q", "origin")
+	b.git("merge", "-q", "--ff-only", "origin/main")
+
+	if got := boardGroup(b.plan("next", "--json"), "0009"); got != "taken" {
+		t.Errorf("the second agent's board says 0009 is %s, want taken — it is being "+
+			"handed a feature somebody already holds", got)
+	}
+	b.run("next").ok().lacks("kit claim 0009")
+
+	// Exit 1, not the exit 2 this used to produce, and no git talking to an agent that
+	// has no idea what a ref is. Whichever refusal answers first, the instruction is the
+	// same: this is not yours to take, and here is the one edit that unsticks it.
+	second := b.run("claim", "0009").fails(1)
+	second.errHas("not claimed")
+	second.lacks("fatal:", "already exists")
+}
+
 func TestClaimWithoutARemoteSaysNobodyElseCanSeeIt(t *testing.T) {
 	// Most projects have no remote on day one, so refusing would make the kit
 	// unusable before the first push. It still has to say what the claim is worth.
@@ -366,6 +482,39 @@ func TestClaimRefusesADocNobodyWrote(t *testing.T) {
 	r.errHas("Problem")
 }
 
+func TestClaimRefusesWhatItsNeedsHaveNotShipped(t *testing.T) {
+	// Measured on a fresh project: `kit next` said 0002 was waiting on 0001 and
+	// `kit claim 0002` took it anyway, so an agent claiming by ID built on a foundation
+	// that is not there. Exit 1, like a lost race — the instruction is the same one.
+	p := cleanProject(t)
+	p.write("docs/features/0002-store.md",
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+	p.commitAll("a chain of two")
+
+	r := p.run("claim", "0002").fails(1)
+	r.errHas("not claimed", "0001")
+
+	// Nothing left behind, locally or on the remote — a branch is a claim.
+	for _, name := range p.branches() {
+		if strings.HasPrefix(name, "0002") {
+			t.Errorf("a refused claim still created branch %q", name)
+		}
+	}
+}
+
+func TestClaimTakesAFeatureWhoseNeedsHaveShipped(t *testing.T) {
+	// The quiet half. A dependency that has shipped is not an obstacle, and refusing
+	// here would make `needs:` a field that never releases anything.
+	p := cleanProject(t)
+	p.write("docs/features/0001-thing.md",
+		doc("0001", "A thing", "Shipped", "shipped: 2026-01-02", "- [x] Do the thing"))
+	p.write("docs/features/0002-store.md",
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+	p.commitAll("one shipped, one waiting on it")
+
+	p.run("claim", "0002").ok().has("claimed", "0002-store")
+}
+
 func TestNextAndClaimAgreeAboutAnUnwrittenDoc(t *testing.T) {
 	// A board that offers what the next command refuses is the loop 0013 exists to
 	// stop: the agent follows the documented path and is turned away at the end of it.
@@ -376,4 +525,25 @@ func TestNextAndClaimAgreeAboutAnUnwrittenDoc(t *testing.T) {
 	r := p.run("next").ok()
 	r.has("blocked", "no plan yet")
 	r.lacks("kit claim 0004")
+}
+
+func TestTheBoardDoesNotOfferWhatClaimRefuses(t *testing.T) {
+	// The loop 0013 exists to stop: `claim` now refuses a mismatched doc, so a board
+	// that still lists it under "start here" sends every agent to a command that turns
+	// it away. Any refusal a command makes, the board has to reflect — the converse of
+	// the rule 0023 established for needs:.
+	p := cleanProject(t)
+	p.write("docs/features/0002-confused.md",
+		doc("0009", "Confused", "Accepted", "", "- [ ] Something"))
+	p.commitAll("a doc whose id and filename disagree")
+
+	if got := boardGroup(p.plan("next", "--json"), "0009"); got != "blocked" {
+		t.Errorf("next put the mismatched feature in %q, want blocked — claim refuses it", got)
+	}
+	p.run("next").ok().has("rename one")
+
+	// And a doc whose names agree is still offered, so this cannot fire on a healthy one.
+	if got := boardGroup(p.plan("next", "--json"), "0001"); got != "ready" {
+		t.Errorf("an agreeing doc landed in %q, want ready", got)
+	}
 }

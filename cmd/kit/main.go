@@ -282,6 +282,14 @@ func runDrop(args []string) int {
 		fmt.Printf("\n  no reason recorded — say why in ## Log, or the next person\n")
 		fmt.Printf("  cannot tell a rejected plan from a forgotten one\n")
 	}
+	// Dropping strands whoever declared this in needs:, and said nothing about it: the
+	// board went on promising them a wait that can never end, and audit reported
+	// needs-unknown once it was too late to ask why.
+	if len(res.Dependants) > 0 {
+		fmt.Printf("\n  still needed by %s — a Dropped feature can never ship, so\n",
+			strings.Join(res.Dependants, ", "))
+		fmt.Printf("  those docs need their needs: edited or they wait for ever\n")
+	}
 	// The doc is retired and the branch is not, and only one of those is this command's
 	// to touch. A leftover branch named after the doc still reads as a claim.
 	if len(res.Claims) > 0 {
@@ -437,35 +445,49 @@ func runNext(args []string) int {
 	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
 	paths := parseArgs(fs, args)
 
-	repos, code := openAll(paths, "kit next", *offline)
-	if code != 0 {
-		return code
-	}
+	all := survey(paths, *offline)
 
-	// surveyed keeps the staleness check next to the plan it belongs to, so both output
+	// planFor keeps the staleness check next to the plan it belongs to, so both output
 	// formats carry the same fact and cannot drift.
-	surveyed := func(r *kit.Repo) kit.Plan {
+	planFor := func(r *kit.Repo) kit.Plan {
 		plan := kit.Survey(r)
 		plan.ProtocolStale = kit.ProtocolIsStale(r, currentProtocol())
 		return plan
 	}
 
 	if *asJSON {
+		// Keyed by name for a project and by the path as given for one that could not
+		// be opened, so a fleet payload lists everything the caller asked about. The
+		// failure rides in the plan itself: an agent parsing this reads one entry per
+		// path either way, and cannot be handed four projects with a fifth missing.
 		payload := map[string]kit.Plan{}
-		for _, r := range repos {
-			payload[r.Name] = surveyed(r)
+		for _, s := range all {
+			if s.Err != "" {
+				payload[s.Name] = kit.Plan{Error: s.Err}
+				continue
+			}
+			payload[s.Name] = planFor(s.Repo)
 		}
-		return emit(payload)
+		if code := emit(payload); code != 0 {
+			return code
+		}
+	} else {
+		color := isTTY()
+		for _, s := range all {
+			fmt.Print(paint("\n"+s.Name+"\n", "1", color))
+			switch {
+			case s.Err != "":
+				fmt.Printf("  %s — nothing to report for this path\n\n", s.Err)
+			case s.Repo.FeaturesDir == "":
+				fmt.Printf("  not set up yet — run:  kit init %s\n\n", s.Repo.Root)
+			default:
+				printPlan(s.Repo, planFor(s.Repo), color)
+			}
+		}
 	}
 
-	color := isTTY()
-	for _, r := range repos {
-		fmt.Print(paint("\n"+r.Name+"\n", "1", color))
-		if r.FeaturesDir == "" {
-			fmt.Printf("  not set up yet — run:  kit init %s\n\n", r.Root)
-			continue
-		}
-		printPlan(r, surveyed(r), color)
+	if reportUnreadable(all, "kit next") {
+		return 2
 	}
 	return 0
 }
@@ -567,24 +589,23 @@ func runAudit(args []string) int {
 	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
 	paths := parseArgs(fs, args)
 
-	repos, code := openAll(paths, "kit audit", *offline)
-	if code != 0 {
-		return code
-	}
+	all := survey(paths, *offline)
 
 	today := time.Now().UTC().Truncate(24 * time.Hour)
-	results := make(map[string][]kit.Finding, len(repos))
-	order := make([][]kit.Finding, 0, len(repos))
-	for _, r := range repos {
-		var findings []kit.Finding
-		if r.FeaturesDir != "" {
-			findings = kit.Audit(r, today, currentProtocol())
+	results := make(map[string]audited, len(all))
+	order := make([]audited, 0, len(all))
+	for _, s := range all {
+		one := audited{Findings: []kit.Finding{}}
+		switch {
+		case s.Err != "":
+			one.Error = s.Err
+		case s.Repo.FeaturesDir != "":
+			if findings := kit.Audit(s.Repo, today, currentProtocol()); findings != nil {
+				one.Findings = findings
+			}
 		}
-		if findings == nil {
-			findings = []kit.Finding{}
-		}
-		results[r.Name] = findings
-		order = append(order, findings)
+		results[s.Name] = one
+		order = append(order, one)
 	}
 
 	if *asJSON {
@@ -592,12 +613,18 @@ func runAudit(args []string) int {
 			return code
 		}
 	} else {
-		printFindings(repos, order, isTTY())
+		printFindings(all, order, isTTY())
 	}
 
+	// A path the caller named could not be audited at all, which outranks whatever was
+	// found in the ones that could: 2 is the more serious answer, and a script must not
+	// read "one project is missing" as "there are findings".
+	if reportUnreadable(all, "kit audit") {
+		return 2
+	}
 	if *strict {
-		for _, findings := range results {
-			for _, f := range findings {
+		for _, one := range results {
+			for _, f := range one.Findings {
 				if f.Severity == kit.High {
 					return 1
 				}
@@ -607,17 +634,29 @@ func runAudit(args []string) int {
 	return 0
 }
 
-func printFindings(repos []*kit.Repo, all [][]kit.Finding, color bool) {
+// audited is one path's audit in --json: what was found, or why nothing could be.
+// `next` carries its failure inside the plan, which is one object per project and
+// can say so itself; a findings list cannot, so this wraps it.
+type audited struct {
+	Findings []kit.Finding `json:"findings"`
+	Error    string        `json:"error,omitempty"`
+}
+
+func printFindings(all []surveyed, results []audited, color bool) {
 	actionable := 0
 	tint := map[string]string{kit.High: "1;31", kit.Medium: "33", kit.Low: "2;37"}
 
-	for i, r := range repos {
-		fmt.Print(paint("\n"+r.Name+"\n", "1", color))
-		if r.FeaturesDir == "" {
-			fmt.Printf("  not set up yet — run:  kit init %s\n\n", r.Root)
+	for i, s := range all {
+		fmt.Print(paint("\n"+s.Name+"\n", "1", color))
+		if s.Err != "" {
+			fmt.Printf("  %s — nothing audited for this path\n\n", s.Err)
 			continue
 		}
-		findings := all[i]
+		if s.Repo.FeaturesDir == "" {
+			fmt.Printf("  not set up yet — run:  kit init %s\n\n", s.Repo.Root)
+			continue
+		}
+		findings := results[i].Findings
 		if len(findings) == 0 {
 			fmt.Printf("  docs and repo agree\n\n")
 			continue
@@ -683,26 +722,56 @@ func parseArgs(fs *flag.FlagSet, args []string) []string {
 	}
 }
 
-func openAll(paths []string, who string, offline bool) ([]*kit.Repo, int) {
+// surveyed is one path the board was asked about: the project it opened, or why it
+// did not. Name is what the board calls it — the project's name, or the path as
+// given when there is no project to name.
+type surveyed struct {
+	Repo *kit.Repo
+	Name string
+	Err  string
+}
+
+// survey opens every path it was given and never returns early. The surveyed
+// projects are independent, so one of them being gone says nothing about the
+// others — the same argument as remoteTimeout in internal/kit, where a board that
+// stops because one remote is unreachable is worse than one that reports what it
+// could reach and says what it could not. A path that cannot be read is a failure
+// in place, in the order it was given, and the caller turns that into exit 2.
+func survey(paths []string, offline bool) []surveyed {
 	if len(paths) == 0 {
 		paths = []string{kit.ProjectRoot(".")}
 	}
-	repos := make([]*kit.Repo, 0, len(paths))
+	all := make([]surveyed, 0, len(paths))
 	for _, given := range paths {
 		root := expand(given)
 		if info, err := os.Stat(root); err != nil || !info.IsDir() {
-			fmt.Fprintf(os.Stderr, "%s: not a directory: %s\n", who, given)
-			return nil, 2
+			all = append(all, surveyed{Name: given, Err: "not a directory"})
+			continue
 		}
 		r, err := kit.Open(root)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", who, err)
-			return nil, 2
+			all = append(all, surveyed{Name: given, Err: err.Error()})
+			continue
 		}
 		r.Offline = offline
-		repos = append(repos, r)
+		all = append(all, surveyed{Repo: r, Name: r.Name})
 	}
-	return repos, 0
+	return all
+}
+
+// reportUnreadable says on stderr which paths could not be surveyed, and whether
+// any could not. The board already carries the same failures on stdout so that a
+// fleet reads in order; this is the copy a script sees, and it is where a single
+// bad path has always reported itself.
+func reportUnreadable(all []surveyed, who string) bool {
+	failed := false
+	for _, s := range all {
+		if s.Err != "" {
+			fmt.Fprintf(os.Stderr, "%s: %s: %s\n", who, s.Err, s.Name)
+			failed = true
+		}
+	}
+	return failed
 }
 
 func emit(payload any) int {
