@@ -24,8 +24,27 @@ func cleanProject(t *testing.T) *project {
 	t.Helper()
 	p := newProject(t)
 	p.run("init").ok()
+	writeVision(p)
 	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
 	return p
+}
+
+// writeVision answers the stub `kit init` leaves behind. A project still carrying that
+// stub is a real finding — unfilled-vision — so a fixture that keeps it is not a
+// project with nothing wrong.
+func writeVision(p *project) {
+	p.t.Helper()
+	p.write("docs/VISION.md", "# VISION\n\n## What this is\nA thing that does the thing.\n")
+}
+
+// visionStub puts back the stub `kit init` writes, rather than an imitation of it, so
+// the cases below run against the template as it actually ships.
+func visionStub(p *project) {
+	p.t.Helper()
+	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
+		p.t.Fatalf("removing VISION.md: %v", err)
+	}
+	p.run("init").ok()
 }
 
 func (p *project) auditCodes() []string {
@@ -239,6 +258,11 @@ var auditCases = []struct {
 			p.t.Fatalf("removing VISION.md: %v", err)
 		}
 	}},
+	{"unfilled-vision", func(p *project) {
+		// A fresh `kit init` and nothing else. The template's guidance is all
+		// comments, so every section under its headings reads as empty.
+		visionStub(p)
+	}},
 	{"no-inbox", func(p *project) {
 		if err := os.Remove(p.path("docs/INBOX.md")); err != nil {
 			p.t.Fatalf("removing INBOX.md: %v", err)
@@ -426,6 +450,41 @@ func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
 	}
 	if codes := p.auditCodes(); slices.Contains(codes, "no-vision") {
 		t.Errorf("no-vision fired on a project with no features yet: %v", codes)
+	}
+}
+
+func TestUnfilledVisionStaysQuietOnAPartlyWrittenVision(t *testing.T) {
+	// One written section is somebody having started, and a check that nags at work in
+	// progress is one people learn to ignore. Only the untouched stub is reported.
+	p := cleanProject(t)
+	visionStub(p)
+	stub := p.read("docs/VISION.md")
+	written := strings.Replace(stub, "## What done looks like\n",
+		"## What done looks like\nSomebody can shorten a URL and follow it.\n", 1)
+	if written == stub {
+		t.Fatal("the stub's headings changed; this test no longer writes a section")
+	}
+	p.write("docs/VISION.md", written)
+
+	if codes := p.auditCodes(); slices.Contains(codes, "unfilled-vision") {
+		t.Errorf("unfilled-vision fired on a vision somebody had started: %v", codes)
+	}
+}
+
+func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
+	// The missing-file case belongs to no-vision, which is LOW and unchanged. Reporting
+	// both would make one gap produce two findings with two different fixes.
+	p := cleanProject(t)
+	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
+		t.Fatalf("removing VISION.md: %v", err)
+	}
+
+	codes := p.auditCodes()
+	if slices.Contains(codes, "unfilled-vision") {
+		t.Errorf("unfilled-vision fired on a project with no VISION.md: %v", codes)
+	}
+	if !slices.Contains(codes, "no-vision") {
+		t.Errorf("no-vision stopped firing on a missing VISION.md: %v", codes)
 	}
 }
 
