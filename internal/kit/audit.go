@@ -125,7 +125,7 @@ var (
 	checkOrphanClaim = Check{"orphan-claim", Medium,
 		"a branch is named after a feature doc that does not exist"}
 	checkDraftClaimed = Check{"draft-claimed", Medium,
-		"a branch carries work on a Draft, so someone is building on a design nobody settled"}
+		"a branch carries work on a doc whose ## Open questions are still open"}
 	checkNoStatus      = Check{"no-status", Medium, "no status: in the frontmatter"}
 	checkBadStatus     = Check{"bad-status", Medium, "an unrecognised status:"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
@@ -155,10 +155,6 @@ var Checks = []Check{
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
 	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
 }
-
-// plannedSections are what an agent needs in order to work a feature at all. `Log` is
-// not among them: it is written as the work happens, so it is checked at Shipped only.
-var plannedSections = []string{"Problem", "Design", "Tasks"}
 
 var (
 	linkRe   = regexp.MustCompile(`\[[^\]]*\]\(([^)]+)\)`)
@@ -355,13 +351,14 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 				"use one of: "+statuses)
 		}
 
+		// Draft is exempt because a doc still being written is not a defect. `claim`
+		// refuses an unwritten doc whatever its status, which is what stops the exemption
+		// reaching an agent now that a Draft can be claimed.
 		if f.Status != StatusDraft {
-			for _, heading := range plannedSections {
-				if f.Section(heading) == "" {
-					report(checkUnfilledTemplate, at,
-						fmt.Sprintf("%s: ## %s was never written", f.Name(), heading),
-						"write it, or set status: Draft until you can")
-				}
+			for _, heading := range f.Unwritten() {
+				report(checkUnfilledTemplate, at,
+					fmt.Sprintf("%s: ## %s was never written", f.Name(), heading),
+					"write it, or set status: Draft until you can")
 			}
 		}
 		if f.Status == StatusShipped && f.Section("Log") == "" {
@@ -389,14 +386,17 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 					fmt.Sprintf("%s: claimed by %s", f.Name(), strings.Join(claims, " and ")),
 					"one agent per feature — delete the branch that is not doing the work")
 			}
-			// A Draft on a branch is the normal way a proposal waits for a human:
-			// agents draft, nothing goes to the default branch, so it sits on a
-			// branch until someone accepts it. Only a branch carrying work beyond
-			// the doc is somebody building on a design nobody settled.
-			if f.Status == StatusDraft && len(claims) > 0 && r.BranchBuildsOn(claims[0], f.Rel) {
+			// Building on a Draft is the normal flow — `status:` orders the board and
+			// does not gate it, so an agent taking an unblessed doc is the model
+			// working. What is still a defect is building on questions nobody
+			// answered: the design says it is unsettled and the branch says it is
+			// being built anyway.
+			if f.Section("Open questions") != "" && len(claims) > 0 &&
+				r.BranchBuildsOn(claims[0], f.Rel) {
 				report(checkDraftClaimed, at,
-					fmt.Sprintf("%s: %s is building on a Draft", f.Name(), claims[0]),
-					"stop work until a human runs kit accept "+f.ID+", or drop the branch")
+					fmt.Sprintf("%s: %s is building on open questions", f.Name(), claims[0]),
+					"settle them in the doc, or move what only a human can answer to the "+
+						"inbox: kit block "+f.ID+" \"<question>\"")
 			}
 		}
 

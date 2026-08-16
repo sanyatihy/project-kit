@@ -181,9 +181,10 @@ var auditCases = []struct {
 		p.git("branch", "0099-long-gone")
 	}},
 	{"draft-claimed", func(p *project) {
-		// Building on it, not merely proposing it: the branch carries code as well
-		// as the doc, which is what makes it a claim on an unsettled design.
-		feature(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
+		// Two facts together: the doc's ## Open questions are still open, and the
+		// branch carries code as well as the doc. Building on a Draft is the normal
+		// flow; building on questions nobody answered is not.
+		unsettled(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
 		p.commitAll("the doc")
 		p.git("checkout", "-q", "-b", "0002-unsettled")
 		p.write("internal/thing/thing.go", "package thing\n")
@@ -559,7 +560,7 @@ func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
 			p := newProject(t)
 			p.run("init").ok()
 			p.git("checkout", "-q", "-b", "develop")
-			feature(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
+			unsettled(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
 			p.commitAll("a draft on develop")
 
 			if withRemote {

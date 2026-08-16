@@ -55,11 +55,12 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"it would claim both — run kit audit and renumber all but one", sharing, id)
 	}
 
+	// Draft is claimable. `status:` orders the board rather than gating it: Accepted is
+	// the operator saying they have looked, not permission to start. What still refuses a
+	// claim is an unwritten plan (below) and a BLOCKING inbox line — the facts that mean
+	// nobody can build this yet, rather than nobody has blessed it.
 	switch target.Status {
-	case StatusAccepted, StatusInProgress:
-	case StatusDraft:
-		return nil, &NotYours{target.Name() + " is a Draft — nobody has settled the design",
-			"only a human accepts a design, with kit accept " + id + " — not you"}
+	case StatusAccepted, StatusInProgress, StatusDraft:
 	case "":
 		return nil, &NotYours{target.Name() + " has no status:, so there is no work to claim",
 			"give it one: " + strings.Join(AllStatuses, ", ")}
@@ -67,6 +68,17 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 		return nil, &NotYours{
 			fmt.Sprintf("%s is %s — it is not open work", target.Name(), target.Status),
 			"claim something kit next offers"}
+	}
+
+	// The load-bearing half of letting a Draft be claimed. `unfilled-template` exempts
+	// Draft, and that exemption was only safe while Drafts could not be claimed — without
+	// this, `claim` hands an agent a doc straight out of `kit new` with three empty
+	// sections and every command still exits 0.
+	if unwritten := target.Unwritten(); len(unwritten) > 0 {
+		return nil, &NotYours{
+			fmt.Sprintf("%s has no plan to build: ## %s never written",
+				target.Name(), strings.Join(unwritten, ", ## ")),
+			"write it first — a claim on an unwritten doc sends an agent to build nothing"}
 	}
 
 	if blockers := r.BlockersFor(id); len(blockers) > 0 {

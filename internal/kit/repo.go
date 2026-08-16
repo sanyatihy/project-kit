@@ -860,10 +860,15 @@ func isFYI(text string) bool {
 	return false
 }
 
-// ActiveFeatures lists features open for work: In progress before Accepted,
+// ActiveFeatures lists features open for work: In progress, then Accepted, then Draft,
 // then by ID. That ordering is the whole WIP policy.
+//
+// Draft is in here because `status:` orders the board rather than gating it. Accepted
+// means the operator has looked and blessed it, so it goes out first; a Draft is
+// invented and not yet blessed, so it goes out last and the agent should expect to
+// settle its `## Open questions` before building. Neither is permission.
 func (r *Repo) ActiveFeatures() []*Feature {
-	rank := map[string]int{StatusInProgress: 0, StatusAccepted: 1}
+	rank := map[string]int{StatusInProgress: 0, StatusAccepted: 1, StatusDraft: 2}
 	var out []*Feature
 	for _, f := range r.Features {
 		if _, ok := rank[f.Status]; ok {

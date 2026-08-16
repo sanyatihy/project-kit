@@ -226,3 +226,38 @@ func isDigit(b byte) bool { return b >= '0' && b <= '9' }
 
 // Days counts whole days from a to b.
 func Days(a, b time.Time) int { return int(b.Sub(a).Hours() / 24) }
+
+// AppendToSection adds a line at the end of one `## Heading` section, reporting whether
+// the heading was there at all. Everything outside that section is untouched.
+//
+// Trailing blank lines inside the section are stepped over, so the new entry sits under
+// the last one rather than after a gap — a ## Log that grows a blank line per entry
+// stops looking like a list.
+func AppendToSection(text, heading, line string) (string, bool) {
+	lines := strings.Split(text, "\n")
+	want := "## " + heading
+	start := -1
+	for i, l := range lines {
+		if strings.TrimSpace(l) == want {
+			start = i
+			break
+		}
+	}
+	if start == -1 {
+		return text, false
+	}
+	end := len(lines)
+	for i := start + 1; i < len(lines); i++ {
+		if strings.HasPrefix(lines[i], "## ") {
+			end = i
+			break
+		}
+	}
+	at := end
+	for at > start+1 && strings.TrimSpace(lines[at-1]) == "" {
+		at--
+	}
+	out := append([]string{}, lines[:at]...)
+	out = append(out, line)
+	return strings.Join(append(out, lines[at:]...), "\n"), true
+}
