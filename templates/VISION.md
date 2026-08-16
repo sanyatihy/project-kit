@@ -7,8 +7,11 @@ before drafting one.
 <!-- This file has no lifecycle and no status. It is expected to change while the
      project is built — a vision that never moved was either never tested or never
      believed. Edit it when what you are aiming at changes, and say so in the feature
-     doc whose work changed it. Keep it short: everything here is read before every
-     draft, so length is a tax paid repeatedly. -->
+     doc whose work changed it.
+
+     Write as much as necessary and no more. Everything here is read before every
+     draft, so length is a tax paid repeatedly — and a vision too vague to reject a
+     feature is not doing its job either. A screen is about right. -->
 
 ## What this is
 

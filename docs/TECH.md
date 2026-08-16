@@ -336,8 +336,18 @@ Recorded so they are not re-litigated. Each was considered and settled.
   PR-sized unit of work, do the topmost one". Source material that uses it for "a
   property to verify" gets converted to prose bullets, or an agent following the
   topmost-box rule works through it as a task list. `TestNoTopicLooksLikeATaskList`
-  pins this,
-  exempting the topics whose subject matter *is* the feature-doc format.
+  pins this, exempting the topics whose subject matter *is* the feature-doc format.
+- **Shipped text has line ceilings** (`cmd/kit/budget_test.go`), because nothing else
+  stops a doc growing: a paragraph is easier to add than to justify, and no reviewer
+  counts lines. Three tiers by how often the text is read — the protocol tightest,
+  since it is written into every project and re-read every session, so its length is
+  the one that compounds; command help next; topics loosest, because `go-checklist`
+  and `deployment` are guidance whose substance is the point.
+
+  Ceilings only. There is no minimum, because a length floor rewards padding and
+  under-writing is already caught by `unfilled-template` and by review. The failure
+  message names the rule rather than the number, and says to raise the ceiling with a
+  reason — a test that only says "shorter" teaches half the rule.
 
 ## Gotchas
 

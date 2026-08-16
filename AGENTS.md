@@ -91,66 +91,54 @@ whole model, and `kit help template` prints the feature doc format.
 ### Picking and finishing work
 
 1. **Asked to plan something? Read `docs/VISION.md`, then draft — all of it.**
-   It says what the project is for and what it is not; a feature that cannot be
-   traced to it is the wrong feature, and saying so is cheaper than building it.
-   Bootstrapping a project means producing the **whole set** of features it needs,
-   not the first one. Do not wait to be asked to decompose.
+   A feature that cannot be traced to the vision is the wrong feature, and saying so
+   is cheaper than building it. Bootstrapping means producing the **whole set**, not
+   the first one; do not wait to be asked to decompose. **Split by `## What done
+   looks like`** — each observable outcome there is at least one feature.
 
-   **Split by the vision's `## What done looks like`.** Each observable outcome there
-   is at least one feature; that list is where the boundaries come from.
+   **A feature is one pull request** (merge request on GitLab), so it is the unit of
+   review. Too big is one nobody can review in one sitting: config, storage, the API
+   and the CLI together is a project. Too small changes nothing anyone can observe —
+   that is a task box, not a doc.
 
-   **A feature is one pull request** (merge request on GitLab) — you push a branch and
-   a human reads it, so the feature is the unit of review. Too big is one nobody can
-   review in one sitting: config, storage, the API and the CLI together is a project,
-   not a feature. Too small changes nothing anyone can observe and exists only so the
-   next can start — that is a task box, not a doc.
+   **Say what each one waits on in `needs:`**, on every draft: it is what lets
+   `kit next` refuse work whose foundation is missing, and several empty ones are what
+   let agents run at once. Judge it by whether the work could *start* now — a shared
+   composition root, a shared router, or numbered files in one sequence such as
+   migrations all make a feature dependent however separate it looks.
 
-   **Say what each one waits on in `needs:`**, and fill it in for every draft: it is
-   what lets `kit next` refuse work whose foundation is missing, and several features
-   with an empty `needs:` is what lets agents run at once. Judge it by whether the
-   work could *start* now — a shared composition root, a shared router, or numbered
-   files in one sequence such as migrations all make a feature dependent however
-   separate it looks.
+   **A drafting session is one plan round: all its docs on one branch, merged once.**
+   Name it `plan/<something>`, never after a feature — a branch leading with a
+   four-digit ID *is* a claim, so a draft on one claims itself.
 
-   **A drafting session is one plan round: all of its docs on one branch, merged
-   once.** Name that branch `plan/<something>` and never after a feature — a branch
-   leading with a four-digit ID *is* a claim, so a draft on one claims itself. One
-   review for the round, not one per draft.
-
-   **The plan has to reach the default branch before anything can be claimed.** A claim
+   **The plan must reach the default branch before anything can be claimed.** A claim
    pushes `HEAD`, so a doc only in the working tree does not travel with the branch an
-   agent is sent to work in. Land the round first, at whatever statuses its docs reached.
+   agent is sent to. Land the round first, at whatever statuses its docs reached.
 
-   **Leave every doc `Draft`.** `status:` orders the board; it does not gate it. A human
-   runs `kit accept <id>` to say they have looked and blessed the design, which moves the
-   feature up the board — it is not permission to start, and agents work Drafts. Never
-   run `accept` yourself and never edit `status:` by hand; use `kit accept`, `kit ship`
-   and `kit drop`, which is why they exist.
+   **Leave every doc `Draft`.** `status:` orders the board; it does not gate it. A
+   human runs `kit accept <id>` to say they have blessed the design, which promotes the
+   feature rather than unlocking it — agents work Drafts. Never run `accept` yourself
+   and never edit `status:` by hand; that is what `accept`, `ship` and `drop` are for.
 
    **Put what you could not settle in `## Open questions`.** A later agent claiming the
    draft settles them before building. Anything only a human can answer goes to
-   `docs/INBOX.md` with `kit block` instead — that is the one thing that still stops a
-   claim.
-2. **One agent per feature. Take it with `kit claim <id>`.** That pushes the branch
-   named after the doc, and creating that ref on the remote is what decides who
-   gets the work: exit 0 is yours, exit 1 means another agent got there first — run
-   `kit next` and take something else. Losing is normal and costs nothing. Never
-   create the claim branch by hand: a branch only you can see is not a claim, and a
-   push that reports "up to date" found somebody else's.
+   `docs/INBOX.md` with `kit block` — the one thing that still stops a claim.
+2. **One agent per feature. Take it with `kit claim <id>`.** It pushes the branch named
+   after the doc, and creating that ref on the remote is what decides: exit 0 is yours,
+   exit 1 means somebody was first — run `kit next` and take something else. Losing is
+   normal. Never create the claim branch by hand: a branch only you can see is not a
+   claim, and a push reporting "up to date" found somebody else's.
 
-   **A feature `kit next` lists as taken is not yours.** Not to work on, not to tick
-   a box in, not to "help with" because it looked slow. One agent per feature means
-   one, and two agents in one feature produce one branch nobody can review.
+   **A feature `kit next` lists as taken is not yours.** Not to work on, not to tick a
+   box in, not to "help with" because it looked slow. Two agents in one feature produce
+   one branch nobody can review.
 
-   **If nothing is free, stop.** Everything claimed or waiting is a real answer and
-   the right one — say so and wait for a human. Do not pick up claimed work and do not
-   invent something to be useful. An idle agent costs nothing; two agents in one
-   feature costs the feature.
-3. **One feature per checkout. Work in the worktree `kit claim` prints.** The
-   worktree is the isolation and git provides it; the kit only refuses to hand out
-   work in a checkout that is occupied. Run in one, `kit next` reports that feature
-   as *yours* and will not offer you another to start — starting a second one where
-   you stand puts two features in one branch and they ship as one.
+   **If nothing is free, stop.** Everything claimed or waiting is a real answer — say
+   so and wait. An idle agent costs nothing; two in one feature costs the feature.
+3. **One feature per checkout. Work in the worktree `kit claim` prints.** Git provides
+   the isolation; the kit only refuses to hand out work in a checkout that is occupied.
+   Starting a second feature where you stand puts both in one branch and they ship as
+   one.
 4. **Read the feature doc for the design.** Never restate or re-derive design
    anywhere else.
 5. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the
@@ -167,33 +155,26 @@ whole model, and `kit help template` prints the feature doc format.
    could not finish. A whole feature that should not be built is `kit drop <id>
    "<why>"` — docs live on the default branch for ever, so an abandoned one stays on
    the board until it is retired.
-8. **Stopping mid-feature? Release the claim.** Delete the branch locally *and* on
-   the remote (`git push origin --delete <branch>`), set the status back to what it
-   was, and say why in `## Log`. The pushed branch is the claim, so deleting only
-   your local copy leaves the feature taken for good and `kit next` will route every
-   future agent around it.
+8. **Stopping mid-feature? Release the claim.** Delete the branch locally *and* on the
+   remote (`git push origin --delete <branch>`), set the status back to what it was,
+   and say why in `## Log`. The pushed branch is the claim, so deleting only your local
+   copy leaves the feature taken for good.
 9. **Blocked on a decision only a human can make?** Run
-   `kit block <id> "<question, with your leaning>"`, then move to another feature.
-   Do not guess. Use `--fyi` for anything work can continue without. "Do not idle"
-   means do not sit on a question you could have filed — it is not licence to take
-   work that is not yours; see **One agent per feature** for when stopping is correct.
-10. **Never put a real secret in a doc.** Feature docs, `## Log`, and `docs/INBOX.md`
-   are committed, and a pushed commit cannot be unpublished. Name the variable and
-   where the value lives — never the value. `audit` reports `secret-in-doc` at HIGH
-   for the shapes it can be certain about, which is a backstop and not the rule: a
-   password in prose matches nothing and is still a leak.
+   `kit block <id> "<question, with your leaning>"`, then move to another feature. Do
+   not guess. Use `--fyi` for anything work can continue without. That is not licence
+   to take work that is not yours; see **One agent per feature**.
+10. **Never put a real secret in a doc.** Docs and `docs/INBOX.md` are committed, and a
+   pushed commit cannot be unpublished. Name the variable and where the value lives —
+   never the value. `secret-in-doc` catches the shapes it can be certain about, which
+   is a backstop and not the rule: a password in prose matches nothing and still leaks.
 11. **Never edit a doc with `status: Shipped`.** It is frozen history.
 12. **When the last box is ticked, run `make check` and `kit audit --strict`, then
     `kit ship <id>`.** Those two are the gate: green means the code holds and the docs
-    and the repo agree. `kit ship` verifies every box is ticked, sets the status and
-    stamps the date — doing that by hand is where `unticked-shipped` and
-    `shipped-no-date` come from, which is why the command exists. Then move durable
-    facts into the as-built doc (`docs/TECH.md`).
-13. **Shipping is a handoff, not a finish.** Push the branch and stop there.
-    Reviewing and merging are not yours. If the project has no remote, the work
-    has nowhere to go — say so and leave it on the branch rather than merging it
-    yourself, which is how unreviewed work reaches `main` without anyone deciding
-    it should.
+    and the repo agree. Shipping by hand is where `unticked-shipped` and
+    `shipped-no-date` come from. Then move durable facts into `docs/TECH.md`.
+13. **Shipping is a handoff, not a finish.** Push the branch and stop; reviewing and
+    merging are not yours. With no remote the work has nowhere to go — say so and leave
+    it on the branch rather than merging it yourself.
 
 ### Where two agents can still collide
 
@@ -231,3 +212,8 @@ over speed on anything non-trivial. Use judgement on trivial tasks.
 - **Define success, then loop.** Say what "done" looks like before starting, and
   verify it yourself rather than reporting completion and hoping. A box you cannot
   check the truth of was too big; split it.
+- **Write as much as necessary and no more.** Cut restatement, hedging and padding.
+  Never cut a decision, a constraint, or the evidence behind it — terseness is not a
+  virtue on its own. Both failures are real: a doc nobody reads spends the context
+  window every later session needs, and one too thin to act on costs a session to
+  reconstruct. Honour each section's stated budget; prefer a table or a list to prose.

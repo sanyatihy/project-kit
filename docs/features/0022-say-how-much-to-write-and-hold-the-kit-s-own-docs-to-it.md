@@ -1,9 +1,9 @@
 ---
 id: 0022
 title: Say how much to write, and hold the kit's own docs to it
-status: Draft
+status: Shipped
 created: 2026-08-15
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs: 0021
@@ -55,12 +55,12 @@ message says so — otherwise the test teaches the wrong half of the rule.
 anyway.
 
 ## Tasks
-- [ ] The rule in `templates/AGENTS-section.md`, stated once, both halves
-- [ ] Two-sided per-section budgets in `features-TEMPLATE.md`, `VISION.md`, `TECH.md`
-- [ ] A test budgeting `AGENTS-section.md` and every help topic, failing with a message
+- [x] The rule in `templates/AGENTS-section.md`, stated once, both halves
+- [x] Two-sided per-section budgets in `features-TEMPLATE.md`, `VISION.md`, `TECH.md`
+- [x] A test budgeting `AGENTS-section.md` and every help topic, failing with a message
       that names the rule rather than only the number
-- [ ] Cut `AGENTS-section.md` under its budget, coordinating with 0021's rewrite
-- [ ] `kit help` and README state the rule where an agent will meet it
+- [x] Cut `AGENTS-section.md` under its budget, coordinating with 0021's rewrite
+- [x] `kit help` and README state the rule where an agent will meet it
 
 ## Log
 - 2026-08-15 — scoped after two drafts in one session ran 145 lines each against a

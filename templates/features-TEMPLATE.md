@@ -26,13 +26,17 @@ related:             # other docs worth reading first
 
 
 ## Problem
-<!-- 1-3 sentences. What is broken or missing, and why now. -->
+<!-- 1-3 sentences: what is broken or missing, and the signal that justifies it now.
+     Shorter than that and nobody can tell whether it was worth doing. -->
 
 ## Non-goals
-<!-- What this deliberately does not do, and where that lives instead. -->
+<!-- What this deliberately does not do, and where that lives instead. One line each;
+     a reason with each, or the next person reopens the argument. -->
 
 ## Design
-<!-- The design. Call out data-model, migration, API, and config changes explicitly. -->
+<!-- The design, and why it beat the alternative. Call out data-model, migration, API
+     and config changes explicitly. Aim for under a screen: long enough that nobody has
+     to re-derive a decision, short enough that it is read before the work starts. -->
 
 ## Tasks
 <!-- Each box is one PR-sized outcome you can verify without asking anyone, in the
