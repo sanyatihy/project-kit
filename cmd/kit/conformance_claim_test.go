@@ -219,6 +219,34 @@ func TestClaimRefusalsThatAreNotRaces(t *testing.T) {
 	}
 }
 
+func TestClaimingFromAnUnmergedPlanRoundIsRefusedUntilItLands(t *testing.T) {
+	// The failure this feature is for, as it happened. A doc committed on the plan
+	// branch is in HEAD's tree, so the older check passed and the claim pushed a branch
+	// whose parent was that plan branch — leaving a merge into it as the only way to
+	// integrate the work, performed by the agent that coordinated the round.
+	a, _ := twoAgents(t)
+	trunk := a.headBranch()
+	a.git("checkout", "-q", "-b", "plan/round-two")
+	feature(a, "0008", "later", "A later thing", "Draft", "- [ ] Build it")
+	a.commitAll("the second round")
+
+	// Exit 2, not 1: nothing on an unlanded round is claimable, so "take something
+	// else" would send the agent into the same wall at the next id.
+	a.run("claim", "0008").fails(2).errHas("Land the round first", "0008-later.md")
+
+	for _, name := range a.branches() {
+		if strings.HasPrefix(name, "0008") {
+			t.Errorf("a refused claim still created branch %q", name)
+		}
+	}
+
+	// The quiet half: the same feature, once the round has landed.
+	a.git("checkout", "-q", trunk)
+	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
+
+	a.run("claim", "0008").ok().has("claimed", "0008-later")
+}
+
 func TestTheFirstClaimOfAFreshProjectIsNotRefused(t *testing.T) {
 	// The trunk barrier must not break a project that has no trunk to land on. A fresh
 	// `kit init` with one branch and no remote is how every project starts, and there

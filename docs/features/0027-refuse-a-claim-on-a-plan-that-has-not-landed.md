@@ -61,7 +61,7 @@ can be on the trunk and edited-but-uncommitted here.
 - [x] `ClaimFeature` requires the doc on `trunkRef()`, exit 2, naming the round to land
 - [x] The no-trunk case is skipped, with a conformance case claiming in a fresh
       single-branch project
-- [ ] Conformance: claiming from an unmerged plan branch is refused; claiming the same
+- [x] Conformance: claiming from an unmerged plan branch is refused; claiming the same
       feature after the round merges succeeds
 - [ ] `kit help claim` and README state the barrier and why it exists
 
