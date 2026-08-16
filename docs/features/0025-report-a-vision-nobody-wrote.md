@@ -1,9 +1,9 @@
 ---
 id: 0025
 title: Report a vision nobody wrote
-status: Draft
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs:

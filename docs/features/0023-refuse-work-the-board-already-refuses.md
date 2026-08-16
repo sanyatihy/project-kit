@@ -1,9 +1,9 @@
 ---
 id: 0023
 title: Stop the commands doing quietly what the board forbids
-status: Draft
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs:
