@@ -46,8 +46,17 @@ var stackLayout = map[string][][2]string{
 		{"gitignore", ".gitignore"},
 		{"gomod", "go.mod"},
 		{"main.go.tmpl", "cmd/{{name}}/main.go"},
-		{"check.yml", ".github/workflows/check.yml"},
 		{"README.md", "README.md"},
+	},
+}
+
+// ciLayout is the one part of a stack that depends on where the project is hosted.
+// Nothing is written for a forge that is not in here, including the unknown one — a
+// missing pipeline is visible and a pipeline for the wrong forge is not.
+var ciLayout = map[string]map[string][2]string{
+	"go": {
+		ForgeGitHub: {"check.yml", ".github/workflows/check.yml"},
+		ForgeGitLab: {"gitlab-ci.yml", ".gitlab-ci.yml"},
 	},
 }
 
@@ -58,6 +67,12 @@ type Result struct {
 	Created   []string
 	Refreshed []string
 	Kept      []string
+
+	// Forge is the forge the CI file was written for, empty when nothing said which.
+	// CINotWritten records that a stack with a pipeline got none for that reason, so
+	// the caller can say so rather than leaving the omission silent.
+	Forge        string
+	CINotWritten bool
 }
 
 // Stacks lists the scaffolds available in the embedded templates.
@@ -81,7 +96,9 @@ func Stacks(templates fs.FS) []string {
 // Your files are never overwritten. The kit-owned protocol section inside
 // AGENTS.md is refreshed, so projects pick up changes without losing their own
 // rules.
-func Init(templates fs.FS, root, stack string) (*Result, error) {
+// forge names where the project is hosted, deciding which CI file a stack gets. Empty
+// means detect it; detection returning nothing means no CI file is written at all.
+func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 	res := &Result{}
 
 	if _, err := os.Stat(root); os.IsNotExist(err) {
@@ -90,6 +107,13 @@ func Init(templates fs.FS, root, stack string) (*Result, error) {
 		}
 		res.Created = append(res.Created, root+"/")
 	}
+
+	// Before anything is scaffolded, so the first rung reads the project's own CI file
+	// rather than one this run just wrote.
+	if forge == "" {
+		forge = DetectForge(root)
+	}
+	res.Forge = forge
 
 	// The model depends on git: branches are claims, and staleness reads the log.
 	if !isGitRepo(root) {
@@ -120,6 +144,15 @@ func Init(templates fs.FS, root, stack string) (*Result, error) {
 				root, values, false, res); err != nil {
 				return nil, err
 			}
+		}
+		if ci, ok := ciLayout[stack][forge]; ok {
+			src := path.Join("templates/stacks", stack, ci[0])
+			if err := place(templates, src, filepath.Join(root, ci[1]),
+				root, values, false, res); err != nil {
+				return nil, err
+			}
+		} else if len(ciLayout[stack]) > 0 {
+			res.CINotWritten = true
 		}
 		// .gitkeep only earns its place in a directory git would otherwise drop.
 		if internal := filepath.Join(root, "internal"); isEmptyDir(internal) {

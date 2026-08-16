@@ -6,7 +6,7 @@ created: 2026-08-15
 shipped:
 check:
 checked:
-needs:
+needs: 0021
 related: 0003-ship-standing-engineering-guidance-in-the-binary.md
 ---
 

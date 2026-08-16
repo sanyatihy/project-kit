@@ -99,6 +99,8 @@ func runInit(args []string) int {
 	fs := newFlagSet("init")
 	stack := fs.String("stack", "", "also scaffold a language stack ("+
 		strings.Join(stacks, ", ")+")")
+	forge := fs.String("forge", "", "where the project is hosted ("+
+		strings.Join(kit.Forges, ", ")+"); detected when not given")
 	paths := parseArgs(fs, args)
 
 	target := "."
@@ -119,8 +121,13 @@ func runInit(args []string) int {
 			*stack, strings.Join(stacks, ", "))
 		return 2
 	}
+	if *forge != "" && !contains(kit.Forges, *forge) {
+		fmt.Fprintf(os.Stderr, "kit init: unknown forge %q (have: %s)\n",
+			*forge, strings.Join(kit.Forges, ", "))
+		return 2
+	}
 
-	res, err := kit.Init(templates, root, *stack)
+	res, err := kit.Init(templates, root, *stack, *forge)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit init: %v\n", err)
 		return 2
@@ -135,6 +142,16 @@ func runInit(args []string) int {
 	}
 	for _, p := range res.Kept {
 		fmt.Printf("  kept       %s\n", p)
+	}
+
+	// Both routes out are the agent's own, because the forge is a discoverable fact and
+	// not a decision only a human can make. Saying nothing here is what would leave a
+	// project with no pipeline and no way to know it.
+	if res.CINotWritten {
+		fmt.Printf("\n  no CI file — nothing here says which forge this project is on.\n")
+		fmt.Printf("  after git remote add, run kit init again and it will detect one,\n")
+		fmt.Printf("  or say so now: kit init %s --stack %s --forge %s\n",
+			target, *stack, strings.Join(kit.Forges, "|"))
 	}
 
 	// Singular here is what produced a plan with one feature covering a whole

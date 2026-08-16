@@ -79,6 +79,27 @@ func (f *Feature) Name() string {
 // Section returns a section's trimmed content, empty when absent.
 func (f *Feature) Section(heading string) string { return f.sections[heading] }
 
+// PlannedSections are what an agent needs in order to work a feature at all. `Log` is
+// not among them: it is written as the work happens, so it is checked at Shipped only.
+var PlannedSections = []string{"Problem", "Design", "Tasks"}
+
+// Unwritten lists the sections an agent would need and cannot read, in document order.
+//
+// Shared by `audit`, which reports it, and `claim`, which refuses over it. Once a Draft
+// can be claimed, the emptiness test is the only thing standing between a doc straight
+// out of `kit new` and an agent sent to build it — so both have to mean the same thing
+// by "nobody wrote the plan". The template's guidance lives in comments, which every
+// parser here strips, so an empty section was genuinely never written.
+func (f *Feature) Unwritten() []string {
+	var out []string
+	for _, heading := range PlannedSections {
+		if f.Section(heading) == "" {
+			out = append(out, heading)
+		}
+	}
+	return out
+}
+
 // OpenTasks lists unticked task boxes in document order.
 func (f *Feature) OpenTasks() []string { return Unticked(f.Section("Tasks")) }
 
