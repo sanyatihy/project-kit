@@ -282,6 +282,14 @@ func runDrop(args []string) int {
 		fmt.Printf("\n  no reason recorded — say why in ## Log, or the next person\n")
 		fmt.Printf("  cannot tell a rejected plan from a forgotten one\n")
 	}
+	// Dropping strands whoever declared this in needs:, and said nothing about it: the
+	// board went on promising them a wait that can never end, and audit reported
+	// needs-unknown once it was too late to ask why.
+	if len(res.Dependants) > 0 {
+		fmt.Printf("\n  still needed by %s — a Dropped feature can never ship, so\n",
+			strings.Join(res.Dependants, ", "))
+		fmt.Printf("  those docs need their needs: edited or they wait for ever\n")
+	}
 	// The doc is retired and the branch is not, and only one of those is this command's
 	// to touch. A leftover branch named after the doc still reads as a claim.
 	if len(res.Claims) > 0 {

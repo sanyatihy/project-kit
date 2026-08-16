@@ -366,6 +366,39 @@ func TestClaimRefusesADocNobodyWrote(t *testing.T) {
 	r.errHas("Problem")
 }
 
+func TestClaimRefusesWhatItsNeedsHaveNotShipped(t *testing.T) {
+	// Measured on a fresh project: `kit next` said 0002 was waiting on 0001 and
+	// `kit claim 0002` took it anyway, so an agent claiming by ID built on a foundation
+	// that is not there. Exit 1, like a lost race — the instruction is the same one.
+	p := cleanProject(t)
+	p.write("docs/features/0002-store.md",
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+	p.commitAll("a chain of two")
+
+	r := p.run("claim", "0002").fails(1)
+	r.errHas("not claimed", "0001")
+
+	// Nothing left behind, locally or on the remote — a branch is a claim.
+	for _, name := range p.branches() {
+		if strings.HasPrefix(name, "0002") {
+			t.Errorf("a refused claim still created branch %q", name)
+		}
+	}
+}
+
+func TestClaimTakesAFeatureWhoseNeedsHaveShipped(t *testing.T) {
+	// The quiet half. A dependency that has shipped is not an obstacle, and refusing
+	// here would make `needs:` a field that never releases anything.
+	p := cleanProject(t)
+	p.write("docs/features/0001-thing.md",
+		doc("0001", "A thing", "Shipped", "shipped: 2026-01-02", "- [x] Do the thing"))
+	p.write("docs/features/0002-store.md",
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+	p.commitAll("one shipped, one waiting on it")
+
+	p.run("claim", "0002").ok().has("claimed", "0002-store")
+}
+
 func TestNextAndClaimAgreeAboutAnUnwrittenDoc(t *testing.T) {
 	// A board that offers what the next command refuses is the loop 0013 exists to
 	// stop: the agent follows the documented path and is turned away at the end of it.

@@ -87,6 +87,63 @@ func TestShipRefusesTwice(t *testing.T) {
 	p.run("ship", "0007").fails(2).errHas("already Shipped")
 }
 
+func TestShipRefusesWhileItsNeedsHaveNotShipped(t *testing.T) {
+	// shipped-early, prevented rather than reported: `ship` was minting a finding on a
+	// doc the protocol then forbids anyone to edit. Exit 2 and not 1 — nobody else holds
+	// this, the work is done and the plan is wrong, so the operator has to look.
+	p := setUp(t)
+	feature(p, "0001", "base", "Base", "Accepted", "- [ ] Do it")
+	p.write("docs/features/0002-store.md",
+		doc("0002", "Store", "In progress", "needs: 0001", "- [x] Done"))
+
+	p.run("ship", "0002").fails(2).errHas("0001", "not shipped")
+	if strings.Contains(p.read("docs/features/0002-store.md"), "status: Shipped") {
+		t.Error("ship wrote the status despite refusing")
+	}
+	p.run("audit").ok().lacks("shipped-early")
+}
+
+func TestShipAllowsAFeatureWhoseNeedsHaveShipped(t *testing.T) {
+	// The quiet half: the foundation is there, so nothing is in the way.
+	p := setUp(t)
+	p.write("docs/features/0001-base.md",
+		doc("0001", "Base", "Shipped", "shipped: 2026-01-02", "- [x] Do it"))
+	p.write("docs/features/0002-store.md",
+		doc("0002", "Store", "In progress", "needs: 0001", "- [x] Done"))
+
+	p.run("ship", "0002").ok().has("shipped")
+}
+
+func TestShipRefusesAFeatureAnotherCheckoutClaims(t *testing.T) {
+	// Measured from a checkout whose own board says the feature is taken: `ship` exited 0
+	// and froze another agent's work mid-flight. `status: Shipped` is history the protocol
+	// forbids anyone to edit, so the agent holding the branch could no longer touch its
+	// own doc — and `audit` reported nothing at all.
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok() // the branch is the claim; this checkout is not on it
+	a.write("docs/features/0007-widget.md",
+		doc("0007", "A widget", "In progress", "", "- [x] Build it"))
+
+	r := a.run("ship", "0007").fails(2)
+	// Naming the branch and the way out: refusing without one is how an agent gets stuck.
+	r.errHas("0007-widget", "rule 8")
+	if strings.Contains(a.read("docs/features/0007-widget.md"), "status: Shipped") {
+		t.Error("ship wrote the status despite refusing")
+	}
+}
+
+func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
+	// The quiet half, and the documented path: the worktree that holds the claim is
+	// where the work was done and where it ships from.
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok()
+	a.git("checkout", "-q", "0007-widget")
+	a.write("docs/features/0007-widget.md",
+		doc("0007", "A widget", "In progress", "", "- [x] Build it"))
+
+	a.run("ship", "0007").ok().has("shipped")
+}
+
 func TestShipRefusesAnUnknownFeature(t *testing.T) {
 	p := setUp(t)
 	feature(p, "0007", "done", "Done", "Accepted", "- [x] One")
