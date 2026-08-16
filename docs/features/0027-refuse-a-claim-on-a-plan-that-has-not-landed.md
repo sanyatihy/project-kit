@@ -1,9 +1,9 @@
 ---
 id: 0027
 title: Refuse a claim on a plan that has not landed
-status: In progress
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs:
