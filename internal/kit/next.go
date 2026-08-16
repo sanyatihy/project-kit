@@ -122,6 +122,14 @@ func Survey(r *Repo) Plan {
 			} else if claim != "" {
 				item.ClaimedBy = claim
 				plan.Taken = append(plan.Taken, item)
+			} else if unplanned := without(f.Unwritten(), "Tasks"); len(unplanned) > 0 {
+				// `claim` refuses a doc nobody wrote, so offering one here would send an
+				// agent to a command that turns it away. An empty ## Tasks is left to the
+				// case below, which already tells "never planned" from "all finished" —
+				// two causes with opposite fixes.
+				item.WaitingOn = "no plan yet — ## " + strings.Join(unplanned, ", ## ") +
+					" never written"
+				plan.Blocked = append(plan.Blocked, item)
 			} else if item.Task == "" {
 				// Nothing to do has two causes needing opposite fixes: the work is
 				// finished, or it was never planned.
@@ -162,9 +170,9 @@ func guidanceFor(r *Repo, plan Plan) string {
 		return "nothing is free: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
 			"Stopping here is the right outcome: say so and wait."
-	case len(Drafts(r)) > 0:
-		return "these drafts are waiting on a human to accept them. " +
-			"Draft another if you were asked to, otherwise stop and say they need a decision."
+	// The branch that used to sit here said drafts were waiting on a human to accept
+	// them. It is gone with the gate: a Draft is active work now, so it reaches Ready
+	// or Blocked like anything else and never leaves the plan empty.
 	default:
 		// No command inside the sentence: guidance is wrapped for a narrow terminal,
 		// and a wrapped command is one nobody can copy. The caller prints the command
@@ -183,17 +191,6 @@ func (i Item) Progress() string {
 	return fmt.Sprintf("%d/%d", i.Done, i.Total)
 }
 
-// Drafts lists features still being designed, so an empty plan can say why.
-func Drafts(r *Repo) []*Feature {
-	var out []*Feature
-	for _, f := range r.Features {
-		if f.Status == StatusDraft {
-			out = append(out, f)
-		}
-	}
-	return out
-}
-
 // Show strips markdown markup and clips to one readable line, keeping output
 // legible in a narrow terminal.
 func Show(text string, width int) string {
@@ -201,4 +198,15 @@ func Show(text string, width int) string {
 		return ""
 	}
 	return clip(markupRe.ReplaceAllString(strings.Join(strings.Fields(text), " "), ""), width)
+}
+
+// without returns the list minus one entry, leaving the original alone.
+func without(list []string, drop string) []string {
+	var out []string
+	for _, item := range list {
+		if item != drop {
+			out = append(out, item)
+		}
+	}
+	return out
 }

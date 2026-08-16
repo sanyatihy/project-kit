@@ -1,9 +1,9 @@
 ---
 id: 0021
 title: Let agents work from drafts, and make accepting a signal
-status: Draft
+status: Shipped
 created: 2026-08-15
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs:
@@ -79,13 +79,13 @@ open — the defect it was reaching for, now that Draft-plus-work is the normal 
 permanently instead of being a branch you delete.
 
 ## Tasks
-- [ ] `kit claim` allows Draft and refuses an empty doc, with a conformance case each
-- [ ] `ActiveFeatures` ranks Draft below Accepted; `kit next` offers drafts as work
-- [ ] `draft-claimed` re-pointed at open questions, with fires and stays-quiet cases
-- [ ] `kit drop <id>`, refusing a Shipped doc, with `kit help` and README entries
-- [ ] Rewrite the drafting rules in `AGENTS-section.md` around the plan round, deleting the
+- [x] `kit claim` allows Draft and refuses an empty doc, with a conformance case each
+- [x] `ActiveFeatures` ranks Draft below Accepted; `kit next` offers drafts as work
+- [x] `draft-claimed` re-pointed at open questions, with fires and stays-quiet cases
+- [x] `kit drop <id>`, refusing a Shipped doc, with `kit help` and README entries
+- [x] Rewrite the drafting rules in `AGENTS-section.md` around the plan round, deleting the
       per-feature-branch rule and 0014's delete-the-branch rule
-- [ ] `kit help` and README describe status as priority, not permission
+- [x] `kit help` and README describe status as priority, not permission
 
 ## Log
 - 2026-08-15 — measured `kit next` against a project that adopted the kit: five drafts on

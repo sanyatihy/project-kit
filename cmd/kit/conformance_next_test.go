@@ -40,6 +40,25 @@ This way.
 `, id, title, status, tasks))
 }
 
+// unsettled writes a feature whose ## Open questions are still open. That, not the
+// status, is what draft-claimed reports when a branch builds on it anyway.
+func unsettled(p *project, id, slug, title, status, tasks string) {
+	p.t.Helper()
+	feature(p, id, slug, title, status, tasks)
+	rel := "docs/features/" + id + "-" + slug + ".md"
+	p.write(rel, strings.Replace(p.read(rel), "## Log",
+		"## Open questions\n- Which way round?\n\n## Log", 1))
+}
+
+// unwritten writes a doc straight out of `kit new`: the headings are there and
+// nothing under them. `claim` refuses it whatever its status.
+func unwritten(p *project, id, slug string) {
+	p.t.Helper()
+	p.write("docs/features/"+id+"-"+slug+".md",
+		"---\nid: "+id+"\ntitle: Unwritten\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
+			"## Problem\n\n## Design\n\n## Tasks\n\n## Log\n")
+}
+
 // plan runs `kit next --json` and returns this project's plan, for the assertions
 // that are about the structure rather than the printed page.
 func (p *project) plan(args ...string) kit.Plan {
@@ -293,20 +312,34 @@ func TestNextBlocksAFeatureWithEveryBoxTicked(t *testing.T) {
 	p.run("next").ok().has("blocked", "every task is ticked")
 }
 
-func TestNextExplainsDraftsRatherThanSayingNothingIsOpen(t *testing.T) {
-	// `next` never offers a Draft — that is where a human settles the design — but
-	// silence would look like there is no work at all.
-	//
-	// This used to assert the output said "Accepted", which was the tool telling an
-	// agent to take the human's gate. Naming who the drafts are waiting on is the
-	// same information without the instruction to overstep it.
+func TestNextOffersADraftAsWork(t *testing.T) {
+	// `status:` orders the board and does not gate it. A Draft is invented and not yet
+	// blessed, which is a reason to rank it last and no reason to withhold it — the
+	// operator reviews the implementation either way, and stopping every agent until
+	// they transition a field is a stop before a review rather than an extra one.
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 
 	r := p.run("next").ok()
-	r.has("drafts", "0001", "waiting on a human")
-	r.lacks("start here")
-	r.lacks("set status: Accepted")
+	r.has("start here", "0001", "kit claim 0001")
+	r.lacks("waiting on a human")
+}
+
+func TestNextRanksAcceptedAboveDraft(t *testing.T) {
+	// The whole autonomy signal: accepting does not unlock work, it promotes it. An
+	// agent handed the board takes what a human has looked at before what nobody has.
+	p := setUp(t)
+	feature(p, "0001", "drafted", "Drafted", "Draft", "- [ ] Later")
+	feature(p, "0002", "blessed", "Blessed", "Accepted", "- [ ] First")
+
+	ready := p.plan("next", "--json").Ready
+	if len(ready) != 2 {
+		t.Fatalf("expected both features ready, got %d", len(ready))
+	}
+	if ready[0].ID != "0002" || ready[1].ID != "0001" {
+		t.Errorf("next ranked %s before %s; Accepted outranks Draft",
+			ready[0].ID, ready[1].ID)
+	}
 }
 
 func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {

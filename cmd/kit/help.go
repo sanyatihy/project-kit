@@ -21,6 +21,7 @@ Commands:
   kit claim <id>                      take a feature: push the branch, win or lose
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
+  kit drop  <id> "<why>"              retire a feature that will not be built
   kit next  [PATH ...] [--json] [--offline]
                                       what should I work on?
   kit audit [PATH ...] [--json] [--strict] [--offline]
@@ -35,13 +36,15 @@ How it works:
 
     Draft -> Accepted -> In progress -> Shipped   (exits: Dropped, Superseded)
 
-  Draft is where a human settles the design. Once a doc is Accepted an agent can
-  work it unattended, which is why "kit next" never offers a Draft. "kit accept" is
-  how a human makes that call; nothing an agent runs will do it.
+  "status:" orders the board rather than gating it. Accepted is a human saying they
+  have looked and blessed the design, so it is offered first; a Draft is invented
+  and not yet blessed, so it is offered last and you should expect to settle its
+  "## Open questions" before building. Neither is permission: what refuses a claim
+  is a doc nobody wrote, and a BLOCKING line in docs/INBOX.md.
 
 The four rules:
-  1. In progress features come before Accepted ones, then lowest ID first.
-     Finishing beats starting.
+  1. In progress, then Accepted, then Draft, and lowest ID first within each.
+     Finishing beats starting, and blessed beats unblessed.
   2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
      order of work, so ordering needs no extra syntax.
   3. One agent per feature, one feature per checkout. "kit claim <id>" pushes the
@@ -136,8 +139,9 @@ yourself.
 
 	"accept": `kit accept <id>
 
-Settle a Draft: set status to Accepted. This is the human's call and the only
-transition in the model that is — an agent drafts the whole set and stops.
+Settle a Draft: set status to Accepted. This is the human's call, and it is a
+signal rather than a gate — agents can work a Draft, and accepting says the design
+has been looked at, which moves it up the board ahead of anything unblessed.
 
 Refuses when there is nothing to settle, or when the doc says the design is not
 settled yet:
@@ -162,7 +166,8 @@ so of any number of agents claiming at once exactly one wins.
 
   0  it is yours — a worktree command to start in is printed
   1  it is not yours: another agent got there first, a branch already claims it, an
-     open INBOX question blocks it, or the doc is a Draft or already closed
+     open INBOX question blocks it, the doc is closed, or nobody wrote it — an empty
+     ## Problem, ## Design or ## Tasks is refused whatever the status
   2  it could not run: no such feature, no commits yet, several remotes and no origin
 
 Losing is normal. Run "kit next" and take something else.
@@ -213,12 +218,34 @@ on, and the doc itself must not be edited again.
   kit ship 0007
   kit ship 7`,
 
+	"drop": `kit drop <id> "<why>"
+
+Retire a feature that will not be built. Sets status: Dropped and records the
+reason in "## Log".
+
+Feature docs live on the default branch at every status, so an unwanted one cannot
+be disposed of by deleting a branch — left alone it sits on the board for ever and
+every agent reads it as work nobody has started.
+
+Refuses a Shipped doc: that is frozen history and the work is in the repo, so
+retiring it would make the record say the feature was never built.
+
+The branch is not this command's to delete. A leftover branch named after the doc
+still reads as a claim, and dropping the doc says so rather than acting.
+
+  kit drop 0007 "superseded by 0011's router"
+  kit drop 7 "the metric it was chasing moved on its own"`,
+
 	"next": `kit next [PATH ...] [--json]
 
 What should I work on? Reads the feature docs and git, and names one task.
 
-Ranks In progress before Accepted, then by lowest ID, and within a feature returns
-the topmost unticked "## Tasks" box.
+Ranks In progress before Accepted before Draft, then by lowest ID, and within a
+feature returns the topmost unticked "## Tasks" box.
+
+A Draft is offered like anything else — accepting promotes work rather than
+unlocking it. A doc with an empty ## Problem or ## Design is reported as blocked
+instead, because "kit claim" would refuse it.
 
 Each feature shows its ticked-over-total, as "2/4", and --json carries the same as
 "done" and "total". It is a count of boxes, not an estimate: boxes are not equal

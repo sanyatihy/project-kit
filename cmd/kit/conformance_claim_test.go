@@ -185,10 +185,14 @@ func TestClaimRefusalsThatAreNotRaces(t *testing.T) {
 		setUp func(p *project)
 		says  string
 	}{
-		{"a draft nobody settled", func(p *project) {
-			feature(p, "0008", "unsettled", "Unsettled", "Draft", "- [ ] Something")
-			p.commitAll("a draft")
-		}, "Draft"},
+		// A Draft is claimable — status orders the board and does not gate it. What is
+		// refused is a doc nobody wrote, whatever its status: `unfilled-template`
+		// exempts Draft, so without this a doc straight out of `kit new` would be
+		// handed to an agent with three empty sections and every command exiting 0.
+		{"a doc nobody wrote", func(p *project) {
+			unwritten(p, "0008", "unwritten")
+			p.commitAll("an empty doc")
+		}, "no plan to build"},
 		{"a feature that already shipped", func(p *project) {
 			feature(p, "0008", "done", "Done", "Shipped", "- [x] Finished")
 			p.commitAll("shipped work")
@@ -333,4 +337,43 @@ func TestAnUnreachableRemoteNamesPruneRatherThanAPhantomDelete(t *testing.T) {
 	b.git("remote", "set-url", "origin", filepath.Join(b.Root, "does-not-exist.git"))
 
 	b.run("claim", "0007").fails(1).errHas("fetch --prune")
+}
+
+func TestClaimTakesADraft(t *testing.T) {
+	// The gate that moved. `status:` orders the board and does not decide who may
+	// work: an agent takes a Draft, settles what the doc leaves open, and the human
+	// reviews the implementation — which is the review that was always going to
+	// happen. Accepting first is a signal, not a precondition.
+	p := cleanProject(t)
+	feature(p, "0004", "drafted", "Drafted", "Draft", "- [ ] Build it")
+	p.commitAll("a draft on the trunk")
+
+	p.run("claim", "0004").ok().has("claimed", "0004-drafted")
+}
+
+func TestClaimRefusesADocNobodyWrote(t *testing.T) {
+	// The load-bearing half of the above. unfilled-template exempts Draft, and that
+	// exemption was only safe while a Draft could not be claimed — without this, a
+	// doc straight out of `kit new` is handed to an agent to build and every command
+	// exits 0.
+	p := cleanProject(t)
+	unwritten(p, "0004", "unwritten")
+	p.commitAll("an empty doc")
+
+	r := p.run("claim", "0004").fails(1)
+	r.errHas("no plan to build")
+	// Naming the sections, because "write the plan" is not actionable on its own.
+	r.errHas("Problem")
+}
+
+func TestNextAndClaimAgreeAboutAnUnwrittenDoc(t *testing.T) {
+	// A board that offers what the next command refuses is the loop 0013 exists to
+	// stop: the agent follows the documented path and is turned away at the end of it.
+	p := cleanProject(t)
+	unwritten(p, "0004", "unwritten")
+	p.commitAll("an empty doc")
+
+	r := p.run("next").ok()
+	r.has("blocked", "no plan yet")
+	r.lacks("kit claim 0004")
 }

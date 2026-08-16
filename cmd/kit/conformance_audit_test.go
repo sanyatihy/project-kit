@@ -181,9 +181,10 @@ var auditCases = []struct {
 		p.git("branch", "0099-long-gone")
 	}},
 	{"draft-claimed", func(p *project) {
-		// Building on it, not merely proposing it: the branch carries code as well
-		// as the doc, which is what makes it a claim on an unsettled design.
-		feature(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
+		// Two facts together: the doc's ## Open questions are still open, and the
+		// branch carries code as well as the doc. Building on a Draft is the normal
+		// flow; building on questions nobody answered is not.
+		unsettled(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
 		p.commitAll("the doc")
 		p.git("checkout", "-q", "-b", "0002-unsettled")
 		p.write("internal/thing/thing.go", "package thing\n")
@@ -559,7 +560,7 @@ func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
 			p := newProject(t)
 			p.run("init").ok()
 			p.git("checkout", "-q", "-b", "develop")
-			feature(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
+			unsettled(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
 			p.commitAll("a draft on develop")
 
 			if withRemote {
@@ -860,5 +861,24 @@ func TestABranchThatCannotBeResolvedIsNotJudged(t *testing.T) {
 	b.git("fetch", "origin")
 	if codes := b.auditCodes(); slices.Contains(codes, "orphan-claim") {
 		t.Errorf("a branch carrying its own doc was reported as an orphan: %v", codes)
+	}
+}
+
+func TestBuildingOnASettledDraftIsNotAFinding(t *testing.T) {
+	// The normal flow now: an agent claims a Draft and builds. `status:` orders the
+	// board and does not gate it, so reporting this would fire on correct behaviour —
+	// the one thing audit cannot afford. What draft-claimed still reports is the
+	// narrower case where the doc's ## Open questions are open.
+	p := cleanProject(t)
+	p.commitAll("baseline")
+	feature(p, "0002", "settled", "Settled", "Draft", "- [ ] Something")
+	p.commitAll("a settled draft")
+	p.git("checkout", "-q", "-b", "0002-settled")
+	p.write("internal/thing/thing.go", "package thing\n")
+	p.commitAll("0002: build it")
+	p.git("checkout", "-q", "-")
+
+	if codes := p.auditCodes(); slices.Contains(codes, "draft-claimed") {
+		t.Errorf("draft-claimed fired on work against a settled Draft: %v", codes)
 	}
 }

@@ -78,6 +78,8 @@ func run() int {
 		return runAccept(os.Args[2:])
 	case "claim":
 		return runClaim(os.Args[2:])
+	case "drop":
+		return runDrop(os.Args[2:])
 	case "block":
 		return runBlock(os.Args[2:])
 	case "ship":
@@ -246,6 +248,48 @@ func runAccept(args []string) int {
 		res.Branch)
 	fmt.Printf("  the branch is deleted on merge — its name is the claim name\n")
 	fmt.Printf("  kit next\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- drop
+
+func runDrop(args []string) int {
+	fs := newFlagSet("drop")
+	rest := parseArgs(fs, args)
+	if len(rest) < 1 {
+		fmt.Fprintf(os.Stderr, "kit drop: need one feature id\n\n%s\n", commandHelp["drop"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit drop: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit drop: %v\n", err)
+		return 2
+	}
+	why := strings.TrimSpace(strings.Join(rest[1:], " "))
+	res, err := kit.Drop(repo, id, why, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit drop: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  dropped  %s  (was %s)\n", res.Doc, res.Was)
+	if why == "" {
+		fmt.Printf("\n  no reason recorded — say why in ## Log, or the next person\n")
+		fmt.Printf("  cannot tell a rejected plan from a forgotten one\n")
+	}
+	// The doc is retired and the branch is not, and only one of those is this command's
+	// to touch. A leftover branch named after the doc still reads as a claim.
+	if len(res.Claims) > 0 {
+		fmt.Printf("\n  still claimed by %s — delete it, or the board shows work\n",
+			strings.Join(res.Claims, " and "))
+		fmt.Printf("  nobody is doing\n")
+	}
+	fmt.Printf("\nnext:\n  kit next\n\n")
 	return 0
 }
 
@@ -503,23 +547,11 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		}
 	}
 
-	// The drafts listing is data the JSON payload does not carry, so it stays here.
-	// The conclusion under it does not: that comes from plan.Guidance, which --json
-	// carries too, so the two formats cannot end up saying different things.
-	if plan.Empty() {
-		if drafts := kit.Drafts(r); len(drafts) > 0 {
-			fmt.Printf("\n  nothing open, but there are drafts:\n")
-			for _, f := range drafts {
-				fmt.Printf("    %s  %s\n", f.ID, kit.Show(f.Title, 60))
-				fmt.Printf("          %s\n", f.Rel)
-			}
-		}
-	}
 	if plan.Guidance != "" && len(plan.Yours) == 0 && len(plan.Ready) == 0 {
 		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
 		// The command goes on its own line, unwrapped, so it can be copied. The
 		// guidance says what to do; this is the thing to run.
-		if plan.Empty() && len(kit.Drafts(r)) == 0 {
+		if plan.Empty() {
 			fmt.Printf("    kit new \"<what the feature does>\"\n")
 		}
 	}

@@ -15,8 +15,8 @@ func TestAcceptSettlesADraftAndNextThenOffersIt(t *testing.T) {
 	path := "docs/features/0001-shorten-urls.md"
 	p.write(path, fullDoc("0001", "Shorten URLs", "Draft", "- [ ] Do the thing"))
 
-	// A Draft is never offered, which is the gate this command opens.
-	p.run("next").ok().lacks("start here")
+	// A Draft is already offered — accepting promotes it, it does not unlock it.
+	p.run("next").ok().has("start here", "0001")
 
 	r := p.run("accept", "0001").ok()
 	r.has("accepted", path)
