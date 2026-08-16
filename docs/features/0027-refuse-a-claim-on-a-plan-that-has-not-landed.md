@@ -63,7 +63,7 @@ can be on the trunk and edited-but-uncommitted here.
       single-branch project
 - [x] Conformance: claiming from an unmerged plan branch is refused; claiming the same
       feature after the round merges succeeds
-- [ ] `kit help claim` and README state the barrier and why it exists
+- [x] `kit help claim` and README state the barrier and why it exists
 
 ## Log
 - 2026-08-16 — found while reviewing how four features came to be merged by their own
