@@ -863,3 +863,22 @@ func TestABranchThatCannotBeResolvedIsNotJudged(t *testing.T) {
 		t.Errorf("a branch carrying its own doc was reported as an orphan: %v", codes)
 	}
 }
+
+func TestBuildingOnASettledDraftIsNotAFinding(t *testing.T) {
+	// The normal flow now: an agent claims a Draft and builds. `status:` orders the
+	// board and does not gate it, so reporting this would fire on correct behaviour —
+	// the one thing audit cannot afford. What draft-claimed still reports is the
+	// narrower case where the doc's ## Open questions are open.
+	p := cleanProject(t)
+	p.commitAll("baseline")
+	feature(p, "0002", "settled", "Settled", "Draft", "- [ ] Something")
+	p.commitAll("a settled draft")
+	p.git("checkout", "-q", "-b", "0002-settled")
+	p.write("internal/thing/thing.go", "package thing\n")
+	p.commitAll("0002: build it")
+	p.git("checkout", "-q", "-")
+
+	if codes := p.auditCodes(); slices.Contains(codes, "draft-claimed") {
+		t.Errorf("draft-claimed fired on work against a settled Draft: %v", codes)
+	}
+}

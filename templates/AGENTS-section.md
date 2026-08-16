@@ -17,10 +17,9 @@ whole model, and `kit help template` prints the feature doc format.
 
    **A feature is one pull request** (merge request on GitLab) — you push a branch and
    a human reads it, so the feature is the unit of review. Too big is one nobody can
-   review in one sitting:
-   config, storage, the API and the CLI together is a project, not a feature. Too
-   small is one that changes nothing anyone can observe and exists only so the next
-   can start — that is a task box, not a doc.
+   review in one sitting: config, storage, the API and the CLI together is a project,
+   not a feature. Too small changes nothing anyone can observe and exists only so the
+   next can start — that is a task box, not a doc.
 
    **Say what each one waits on in `needs:`**, and fill it in for every draft: it is
    what lets `kit next` refuse work whose foundation is missing, and several features
@@ -29,21 +28,25 @@ whole model, and `kit help template` prints the feature doc format.
    files in one sequence such as migrations all make a feature dependent however
    separate it looks.
 
-   **Leave every doc `Draft`: accepting is a human's call.** A draft waits on a
-   branch of its own — nothing is ever committed to
-   `main` — and **that branch is deleted when the draft is accepted and merged**. Its
-   name is the claim name, so leaving it behind makes the feature unclaimable: every
-   agent is then told it is taken, by nobody.
+   **A drafting session is one plan round: all of its docs on one branch, merged
+   once.** Name that branch `plan/<something>` and never after a feature — a branch
+   leading with a four-digit ID *is* a claim, so a draft on one claims itself. One
+   review for the round, not one per draft.
 
-   The human accepts with **`kit accept <id>`, run on the draft's own branch**, so the
-   acceptance lands in the same pull request as the draft: one review and one merge per
-   feature. Never run it yourself and never edit `status:` by hand — that is the only
-   gate in this model, and a tool that steps through it makes the gate advisory.
+   **The plan has to reach the default branch before anything can be claimed.** A claim
+   pushes `HEAD`, so a doc only in the working tree does not travel with the branch an
+   agent is sent to work in. Land the round first, at whatever statuses its docs reached.
 
-   **The plan has to be on `main` before anything can be claimed.** A claim pushes
-   `HEAD`, so a doc that is only in the working tree does not travel with the branch an
-   agent is sent to work in. On a project that has just been set up, that means one pull
-   request landing the scaffold and the whole set of drafts.
+   **Leave every doc `Draft`.** `status:` orders the board; it does not gate it. A human
+   runs `kit accept <id>` to say they have looked and blessed the design, which moves the
+   feature up the board — it is not permission to start, and agents work Drafts. Never
+   run `accept` yourself and never edit `status:` by hand; use `kit accept`, `kit ship`
+   and `kit drop`, which is why they exist.
+
+   **Put what you could not settle in `## Open questions`.** A later agent claiming the
+   draft settles them before building. Anything only a human can answer goes to
+   `docs/INBOX.md` with `kit block` instead — that is the one thing that still stops a
+   claim.
 2. **One agent per feature. Take it with `kit claim <id>`.** That pushes the branch
    named after the doc, and creating that ref on the remote is what decides who
    gets the work: exit 0 is yours, exit 1 means another agent got there first — run
@@ -56,9 +59,9 @@ whole model, and `kit help template` prints the feature doc format.
    one, and two agents in one feature produce one branch nobody can review.
 
    **If nothing is free, stop.** Everything claimed or waiting is a real answer and
-   the right one — say so and wait for a human. Do not pick up claimed work, do not
-   start a feature nobody accepted, and do not invent something to be useful. An
-   idle agent costs nothing; two agents in one feature costs the feature.
+   the right one — say so and wait for a human. Do not pick up claimed work and do not
+   invent something to be useful. An idle agent costs nothing; two agents in one
+   feature costs the feature.
 3. **One feature per checkout. Work in the worktree `kit claim` prints.** The
    worktree is the isolation and git provides it; the kit only refuses to hand out
    work in a checkout that is occupied. Run in one, `kit next` reports that feature
@@ -77,12 +80,14 @@ whole model, and `kit help template` prints the feature doc format.
 7. **A box that turns out wrong may be rewritten, split, or deleted** — in its own
    commit, with the reason in `## Log`. The plan is a working document; only
    `status: Shipped` freezes it. What you may not do is silently drop a box you
-   could not finish.
+   could not finish. A whole feature that should not be built is `kit drop <id>
+   "<why>"` — docs live on the default branch for ever, so an abandoned one stays on
+   the board until it is retired.
 8. **Stopping mid-feature? Release the claim.** Delete the branch locally *and* on
-   the remote (`git push origin --delete <branch>`), set the status back to
-   `Accepted`, and say why in `## Log`. The pushed branch is the claim, so deleting
-   only your local copy leaves the feature taken for good and `kit next` will route
-   every future agent around it.
+   the remote (`git push origin --delete <branch>`), set the status back to what it
+   was, and say why in `## Log`. The pushed branch is the claim, so deleting only
+   your local copy leaves the feature taken for good and `kit next` will route every
+   future agent around it.
 9. **Blocked on a decision only a human can make?** Run
    `kit block <id> "<question, with your leaning>"`, then move to another feature.
    Do not guess. Use `--fyi` for anything work can continue without. "Do not idle"
@@ -109,9 +114,10 @@ whole model, and `kit help template` prints the feature doc format.
 ### Where two agents can still collide
 
 The claim is airtight and the ID is not. `kit new` takes the next free ID from what
-it can see on disk and never goes to the network, so two agents drafting at once on
-two branches can both produce `0009`. Nothing in git objects: the filenames differ,
-so the merge is clean.
+it can see on disk and never goes to the network, so two sessions drafting against
+the same trunk both produce `0009`. A plan round in flight is invisible to the next
+one, and a round collides a batch of IDs where a single draft collided one. Nothing
+in git objects: the filenames differ, so the merge is clean.
 
 `kit audit` reports it as `duplicate-id`, and it is HIGH because the ID is the
 primary key — one branch would claim both features and one INBOX line would block

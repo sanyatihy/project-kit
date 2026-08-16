@@ -173,18 +173,29 @@ Each box is one PR you can finish and verify without asking anyone. `- [ ] Build
 backend` is not a task. If you cannot say how you would check a box is done, it is
 too big — split it.
 
-Then accept it — this is the one decision the tool will never make for you, and the
-one command an agent must never run:
+A drafting session is one **plan round**: every doc it produces goes on a single branch
+named `plan/<something>` — never after a feature, since a branch leading with a
+four-digit ID *is* a claim — and merges once. One review for the round rather than one
+per draft, and the docs reach the default branch at whatever statuses they reached,
+`Draft` included.
+
+Then accept whichever you have looked at. This is the one command an agent must never
+run, but it is a **signal, not a gate**:
 
 ```sh
 kit accept 0001                  # Draft -> Accepted
 ```
 
-It refuses if `## Open questions` is still there or a `BLOCKING` inbox line names the
-feature, because both say the design is not settled. Run it on the draft's own branch so
-the acceptance lands in the same pull request as the draft.
+Accepting says you have blessed the design, which moves the feature up the board. It
+does not unlock the work: agents claim Drafts too, and `kit next` simply offers anything
+`Accepted` first. It refuses if `## Open questions` is still there or a `BLOCKING` inbox
+line names the feature, because both say the design is not settled.
 
-Land that pull request, and `kit next` hands you the first box and the command to start:
+What still refuses a claim is a `BLOCKING` inbox line, and a doc nobody wrote — an empty
+`## Problem`, `## Design` or `## Tasks` is turned away whatever its status, so a doc
+straight out of `kit new` can never be handed to an agent to build.
+
+Land the round, and `kit next` hands you the first box and the command to start:
 
 ```
   start here
@@ -213,8 +224,9 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 
 ## The four rules
 
-1. `In progress` features come before `Accepted` ones, then lowest ID first.
-   Finishing beats starting.
+1. `In progress`, then `Accepted`, then `Draft`, and lowest ID first within each.
+   Finishing beats starting, and blessed beats unblessed. `status:` orders the
+   board; it does not gate it.
 2. Within a feature, do the topmost unticked box. List order is the order of work.
 3. One agent per feature, one feature per checkout. `kit claim <id>` pushes the
    branch named after the doc, and creating that ref on the remote is what decides
@@ -230,10 +242,11 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 
 ```sh
 kit new   <title...>                     next free ID, date filled in, status Draft
-kit accept <id>                          settle a Draft — the human's call, never an agent's
+kit accept <id>                          bless a Draft — the human's call, never an agent's
 kit claim <id>                           push the branch; exit 1 means you lost it
 kit block <id> "<question>" [--fyi]      park a decision only a human can make
 kit ship  <id>                           verify every box, stamp the date, freeze
+kit drop  <id> "<why>"                   retire a feature that will not be built
 kit next  [PATH ...] [--json] [--offline] warns above 2 features in progress
 kit audit [PATH ...] [--json] [--strict] [--offline]
                                          --strict exits 1 on HIGH, for CI
