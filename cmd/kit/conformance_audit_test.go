@@ -547,6 +547,23 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	cleanProject(t).run("audit", "--strict").ok()
 }
 
+func TestIDMismatchFailsStrict(t *testing.T) {
+	// Raised from MEDIUM. A doc whose id: and filename disagree is not untidy: the
+	// branch comes from the filename and the board looks for the id, so the feature's
+	// own claim is invisible and it keeps being handed out. --strict is rule 12's
+	// gate, so this is what stops it being left sitting while agents run.
+	mismatched := cleanProject(t)
+	mismatched.write("docs/features/0002-confused.md",
+		doc("0009", "Confused", "Accepted", "", "- [ ] Something"))
+	mismatched.run("audit", "--strict").fails(1).has("id-mismatch")
+
+	// The quiet half: agreeing is the normal case and must not fail anything.
+	agreed := cleanProject(t)
+	agreed.write("docs/features/0002-agreed.md",
+		doc("0002", "Agreed", "Accepted", "", "- [ ] Something"))
+	agreed.run("audit", "--strict").ok().lacks("id-mismatch")
+}
+
 func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
 	// The failure this closes: `In progress` is set on the feature branch, so the trunk
 	// checkout — the only one a human or a supervising agent audits — sees `Accepted`

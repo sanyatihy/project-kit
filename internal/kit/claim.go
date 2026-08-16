@@ -53,6 +53,18 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	case sharing > 1:
 		return nil, fmt.Errorf("%d feature docs share id %s, so a branch named after "+
 			"it would claim both — run kit audit and renumber all but one", sharing, id)
+	// The same key disagreeing with itself, and it breaks the same guarantee. The
+	// branch comes from the filename and `Claims` matches the id, so claiming this
+	// would create a branch the board cannot see: `next` goes on offering the feature
+	// and the next agent gets a raw git error about a branch that already exists.
+	// NotYours because one rename fixes it — and because meanwhile the agent is meant
+	// to take something else, which is what a lost race says too.
+	case target.FilenamePrefix() != "" && target.FilenamePrefix() != target.ID:
+		return nil, &NotYours{
+			fmt.Sprintf("%s declares id %s but its file is named %s, so the branch "+
+				"claiming it would not mention %s", target.Name(), target.ID,
+				target.FilenamePrefix(), target.ID),
+			"make them match — rename the file, or fix the id: — then claim again"}
 	}
 
 	// Draft is claimable. `status:` orders the board rather than gating it: Accepted is

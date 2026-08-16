@@ -65,14 +65,18 @@ rather than being orphaned by it. `FilenamePrefix` exists and is already used by
 `NextID`, so this is one extra comparison.
 
 ## Tasks
-- [ ] `id-mismatch` raised to HIGH, with its `--strict` behaviour covered
-- [ ] `ClaimFeature` refuses a doc whose `id:` and filename prefix disagree, as
+- [x] `id-mismatch` raised to HIGH, with its `--strict` behaviour covered
+- [x] `ClaimFeature` refuses a doc whose `id:` and filename prefix disagree, as
       `NotYours` and before any git call; conformance case asserting exit 1
-- [ ] `Claims` matches the filename prefix as well as the declared id, so an existing
+- [x] `Claims` matches the filename prefix as well as the declared id, so an existing
       mismatched claim is still seen; conformance case
-- [ ] A conformance case for the whole scenario: claim, then the board must not offer
+- [x] A conformance case for the whole scenario: claim, then the board must not offer
       the same feature again
 - [ ] README's check list and `kit help checks` reflect the new severity
+- [ ] `next` blocks a mismatched doc instead of offering it, so the board and `claim`
+      agree — the loop 0013 exists to stop
 
 ## Log
 - 2026-08-16 — found probing the lifecycle after the url-shortener bootstrap.
+- 2026-08-16 — the refusal leaves `next` offering a feature `claim` turns away, which
+  is the 0013 loop. Appended as a box rather than widening this change.

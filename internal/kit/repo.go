@@ -583,13 +583,28 @@ func (r *Repo) TrackedAtHEAD(rel string) bool {
 
 // Claims lists the distinct branches claiming a feature. More than one means two
 // agents believe they own it.
+//
+// A branch is matched on the feature's declared id and on its filename prefix, which
+// are the same string in every doc that is not defective. Where they disagree the
+// branch is named after the file and mentions the prefix only, so matching the id
+// alone loses the claim: the board would offer a feature somebody is already holding.
+// `claim` now refuses to create such a claim, so this is for the ones already made.
 func (r *Repo) Claims(id string) []string {
 	r.loadGit()
+	ids := []string{id}
+	for _, f := range r.Features {
+		if f.ID != id {
+			continue
+		}
+		if prefix := f.FilenamePrefix(); prefix != "" && prefix != id {
+			ids = append(ids, prefix)
+		}
+	}
 	seen := map[string]bool{}
 	var out []string
 	for _, ref := range r.refs {
 		name := branchName(ref)
-		if r.isTrunk(name) || seen[name] || !Mentions(name, id) {
+		if r.isTrunk(name) || seen[name] || !mentionsAny(name, ids) {
 			continue
 		}
 		seen[name] = true
@@ -597,6 +612,15 @@ func (r *Repo) Claims(id string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func mentionsAny(text string, ids []string) bool {
+	for _, id := range ids {
+		if Mentions(text, id) {
+			return true
+		}
+	}
+	return false
 }
 
 // Mine reports whether the branch this checkout is on is one of the branches claiming a

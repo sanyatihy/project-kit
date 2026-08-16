@@ -112,8 +112,12 @@ var (
 	// before work starts produced a fix line telling the author to set it back to Draft.
 	checkMissingSection = Check{"missing-section", Medium,
 		"a Shipped doc has an empty ## Log, so nothing records what was decided"}
-	checkIDMismatch = Check{"id-mismatch", Medium,
-		"frontmatter id: disagrees with the filename"}
+	// HIGH, not tidiness: the branch is named from the filename and `Claims` matches
+	// the id, so a doc in this state makes its own claim invisible and the board goes
+	// on handing the feature out. It has to fail --strict — it cannot be left sitting
+	// while agents run.
+	checkIDMismatch = Check{"id-mismatch", High,
+		"frontmatter id: disagrees with the filename, so a claim on it is invisible to the board"}
 	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
 		"an INBOX.md line is not in the documented format, so it blocks by prose match"}
 	checkInboxUnknown = Check{"inbox-unknown", Medium,
@@ -154,9 +158,10 @@ var (
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
-	checkDuplicateID, checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
+	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
+	checkUnchecked,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
-	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
+	checkMissingSection, checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
 	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
