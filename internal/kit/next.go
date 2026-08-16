@@ -122,6 +122,16 @@ func Survey(r *Repo) Plan {
 			} else if claim != "" {
 				item.ClaimedBy = claim
 				plan.Taken = append(plan.Taken, item)
+			} else if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
+				// `claim` refuses this, so offering it is the board sending an agent to a
+				// command that turns it away — the loop 0013 exists to stop. The branch
+				// would be named after the file and the claim looked up by the id, so
+				// nothing would connect them.
+				// Short enough to survive the board's 56-column clip: an instruction cut
+				// off halfway is one nobody can follow.
+				item.WaitingOn = "filename says " + prefix + " but id: says " + f.ID +
+					" — rename one"
+				plan.Blocked = append(plan.Blocked, item)
 			} else if unplanned := without(f.Unwritten(), "Tasks"); len(unplanned) > 0 {
 				// `claim` refuses a doc nobody wrote, so offering one here would send an
 				// agent to a command that turns it away. An empty ## Tasks is left to the

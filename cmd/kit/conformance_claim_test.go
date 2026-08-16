@@ -275,9 +275,11 @@ func TestAClaimMadeBeforeTheFixStaysVisible(t *testing.T) {
 	p.commitAll("a doc whose id and filename disagree")
 
 	// The quiet half first: with no branch there is no claim, and matching the prefix
-	// must not invent one out of a feature nobody has taken.
-	if got := boardGroup(p.plan("next", "--json"), "0009"); got != "ready" {
-		t.Errorf("with no branch, 0009 is %s on the board, want ready", got)
+	// must not invent one out of a feature nobody has taken. Blocked, not ready — the
+	// board withholds a mismatched doc because `claim` refuses it — but the point here
+	// is that it is not reported as *taken*.
+	if got := boardGroup(p.plan("next", "--json"), "0009"); got != "blocked" {
+		t.Errorf("with no branch, 0009 is %s on the board, want blocked", got)
 	}
 
 	p.git("branch", "0002-confused")
@@ -523,4 +525,25 @@ func TestNextAndClaimAgreeAboutAnUnwrittenDoc(t *testing.T) {
 	r := p.run("next").ok()
 	r.has("blocked", "no plan yet")
 	r.lacks("kit claim 0004")
+}
+
+func TestTheBoardDoesNotOfferWhatClaimRefuses(t *testing.T) {
+	// The loop 0013 exists to stop: `claim` now refuses a mismatched doc, so a board
+	// that still lists it under "start here" sends every agent to a command that turns
+	// it away. Any refusal a command makes, the board has to reflect — the converse of
+	// the rule 0023 established for needs:.
+	p := cleanProject(t)
+	p.write("docs/features/0002-confused.md",
+		doc("0009", "Confused", "Accepted", "", "- [ ] Something"))
+	p.commitAll("a doc whose id and filename disagree")
+
+	if got := boardGroup(p.plan("next", "--json"), "0009"); got != "blocked" {
+		t.Errorf("next put the mismatched feature in %q, want blocked — claim refuses it", got)
+	}
+	p.run("next").ok().has("rename one")
+
+	// And a doc whose names agree is still offered, so this cannot fire on a healthy one.
+	if got := boardGroup(p.plan("next", "--json"), "0001"); got != "ready" {
+		t.Errorf("an agreeing doc landed in %q, want ready", got)
+	}
 }

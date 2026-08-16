@@ -73,7 +73,7 @@ rather than being orphaned by it. `FilenamePrefix` exists and is already used by
 - [x] A conformance case for the whole scenario: claim, then the board must not offer
       the same feature again
 - [ ] README's check list and `kit help checks` reflect the new severity
-- [ ] `next` blocks a mismatched doc instead of offering it, so the board and `claim`
+- [x] `next` blocks a mismatched doc instead of offering it, so the board and `claim`
       agree — the loop 0013 exists to stop
 
 ## Log
