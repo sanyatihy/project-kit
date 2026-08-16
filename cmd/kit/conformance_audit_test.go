@@ -53,13 +53,13 @@ func (p *project) auditCodes() []string {
 	if r.Code > 1 {
 		p.t.Fatalf("audit --json failed: %s", r.context())
 	}
-	var payload map[string][]kit.Finding
+	var payload map[string]audited
 	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
 		p.t.Fatalf("audit --json emitted invalid JSON: %v\n%s", err, r.Stdout)
 	}
 	var codes []string
-	for _, findings := range payload {
-		for _, f := range findings {
+	for _, one := range payload {
+		for _, f := range one.Findings {
 			codes = append(codes, f.Code)
 		}
 	}
@@ -940,4 +940,72 @@ func TestBuildingOnASettledDraftIsNotAFinding(t *testing.T) {
 	if codes := p.auditCodes(); slices.Contains(codes, "draft-claimed") {
 		t.Errorf("draft-claimed fired on work against a settled Draft: %v", codes)
 	}
+}
+
+func TestAuditSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
+	// Same failure as `next`, and the same reason it matters: an operator auditing a
+	// fleet got an error about the path they did not care about and silence about the
+	// projects they did.
+	for _, last := range []bool{true, false} {
+		name := "the unusable path last"
+		if !last {
+			name = "the unusable path first"
+		}
+		t.Run(name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+				"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+			gone := filepath.Join(p.Root, "gone")
+
+			args := []string{"audit", gone, p.Root}
+			if last {
+				args = []string{"audit", p.Root, gone}
+			}
+			r := p.run(args...).fails(2)
+
+			r.outHas("unticked-shipped", gone, "not a directory")
+			r.errHas("kit audit: not a directory: " + gone)
+
+			found, failure := strings.Index(r.Stdout, "unticked-shipped"), strings.Index(r.Stdout, "not a directory")
+			if last != (found < failure) {
+				t.Errorf("the report reordered the paths it was given:\n%s", r.Stdout)
+			}
+		})
+	}
+}
+
+func TestAuditJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
+	p := cleanProject(t)
+	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	gone := filepath.Join(p.Root, "gone")
+
+	r := p.run("audit", p.Root, gone, "--json").fails(2)
+	var payload map[string]audited
+	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
+		t.Fatalf("--json stopped being parseable when a path was unreadable: %v\n%s",
+			err, r.Stdout)
+	}
+	if healthy := payload[filepath.Base(p.Root)]; len(healthy.Findings) == 0 {
+		t.Errorf("--json lost the audited project: %+v", payload)
+	}
+	if payload[gone].Error == "" {
+		t.Errorf("--json never said %s could not be read: %+v", gone, payload)
+	}
+}
+
+func TestAuditRanksAnUnreadablePathAboveAStrictFinding(t *testing.T) {
+	// The two codes mean different things to the script running them: 1 is "the audit
+	// found something HIGH", 2 is "the command could not do what it was asked". A path
+	// that could not be read is the second, and reporting it as the first would have a
+	// CI gate treat a vanished project as a finding it could go and fix.
+	p := cleanProject(t)
+	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	gone := filepath.Join(p.Root, "gone")
+
+	// The HIGH finding on its own is still 1.
+	p.run("audit", "--strict", p.Root).fails(1)
+	// With a path it could not read, 2 — and the finding is still reported.
+	p.run("audit", "--strict", p.Root, gone).fails(2).has("unticked-shipped")
 }

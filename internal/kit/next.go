@@ -50,6 +50,12 @@ type Plan struct {
 	// the caller, which is the only layer that can see the embedded protocol.
 	ProtocolStale bool `json:"protocol_stale,omitempty"`
 
+	// Error says this path could not be surveyed at all — missing, or not a directory —
+	// so everything above it is empty because nothing was read, not because there is
+	// nothing to do. Set by the caller: a fleet board reports the path it could not read
+	// beside the projects it could, rather than reporting none of them.
+	Error string `json:"error,omitempty"`
+
 	// Guidance is what to do about all of the above, and it ships in both formats.
 	// The conclusion used to exist only in the rendered text, so an agent reading
 	// --json — the output documented for agents — got a board and no instruction,

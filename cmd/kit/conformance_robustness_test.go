@@ -135,7 +135,7 @@ func TestJSONStaysCleanOnStdoutWhenThereIsNothingToReport(t *testing.T) {
 	// A consumer piping --json must get parseable output even in the empty case,
 	// rather than a friendly sentence.
 	p := setUp(t)
-	var findings map[string][]kit.Finding
+	var findings map[string]audited
 	raw := p.run("audit", "--json").ok().Stdout
 	if err := json.Unmarshal([]byte(raw), &findings); err != nil {
 		t.Fatalf("audit --json is not valid JSON when clean: %v\n%s", err, raw)

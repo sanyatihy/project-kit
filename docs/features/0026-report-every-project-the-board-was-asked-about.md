@@ -60,13 +60,24 @@ Order is preserved: projects report in the order given, failures included, so a 
 survey reads the same way twice.
 
 ## Tasks
-- [ ] `next` surveys every path, reporting unreadable ones per-project instead of
+- [x] `next` surveys every path, reporting unreadable ones per-project instead of
       returning early; conformance with a good path before and after a bad one
-- [ ] `audit` does the same, and `--strict` still exits 1 on HIGH while a bad path
+- [x] `audit` does the same, and `--strict` still exits 1 on HIGH while a bad path
       exits 2; conformance for both
-- [ ] `--json` carries per-path failures for both commands; conformance asserting the
+- [x] `--json` carries per-path failures for both commands; conformance asserting the
       payload still contains the healthy projects
 - [ ] README's fleet example says what happens when one path is unusable
 
 ## Log
 - 2026-08-16 — found probing the fleet view while two agents built 0023 and 0025.
+- 2026-08-16 — the two `--json` payloads carry a failure differently, because their
+  value types differ. `next`'s is one object per project, so the failure is an
+  `error` field on the plan and the shape is unchanged. `audit`'s was a bare list of
+  findings, which has nowhere to put one; a synthetic finding would have meant a code
+  outside the registry `kit help checks` prints from, which is the drift the registry
+  exists to prevent. So audit's entry is now `{"findings": [...], "error": "..."}` —
+  a shape change for anything parsing `audit --json`.
+- 2026-08-16 — a failed path is written twice on purpose: as a line in the board on
+  stdout, so a fleet survey reads in order and both formats agree on what was
+  surveyed, and as the same one-line diagnostic on stderr, which is where a
+  single-path run has always reported it and what keeps `--json` pipe-clean.

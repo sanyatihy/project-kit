@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -510,4 +511,82 @@ func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
 	if current.plan("next", "--json").ProtocolStale {
 		t.Error("a freshly scaffolded project was reported as stale")
 	}
+}
+
+func TestNextSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
+	// `kit next ~/code/*` is the fleet survey, so a glob picking up a deleted
+	// directory or a stray file used to blank the whole board: the run returned early
+	// and said nothing about the healthy projects it had already been handed. The two
+	// orders are both here because the first version reported whatever happened to
+	// come before the bad path and nothing after it.
+	for _, tc := range []struct {
+		name     string
+		unusable func(p *project) string
+		last     bool
+	}{
+		{"a missing directory, listed last", func(p *project) string {
+			return filepath.Join(p.Root, "gone")
+		}, true},
+		{"a stray file, listed first", func(p *project) string {
+			return p.path("docs/INBOX.md")
+		}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := setUp(t)
+			feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+			bad := tc.unusable(p)
+
+			args := []string{"next", bad, p.Root}
+			if tc.last {
+				args = []string{"next", p.Root, bad}
+			}
+			r := p.run(args...).fails(2)
+
+			// The healthy project is on the board whichever side of the bad path it sat.
+			r.outHas("start here", "Do the thing")
+			// And the bad path is named rather than skipped silently. The diagnostic
+			// still reaches stderr, where a single-path run has always put it.
+			r.outHas(bad, "not a directory")
+			r.errHas("kit next: not a directory: " + bad)
+
+			// Order is the order given, so a fleet survey reads the same way twice.
+			board, failure := strings.Index(r.Stdout, "Do the thing"), strings.Index(r.Stdout, "not a directory")
+			if tc.last != (board < failure) {
+				t.Errorf("the board reordered the paths it was given:\n%s", r.Stdout)
+			}
+		})
+	}
+}
+
+func TestNextJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
+	// The format agents parse. Being told about one project while another vanished is
+	// worse than the error was: nothing in the payload says anything is missing.
+	p := setUp(t)
+	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	gone := filepath.Join(p.Root, "gone")
+
+	r := p.run("next", p.Root, gone, "--json").fails(2)
+	var payload map[string]kit.Plan
+	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
+		t.Fatalf("--json stopped being parseable when a path was unreadable: %v\n%s",
+			err, r.Stdout)
+	}
+	if healthy := payload[filepath.Base(p.Root)]; len(healthy.Ready) != 1 {
+		t.Errorf("--json lost the healthy project: %+v", payload)
+	}
+	if payload[gone].Error == "" {
+		t.Errorf("--json never said %s could not be read: %+v", gone, payload)
+	}
+}
+
+func TestNextStillRefusesASinglePathItCannotRead(t *testing.T) {
+	// One bad path on its own is a broken invocation, not a fleet with a hole in it.
+	// Nothing about it changes: exit 2, and the reason on stderr.
+	p := setUp(t)
+	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	gone := filepath.Join(p.Root, "gone")
+
+	r := p.run("next", gone).fails(2)
+	r.errHas("kit next: not a directory: " + gone)
+	r.lacks("start here")
 }
