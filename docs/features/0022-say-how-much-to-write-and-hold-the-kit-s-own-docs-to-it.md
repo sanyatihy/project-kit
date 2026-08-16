@@ -1,9 +1,9 @@
 ---
 id: 0022
 title: Say how much to write, and hold the kit's own docs to it
-status: In progress
+status: Shipped
 created: 2026-08-15
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs: 0021
