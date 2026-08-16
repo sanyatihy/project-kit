@@ -36,6 +36,15 @@ human never being involved is a separate decision.
   keeps it identical on GitHub and on a self-hosted GitLab.
 - **Judging whether work is any good.** `audit` reports what is checkable.
 - **Assigning reviewers.** The kit does not know who exists.
+- **Holding the review policy.** Whether a human must see a change before it lands is a
+  per-project decision, and it already has a home the controlled party cannot rewrite:
+  branch protection on the trunk. A `.kit.toml` saying `review: human` would be a
+  control an agent can edit, and a second copy of a fact the forge already enforces —
+  the drift `Repo`'s "no config" line exists to prevent. The kit reports; the forge
+  enforces.
+- **Classifying risk.** "Low risk, let it self-merge" is a real judgement and not a
+  checkable one. Protection set per project *is* that judgement, made once by whoever
+  is entitled to make it.
 
 ## Design
 Three git facts already available decide the state, and no new one is stored:
@@ -65,10 +74,26 @@ rest of the kit does: with `--offline`, or a remote that cannot be reached, neit
 reports rather than guessing. A claim read from a stale mirror is already handled by
 `RefsAreAuthoritative`, and this uses the same answer.
 
+**Each entry says whether the reader built it.** A coordinator that is itself an agent
+needs to know which of these it may not merge, and the claim already answers it —
+`Repo.Mine` for the checkout it is standing in, the claim branch's authorship
+otherwise. Marking it is the kit making the invariant legible, which is all a
+well-behaved agent needs; a badly-behaved one is the forge's problem.
+
 **Rule 13 is reworded** from "reviewing and merging are not yours" to the invariant it
 means: *you do not merge your own work; a different checkout — another agent, or a
-human — reviews it.* The protocol gains the three roles and the barrier that separates
-them.
+human — reviews it.* The protocol gains the three roles, the barrier that separates
+them, and two things that must be true for any of it to hold:
+
+- **Agents need distinct git identities.** Measured on this repo: every commit from
+  all four agents in the last round is authored by the operator, so nothing — not the
+  kit, not a forge rule requiring a non-author reviewer — can tell builder from
+  coordinator. Separation of duties is unverifiable until the identities differ, and
+  the credential matters more than the checkout: an agent pushing with the operator's
+  token *is* the operator to every check that exists.
+- **The policy lives in branch protection.** Enforcement has to sit where the agent
+  has no authority. Everything the kit does here is legibility, and it says so rather
+  than implying a guarantee it cannot make.
 
 ## Tasks
 - [ ] `Repo.AwaitingReview()` — Shipped, branch on the remote, not reachable from the
@@ -77,10 +102,17 @@ them.
 - [ ] Closing guidance names reviewing as the work when that is all there is
 - [ ] `shipped-not-pushed` at HIGH, quiet offline and quiet when the work is on the
       trunk; conformance for each
-- [ ] Rule 13 reworded around separation of duties, with the three roles and the
-      landing barrier, in `templates/AGENTS-section.md`
+- [ ] Each awaiting-review entry says whether the reader built it, so a coordinator
+      agent knows what it may not merge
+- [ ] Rule 13 reworded around separation of duties, with the three roles, the landing
+      barrier, distinct agent identities, and the policy living in branch protection,
+      in `templates/AGENTS-section.md`
 - [ ] README and `kit help next` describe the review board and who reads it
 
 ## Log
 - 2026-08-16 — scoped after shipping four features without pushing any of them, with
   every check green the whole way.
+- 2026-08-16 — the review policy stays out of the kit. It is optional per project and
+  enforceable only on the remote: anything the kit checks, an agent skips by calling
+  git directly, so a config flag would be a control the controlled party can rewrite.
+  Legibility here, enforcement in branch protection.
