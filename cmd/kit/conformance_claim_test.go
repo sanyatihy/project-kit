@@ -219,6 +219,20 @@ func TestClaimRefusalsThatAreNotRaces(t *testing.T) {
 	}
 }
 
+func TestTheFirstClaimOfAFreshProjectIsNotRefused(t *testing.T) {
+	// The trunk barrier must not break a project that has no trunk to land on. A fresh
+	// `kit init` with one branch and no remote is how every project starts, and there
+	// the doc is on the only branch there is: `Trunk()` falls back to that branch, so
+	// the doc is on the trunk and the check passes rather than being skipped. The skip
+	// itself is for the states where no trunk resolves at all — a detached HEAD, or a
+	// checkout whose only branch is claim-shaped — and this is the case that would be
+	// broken if the barrier assumed a trunk exists.
+	p := cleanProject(t)
+	p.commitAll("the plan")
+
+	p.run("claim", "0001").ok().has("claimed", "0001-thing", "no remote")
+}
+
 func TestClaimRefusesAnIDTwoDocsShare(t *testing.T) {
 	// Exit 2, not 1: this is not someone else holding the feature, it is a question
 	// with no answer. One branch cannot claim one of two features, and picking the
