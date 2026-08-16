@@ -99,8 +99,9 @@ whole model, and `kit help template` prints the feature doc format.
    **Split by the vision's `## What done looks like`.** Each observable outcome there
    is at least one feature; that list is where the boundaries come from.
 
-   **A feature is one pull request** — you push a branch and a human reads it, so the
-   feature is the unit of review. Too big is a PR nobody can review in one sitting:
+   **A feature is one pull request** (merge request on GitLab) — you push a branch and
+   a human reads it, so the feature is the unit of review. Too big is one nobody can
+   review in one sitting:
    config, storage, the API and the CLI together is a project, not a feature. Too
    small is one that changes nothing anyone can observe and exists only so the next
    can start — that is a task box, not a doc.

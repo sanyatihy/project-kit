@@ -160,13 +160,13 @@ func runInit(args []string) int {
 	fmt.Printf("\nnext:\n")
 	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
 	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
-	fmt.Printf("  each one a pull request a human can review in one sitting\n")
+	fmt.Printf("  each one a change a human can review in one sitting\n")
 	fmt.Printf("  leave them Draft — accepting them is the human's call\n")
 	// Said here because this is where a bootstrap run reads what to do next, and the
 	// omission is what let `kit claim` win a branch carrying no plan: a claim pushes
 	// HEAD, so a plan that is only in the working tree does not travel with it.
-	fmt.Printf("  then land all of it on the default branch — a pull request, if that\n")
-	fmt.Printf("  branch is protected. A claim pushes HEAD, so nothing uncommitted\n")
+	fmt.Printf("  then land all of it on the default branch — a pull or merge request,\n")
+	fmt.Printf("  if that branch is protected. A claim pushes HEAD, so nothing uncommitted\n")
 	fmt.Printf("  reaches the branch an agent is sent to work in\n\n")
 	return 0
 }
@@ -242,7 +242,7 @@ func runAccept(args []string) int {
 	// draft's own pull request is one review and one merge per feature; accepting after it
 	// merges is a second pull request for a one-line change, which is what the protocol
 	// left undefined and a human had to guess at every time.
-	fmt.Printf("  commit this on %s so it lands in the same pull request as the draft\n",
+	fmt.Printf("  commit this on %s so it lands in the same review as the draft\n",
 		res.Branch)
 	fmt.Printf("  the branch is deleted on merge — its name is the claim name\n")
 	fmt.Printf("  kit next\n\n")

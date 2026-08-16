@@ -75,16 +75,16 @@ discoverable fact.
 neutrally: *a feature is one pull request (merge request on GitLab)*.
 
 ## Tasks
-- [ ] `DetectForge` in `internal/kit`, one unit test per rung including unknown
-- [ ] `stackLayout` keyed by forge, with a `.gitlab-ci.yml` template for the go stack
-- [ ] `kit init --forge github|gitlab` overriding detection, rejecting an unknown value
-- [ ] Unknown forge writes no CI file and closes with both ways to resolve it
-- [ ] Conformance: `.gitlab-ci.yml` present writes no `.github/`; a `github.com` remote
+- [x] `DetectForge` in `internal/kit`, one unit test per rung including unknown
+- [x] `stackLayout` keyed by forge, with a `.gitlab-ci.yml` template for the go stack
+- [x] `kit init --forge github|gitlab` overriding detection, rejecting an unknown value
+- [x] Unknown forge writes no CI file and closes with both ways to resolve it
+- [x] Conformance: `.gitlab-ci.yml` present writes no `.github/`; a `github.com` remote
       writes the workflow; neither writes no CI file
-- [ ] GitLab token shapes in `secret-in-doc`, with a fires case and a stays-quiet case
-- [ ] Forge-neutral wording in `AGENTS-section.md`, `help.go`, `main.go`, `claim.go`;
+- [x] GitLab token shapes in `secret-in-doc`, with a fires case and a stays-quiet case
+- [x] Forge-neutral wording in `AGENTS-section.md`, `help.go`, `main.go`, `claim.go`;
       confirm `ProtocolIsStale` still reports nothing on a clean project
-- [ ] Document detection and `--forge` in README.md and the `init` help topic
+- [x] Document detection and `--forge` in README.md and the `init` help topic
 
 ## Log
 - 2026-08-15 — measured against a private project on a self-hosted GitLab: the read
