@@ -166,9 +166,13 @@ so of any number of agents claiming at once exactly one wins.
 
   0  it is yours — a worktree command to start in is printed
   1  it is not yours: another agent got there first, a branch already claims it, an
-     open INBOX question blocks it, the doc is closed, or nobody wrote it — an empty
-     ## Problem, ## Design or ## Tasks is refused whatever the status
+     open INBOX question blocks it, something in its needs: has not shipped, the doc
+     is closed, or nobody wrote it — an empty ## Problem, ## Design or ## Tasks is
+     refused whatever the status
   2  it could not run: no such feature, no commits yet, several remotes and no origin
+
+Every refusal here is one "kit next" already makes. The board and the commands read
+the same facts, so claiming by id without consulting it cannot get you further.
 
 Losing is normal. Run "kit next" and take something else.
 
@@ -208,6 +212,12 @@ State a leaning. It turns most questions into a yes/no.
 Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
 status: Shipped, and stamps shipped: with today's date.
 
+Two more refusals, both exit 2. Something in its needs: has not shipped — the plan
+says this was built on a foundation that is not there, so the plan is wrong and you
+have to look. Or the feature is claimed by a branch that is not this checkout's:
+ship it from that worktree, because "Shipped" is history nobody may edit and doing
+it from elsewhere freezes another agent's work mid-flight.
+
 Doing this by hand is where two audit findings come from — unticked-shipped and
 shipped-no-date — so the command removes the mistake rather than reporting it
 afterwards.
@@ -232,6 +242,10 @@ retiring it would make the record say the feature was never built.
 
 The branch is not this command's to delete. A leftover branch named after the doc
 still reads as a claim, and dropping the doc says so rather than acting.
+
+It also names any feature whose needs: cites the dropped one. A Dropped feature can
+never ship, so those docs wait for ever until their needs: is edited — and the board
+says so too, rather than promising a wait that will not end.
 
   kit drop 0007 "superseded by 0011's router"
   kit drop 7 "the metric it was chasing moved on its own"`,

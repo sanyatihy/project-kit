@@ -50,7 +50,7 @@ case; this is the same gap, found one step later.
       comments are stripped
 - [x] Conformance: fires on a fresh `kit init` stub, stays quiet once one section is
       written, and stays quiet when the file is absent (that is `no-vision`)
-- [ ] README's check list, and the `vision` help topic saying the stub is reported
+- [x] README's check list, and the `vision` help topic saying the stub is reported
 
 ## Log
 - 2026-08-16 — found while adopting the kit into two existing projects: `kit init`

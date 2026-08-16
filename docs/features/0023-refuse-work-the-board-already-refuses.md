@@ -107,7 +107,7 @@ that is Dropped or Superseded, the line says so instead of *"to ship first"* —
       conformance case on a doc with no Log section
 - [x] `Survey` distinguishes a dependency that can never ship from one not yet
       shipped, and says which; conformance case
-- [ ] README and `kit help` for claim, ship and drop describe the new refusals
+- [x] README and `kit help` for claim, ship and drop describe the new refusals
 
 ## Log
 - 2026-08-16 — found bootstrapping url-shortener from an empty directory: the board

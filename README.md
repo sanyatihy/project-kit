@@ -217,6 +217,12 @@ Land the round, and `kit next` hands you the first box and the command to start:
 It refuses if the plan is not committed on the default branch yet: the claim pushes
 `HEAD`, so an uncommitted doc would not travel with the branch you were sent to.
 
+Every refusal `claim` makes is one `kit next` already makes — an unmet `needs:`, a
+BLOCKING inbox line, a doc nobody wrote. Claiming by id without reading the board
+cannot get you further than the board would. `kit ship` refuses the same way, and
+also refuses a feature claimed by a branch that is not your checkout's: `Shipped` is
+history nobody may edit, so shipping someone else's claim freezes their work.
+
 Do that one box, tick it in the commit that implements it, and open a PR. Run `kit next`
 again for the next one. When the last box is ticked, `kit ship 0001` verifies every box,
 stamps the date, and freezes the doc.
@@ -295,6 +301,7 @@ even when something goes wrong.
 - **HIGH** — `secret-in-doc`, `needs-cycle`, `unfilled-template`, `stalled`,
   `unticked-shipped`, `inbox-stale`, `unchecked`
 - **MEDIUM** — `no-plan`, `done-not-shipped`, `tech-drift`, `shipped-no-date`,
+  `unfilled-vision`,
   `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`,
   `needs-unknown`, `shipped-early`, `protocol-stale`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
