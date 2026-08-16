@@ -26,9 +26,10 @@ A project has one markdown file per feature, `docs/features/NNNN-name.md`, whose
 Draft -> Accepted -> In progress -> Shipped     (exits: Dropped, Superseded)
 ```
 
-`status:` is also the autonomy dial. `Draft` is where a human settles the design,
-and `kit next` never offers one as work; once `Accepted`, an agent can work it
-unattended. Four rules govern the rest, and `kit help` prints them.
+`status:` is the autonomy dial, and it **orders the board rather than gating it**.
+`next` offers `In progress`, then `Accepted`, then `Draft`; accepting says a human has
+looked and blessed the design, which promotes the work rather than unlocking it. Four
+rules govern the rest, and `kit help` prints them.
 
 Mechanisms worth knowing before changing anything:
 
@@ -127,15 +128,33 @@ Mechanisms worth knowing before changing anything:
   to wait stopped everything from shipping.
 - **`audit` never writes.** An auditor that fixes things stops being read.
 - **Accepting is a command, and only a human runs it.** `Draft -> Accepted` is the one
-  transition that belongs to a person, and it was the only one with no command — so it was
-  a hand edit, which is what `kit ship` exists to stop doing at the other end of the
-  lifecycle and what `unticked-shipped` and `shipped-no-date` are the wreckage of.
-  `kit accept` refuses a non-Draft, a doc whose `## Open questions` is not empty, and one a
-  BLOCKING inbox line names — the last via `BlockersFor`, so `accept` and `next` cannot
-  disagree about what is blocked. It stamps no date: `created:` already says when the
-  feature was proposed. And it says where to commit, because the protocol never settled
-  that: on the draft's own branch, so the acceptance lands in the draft's pull request
-  rather than needing a second one for a one-line change.
+  transition that belongs to a person, and it was a hand edit — which is what `kit ship`
+  exists to stop at the other end and what `unticked-shipped` and `shipped-no-date` are
+  the wreckage of. `kit accept` refuses a non-Draft, a doc whose `## Open questions` is
+  not empty, and one a BLOCKING inbox line names — the last via `BlockersFor`, so
+  `accept` and `next` cannot disagree about what is blocked. It stamps no date:
+  `created:` already says when the feature was proposed.
+- **The gate is unresolved questions, not `status:`.** Accepting used to block every
+  agent until a human transitioned a field, which added a stop before a review rather
+  than a review. `kit claim` takes a `Draft`; what still refuses it is a BLOCKING inbox
+  line and a doc nobody wrote.
+
+  That second one is load-bearing. `unfilled-template` exempts `Draft`, and the
+  exemption was only safe while a Draft could not be claimed — without a replacement,
+  `claim` would hand out a doc straight from `kit new` with three empty sections and
+  every command exiting 0. `Feature.Unwritten()` is the single answer to "nobody wrote
+  the plan", shared by `audit`, `claim` and `next`, so the board never offers what the
+  next command refuses.
+
+  `draft-claimed` moved with the gate: it now reports a branch building on a doc whose
+  `## Open questions` are open, which is the defect it was always reaching for. Left
+  pointed at `Draft` it would have fired on the normal flow.
+- **Drafting is a plan round, and drafts live on the trunk.** A session's docs go on
+  one `plan/<something>` branch and merge once, at whatever statuses they reached. The
+  branch is never named after a feature, because a branch leading with a four-digit ID
+  *is* a claim — which is what made a draft on its own branch claim itself, and what
+  0014 had to patch with a delete-the-branch rule that is now gone. `kit drop` exists
+  because a doc on the trunk cannot be retired by deleting a branch.
 - **`next` reports a stale protocol; `audit` alone was not enough.** The protocol tells
   agents to run `next` at the start of every session and says nothing about running
   `audit`, so a project following superseded rules had no moment at which anything would
@@ -156,12 +175,12 @@ Mechanisms worth knowing before changing anything:
   either format: `task` means "the box to do now", which for work that is not on offer
   is a category error. Copyable commands stay out of the guidance sentence, because it
   is wrapped and a wrapped command cannot be copied.
-- **A leftover draft branch is indistinguishable from a fresh claim.** Before a draft
-  merges, its branch carries the doc and a fresh claim carries nothing. Afterwards
-  both are identical to the trunk, so no inspection can separate them — which is why
-  the protocol deletes the branch when a draft is accepted, and why `kit claim` names
-  both possibilities instead of asserting a claim it cannot verify. It is also why a
-  claim carrying no work is never aged: `stalled` would be inventing a date.
+- **A leftover branch is indistinguishable from a fresh claim.** Both are identical to
+  the trunk, so no inspection can separate them, which is why `kit claim` names both
+  possibilities instead of asserting a claim it cannot verify. It is also why a claim
+  carrying no work is never aged: `stalled` would be inventing a date. Plan rounds
+  removed the common source — a draft no longer sits on a feature-named branch — but a
+  claim released by hand still leaves one.
 - **Claims are read from the remote, not from `refs/remotes/*`.** Those refs are a cache
   of the last fetch and git prunes them on neither `fetch` nor `pull`, so a branch deleted
   when its pull request merged stayed there and read as a live claim — permanently, on

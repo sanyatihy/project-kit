@@ -1,9 +1,9 @@
 ---
 id: 0021
 title: Let agents work from drafts, and make accepting a signal
-status: Draft
+status: Shipped
 created: 2026-08-15
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs:
