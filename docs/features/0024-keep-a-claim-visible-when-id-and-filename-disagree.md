@@ -1,9 +1,9 @@
 ---
 id: 0024
 title: Keep a claim visible when id and filename disagree
-status: Draft
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs: 0023, 0025

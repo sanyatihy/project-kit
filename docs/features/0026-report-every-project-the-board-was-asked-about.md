@@ -1,9 +1,9 @@
 ---
 id: 0026
 title: Report every project the board was asked about
-status: Draft
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs:
