@@ -214,10 +214,14 @@ Land the round, and `kit next` hands you the first box and the command to start:
 ```
 
 `kit claim` pushes the branch that takes the feature and prints the worktree to work in.
-It refuses if the plan is not committed on the default branch yet: the claim pushes
-`HEAD`, so an uncommitted doc would not travel with the branch you were sent to.
+It refuses until the plan is on the default branch, for two reasons: the claim pushes
+`HEAD`, so an uncommitted doc would not travel with the branch you were sent to, and a
+doc that is only on the plan branch makes the claim a child of that branch — leaving a
+merge into the round's own branch as the only way to integrate the work, performed by
+whoever coordinated the round. Land the round, then claim. A project with no trunk to
+land on — one branch, no remote — is unaffected.
 
-Every refusal `claim` makes is one `kit next` already makes — an unmet `needs:`, a
+Every other refusal `claim` makes is one `kit next` already makes — an unmet `needs:`, a
 BLOCKING inbox line, a doc nobody wrote. Claiming by id without reading the board
 cannot get you further than the board would. `kit ship` refuses the same way, and
 also refuses a feature claimed by a branch that is not your checkout's: `Shipped` is

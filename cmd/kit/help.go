@@ -169,10 +169,19 @@ so of any number of agents claiming at once exactly one wins.
      open INBOX question blocks it, something in its needs: has not shipped, the doc
      is closed, or nobody wrote it — an empty ## Problem, ## Design or ## Tasks is
      refused whatever the status
-  2  it could not run: no such feature, no commits yet, several remotes and no origin
+  2  it could not run: no such feature, no commits yet, the plan not landed on the
+     default branch, several remotes and no origin
 
-Every refusal here is one "kit next" already makes. The board and the commands read
-the same facts, so claiming by id without consulting it cannot get you further.
+Every refusal here is one "kit next" already makes, bar the landing one. The board and
+the commands read the same facts, so claiming by id without consulting it cannot get
+you further.
+
+The doc has to be on the default branch. Drafting and reading the board from a plan
+branch are correct, so "next" goes on offering the feature there — taking it is what
+waits. A claim made from an unmerged round pushes a branch whose parent is that plan
+branch, so the only way to integrate the work is a merge into the branch its own author
+coordinated. Land the round, then claim. A project with no trunk to land on — one
+branch, no remote — is unaffected.
 
 Losing is normal. Run "kit next" and take something else.
 

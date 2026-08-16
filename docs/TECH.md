@@ -42,6 +42,15 @@ Mechanisms worth knowing before changing anything:
   at the commit being pushed says "Everything up-to-date" and exits 0; trusting the
   exit code hands one feature to two agents. Creating the ref is a compare-and-swap
   server-side, so simultaneous claimants produce exactly one winner.
+- **A claim branches from the trunk, never from the round that planned it.** The doc
+  must be in `trunkRef()`'s tree as well as in `HEAD`'s. A doc committed only on the
+  plan branch passes the HEAD check, and the branch pushed is then a child of that plan
+  branch, so the only way to integrate the work is a merge into the branch its own
+  author coordinated — which is how four features came to be merged by their builder
+  with nothing pushed for review. Refused as an ordinary error at exit 2, not `NotYours`:
+  nothing on an unlanded round is claimable, so "take another" would be false advice. The
+  local trunk ref is read, so `claim` needs no network; where no trunk resolves at all the
+  check is skipped.
 - **The checkout is the unit of isolation.** A worktree holds one feature. `kit next`
   reports the claim on its own HEAD as *yours* rather than taken, and will not offer
   a different feature to start in a checkout that is already claimed. Creating and

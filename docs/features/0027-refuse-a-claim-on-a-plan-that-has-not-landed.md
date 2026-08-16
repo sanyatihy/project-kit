@@ -1,9 +1,9 @@
 ---
 id: 0027
 title: Refuse a claim on a plan that has not landed
-status: Draft
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-16
 check:
 checked:
 needs:
@@ -58,13 +58,17 @@ not travel with the pushed branch — because the trunk check does not cover it:
 can be on the trunk and edited-but-uncommitted here.
 
 ## Tasks
-- [ ] `ClaimFeature` requires the doc on `trunkRef()`, exit 2, naming the round to land
-- [ ] The no-trunk case is skipped, with a conformance case claiming in a fresh
+- [x] `ClaimFeature` requires the doc on `trunkRef()`, exit 2, naming the round to land
+- [x] The no-trunk case is skipped, with a conformance case claiming in a fresh
       single-branch project
-- [ ] Conformance: claiming from an unmerged plan branch is refused; claiming the same
+- [x] Conformance: claiming from an unmerged plan branch is refused; claiming the same
       feature after the round merges succeeds
-- [ ] `kit help claim` and README state the barrier and why it exists
+- [x] `kit help claim` and README state the barrier and why it exists
 
 ## Log
 - 2026-08-16 — found while reviewing how four features came to be merged by their own
   builder: the ordering rule was documented and only half enforced.
+- 2026-08-16 — a fresh single-branch project turns out never to reach the skip:
+  `Trunk()` falls back to the branch the checkout is on, so the doc is on the trunk
+  and the check passes outright. The skip covers the states with no trunk at all — a
+  detached HEAD, or a checkout whose only branch is claim-shaped.
