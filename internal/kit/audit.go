@@ -96,6 +96,12 @@ var (
 	// MEDIUM — incomplete or drifting.
 	checkNoPlan = Check{"no-plan", Medium,
 		"the project has commits but not one feature doc"}
+	// MEDIUM, not HIGH: nothing here is untrue and no agent is misled about state —
+	// the cost is drafting without a target. It cannot misfire for unfilled-template's
+	// reason: the template's guidance lives in comments, which every parser here
+	// strips, so an empty section means the section was never written.
+	checkUnfilledVision = Check{"unfilled-vision", Medium,
+		"docs/VISION.md is still the stub — every section under its headings is empty"}
 	checkDoneNotShipped = Check{"done-not-shipped", Medium,
 		"every task is ticked but the status is still open"}
 	checkTechDrift = Check{"tech-drift", Medium,
@@ -149,7 +155,7 @@ var (
 var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
 	checkDuplicateID, checkStalled, checkUntickedShipped, checkInboxStale, checkUnchecked,
-	checkNoPlan, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
+	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkIDMismatch, checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
@@ -577,6 +583,17 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			"features are being planned but nothing says what the project is for",
 			"run: kit init . — or see: kit help vision")
 	}
+	// The same gap, one step later. `kit init` writes the stub, so the run that adds it
+	// clears no-vision without anybody answering the question — and rule 1 sends every
+	// agent to this file before drafting, where against a stub anything traces to
+	// nothing. Not gated on features existing: the stub is worth reporting from the
+	// moment it is there, which is before the first draft it would have shaped.
+	if r.Vision != "" && visionIsStub(r.Vision) {
+		report(checkUnfilledVision, r.Rel(r.Vision),
+			"every section is empty — the stub was written by kit init and never filled in",
+			"say what the project is for, who for, and what it is not; "+
+				"see: kit help vision")
+	}
 
 	return found
 }
@@ -596,6 +613,34 @@ func duplicateIDs(features []*Feature) []string {
 		}
 	}
 	return order
+}
+
+// visionIsStub reports whether a vision document has headings and nothing written
+// under any of them — the state `kit init` leaves it in.
+//
+// The same emptiness test Unwritten uses on a feature doc, and safe for the same
+// reason: ParseSections strips comments, and the template's guidance is all comments,
+// so an empty section was genuinely never written.
+//
+// One written section is enough to stay quiet: somebody has started, and a check that
+// nags at work in progress is one people learn to ignore. A file with no `##` headings
+// at all is never reported either — it is not the stub, and whether what is there is
+// any good is not audit's to judge.
+func visionIsStub(path string) bool {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	sections := ParseSections(Normalise(string(raw)))
+	if len(sections) == 0 {
+		return false
+	}
+	for _, body := range sections {
+		if body != "" {
+			return false
+		}
+	}
+	return true
 }
 
 // linksIn lists relative markdown link targets, skipping URLs and pure anchors.

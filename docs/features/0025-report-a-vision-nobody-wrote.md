@@ -46,9 +46,9 @@ drafting without a target. `no-vision` stays LOW and unchanged for the missing-f
 case; this is the same gap, found one step later.
 
 ## Tasks
-- [ ] `unfilled-vision` at MEDIUM, on `VISION.md` with every section empty after
+- [x] `unfilled-vision` at MEDIUM, on `VISION.md` with every section empty after
       comments are stripped
-- [ ] Conformance: fires on a fresh `kit init` stub, stays quiet once one section is
+- [x] Conformance: fires on a fresh `kit init` stub, stays quiet once one section is
       written, and stays quiet when the file is absent (that is `no-vision`)
 - [ ] README's check list, and the `vision` help topic saying the stub is reported
 
