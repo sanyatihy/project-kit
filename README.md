@@ -173,6 +173,14 @@ Each box is one PR you can finish and verify without asking anyone. `- [ ] Build
 backend` is not a task. If you cannot say how you would check a box is done, it is
 too big — split it.
 
+Write **as much as necessary and no more**. Cut restatement, hedging and padding;
+never cut a decision, a constraint, or the evidence behind it. Both failures cost
+real time: a doc nobody reads spends the context window every later session needs,
+and one too thin to act on costs a session to reconstruct. Every template section
+states its own budget, and the kit holds its own shipped text to line ceilings in
+`cmd/kit/budget_test.go` — the protocol most tightly, since it is re-read at the
+start of every session in every project.
+
 A drafting session is one **plan round**: every doc it produces goes on a single branch
 named `plan/<something>` — never after a feature, since a branch leading with a
 four-digit ID *is* a claim — and merges once. One review for the round rather than one

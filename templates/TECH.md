@@ -6,7 +6,13 @@ then freeze; this describes what exists now, and must always be true.
 <!-- When a feature ships, its durable facts move here and the feature doc becomes
      history. This file has no lifecycle and no status: it is either accurate or it
      is a bug. `kit audit` reports tech-drift when a feature ships and this file has
-     not been touched since. -->
+     not been touched since.
+
+     Write as much as necessary and no more. This is the file someone reads before
+     changing anything, so a fact left out is a fact rediscovered the hard way — and
+     a retelling of what the code already says is length nobody gains from. Record
+     what the code cannot: why this shape beat the alternative, and what breaks if
+     it changes. -->
 
 ## What it is
 
