@@ -432,10 +432,14 @@ for this package.
 
 ## State of play
 
-Published. `github.com/sanyatihy/project-kit` is a private repo tagged `v0.1.0`, and
+Published. `github.com/sanyatihy/project-kit` is a private repo tagged `v0.2.0`, and
 `go install github.com/sanyatihy/project-kit/cmd/kit@latest` resolves to that tag —
 verified from an empty `GOMODCACHE`, not just assumed. Setting up a new machine takes
 the two settings in the README's install section.
+
+`v0.2.0` is 0002-0022: the conformance suite, concurrent-agent safety, claims read from
+the remote, the accept/ship/drop commands, forge detection, and the drafting model where
+`status:` orders the board rather than gating it. Four projects run it.
 
 The testing gap is closed. `make check` is now the whole gate: fmt, vet, unit tests,
 and the conformance suite that drives the commands end to end. The kit's own CI runs
