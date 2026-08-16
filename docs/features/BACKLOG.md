@@ -106,6 +106,23 @@ that would refuse claims people legitimately make mid-edit.
 
 Promote when: a worktree is found holding an older doc than the one that was claimed.
 
+## `In progress` is a second copy of what the claim branch already says
+
+Rule 1 forbids hand-editing `status:` — "that is what `accept`, `ship` and `drop` are
+for" — and `kit claim` prints "set status: In progress in the doc". No command sets it,
+and rule 8 tells you to hand-edit it back when releasing a claim. So the protocol
+forbids the only available means for two transitions it requires.
+
+Three fixes: `claim` sets it (but claim deliberately does not edit docs), a new
+`kit start <id>`, or drop the status entirely. The third is the one the "enforce, do
+not instruct" rule points at — it does not move the constraint to a stronger tier, it
+removes the need for one. `no-claim` exists only to reconcile the two copies and would
+go with it. The cost is that `next`'s "finishing beats starting" would key off having
+a claim rather than the field.
+
+Promote when: someone hits the contradiction for real, or `no-claim` fires on a project
+where the claim branch plainly exists.
+
 ## Frontmatter values are truncated at ` #`
 
 `trailingRe` strips ` # comment` from every frontmatter value so template scaffolding
