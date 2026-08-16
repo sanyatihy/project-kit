@@ -283,7 +283,9 @@ contains a `- [ ]`: in a kit project that syntax means work to do, and guidance 
 looked like a task list would be worked through.
 
 `next` and `audit` read only and never write. With no path they use the repo you are in, from any
-subdirectory; `kit next ~/code/*` surveys every project at once.
+subdirectory; `kit next ~/code/*` surveys every project at once. A path in that list
+that cannot be read is reported in place and sets the exit code to 2, and every other
+project still reports — one tidied directory must not blank the board.
 
 Exit codes are a contract, so a script can tell a typo from a finding:
 
@@ -299,10 +301,10 @@ even when something goes wrong.
 `audit` names the file, the problem, and the fix. It reports:
 
 - **HIGH** — `secret-in-doc`, `needs-cycle`, `unfilled-template`, `stalled`,
-  `unticked-shipped`, `inbox-stale`, `unchecked`
+  `unticked-shipped`, `inbox-stale`, `unchecked`, `id-mismatch`
 - **MEDIUM** — `no-plan`, `done-not-shipped`, `tech-drift`, `shipped-no-date`,
   `unfilled-vision`,
-  `missing-section`, `id-mismatch`, `inbox-unparsed`, `inbox-unknown`,
+  `missing-section`, `inbox-unparsed`, `inbox-unknown`,
   `needs-unknown`, `shipped-early`, `protocol-stale`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`

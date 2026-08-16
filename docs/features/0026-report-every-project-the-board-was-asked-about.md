@@ -66,7 +66,7 @@ survey reads the same way twice.
       exits 2; conformance for both
 - [x] `--json` carries per-path failures for both commands; conformance asserting the
       payload still contains the healthy projects
-- [ ] README's fleet example says what happens when one path is unusable
+- [x] README's fleet example says what happens when one path is unusable
 
 ## Log
 - 2026-08-16 — found probing the fleet view while two agents built 0023 and 0025.

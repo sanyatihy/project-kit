@@ -261,6 +261,10 @@ A Draft is offered like anything else — accepting promotes work rather than
 unlocking it. A doc with an empty ## Problem or ## Design is reported as blocked
 instead, because "kit claim" would refuse it.
 
+Several paths survey several projects at once. One that cannot be read is reported
+in its place and sets the exit code to 2; the others still report, in the order
+given, because a tidied directory says nothing about the projects beside it.
+
 Each feature shows its ticked-over-total, as "2/4", and --json carries the same as
 "done" and "total". It is a count of boxes, not an estimate: boxes are not equal
 sizes, so nothing here should be read as how much time is left.
@@ -292,6 +296,10 @@ noticed), MEDIUM (incomplete or drifting), LOW (hygiene). See "kit help checks"
 for every finding and what it means.
 
 Reads only, and never edits a file. With no PATH it uses the repo you are in.
+
+Several paths audit several projects. One that cannot be read is reported in its
+place and exits 2, which outranks --strict's 1 — a path you asked about and did not
+get is a worse answer than findings you did get.
 
   kit audit                      # this project
   kit audit ~/code/*             # every project at once
