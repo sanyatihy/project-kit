@@ -254,6 +254,7 @@ func (r *result) errHas(want ...string) *result {
 // real directory the binary acts on. Everything else in the suite rests on this, so
 // a failure here means the later suites are testing nothing.
 func TestHarness(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 
 	// Success goes to stdout, and the binary is the one we just built.

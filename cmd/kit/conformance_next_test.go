@@ -78,6 +78,7 @@ func (p *project) plan(args ...string) kit.Plan {
 }
 
 func TestNextHandsBackTheTopmostUntickedBox(t *testing.T) {
+	t.Parallel()
 	// List order is the order of work, which is what lets ordering need no syntax.
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Accepted",
@@ -89,6 +90,7 @@ func TestNextHandsBackTheTopmostUntickedBox(t *testing.T) {
 }
 
 func TestFinishingBeatsStartingWithoutAStatusToSaySo(t *testing.T) {
+	t.Parallel()
 	// What `In progress` used to order, done by the groups instead. In the checkout
 	// holding a claim, that feature is what `next` names — ahead of anything free, and
 	// with no status anywhere asserting that work had started.
@@ -112,6 +114,7 @@ func TestFinishingBeatsStartingWithoutAStatusToSaySo(t *testing.T) {
 }
 
 func TestNextTreatsABranchAsAClaim(t *testing.T) {
+	t.Parallel()
 	// The claim is a branch name and nothing else — no lock file, no state to sync.
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
@@ -127,6 +130,7 @@ func TestNextTreatsABranchAsAClaim(t *testing.T) {
 }
 
 func TestNextReportsThisCheckoutsOwnClaimAsYours(t *testing.T) {
+	t.Parallel()
 	// Measured before this existed: standing in the checkout that claims 0001,
 	// `next` reported 0001 as taken — by you — which is the tool stating a fact
 	// about the reader back to them as somebody else's.
@@ -143,6 +147,7 @@ func TestNextReportsThisCheckoutsOwnClaimAsYours(t *testing.T) {
 }
 
 func TestNextJSONSeparatesYoursFromTaken(t *testing.T) {
+	t.Parallel()
 	// --json is the interface agents actually read, so the distinction has to exist
 	// there and not only in the prose above it.
 	p := setUp(t)
@@ -168,6 +173,7 @@ func TestNextJSONSeparatesYoursFromTaken(t *testing.T) {
 }
 
 func TestNextReportsProgressThroughTheBoxes(t *testing.T) {
+	t.Parallel()
 	// With one feature the next box is the whole state. With several the question is
 	// which are moving, and only a count answers it. In --json too, because that is
 	// what anything watching the plan from outside has to read.
@@ -189,6 +195,7 @@ func TestNextReportsProgressThroughTheBoxes(t *testing.T) {
 }
 
 func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
+	t.Parallel()
 	// The whole point of the field: what is ready is the answer to "can these be
 	// worked at once", so it has to be right in both directions — refusing work that
 	// cannot start, and releasing it the moment the dependency ships.
@@ -225,6 +232,7 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 }
 
 func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
+	t.Parallel()
 	// The board promised a wait that never ends: "waiting on: needs 0001 to ship first"
 	// about a feature that is Dropped. The two states need opposite fixes — one ends on
 	// its own, the other only when somebody edits needs: — so the line has to say which.
@@ -257,6 +265,7 @@ func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 }
 
 func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
+	t.Parallel()
 	// The invariant, not any particular sentence. A state the tool can reach and
 	// does not close is a state something else decides — which is how an agent
 	// facing a board of taken and blocked features started working on one of them.
@@ -319,6 +328,7 @@ func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
 }
 
 func TestNextIsBlockedByAnOpenBlockingQuestion(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
 	p.write("docs/INBOX.md",
@@ -332,6 +342,7 @@ func TestNextIsBlockedByAnOpenBlockingQuestion(t *testing.T) {
 }
 
 func TestNextIsNotBlockedByAnFYIQuestion(t *testing.T) {
+	t.Parallel()
 	// FYI is recorded for a human without stopping the work, or every note would
 	// halt a feature.
 	p := setUp(t)
@@ -343,6 +354,7 @@ func TestNextIsNotBlockedByAnFYIQuestion(t *testing.T) {
 }
 
 func TestNextBlocksAFeatureWithEveryBoxTicked(t *testing.T) {
+	t.Parallel()
 	// Nothing left to do is not the same as ready to work: it needs shipping or a
 	// next task, and silently offering nothing would hide that.
 	p := setUp(t)
@@ -352,6 +364,7 @@ func TestNextBlocksAFeatureWithEveryBoxTicked(t *testing.T) {
 }
 
 func TestNextOffersADraftAsWork(t *testing.T) {
+	t.Parallel()
 	// `status:` orders the board and does not gate it. A Draft is invented and not yet
 	// blessed, which is a reason to rank it last and no reason to withhold it — the
 	// operator reviews the implementation either way, and stopping every agent until
@@ -365,6 +378,7 @@ func TestNextOffersADraftAsWork(t *testing.T) {
 }
 
 func TestNextRanksAcceptedAboveDraft(t *testing.T) {
+	t.Parallel()
 	// The whole autonomy signal: accepting does not unlock work, it promotes it. An
 	// agent handed the board takes what a human has looked at before what nobody has.
 	p := setUp(t)
@@ -382,6 +396,7 @@ func TestNextRanksAcceptedAboveDraft(t *testing.T) {
 }
 
 func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
+	t.Parallel()
 	// Counted from claims, which is the only record that somebody started something.
 	const warning = "in progress at once"
 
@@ -405,6 +420,7 @@ func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
 }
 
 func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
+	t.Parallel()
 	// The output is meant to be actionable without reading the docs first.
 	//
 	// The command is the claim, not the worktree. It used to print `git worktree add
@@ -422,6 +438,7 @@ func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
 }
 
 func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
+	t.Parallel()
 	// Measured before this existed: standing in 0001's checkout, `next` offered 0002
 	// under "start here". Followed literally that begins a second feature in the
 	// first one's branch, and the two ship as one.
@@ -440,6 +457,7 @@ func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
 }
 
 func TestAClaimedCheckoutIsNotOfferedOtherWorkEvenWhenItsOwnIsBlocked(t *testing.T) {
+	t.Parallel()
 	// The suppression keys off what the checkout claims, not off whether that
 	// feature happens to be workable. A blocked feature is still the reason this
 	// branch exists, and starting a second one here would still be wrong.
@@ -459,11 +477,13 @@ func TestAClaimedCheckoutIsNotOfferedOtherWorkEvenWhenItsOwnIsBlocked(t *testing
 }
 
 func TestNextOnAnUnsetUpProjectSaysHowToFixIt(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	p.run("next").ok().has("not set up yet", "kit init")
 }
 
 func TestNextIsNotBlockedByAQuestionAboutAnotherFeature(t *testing.T) {
+	t.Parallel()
 	// The ID lives in a field of the line. Matching the whole line blocks any
 	// feature a question happens to name, and the cause is invisible in the output.
 	p := setUp(t)
@@ -475,6 +495,7 @@ func TestNextIsNotBlockedByAQuestionAboutAnotherFeature(t *testing.T) {
 }
 
 func TestNextStillBlocksOnAMalformedLineThatNamesTheFeature(t *testing.T) {
+	t.Parallel()
 	// A line outside the format falls back to scanning the whole thing, which
 	// over-blocks. That is the safe direction: missing a blocker sends an agent
 	// into work a human has not cleared. `inbox-unparsed` makes the line visible.
@@ -487,6 +508,7 @@ func TestNextStillBlocksOnAMalformedLineThatNamesTheFeature(t *testing.T) {
 }
 
 func TestNextTellsAnEmptyPlanApartFromAFinishedOne(t *testing.T) {
+	t.Parallel()
 	// Both leave nothing to do, and the fixes are opposite: one needs the plan
 	// written, the other needs shipping.
 	never := setUp(t)
@@ -499,6 +521,7 @@ func TestNextTellsAnEmptyPlanApartFromAFinishedOne(t *testing.T) {
 }
 
 func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
+	t.Parallel()
 	// `next` is the command the protocol tells agents to run at the start of every
 	// session; `audit` is not. One binary on $PATH serves every project and only
 	// `kit init` rewrites AGENTS.md, so a project keeps following whatever rules it was
@@ -528,6 +551,7 @@ func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
 }
 
 func TestNextSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
+	t.Parallel()
 	// `kit next ~/code/*` is the fleet survey, so a glob picking up a deleted
 	// directory or a stray file used to blank the whole board: the run returned early
 	// and said nothing about the healthy projects it had already been handed. The two
@@ -573,6 +597,7 @@ func TestNextSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
 }
 
 func TestNextJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
+	t.Parallel()
 	// The format agents parse. Being told about one project while another vanished is
 	// worse than the error was: nothing in the payload says anything is missing.
 	p := setUp(t)
@@ -594,6 +619,7 @@ func TestNextJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
 }
 
 func TestNextStillRefusesASinglePathItCannotRead(t *testing.T) {
+	t.Parallel()
 	// One bad path on its own is a broken invocation, not a fleet with a hole in it.
 	// Nothing about it changes: exit 2, and the reason on stderr.
 	p := setUp(t)
@@ -622,6 +648,7 @@ func shipOnItsBranch(p *project, id, slug, title string) {
 }
 
 func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
+	t.Parallel()
 	// 0013's rule: never leave an agent without an instruction. A board with nothing
 	// free and a feature pushed and unmerged has work on it, so "stopping here is the
 	// right outcome" is the one answer that must not be printed.
@@ -641,6 +668,7 @@ func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
 }
 
 func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
+	t.Parallel()
 	// The blind spot this closes: from the trunk, a feature shipped on its branch and
 	// never merged is invisible. The doc here still says Accepted — the status that
 	// matters is the one on the branch, which is the only place the ship happened.
@@ -671,6 +699,7 @@ func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 }
 
 func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
+	t.Parallel()
 	// A coordinator that is itself an agent needs one fact from this board: which
 	// entries are its own. Its own work is the work it may not merge, and nothing else
 	// on the board answers it.
@@ -700,6 +729,7 @@ func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
 }
 
 func TestAReviewMarkChangesNothingElseOnTheBoard(t *testing.T) {
+	t.Parallel()
 	// The field is optional and new, so every doc written before it has to behave
 	// exactly as it did — and a doc carrying it must not become a finding, a blocker,
 	// or anything else the board treats differently. What it changes is who merges.
@@ -722,6 +752,7 @@ func TestAReviewMarkChangesNothingElseOnTheBoard(t *testing.T) {
 }
 
 func TestTheReviewBoardMarksWhatNeedsAHuman(t *testing.T) {
+	t.Parallel()
 	// The two facts a coordinator agent needs before merging anything: what it built,
 	// and what is nobody's but a person's. This is the second.
 	a, _ := twoAgents(t)
@@ -739,6 +770,7 @@ func TestTheReviewBoardMarksWhatNeedsAHuman(t *testing.T) {
 }
 
 func TestTheBoardCountsBoxesFromTheClaimBranch(t *testing.T) {
+	t.Parallel()
 	// The ticks live on the claim branch until it merges, so counting the checkout's copy
 	// reported 0/3 for a feature somebody was two-thirds through — indistinguishable from
 	// an agent that had done nothing.
@@ -765,6 +797,7 @@ func TestTheBoardCountsBoxesFromTheClaimBranch(t *testing.T) {
 }
 
 func TestTheBoardKeepsItsOwnCountWhenTheBranchCannotBeRead(t *testing.T) {
+	t.Parallel()
 	// A claim branch that predates the doc — or one whose objects were never fetched —
 	// carries no copy to count. Reporting nothing there would be worse than reporting the
 	// checkout's number, which is at least the plan as the trunk knows it.
@@ -787,6 +820,7 @@ func TestTheBoardKeepsItsOwnCountWhenTheBranchCannotBeRead(t *testing.T) {
 }
 
 func TestATakenEntrySaysWhenItsBranchLastMoved(t *testing.T) {
+	t.Parallel()
 	// A count alone cannot tell an agent working steadily from one that stopped an hour
 	// in. `stalled` only speaks at three days, and by then the answer has cost two.
 	p := setUp(t)

@@ -15,6 +15,7 @@ import (
 var subcommands = []string{"init", "new", "accept", "claim", "block", "ship", "drop", "next", "audit"}
 
 func TestEveryCommandHasHelp(t *testing.T) {
+	t.Parallel()
 	for _, name := range subcommands {
 		text, ok := commandHelp[name]
 		if !ok {
@@ -33,6 +34,7 @@ func TestEveryCommandHasHelp(t *testing.T) {
 }
 
 func TestOverviewListsEveryCommand(t *testing.T) {
+	t.Parallel()
 	for _, name := range append(subcommands, "help", "version") {
 		if !strings.Contains(overview, "kit "+name) {
 			t.Errorf("overview never mentions %q; an agent reading only the binary would miss it", name)
@@ -44,6 +46,7 @@ func TestOverviewListsEveryCommand(t *testing.T) {
 // binary. The binary also has to say what they mean, or the only statement of the
 // contract is a test the user cannot read.
 func TestOverviewDocumentsTheExitCodes(t *testing.T) {
+	t.Parallel()
 	if !strings.Contains(overview, "Exit codes") {
 		t.Error("the overview never mentions exit codes")
 	}
@@ -55,6 +58,7 @@ func TestOverviewDocumentsTheExitCodes(t *testing.T) {
 }
 
 func TestProtocolCitesRulesByNameNotNumber(t *testing.T) {
+	t.Parallel()
 	// Two cross-references pointed at the wrong rules for months, because 0007 and
 	// 0009 inserted rules above them and numbers in prose do not move. Naming the
 	// rule removes the class rather than the two instances.
@@ -69,6 +73,7 @@ func TestProtocolCitesRulesByNameNotNumber(t *testing.T) {
 }
 
 func TestNoCommandTellsAnAgentToAcceptADraft(t *testing.T) {
+	t.Parallel()
 	// Accepting is the human's gate, and a tool that instructs an agent past it
 	// makes the gate advisory. 0014 removed this from `kit next` and from the
 	// protocol text, and it survived in `init` and `new` because the test read the
@@ -92,6 +97,7 @@ func TestNoCommandTellsAnAgentToAcceptADraft(t *testing.T) {
 }
 
 func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
+	t.Parallel()
 	// A protocol that describes the manual path for something the tool does is a
 	// protocol that teaches the mistake. `kit ship` exists because setting the
 	// status and date by hand is where two audit findings came from.
@@ -107,6 +113,7 @@ func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
 }
 
 func TestOverviewListsEveryTopic(t *testing.T) {
+	t.Parallel()
 	for _, topic := range topicNames() {
 		if !strings.Contains(overview, "kit help "+topic) {
 			t.Errorf("topic %q is not advertised in the overview", topic)
@@ -115,6 +122,7 @@ func TestOverviewListsEveryTopic(t *testing.T) {
 }
 
 func TestEveryTopicResolvesInTheBinary(t *testing.T) {
+	t.Parallel()
 	for topic, path := range topics {
 		raw, err := fs.ReadFile(templates, path)
 		if err != nil {
@@ -139,6 +147,7 @@ var showsTaskSyntax = map[string]bool{
 // uses the same syntax for "a property to verify" would be read as a task list by an
 // agent following the protocol, and it would work through it.
 func TestNoTopicLooksLikeATaskList(t *testing.T) {
+	t.Parallel()
 	for topic, path := range topics {
 		if showsTaskSyntax[topic] {
 			continue
@@ -162,6 +171,7 @@ func TestNoTopicLooksLikeATaskList(t *testing.T) {
 // the two thresholds were restated in prose in three places. Retuning them left the
 // prose behind, so the numbers now come from the constants themselves.
 func TestThresholdProseCarriesTheRealNumbers(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		code string
 		days int
@@ -188,6 +198,7 @@ func TestThresholdProseCarriesTheRealNumbers(t *testing.T) {
 }
 
 func TestCheckRegistryIsSaneAndComplete(t *testing.T) {
+	t.Parallel()
 	seen := map[string]bool{}
 	for _, c := range kit.Checks {
 		switch {

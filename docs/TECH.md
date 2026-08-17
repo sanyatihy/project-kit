@@ -240,7 +240,15 @@ behind. It is a Go test in-tree because the previous suite was an external scrip
 how it got deleted without anything noticing. Two properties are load-bearing:
 `TestEveryRegisteredCheckIsExercised` compares the cases against `kit.Checks` both ways, so
 a check with no test fails the build; and every audit case starts from the same clean
-project, which must report nothing, or the firing cases are vacuous. `cmd/kit` coverage
+project, which must report nothing, or the firing cases are vacuous.
+
+Every test declares `t.Parallel()`, capped by `PARALLEL` in the Makefile — 4 of 12 cores by
+default, because the gate runs beside whatever else the operator is doing. What buys that
+is independence the suite already had: a `t.TempDir()` per test, no `os.Chdir` or
+`os.Setenv` anywhere, and the binary built once behind `sync.Once`. Give any of the three
+up and the gate goes back to 32.8s from 17.4s capped, or 8.8s uncapped.
+
+`cmd/kit` coverage
 reads about 4% and stays there — these tests drive a subprocess, so nothing is instrumented.
 
 ## State of play

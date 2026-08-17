@@ -32,6 +32,7 @@ func templateFS() fstest.MapFS {
 }
 
 func TestSlug(t *testing.T) {
+	t.Parallel()
 	cases := map[string]string{
 		"Shorten URLs":           "shorten-urls",
 		"  TON payment rail  ":   "ton-payment-rail",
@@ -47,6 +48,7 @@ func TestSlug(t *testing.T) {
 }
 
 func TestNextIDSkipsGapsRatherThanReusing(t *testing.T) {
+	t.Parallel()
 	r := &Repo{Features: []*Feature{
 		{ID: "0001"}, {ID: "0002"}, {ID: "0007"},
 	}}
@@ -59,6 +61,7 @@ func TestNextIDSkipsGapsRatherThanReusing(t *testing.T) {
 }
 
 func TestNewFeatureFillsFrontmatter(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	features := filepath.Join(dir, "docs", "features")
 	if err := os.MkdirAll(features, 0o755); err != nil {
@@ -97,6 +100,7 @@ func TestNewFeatureFillsFrontmatter(t *testing.T) {
 }
 
 func TestNewFeatureRefusesToOverwrite(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	features := filepath.Join(dir, "docs", "features")
 	if err := os.MkdirAll(features, 0o755); err != nil {
@@ -115,6 +119,7 @@ func TestNewFeatureRefusesToOverwrite(t *testing.T) {
 }
 
 func TestNewFeatureRejectsUnusableInput(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	r := &Repo{Root: dir, FeaturesDir: dir}
 	for _, title := range []string{"", "   ", "!!!"} {
@@ -125,12 +130,14 @@ func TestNewFeatureRejectsUnusableInput(t *testing.T) {
 }
 
 func TestNewFeatureNeedsAnInitialisedProject(t *testing.T) {
+	t.Parallel()
 	if _, err := NewFeature(templateFS(), &Repo{Root: t.TempDir()}, "Thing", testDate); err == nil {
 		t.Error("succeeded without a features directory, want an error pointing at kit init")
 	}
 }
 
 func TestFYIQuestionsDoNotBlock(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	inbox := filepath.Join(dir, "INBOX.md")
 	if err := os.WriteFile(inbox, []byte(

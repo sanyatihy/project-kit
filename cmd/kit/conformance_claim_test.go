@@ -119,6 +119,7 @@ func (p *project) branchesWith(extra ...string) []string {
 }
 
 func TestClaimPushesTheBranchAndSaysSo(t *testing.T) {
+	t.Parallel()
 	a, _ := twoAgents(t)
 
 	a.run("claim", "0007").ok().has("claimed", "0007-widget", "git worktree add")
@@ -139,6 +140,7 @@ func TestClaimPushesTheBranchAndSaysSo(t *testing.T) {
 
 // The test this feature is for.
 func TestTwoAgentsClaimingAtOnceProduceExactlyOneWinner(t *testing.T) {
+	t.Parallel()
 	a, b := twoAgents(t)
 
 	first := a.run("claim", "0007")
@@ -157,6 +159,7 @@ func TestTwoAgentsClaimingAtOnceProduceExactlyOneWinner(t *testing.T) {
 }
 
 func TestLosingAClaimLeavesNoBranchBehind(t *testing.T) {
+	t.Parallel()
 	// A branch left over from a lost race is indistinguishable from a claim, so the
 	// loser would go on to be reported as a second claimant of a feature it does not
 	// have — and audit would call it a split claim.
@@ -172,6 +175,7 @@ func TestLosingAClaimLeavesNoBranchBehind(t *testing.T) {
 }
 
 func TestClaimingTwiceFromTheSameCheckoutLosesTheSecondTime(t *testing.T) {
+	t.Parallel()
 	// The same guarantee seen from one side: the second call did not take anything,
 	// and saying otherwise would make the command useless for deciding who works.
 	a, _ := twoAgents(t)
@@ -180,6 +184,7 @@ func TestClaimingTwiceFromTheSameCheckoutLosesTheSecondTime(t *testing.T) {
 }
 
 func TestClaimRefusalsThatAreNotRaces(t *testing.T) {
+	t.Parallel()
 	// All of these mean "not yours, take another" and share the exit code with a
 	// lost race, because that is the same instruction to the agent that gets one.
 	for _, tc := range []struct {
@@ -220,6 +225,7 @@ func TestClaimRefusalsThatAreNotRaces(t *testing.T) {
 }
 
 func TestClaimingFromAnUnmergedPlanRoundIsRefusedUntilItLands(t *testing.T) {
+	t.Parallel()
 	// The failure this feature is for, as it happened. A doc committed on the plan
 	// branch is in HEAD's tree, so the older check passed and the claim pushed a branch
 	// whose parent was that plan branch — leaving a merge into it as the only way to
@@ -248,6 +254,7 @@ func TestClaimingFromAnUnmergedPlanRoundIsRefusedUntilItLands(t *testing.T) {
 }
 
 func TestTheFirstClaimOfAFreshProjectIsNotRefused(t *testing.T) {
+	t.Parallel()
 	// The trunk barrier must not break a project that has no trunk to land on. A fresh
 	// `kit init` with one branch and no remote is how every project starts, and there
 	// the doc is on the only branch there is: `Trunk()` falls back to that branch, so
@@ -262,6 +269,7 @@ func TestTheFirstClaimOfAFreshProjectIsNotRefused(t *testing.T) {
 }
 
 func TestClaimRefusesAnIDTwoDocsShare(t *testing.T) {
+	t.Parallel()
 	// Exit 2, not 1: this is not someone else holding the feature, it is a question
 	// with no answer. One branch cannot claim one of two features, and picking the
 	// first doc silently is how the ID stops being a primary key.
@@ -274,6 +282,7 @@ func TestClaimRefusesAnIDTwoDocsShare(t *testing.T) {
 }
 
 func TestClaimRefusesADocWhoseIDAndFilenameDisagree(t *testing.T) {
+	t.Parallel()
 	// Exit 1 and before any git call. `Branch()` comes from the filename and the board
 	// looks a claim up by the id:, so claiming this creates a branch nothing connects
 	// to the feature — the board goes on offering it and the next agent gets a raw git
@@ -307,6 +316,7 @@ func TestClaimRefusesADocWhoseIDAndFilenameDisagree(t *testing.T) {
 }
 
 func TestAClaimMadeBeforeTheFixStaysVisible(t *testing.T) {
+	t.Parallel()
 	// Belt and braces for docs already in this state. `claim` refuses to create such a
 	// claim now, so the branch here is made the way the old `claim` made it: named from
 	// the filename, mentioning nothing the board searched for. Matching the filename
@@ -358,6 +368,7 @@ func boardGroup(plan kit.Plan, id string) string {
 }
 
 func TestAMismatchedFeatureIsNeverHandedOutTwice(t *testing.T) {
+	t.Parallel()
 	// The whole scenario, as measured: `claim 0009` created `0002-confused`, `next` went
 	// on saying "start here 0009", and the second agent got exit 2 with a raw git error —
 	// the code documented as "it could not run", so it escalates instead of moving on.
@@ -388,6 +399,7 @@ func TestAMismatchedFeatureIsNeverHandedOutTwice(t *testing.T) {
 }
 
 func TestClaimWithoutARemoteSaysNobodyElseCanSeeIt(t *testing.T) {
+	t.Parallel()
 	// Most projects have no remote on day one, so refusing would make the kit
 	// unusable before the first push. It still has to say what the claim is worth.
 	p := cleanProject(t)
@@ -401,12 +413,14 @@ func TestClaimWithoutARemoteSaysNobodyElseCanSeeIt(t *testing.T) {
 }
 
 func TestClaimUsageErrorsAreExitTwo(t *testing.T) {
+	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim").fails(2)
 	a.run("claim", "0099").fails(2).errHas("no feature")
 }
 
 func TestClaimRefusesWhenTheBranchWouldCarryNoPlan(t *testing.T) {
+	t.Parallel()
 	// The claim pushes HEAD, so a plan that is only in the working tree does not travel
 	// with it. This exited 0, reported a won claim, and sent the agent to a worktree
 	// holding nothing but the README — where `kit next` said the project was not set up.
@@ -434,6 +448,7 @@ func TestClaimRefusesWhenTheBranchWouldCarryNoPlan(t *testing.T) {
 }
 
 func TestAMergedAndDeletedBranchIsNotAClaim(t *testing.T) {
+	t.Parallel()
 	// The whole loop the kit exists to run: a draft is proposed on a branch, the pull
 	// request merges, and the branch is deleted. Git prunes remote-tracking refs on
 	// neither fetch nor pull, so the ref survived and the feature was taken for good —
@@ -459,6 +474,7 @@ func TestAMergedAndDeletedBranchIsNotAClaim(t *testing.T) {
 }
 
 func TestOfflineReadsTheMirrorAndAcceptsTheCost(t *testing.T) {
+	t.Parallel()
 	// --offline is the escape for a network that is not there, and the cost is stated
 	// rather than hidden: claims come from the last fetch, so a branch deleted since then
 	// still reads as one. Pinned so nobody "fixes" it into a silent network call.
@@ -480,6 +496,7 @@ func TestOfflineReadsTheMirrorAndAcceptsTheCost(t *testing.T) {
 }
 
 func TestAnUnreachableRemoteNamesPruneRatherThanAPhantomDelete(t *testing.T) {
+	t.Parallel()
 	// When the remote cannot be asked, claims fall back to the mirror — and the mirror is
 	// what names branches nobody holds. The refusal has to say so, because the advice it
 	// used to print unconditionally (`git push --delete` then `git branch -d`) fails with
@@ -498,6 +515,7 @@ func TestAnUnreachableRemoteNamesPruneRatherThanAPhantomDelete(t *testing.T) {
 }
 
 func TestClaimTakesADraft(t *testing.T) {
+	t.Parallel()
 	// The gate that moved. `status:` orders the board and does not decide who may
 	// work: an agent takes a Draft, settles what the doc leaves open, and the human
 	// reviews the implementation — which is the review that was always going to
@@ -510,6 +528,7 @@ func TestClaimTakesADraft(t *testing.T) {
 }
 
 func TestClaimRefusesADocNobodyWrote(t *testing.T) {
+	t.Parallel()
 	// The load-bearing half of the above. unfilled-template exempts Draft, and that
 	// exemption was only safe while a Draft could not be claimed — without this, a
 	// doc straight out of `kit new` is handed to an agent to build and every command
@@ -525,6 +544,7 @@ func TestClaimRefusesADocNobodyWrote(t *testing.T) {
 }
 
 func TestClaimRefusesWhatItsNeedsHaveNotShipped(t *testing.T) {
+	t.Parallel()
 	// Measured on a fresh project: `kit next` said 0002 was waiting on 0001 and
 	// `kit claim 0002` took it anyway, so an agent claiming by ID built on a foundation
 	// that is not there. Exit 1, like a lost race — the instruction is the same one.
@@ -545,6 +565,7 @@ func TestClaimRefusesWhatItsNeedsHaveNotShipped(t *testing.T) {
 }
 
 func TestClaimTakesAFeatureWhoseNeedsHaveShipped(t *testing.T) {
+	t.Parallel()
 	// The quiet half. A dependency that has shipped is not an obstacle, and refusing
 	// here would make `needs:` a field that never releases anything.
 	p := cleanProject(t)
@@ -558,6 +579,7 @@ func TestClaimTakesAFeatureWhoseNeedsHaveShipped(t *testing.T) {
 }
 
 func TestNextAndClaimAgreeAboutAnUnwrittenDoc(t *testing.T) {
+	t.Parallel()
 	// A board that offers what the next command refuses is the loop 0013 exists to
 	// stop: the agent follows the documented path and is turned away at the end of it.
 	p := cleanProject(t)
@@ -570,6 +592,7 @@ func TestNextAndClaimAgreeAboutAnUnwrittenDoc(t *testing.T) {
 }
 
 func TestTheBoardDoesNotOfferWhatClaimRefuses(t *testing.T) {
+	t.Parallel()
 	// The loop 0013 exists to stop: `claim` now refuses a mismatched doc, so a board
 	// that still lists it under "start here" sends every agent to a command that turns
 	// it away. Any refusal a command makes, the board has to reflect — the converse of

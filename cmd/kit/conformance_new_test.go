@@ -25,12 +25,14 @@ func setUp(t *testing.T) *project {
 }
 
 func TestNewStartsAtOneAndCounts(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	p.run("new", "Shorten URLs").ok().has("0001-shorten-urls.md")
 	p.run("new", "Rate limit").ok().has("0002-rate-limit.md")
 }
 
 func TestNewTakesTheHighestIDNotTheFirstGap(t *testing.T) {
+	t.Parallel()
 	// Filling a gap would reuse the number of a dropped feature, and every branch
 	// and commit citing it would then point at the wrong doc.
 	p := setUp(t)
@@ -44,6 +46,7 @@ func TestNewTakesTheHighestIDNotTheFirstGap(t *testing.T) {
 }
 
 func TestNewSlugsTheTitle(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	for _, tc := range []struct{ title, want string }{
 		{"Shorten URLs", "0001-shorten-urls.md"},
@@ -58,6 +61,7 @@ func TestNewSlugsTheTitle(t *testing.T) {
 }
 
 func TestNewFillsTheFrontmatter(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	p.run("new", "Shorten URLs").ok()
 	doc := p.read("docs/features/0001-shorten-urls.md")
@@ -83,6 +87,7 @@ func TestNewFillsTheFrontmatter(t *testing.T) {
 }
 
 func TestANewDocIsEmptyToTheToolNotJustToTheReader(t *testing.T) {
+	t.Parallel()
 	// The template's guidance lives in HTML comments, which every parser here strips.
 	// When it lived in visible prose and two `- [ ] …` boxes, a doc nobody had written
 	// read as a plan: `next` counted 0/2 and handed out `…` as the task to build, and
@@ -106,6 +111,7 @@ func TestANewDocIsEmptyToTheToolNotJustToTheReader(t *testing.T) {
 }
 
 func TestNewNeverClobbersAnExistingFile(t *testing.T) {
+	t.Parallel()
 	// Even a file that is not a valid feature doc counts toward the next ID, so
 	// the name is skipped rather than the content replaced.
 	p := setUp(t)
@@ -122,6 +128,7 @@ func TestNewNeverClobbersAnExistingFile(t *testing.T) {
 }
 
 func TestNewUnderConcurrencyLosesNothing(t *testing.T) {
+	t.Parallel()
 	// One agent per feature is the model, so several can run `new` at once. A
 	// loser must report an error rather than silently overwrite the winner. The
 	// interleaving is not deterministic, so assert the invariant instead: every
@@ -167,6 +174,7 @@ func TestNewUnderConcurrencyLosesNothing(t *testing.T) {
 }
 
 func TestNewRefusesATitleItCannotUse(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	// The empty cases are caught by the CLI before NewFeature sees them, so these
 	// pin the behaviour a user gets, not which layer produces it — NewFeature's own
@@ -180,6 +188,7 @@ func TestNewRefusesATitleItCannotUse(t *testing.T) {
 }
 
 func TestNewOnAnUnsetUpProjectSaysHowToFixIt(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	r := p.run("new", "Anything").fails(2)
 	r.errHas("kit init")

@@ -14,6 +14,7 @@ import (
 )
 
 func TestParsingSurvivesBOMAndCRLF(t *testing.T) {
+	t.Parallel()
 	// A doc saved by a Windows editor must behave exactly like one that was not.
 	p := setUp(t)
 	body := "---\nid: 0001\ntitle: Windows\nstatus: Accepted\ncreated: 2026-01-01\n---\n\n" +
@@ -25,6 +26,7 @@ func TestParsingSurvivesBOMAndCRLF(t *testing.T) {
 }
 
 func TestADocWithNoFrontmatterIsReportedNotFatal(t *testing.T) {
+	t.Parallel()
 	// An interrupted agent leaves these behind. The tool has to keep working and
 	// say what is wrong.
 	p := setUp(t)
@@ -35,6 +37,7 @@ func TestADocWithNoFrontmatterIsReportedNotFatal(t *testing.T) {
 }
 
 func TestAnUnparseableDateIsTreatedAsAbsent(t *testing.T) {
+	t.Parallel()
 	// Rather than crashing, or worse, being read as some other date.
 	p := setUp(t)
 	p.write("docs/features/0001-odd.md",
@@ -45,6 +48,7 @@ func TestAnUnparseableDateIsTreatedAsAbsent(t *testing.T) {
 }
 
 func TestExamplesInFencedBlocksAreNotRealTasks(t *testing.T) {
+	t.Parallel()
 	// The template and the conventions doc both show `- [ ]` inside fences. Counting
 	// those would have every project start life with imaginary work.
 	// The example has to sit inside ## Tasks to be a real test: OpenTasks only ever
@@ -62,6 +66,7 @@ func TestExamplesInFencedBlocksAreNotRealTasks(t *testing.T) {
 }
 
 func TestASectionHoldingOnlyACommentCountsAsEmpty(t *testing.T) {
+	t.Parallel()
 	// Template guidance lives in HTML comments. If those counted as content, a doc
 	// nobody had written would look complete and nothing would ever fire.
 	p := setUp(t)
@@ -75,6 +80,7 @@ func TestASectionHoldingOnlyACommentCountsAsEmpty(t *testing.T) {
 }
 
 func TestNewDocsAreDraftsAndNotOffered(t *testing.T) {
+	t.Parallel()
 	// Draft is where a human settles the design, so `next` never hands one out.
 	p := setUp(t)
 	p.run("new", "Untouched").ok()
@@ -82,6 +88,7 @@ func TestNewDocsAreDraftsAndNotOffered(t *testing.T) {
 }
 
 func TestCommandsWorkFromASubdirectory(t *testing.T) {
+	t.Parallel()
 	// Documented behaviour: with no path they use the repo you are in, from
 	// anywhere inside it.
 	p := setUp(t)
@@ -96,6 +103,7 @@ func TestCommandsWorkFromASubdirectory(t *testing.T) {
 }
 
 func TestFlagsAreAcceptedAfterPaths(t *testing.T) {
+	t.Parallel()
 	// Go's flag package stops at the first positional, so `kit audit PATH --json`
 	// would silently ignore the flag without parseArgs looping.
 	p := setUp(t)
@@ -109,6 +117,7 @@ func TestFlagsAreAcceptedAfterPaths(t *testing.T) {
 }
 
 func TestJSONIsValidAndCarriesThePlan(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
 
@@ -132,6 +141,7 @@ func TestJSONIsValidAndCarriesThePlan(t *testing.T) {
 }
 
 func TestJSONStaysCleanOnStdoutWhenThereIsNothingToReport(t *testing.T) {
+	t.Parallel()
 	// A consumer piping --json must get parseable output even in the empty case,
 	// rather than a friendly sentence.
 	p := setUp(t)
@@ -143,6 +153,7 @@ func TestJSONStaysCleanOnStdoutWhenThereIsNothingToReport(t *testing.T) {
 }
 
 func TestNonGitDirectoriesStillWork(t *testing.T) {
+	t.Parallel()
 	// git powers claims and staleness, but its absence must degrade rather than
 	// break — plenty of directories are not repositories yet.
 	p := setUp(t)
@@ -156,6 +167,7 @@ func TestNonGitDirectoriesStillWork(t *testing.T) {
 }
 
 func TestExitCodesAreDistinct(t *testing.T) {
+	t.Parallel()
 	// An agent scripting the kit has to tell "you typed it wrong" from "the audit
 	// found something".
 	p := cleanProject(t)
@@ -176,6 +188,7 @@ func TestExitCodesAreDistinct(t *testing.T) {
 }
 
 func TestEmptyProjectDirectoriesAreHandled(t *testing.T) {
+	t.Parallel()
 	// An empty features directory is not the same as a broken project.
 	p := setUp(t)
 	entries, err := os.ReadDir(p.path("docs/features"))
@@ -193,6 +206,7 @@ func TestEmptyProjectDirectoriesAreHandled(t *testing.T) {
 }
 
 func TestARemoteThatDoesNotAnswerIsSaidRatherThanShownAsNothing(t *testing.T) {
+	t.Parallel()
 	// The failure this feature is for: an unreachable remote and a project with nothing
 	// waiting produced the same page. The remote here refuses the connection instead of
 	// timing out, which reaches the same code by the same route and does not cost the

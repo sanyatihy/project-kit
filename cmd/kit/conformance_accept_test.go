@@ -10,6 +10,7 @@ import (
 )
 
 func TestAcceptSettlesADraftAndNextThenOffersIt(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	p.run("new", "Shorten URLs").ok()
 	path := "docs/features/0001-shorten-urls.md"
@@ -34,12 +35,14 @@ func TestAcceptSettlesADraftAndNextThenOffersIt(t *testing.T) {
 }
 
 func TestAcceptTakesAnIDWithoutLeadingZeros(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	p.write("docs/features/0003-thing.md", fullDoc("0003", "Thing", "Draft", "- [ ] Do it"))
 	p.run("accept", "3").ok()
 }
 
 func TestAcceptRefusesWhatIsNotSettled(t *testing.T) {
+	t.Parallel()
 	// Each of these is a doc saying the design is not ready. Accepting over any of them
 	// puts an agent to work on something nobody decided — the exact thing the Draft gate
 	// exists to prevent, so the command must not be a way around it.
@@ -78,6 +81,7 @@ func TestAcceptRefusesWhatIsNotSettled(t *testing.T) {
 }
 
 func TestAcceptRefusesAnFYIItShouldNotBlockOn(t *testing.T) {
+	t.Parallel()
 	// The mirror of the case above. `--fyi` means work continues without an answer, so
 	// accept must not treat one as a blocker — and it cannot decide that separately from
 	// `next` without the two eventually disagreeing.
@@ -89,6 +93,7 @@ func TestAcceptRefusesAnFYIItShouldNotBlockOn(t *testing.T) {
 }
 
 func TestTheStatusRewriteStaysInsideTheFrontmatter(t *testing.T) {
+	t.Parallel()
 	// `(?m)^status:.*$` over the whole document rewrote every matching line, and a feature
 	// doc for a tool whose subject *is* frontmatter quotes frontmatter constantly. Both
 	// writers share one frontmatter-only helper now, so this pins accept and ship together.
@@ -114,6 +119,7 @@ func TestTheStatusRewriteStaysInsideTheFrontmatter(t *testing.T) {
 }
 
 func TestAcceptUsageErrorsAreExitTwo(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	p.run("accept").fails(2)
 	p.run("accept", "0099").fails(2).errHas("no feature")
@@ -131,6 +137,7 @@ func fullDoc(id, title, status, tasks string) string {
 }
 
 func TestAcceptWritesTheReviewMarkOnlyWhenAsked(t *testing.T) {
+	t.Parallel()
 	// The field is the human's to set and this is the human's command, so it is the one
 	// place it can be written without an agent deciding it. A doc written before the
 	// field existed has to take it, which is every doc there is on the day this lands.
