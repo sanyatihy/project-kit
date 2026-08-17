@@ -157,6 +157,13 @@ type Repo struct {
 	// from a past fetch. Only the second can produce a claim nobody holds, so only the
 	// second earns a message about pruning.
 	refsAuthoritative bool
+
+	// The remote's branch list, asked once. It cannot change under a single command, and
+	// `audit` asks it per Shipped feature: unmemoised, one ls-remote per doc took this
+	// repo's audit from under a second to two minutes.
+	heads      []string
+	headsKnown bool
+	headsAsked bool
 }
 
 type commit struct {
@@ -456,6 +463,10 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 	if r.Offline {
 		return nil, false
 	}
+	if r.headsAsked {
+		return r.heads, r.headsKnown
+	}
+	r.headsAsked = true
 	var out []string
 	answered := false
 	for _, remote := range r.remotes() {
@@ -479,6 +490,7 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 			}
 		}
 	}
+	r.heads, r.headsKnown = out, answered
 	return out, answered
 }
 

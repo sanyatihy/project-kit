@@ -61,6 +61,21 @@ Mechanisms worth knowing before changing anything:
   at the commit being pushed says "Everything up-to-date" and exits 0; trusting the
   exit code hands one feature to two agents. Creating the ref is a compare-and-swap
   server-side, so simultaneous claimants produce exactly one winner.
+- **Ship has a far side, and the kit reports it.** `kit next` ends with **awaiting
+  review**: a branch the remote has, carrying a doc that says Shipped, not yet reachable
+  from the trunk. The status is read *from the branch*, because that is the only place it
+  exists — a coordinator stands on the trunk, where an unmerged feature's doc still says
+  what it said when the round landed. `shipped-not-pushed` is the other half at HIGH, and
+  it needs two independent negatives before it fires: no branch the remote has names the
+  feature, and no remote-tracking ref contains the commit that last wrote its doc. Either
+  alone misfires — the live branch list cannot see a feature merged and then deleted, and
+  the tracking refs are only as fresh as the last fetch.
+- **Separation of duties is legibility here and enforcement on the remote.** The board
+  marks what the reader built, from the claim it stands on or the branch's authorship.
+  Both are advisory: an agent can merge its own branch with git directly, so what stops
+  it is branch protection. And none of it distinguishes anybody while agents share one
+  credential — measured on this repo, four agents' commits all carried the operator's
+  name.
 - **A claim branches from the trunk, never from the round that planned it.** The doc
   must be in `trunkRef()`'s tree as well as in `HEAD`'s. A doc committed only on the
   plan branch passes the HEAD check, and the branch pushed is then a child of that plan

@@ -151,6 +151,7 @@ sounding like a guarantee.
 - [x] "Enforce, do not instruct" in the protocol and `docs/TECH.md`, with the three
       tiers, so a future rule is weighed against making itself unnecessary
 - [x] README and `kit help next` describe the review board and who reads it
+- [x] `remoteHeads` is asked once per command, not once per Shipped feature
 
 ## Log
 - 2026-08-16 — scoped after shipping four features without pushing any of them, with
@@ -178,3 +179,8 @@ sounding like a guarantee.
   merging, and the remote-tracking refs that do know are only as fresh as the last
   fetch. It fires when both agree the work is nowhere: no branch on the remote names it,
   and no remote-tracking ref contains the commit that last wrote the doc.
+- 2026-08-17 — a box added after the others were ticked, per rule 7. `shipped-not-pushed`
+  calls `remoteHeads` per Shipped doc, and it was not memoised: on this repo, with 24
+  shipped features, `kit audit` went from under a second to one minute fifty-seven. The
+  answer cannot change under a single command, so it is now asked once — 5 seconds — the
+  same reasoning that already caches `Trunk()`.
