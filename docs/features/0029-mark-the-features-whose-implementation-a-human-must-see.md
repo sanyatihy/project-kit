@@ -1,7 +1,7 @@
 ---
 id: 0029
 title: Mark the features whose implementation a human must see
-status: Draft
+status: In progress
 created: 2026-08-16
 shipped:
 check:
@@ -65,7 +65,7 @@ merged, so changing it afterwards is another pull request — visible in the sam
 the work is.
 
 ## Tasks
-- [ ] `review:` parsed on `Feature`, empty and absent both meaning the coordinator may
+- [x] `review:` parsed on `Feature`, empty and absent both meaning the coordinator may
       merge; conformance that existing docs are unaffected
 - [ ] `kit accept <id> --review` writes the field; conformance for with and without
 - [ ] The awaiting-review board marks entries needing a human, in text and `--json`

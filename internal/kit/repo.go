@@ -64,8 +64,19 @@ type Feature struct {
 	Check   time.Time
 	Checked time.Time
 
+	// Review is the human's mark on one feature: set, a person merges it whatever the
+	// trunk allows. Empty and absent are the same answer — the coordinator may merge —
+	// so every doc written before the field existed keeps working untouched.
+	Review string
+
 	sections map[string]string
 }
+
+// NeedsHuman reports whether a person must see this feature merged, whatever branch
+// protection allows. Any value counts, not only the documented `human`: a field somebody
+// wrote in and the kit did not recognise should ask for a person rather than quietly
+// waving the change through, which is the only direction that fails safe.
+func (f *Feature) NeedsHuman() bool { return f.Review != "" }
 
 // Name is the ID and title, for display.
 func (f *Feature) Name() string {
@@ -256,6 +267,7 @@ func (r *Repo) readFeature(path string) *Feature {
 		Shipped:  ParseDate(fields["shipped"]),
 		Check:    ParseDate(fields["check"]),
 		Checked:  ParseDate(fields["checked"]),
+		Review:   fields["review"],
 		sections: ParseSections(body),
 	}
 	if f.Title == "" {

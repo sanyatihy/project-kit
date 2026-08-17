@@ -684,3 +684,25 @@ func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
 		t.Errorf("0007 is marked as the coordinator's own work: %+v", got[0])
 	}
 }
+
+func TestAReviewMarkChangesNothingElseOnTheBoard(t *testing.T) {
+	// The field is optional and new, so every doc written before it has to behave
+	// exactly as it did — and a doc carrying it must not become a finding, a blocker,
+	// or anything else the board treats differently. What it changes is who merges.
+	p := cleanProject(t)
+	p.write("docs/features/0002-marked.md",
+		doc("0002", "Marked", "Accepted", "review: human", "- [ ] Something"))
+
+	if codes := p.auditCodes(); len(codes) > 0 {
+		t.Errorf("a review: mark produced findings: %v", codes)
+	}
+	plan := p.plan("next", "--json")
+	if got := boardGroup(plan, "0002"); got != "ready" {
+		t.Errorf("a marked feature is %s on the board, want ready", got)
+	}
+	// And the unmarked doc beside it is untouched, which is what "absent behaves as
+	// empty" has to mean for the twenty-odd docs already written.
+	if got := boardGroup(plan, "0001"); got != "ready" {
+		t.Errorf("the unmarked feature is %s on the board, want ready", got)
+	}
+}
