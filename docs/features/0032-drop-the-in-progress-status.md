@@ -1,7 +1,7 @@
 ---
 id: 0032
 title: Drop the In progress status
-status: Draft
+status: In progress
 created: 2026-08-17
 shipped:
 check:
@@ -57,10 +57,10 @@ The status line in the docs becomes `Draft -> Accepted -> Shipped`, with `Droppe
 `Superseded` as exits, and the claim branch is what says work is happening.
 
 ## Tasks
-- [ ] `In progress` out of `AllStatuses`, `claim`, and the two checks that read it, with
-      `no-claim` retired from the registry and its conformance case
-- [ ] `next` orders by claim rather than status, and the WIP warning counts claims;
-      conformance that a claimed feature still sorts ahead of an unclaimed one
+- [ ] `In progress` leaves the vocabulary — `AllStatuses`, `claim`, `stalled`, `no-tasks`
+      — and `next` orders by claim with the WIP warning counting claims; `no-claim` is
+      retired from the registry and its conformance case; conformance that a claimed
+      feature still sorts ahead of an unclaimed one
 - [ ] `claim` no longer instructs a status edit, and prints what to do instead
 - [ ] Protocol rules 1, 2, 5 and 8, the template, `kit help` and README drop the status
       and say the claim is what marks work as started
@@ -70,3 +70,9 @@ The status line in the docs becomes `Draft -> Accepted -> Shipped`, with `Droppe
 ## Log
 - 2026-08-17 — promoted from BACKLOG.md after the contradiction was hit four times in one
   session. The third of its three options: drop the status rather than add a command.
+- 2026-08-17 — the first two boxes merged into one, per rule 7. They cannot be separate
+  commits that both compile: `ActiveFeatures` ranks by the status and `Plan.InProgress`
+  counts it, so removing the constant and replacing the ordering are the same edit.
+- 2026-08-17 — this doc is `In progress` while the feature that removes that status is
+  built, which is the contradiction it exists to end. `ship` sets `Shipped` from whatever
+  it finds, so the last edit clears it.
