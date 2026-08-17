@@ -675,6 +675,76 @@ func (r *Repo) BranchBuildsOn(branch, rel string) bool {
 	return false
 }
 
+// Review is one feature whose builder has finished and whose work has not landed.
+type Review struct {
+	Feature *Feature
+	Branch  string
+}
+
+// AwaitingReview lists the features waiting for somebody other than their builder: a
+// claim branch the remote has, carrying a copy of the doc that says Shipped, and not yet
+// reachable from the trunk.
+//
+// The status is read from the branch rather than from this checkout, because the branch
+// is the only place it exists yet. A coordinator stands on the trunk, where an unmerged
+// feature's doc still says whatever it said when the plan round landed — read from here,
+// every entry would be missing in exactly the case this exists to report.
+//
+// Silent rather than wrong wherever the answer cannot be had: offline, no remote, or a
+// remote that did not answer reports nothing, and so does a branch whose objects this
+// checkout has never fetched. Both are the kit's standing answer to a fact it cannot
+// read, and both are recoverable with a fetch.
+func (r *Repo) AwaitingReview() []Review {
+	heads, ok := r.remoteHeads()
+	if !ok {
+		return nil
+	}
+	trunk := r.trunkRef()
+	var out []Review
+	for _, f := range r.Features {
+		ids := []string{f.ID}
+		if prefix := f.FilenamePrefix(); prefix != "" && prefix != f.ID {
+			ids = append(ids, prefix)
+		}
+		for _, name := range heads {
+			if r.isTrunk(name) || !mentionsAny(name, ids) {
+				continue
+			}
+			rev := r.resolveBranch(name)
+			if rev == "" || r.statusOn(rev, f.Rel) != StatusShipped {
+				continue
+			}
+			// A merged branch the remote still carries is not waiting for anybody. The
+			// local trunk ref answers it, so this asks the network nothing beyond the
+			// one ls-remote — the same bargain `claim` makes.
+			if trunk != "" && r.reaches(rev, trunk) {
+				continue
+			}
+			out = append(out, Review{Feature: f, Branch: name})
+			break
+		}
+	}
+	return out
+}
+
+// statusOn reads a doc's status: from a revision's copy of it, empty when that revision
+// does not carry the doc, cannot be read, or the doc declares no status.
+func (r *Repo) statusOn(rev, rel string) string {
+	out, err := r.gitRun("show", rev+":"+rel)
+	if err != nil {
+		return ""
+	}
+	fields, _ := ParseFrontmatter(Normalise(out))
+	return fields["status"]
+}
+
+// reaches reports whether a revision has landed on another — whether the branch's work
+// is already contained in the trunk.
+func (r *Repo) reaches(rev, trunk string) bool {
+	_, err := r.gitRun("merge-base", "--is-ancestor", rev, trunk)
+	return err == nil
+}
+
 // OrphanClaims lists branches named like a claim — a leading four-digit ID — that cite a
 // feature doc nobody wrote.
 //

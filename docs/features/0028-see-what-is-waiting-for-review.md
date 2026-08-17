@@ -1,7 +1,7 @@
 ---
 id: 0028
 title: See what is waiting for review
-status: Draft
+status: In progress
 created: 2026-08-16
 shipped:
 check:
@@ -134,7 +134,7 @@ only option — judgement, taste, what to write down — it says so plainly rath
 sounding like a guarantee.
 
 ## Tasks
-- [ ] `Repo.AwaitingReview()` — Shipped, branch on the remote, not reachable from the
+- [x] `Repo.AwaitingReview()` — Shipped, branch on the remote, not reachable from the
       trunk — reusing `remoteHeads` and `trunkRef`
 - [ ] `kit next` prints an `awaiting review` section, in text and `--json`
 - [ ] Closing guidance names reviewing as the work when that is all there is
@@ -162,3 +162,9 @@ sounding like a guarantee.
   enforceable only on the remote: anything the kit checks, an agent skips by calling
   git directly, so a config flag would be a control the controlled party can rewrite.
   Legibility here, enforcement in branch protection.
+- 2026-08-17 — the status is read from the claim branch, not from this checkout. A
+  coordinator stands on the trunk, where an unmerged feature's doc still says what it
+  said when the round landed, so a board read from the working tree would be empty in
+  exactly the case it exists to report. Measured: from the trunk the doc says `Accepted`
+  while the branch says `Shipped`. The cost is that a branch whose objects were never
+  fetched cannot be read, and is passed over rather than guessed at.
