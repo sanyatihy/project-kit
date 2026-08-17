@@ -189,6 +189,20 @@ type Repo struct {
 	// failed call. Distinct from having no remote to ask, which is not a failure and has
 	// nothing to report.
 	headsFailed bool
+
+	// The branch this checkout is on and the remotes it has, asked once each. Neither can
+	// change while one command runs, and both were being asked per feature: 62 of the 116
+	// git processes a board read spawned on a 30-feature project were these two.
+	head         string
+	headAsked    bool
+	remoteNames  []string
+	remotesAsked bool
+
+	// Every ref this repository has, read in one `git show-ref`. The alternative is one
+	// `rev-parse` per candidate per feature, which is where 32 of a board read's 58
+	// processes went.
+	refIndex    map[string]bool
+	refsIndexed bool
 }
 
 type commit struct {
@@ -566,7 +580,7 @@ func (r *Repo) findTrunk() string {
 		}
 	}
 	for _, candidate := range []string{"main", "master"} {
-		if r.git("rev-parse", "--verify", "--quiet", candidate) != "" {
+		if r.hasRef("refs/heads/" + candidate) {
 			return candidate
 		}
 	}
@@ -595,13 +609,12 @@ func (r *Repo) trunkRef() string {
 	if trunk == "" {
 		return ""
 	}
-	candidates := []string{trunk}
-	for _, remote := range r.remotes() {
-		candidates = append(candidates, remote+"/"+trunk)
+	if r.hasRef("refs/heads/" + trunk) {
+		return trunk
 	}
-	for _, ref := range candidates {
-		if r.git("rev-parse", "--verify", "--quiet", ref) != "" {
-			return ref
+	for _, remote := range r.remotes() {
+		if r.hasRef("refs/remotes/" + remote + "/" + trunk) {
+			return remote + "/" + trunk
 		}
 	}
 	return ""
@@ -614,7 +627,11 @@ func (r *Repo) trunkRef() string {
 // which is the whole point: it is how the kit tells the checkout you are standing
 // in apart from the ones other agents are standing in.
 func (r *Repo) HeadBranch() string {
-	return strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short", "HEAD"))
+	if !r.headAsked {
+		r.headAsked = true
+		r.head = strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short", "HEAD"))
+	}
+	return r.head
 }
 
 // RefsAreAuthoritative reports whether the claim refs were read from the remotes
@@ -952,15 +969,32 @@ func (r *Repo) BranchCarriesItsDoc(branch string) bool {
 	return err == nil
 }
 
+// hasRef reports whether a fully-qualified ref exists, from one `git show-ref` read once.
+//
+// Existence is all any caller here needs, and asking per candidate cost a process each:
+// with ten claims that was a third of a board read. A repository with no refs at all
+// answers false for everything, which is correct — there is nothing to resolve.
+func (r *Repo) hasRef(ref string) bool {
+	if !r.refsIndexed {
+		r.refsIndexed = true
+		r.refIndex = map[string]bool{}
+		for _, line := range strings.Split(r.git("show-ref"), "\n") {
+			if _, name, found := strings.Cut(strings.TrimSpace(line), " "); found {
+				r.refIndex[name] = true
+			}
+		}
+	}
+	return r.refIndex[ref]
+}
+
 // resolveBranch finds a revision for a branch name, widening from the local ref to each
 // remote-tracking one, and returns "" when nothing resolves.
 func (r *Repo) resolveBranch(branch string) string {
-	candidates := []string{"refs/heads/" + branch}
-	for _, remote := range r.remotes() {
-		candidates = append(candidates, "refs/remotes/"+remote+"/"+branch)
+	if r.hasRef("refs/heads/" + branch) {
+		return "refs/heads/" + branch
 	}
-	for _, ref := range candidates {
-		if r.git("rev-parse", "--verify", "--quiet", ref) != "" {
+	for _, remote := range r.remotes() {
+		if ref := "refs/remotes/" + remote + "/" + branch; r.hasRef(ref) {
 			return ref
 		}
 	}

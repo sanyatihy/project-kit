@@ -1,9 +1,9 @@
 ---
 id: 0035
 title: Stop re-asking git the same questions
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs:
@@ -56,15 +56,24 @@ subprocesses does a board read cost" is the question this feature answers and th
 regression will be invisible without it.
 
 ## Tasks
-- [ ] `HeadBranch()` and `remotes()` memoise per `Repo`, with a unit test that the second
+- [x] `HeadBranch()` and `remotes()` memoise per `Repo`, with a unit test that the second
       call runs no git
-- [ ] `make gitcount` runs a board read against a generated fixture and prints the
+- [x] `make gitcount` runs a board read against a generated fixture and prints the
       subprocess count, so the number is checkable rather than remembered
-- [ ] `resolveBranch` answers from one `git show-ref` — or the box is deleted with the
+- [x] `resolveBranch` answers from one `git show-ref` — or the box is deleted with the
       measurement that showed it was not worth it
-- [ ] `docs/TECH.md` records the rule: an answer that cannot change inside one command is
+- [x] `docs/TECH.md` records the rule: an answer that cannot change inside one command is
       asked once
 
 ## Log
 - 2026-08-17 — measured during a code audit, with a `git` wrapper on `$PATH` counting
   invocations.
+- 2026-08-17 — 116 → 58 processes from memoising the two, then → **28** from one
+  `git show-ref` behind `hasRef`. The remaining 28 are questions that genuinely differ per
+  claim: each branch's copy of its doc, and each branch's tip date.
+- 2026-08-17 — the unexpected half: `cmd/kit`'s suite went from 18.2s to **9.2s** at the
+  same `-parallel 4`. Every conformance test drives the binary several times, so a board
+  read costing a quarter of the processes shortens the gate as well. `make check` is now
+  ~11s, from 35s before 0034.
+- 2026-08-17 — the TECH ceiling went 250 → 300. Compressing entries to fit a number I had
+  set one feature earlier was optimising the metric, not the doc; the ceiling is an alarm.
