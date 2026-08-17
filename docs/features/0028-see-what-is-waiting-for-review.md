@@ -150,7 +150,7 @@ sounding like a guarantee.
       named as opening the pull request
 - [x] "Enforce, do not instruct" in the protocol and `docs/TECH.md`, with the three
       tiers, so a future rule is weighed against making itself unnecessary
-- [ ] README and `kit help next` describe the review board and who reads it
+- [x] README and `kit help next` describe the review board and who reads it
 
 ## Log
 - 2026-08-16 — scoped after shipping four features without pushing any of them, with

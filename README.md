@@ -231,6 +231,26 @@ Do that one box, tick it in the commit that implements it, and open a PR. Run `k
 again for the next one. When the last box is ticked, `kit ship 0001` verifies every box,
 stamps the date, and freezes the doc.
 
+Then push and stop, because **you never merge your own work**. `kit next` closes with
+what is waiting on the other side of that handoff:
+
+```
+  awaiting review
+    0001  Shorten URLs
+          0001-shorten-urls · waiting 2 days · you built this — not yours to merge
+```
+
+Shipped on the branch, pushed, and not on the trunk. The status is read from the branch,
+since on the trunk it still says what it said when the round landed — so a coordinator
+standing on the trunk sees the whole queue in the command everyone else already runs.
+`shipped-not-pushed` catches the other half at HIGH: shipped, and on no remote at all.
+
+What the kit does here is make the invariant legible, and nothing more. An agent can
+merge its own branch with git directly; what stops it is branch protection on the trunk,
+which is the one control the controlled party cannot rewrite. Agents also need git
+identities of their own — one pushing with the operator's credential is the operator to
+every check that exists.
+
 **When you get stuck on something only a human can decide**, add a line to
 `docs/INBOX.md` with your leaning and move on:
 

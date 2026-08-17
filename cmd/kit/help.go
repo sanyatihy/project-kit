@@ -285,6 +285,13 @@ reported as "yours" and offered as the work to do. A feature is reported as bloc
 when an open docs/INBOX.md line carries its id in the id field, or when something in
 its "needs:" has not shipped yet.
 
+Below the board, "awaiting review" is the far side of ship: a branch the remote has,
+carrying a doc that says Shipped, not yet on the trunk. The status is read from the
+branch, because on the trunk it still says what it said when the plan round landed.
+Entries you built are marked — you never merge your own work — and where reviewing is
+all there is, the closing guidance says so instead of telling you to stop. A coordinator
+reads this; it is the same command everyone else runs.
+
 What is ready is therefore the answer to how much can happen at once: one ready
 feature means the work is a chain, three means three agents can take one each. That
 falls out of what the docs already declare rather than being planned separately.
