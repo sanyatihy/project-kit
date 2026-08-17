@@ -76,7 +76,7 @@ only record that we thought about something go.
 - [x] Ceilings for both in `cmd/kit/budget_test.go`, with the reasoning for the numbers
 - [x] `kit help as-built` and README describe what TECH is for, in one place rather than
       three
-- [ ] The template and protocol shift weight from writing before the work to writing
+- [x] The template and protocol shift weight from writing before the work to writing
       during it: `## Design` is decisions a builder cannot derive, `## Log` carries what
       was learned
 
