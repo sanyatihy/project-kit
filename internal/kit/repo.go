@@ -23,11 +23,17 @@ const (
 	gitLogLimit = "500"
 	gitTimeout  = 30 * time.Second
 
-	// remoteTimeout bounds the one question the kit asks the network on a read. Short on
-	// purpose: `kit next ~/code/*` walks every project, and a board that hangs because
+	// remoteTimeout bounds the one question the kit asks the network on a read. Bounded
+	// on purpose: `kit next ~/code/*` walks every project, and a board that hangs because
 	// one remote is unreachable is worse than a board that falls back to a stale mirror
 	// and says so.
-	remoteTimeout = 5 * time.Second
+	//
+	// It was 5s, which a working remote did not fit inside: `git ls-remote --heads` to
+	// GitHub over SSH measured 5.58s on an ordinary connection, so the review board went
+	// blank and `shipped-not-pushed` never ran, with nothing on the page saying why. Tune
+	// it against that number, and against RemoteUnanswered — a bound that expires is now
+	// reported rather than printed as an empty board.
+	remoteTimeout = 15 * time.Second
 )
 
 // AllStatuses is every status a feature doc may declare.
@@ -175,6 +181,11 @@ type Repo struct {
 	heads      []string
 	headsKnown bool
 	headsAsked bool
+
+	// headsFailed records that the remote was asked and did not answer — a timeout or a
+	// failed call. Distinct from having no remote to ask, which is not a failure and has
+	// nothing to report.
+	headsFailed bool
 }
 
 type commit struct {
@@ -489,6 +500,7 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 		if err != nil {
 			// One unreachable remote does not invalidate another's answer, but it does
 			// mean this one's branches are unknown, so nothing here can be authoritative.
+			r.headsFailed = true
 			return nil, false
 		}
 		answered = true
@@ -505,6 +517,18 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 	r.heads, r.headsKnown = out, answered
 	return out, answered
 }
+
+// RemoteUnanswered reports whether something this command needed from the remote could
+// not be had: it was asked and the call failed or timed out.
+//
+// False where there was nothing to ask — no remote, `--offline`, or a command that never
+// needed the branch list. Those are not failures and have nothing to report; this is for
+// the case where an answer exists and the kit could not get it, which otherwise reaches
+// the reader as a page with nothing on it.
+//
+// Read it after the work, not before: it reports what actually went unanswered rather
+// than provoking a call nobody needed.
+func (r *Repo) RemoteUnanswered() bool { return r.headsFailed }
 
 // branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
 // recognised as one branch rather than two claims on the same feature.

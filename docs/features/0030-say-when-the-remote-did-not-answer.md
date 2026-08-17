@@ -1,7 +1,7 @@
 ---
 id: 0030
 title: Say when the remote did not answer
-status: Draft
+status: In progress
 created: 2026-08-17
 shipped:
 check:
@@ -62,7 +62,7 @@ at all. Silence is the one output that cannot be told from good news.
 `--offline` stays silent: that one is the reader's own instruction, not a failure.
 
 ## Tasks
-- [ ] `remoteHeads`' bound is 15s, with the measurement recorded beside it, and callers
+- [x] `remoteHeads`' bound is 15s, with the measurement recorded beside it, and callers
       can tell "did not answer" from "no remote at all"
 - [ ] `kit next` says the board may be incomplete when the remote did not answer, in
       text and `--json`
