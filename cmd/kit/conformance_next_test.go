@@ -591,19 +591,47 @@ func TestNextStillRefusesASinglePathItCannotRead(t *testing.T) {
 	r.lacks("start here")
 }
 
+// shipOnItsBranch builds and ships a feature the way the protocol does — on its claim
+// branch, pushed, with the trunk left untouched — and leaves the checkout back on the
+// trunk. That is the state a coordinator reads, and the one where the trunk's copy of
+// the doc still says what it said when the round landed.
+func shipOnItsBranch(p *project, id, slug, title string) {
+	p.t.Helper()
+	trunk := p.headBranch()
+	p.run("claim", id).ok()
+	p.git("checkout", "-q", id+"-"+slug)
+	p.write("thing.txt", "the work\n")
+	feature(p, id, slug, title, "Shipped", "- [x] Build it")
+	p.commitAll("build and ship " + id)
+	p.git("push", "-q", "origin", "HEAD:refs/heads/"+id+"-"+slug)
+	p.git("checkout", "-q", trunk)
+}
+
+func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
+	// 0013's rule: never leave an agent without an instruction. A board with nothing
+	// free and a feature pushed and unmerged has work on it, so "stopping here is the
+	// right outcome" is the one answer that must not be printed.
+	a, _ := twoAgents(t)
+	shipOnItsBranch(a, "0007", "widget", "A widget")
+
+	r := a.run("next").ok().has("awaiting review", "is the work here")
+	if strings.Contains(r.Stdout, "Stopping here is the right outcome") {
+		t.Errorf("next told the agent to stop while a feature waits for review%s", r.context())
+	}
+
+	// The same conclusion in the format agents parse, per the reason Guidance ships in
+	// both: a board with no instruction is where an agent decides for itself.
+	if guidance := a.plan("next", "--json").Guidance; !strings.Contains(guidance, "awaiting review") {
+		t.Errorf("--json guidance says %q, which never mentions the review waiting", guidance)
+	}
+}
+
 func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 	// The blind spot this closes: from the trunk, a feature shipped on its branch and
 	// never merged is invisible. The doc here still says Accepted — the status that
 	// matters is the one on the branch, which is the only place the ship happened.
 	a, _ := twoAgents(t)
-	trunk := a.headBranch()
-	a.run("claim", "0007").ok()
-	a.git("checkout", "-q", "0007-widget")
-	a.write("thing.txt", "the work\n")
-	feature(a, "0007", "widget", "A widget", "Shipped", "- [x] Build it")
-	a.commitAll("build and ship 0007")
-	a.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
-	a.git("checkout", "-q", trunk)
+	shipOnItsBranch(a, "0007", "widget", "A widget")
 
 	a.run("next").ok().has("awaiting review", "0007-widget", "waiting")
 

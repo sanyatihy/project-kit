@@ -236,10 +236,16 @@ func guidanceFor(r *Repo, plan Plan) string {
 		return "work the box named under yours, in this checkout. It is already claimed by you."
 	case len(plan.Ready) > 0:
 		return "take one with kit claim <id>, then work it in the worktree it prints."
+	case !plan.Empty() && len(plan.AwaitingReview) > 0:
+		return "nothing is free to build: every feature is claimed or waiting on something. " +
+			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
+			reviewing(len(plan.AwaitingReview))
 	case !plan.Empty():
 		return "nothing is free: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
 			"Stopping here is the right outcome: say so and wait."
+	case len(plan.AwaitingReview) > 0:
+		return "nothing is planned. " + reviewing(len(plan.AwaitingReview))
 	// The branch that used to sit here said drafts were waiting on a human to accept
 	// them. It is gone with the gate: a Draft is active work now, so it reaches Ready
 	// or Blocked like anything else and never leaves the plan empty.
@@ -249,6 +255,18 @@ func guidanceFor(r *Repo, plan Plan) string {
 		// on its own line.
 		return "nothing is planned yet. Read docs/VISION.md and draft a feature, or stop."
 	}
+}
+
+// reviewing is the instruction when what is left is not building. Telling an agent to
+// stop while work sits pushed and unmerged is the vacuum 0013 exists to close: the board
+// had an answer and did not say it.
+func reviewing(n int) string {
+	what := fmt.Sprintf("%d features are", n)
+	if n == 1 {
+		what = "One feature is"
+	}
+	return what + " awaiting review, listed above. Reviewing and merging one somebody " +
+		"else built is the work here; your own is never yours to merge."
 }
 
 // Progress is "3/6", or "" for a feature with no boxes to count. It reports what

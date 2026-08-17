@@ -137,7 +137,7 @@ sounding like a guarantee.
 - [x] `Repo.AwaitingReview()` — Shipped, branch on the remote, not reachable from the
       trunk — reusing `remoteHeads` and `trunkRef`
 - [x] `kit next` prints an `awaiting review` section, in text and `--json`
-- [ ] Closing guidance names reviewing as the work when that is all there is
+- [x] Closing guidance names reviewing as the work when that is all there is
 - [ ] `shipped-not-pushed` at HIGH, quiet offline and quiet when the work is on the
       trunk; conformance for each
 - [ ] Each awaiting-review entry says whether the reader built it, so a coordinator
