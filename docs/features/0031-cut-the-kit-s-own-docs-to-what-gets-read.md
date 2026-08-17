@@ -74,7 +74,7 @@ only record that we thought about something go.
 - [x] `templates/AGENTS-section.md` cut to ≤115 lines, every rule kept, and the repo's
       own `AGENTS.md` regenerated
 - [x] Ceilings for both in `cmd/kit/budget_test.go`, with the reasoning for the numbers
-- [ ] `kit help as-built` and README describe what TECH is for, in one place rather than
+- [x] `kit help as-built` and README describe what TECH is for, in one place rather than
       three
 - [ ] The template and protocol shift weight from writing before the work to writing
       during it: `## Design` is decisions a builder cannot derive, `## Log` carries what

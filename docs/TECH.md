@@ -142,7 +142,7 @@ next command refuses.
 - **The kit owns the work, not the runtime.** Where agents run — panes, restarts, noticing
   one is blocked — belongs to a runtime like `herdr`; an agent composes the two.
 
-## Decisions settled
+## Decisions and why
 
 - **Go, not Python**, for `go install` distribution; projects depend on `kit` being on the
   machine rather than vendored. The cost is real: a binary cannot be patched in place by an
