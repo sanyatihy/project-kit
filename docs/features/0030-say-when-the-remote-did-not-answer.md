@@ -64,7 +64,7 @@ at all. Silence is the one output that cannot be told from good news.
 ## Tasks
 - [x] `remoteHeads`' bound is 15s, with the measurement recorded beside it, and callers
       can tell "did not answer" from "no remote at all"
-- [ ] `kit next` says the board may be incomplete when the remote did not answer, in
+- [x] `kit next` says the board may be incomplete when the remote did not answer, in
       text and `--json`
 - [ ] `kit audit` names the checks it could not run instead of reporting nothing
 - [ ] Conformance: a remote that cannot be reached produces the notice rather than a

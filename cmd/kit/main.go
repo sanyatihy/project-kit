@@ -593,6 +593,16 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		}
 	}
 
+	// Under the board, because it is a statement about everything above it. An empty
+	// board and an unreachable remote produce the same page otherwise, which is how a
+	// feature sat pushed and unmerged while `next` said nothing was planned.
+	if plan.RemoteUnanswered {
+		fmt.Printf("\n%s\n", paint(wrapAt("! the remote did not answer, so this board is "+
+			"what the last fetch knew: claims may be stale, and anything awaiting review "+
+			"is missing rather than absent. Try again, or run git fetch.", 74, "  "),
+			"33", color))
+	}
+
 	if plan.Guidance != "" && len(plan.Yours) == 0 && len(plan.Ready) == 0 {
 		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
 		// The command goes on its own line, unwrapped, so it can be copied. The
