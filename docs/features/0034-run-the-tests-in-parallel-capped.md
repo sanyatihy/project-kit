@@ -1,9 +1,9 @@
 ---
 id: 0034
 title: Run the tests in parallel, capped
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs:
