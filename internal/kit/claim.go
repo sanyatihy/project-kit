@@ -236,7 +236,7 @@ func deleteHint(r *Repo, remote, branch string) string {
 	if heads, ok := r.remoteHeads(); ok && remote != "" && contains(heads, branch) {
 		parts = append(parts, "git push "+remote+" --delete "+branch)
 	}
-	if r.git("rev-parse", "--verify", "--quiet", "refs/heads/"+branch) != "" {
+	if r.hasRef("refs/heads/" + branch) {
 		parts = append(parts, "git branch -D "+branch)
 	}
 	if len(parts) == 0 {
@@ -273,12 +273,17 @@ func pushFlag(out, ref string) string {
 
 // remotes lists the project's git remotes.
 func (r *Repo) remotes() []string {
+	if r.remotesAsked {
+		return r.remoteNames
+	}
+	r.remotesAsked = true
 	var out []string
 	for _, line := range strings.Split(r.git("remote"), "\n") {
 		if name := strings.TrimSpace(line); name != "" {
 			out = append(out, name)
 		}
 	}
+	r.remoteNames = out
 	return out
 }
 

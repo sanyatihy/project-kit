@@ -34,6 +34,13 @@ check: fmt-check vet test
 # a build server: make check PARALLEL=8
 PARALLEL ?= 4
 
+# What a board read costs in subprocesses, on a generated fixture. The count is the thing
+# to watch: an answer asked once per feature instead of once per command is invisible until
+# it takes minutes, which has happened twice.
+.PHONY: gitcount
+gitcount: build
+	@./scripts/gitcount.sh
+
 .PHONY: test
 test:
 	$(GO) test -race -cover -parallel $(PARALLEL) $(PKG)
