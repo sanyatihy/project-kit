@@ -1,9 +1,30 @@
 package kit
 
 import (
+	"os"
 	"os/exec"
 	"testing"
 )
+
+// gitIn runs git in a throwaway repository with an identity of its own.
+//
+// Nothing may be inherited from the machine: a runner with no `user.name` cannot commit at
+// all, which is how this failed in CI while passing on a laptop that has one. The config
+// files are neutralised for the same reason — a developer's global settings must not decide
+// whether a test passes.
+func gitIn(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(),
+		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null", "GIT_CONFIG_COUNT=0",
+		"GIT_AUTHOR_NAME=kit tests", "GIT_AUTHOR_EMAIL=kit@example.invalid",
+		"GIT_COMMITTER_NAME=kit tests", "GIT_COMMITTER_EMAIL=kit@example.invalid",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
 
 // The two answers that cannot change while one command runs, and were being asked once per
 // feature. Rather than count subprocesses, each test changes the repository underneath a
@@ -16,11 +37,7 @@ func TestTheBranchAndRemotesAreAskedOnce(t *testing.T) {
 		{"commit", "-q", "--allow-empty", "-m", "first"},
 		{"remote", "add", "origin", "https://example.invalid/one.git"},
 	} {
-		cmd := exec.Command("git", args...)
-		cmd.Dir = root
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git %v: %v\n%s", args, err, out)
-		}
+		gitIn(t, root, args...)
 	}
 	r, err := Open(root)
 	if err != nil {
@@ -40,11 +57,7 @@ func TestTheBranchAndRemotesAreAskedOnce(t *testing.T) {
 		{"checkout", "-q", "-b", "elsewhere"},
 		{"remote", "add", "second", "https://example.invalid/two.git"},
 	} {
-		cmd := exec.Command("git", args...)
-		cmd.Dir = root
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git %v: %v\n%s", args, err, out)
-		}
+		gitIn(t, root, args...)
 	}
 
 	if got := r.HeadBranch(); got != "main" {
