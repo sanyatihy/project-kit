@@ -72,7 +72,7 @@ the work is.
 - [x] `templates/features-TEMPLATE.md` documents the field beside `check:`
 - [x] The protocol says who sets it, that a coordinator honours it, and that branch
       protection is what enforces it
-- [ ] README describes the two-level policy: protection as the floor, `review:` as the
+- [x] README describes the two-level policy: protection as the floor, `review:` as the
       per-feature exception
 
 ## Log
