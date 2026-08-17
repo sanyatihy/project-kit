@@ -279,9 +279,9 @@ Several paths survey several projects at once. One that cannot be read is report
 in its place and sets the exit code to 2; the others still report, in the order
 given, because a tidied directory says nothing about the projects beside it.
 
-Each feature shows its ticked-over-total, as "2/4", and --json carries the same as
-"done" and "total". It is a count of boxes, not an estimate: boxes are not equal
-sizes, so nothing here should be read as how much time is left.
+Each feature shows ticked-over-total, "2/4", carried in --json as "done" and "total".
+A count of boxes and not an estimate: boxes are not equal sizes, so nothing here
+forecasts how much is left.
 
 A feature is reported as taken when a branch cites its id — local branches, remote
 branches and worktrees all count, so a stale fetch hides someone else's claim. The
@@ -293,13 +293,15 @@ its "needs:" has not shipped yet.
 Below the board, "awaiting review" is the far side of ship: a branch the remote has,
 carrying a doc that says Shipped, not yet on the trunk. The status is read from the
 branch, because on the trunk it still says what it said when the plan round landed.
-Entries you built are marked — you never merge your own work — and where reviewing is
-all there is, the closing guidance says so instead of telling you to stop. A coordinator
-reads this; it is the same command everyone else runs.
+Entries you built are marked, and ones a human must see; where reviewing is all there
+is, the closing guidance says so instead of telling you to stop.
 
-What is ready is therefore the answer to how much can happen at once: one ready
-feature means the work is a chain, three means three agents can take one each. That
-falls out of what the docs already declare rather than being planned separately.
+What is ready is how much can happen at once: three ready features means three agents
+can take one each, which falls out of what the docs declare rather than being planned.
+
+The board asks the remote which branches exist, bounded at 15 seconds. If that does not
+answer the page says so: claims fall back to the last fetch, and anything awaiting review
+is missing rather than absent. --offline skips the question and stays quiet.
 
 Reads only. With no PATH it uses the repo you are in, from any subdirectory.
 

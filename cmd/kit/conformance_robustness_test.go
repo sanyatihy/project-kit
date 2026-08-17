@@ -191,3 +191,31 @@ func TestEmptyProjectDirectoriesAreHandled(t *testing.T) {
 	p.run("next").ok().has("nothing is planned yet")
 	p.run("audit").ok()
 }
+
+func TestARemoteThatDoesNotAnswerIsSaidRatherThanShownAsNothing(t *testing.T) {
+	// The failure this feature is for: an unreachable remote and a project with nothing
+	// waiting produced the same page. The remote here refuses the connection instead of
+	// timing out, which reaches the same code by the same route and does not cost the
+	// suite fifteen seconds.
+	p := cleanProject(t)
+	p.commitAll("the plan")
+	p.git("remote", "add", "origin", "ssh://127.0.0.1:1/nowhere.git")
+
+	p.run("next").ok().has("the remote did not answer")
+	if !p.plan("next", "--json").RemoteUnanswered {
+		t.Errorf("--json does not carry remote_unanswered, so an agent reads a board " +
+			"that looks complete")
+	}
+	// The check that could not run at all is named, and the ones that ran on a stale
+	// mirror are qualified. A clean bill here would be the worst of the three outputs.
+	p.run("audit").ok().has("the remote did not answer", "shipped-not-pushed")
+
+	// --offline is the reader's own instruction, not a failure, so it stays quiet.
+	for _, args := range [][]string{{"next", "--offline"}, {"audit", "--offline"}} {
+		r := p.run(args...).ok()
+		if strings.Contains(r.Stdout, "did not answer") {
+			t.Errorf("kit %s reported a failure the reader asked for%s",
+				strings.Join(args, " "), r.context())
+		}
+	}
+}

@@ -593,6 +593,16 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		}
 	}
 
+	// Under the board, because it is a statement about everything above it. An empty
+	// board and an unreachable remote produce the same page otherwise, which is how a
+	// feature sat pushed and unmerged while `next` said nothing was planned.
+	if plan.RemoteUnanswered {
+		fmt.Printf("\n%s\n", paint(wrapAt("! the remote did not answer, so this board is "+
+			"what the last fetch knew: claims may be stale, and anything awaiting review "+
+			"is missing rather than absent. Try again, or run git fetch.", 74, "  "),
+			"33", color))
+	}
+
 	if plan.Guidance != "" && len(plan.Yours) == 0 && len(plan.Ready) == 0 {
 		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
 		// The command goes on its own line, unwrapped, so it can be copied. The
@@ -644,6 +654,8 @@ func runAudit(args []string) int {
 			if findings := kit.Audit(s.Repo, today, currentProtocol()); findings != nil {
 				one.Findings = findings
 			}
+			// After the audit, so it reports what actually went unanswered.
+			one.RemoteUnanswered = s.Repo.RemoteUnanswered()
 		}
 		results[s.Name] = one
 		order = append(order, one)
@@ -681,6 +693,12 @@ func runAudit(args []string) int {
 type audited struct {
 	Findings []kit.Finding `json:"findings"`
 	Error    string        `json:"error,omitempty"`
+
+	// RemoteUnanswered says the remote was asked and did not answer, so this is a
+	// weaker statement than it looks: shipped-not-pushed could not run at all, and the
+	// claim checks read the last fetch. Without it a clean bill and an unreachable
+	// remote print the same page.
+	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
 }
 
 func printFindings(all []surveyed, results []audited, color bool) {
@@ -696,6 +714,10 @@ func printFindings(all []surveyed, results []audited, color bool) {
 		if s.Repo.FeaturesDir == "" {
 			fmt.Printf("  not set up yet — run:  kit init %s\n\n", s.Repo.Root)
 			continue
+		}
+		if results[i].RemoteUnanswered {
+			fmt.Printf("  %s\n", paint("! the remote did not answer: shipped-not-pushed "+
+				"did not run, and the claim\n    checks read the last fetch", "33", color))
 		}
 		findings := results[i].Findings
 		if len(findings) == 0 {

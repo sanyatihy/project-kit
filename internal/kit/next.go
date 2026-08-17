@@ -68,6 +68,11 @@ type Plan struct {
 	Branch   string `json:"branch,omitempty"`
 	Claiming string `json:"claiming,omitempty"`
 
+	// RemoteUnanswered says the remote was asked and did not answer, so the board is a
+	// weaker statement than it looks: claims come from the last fetch, and anything
+	// awaiting review is missing rather than absent.
+	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
+
 	// ProtocolStale says the project's AGENTS.md is older than the binary reading it, so
 	// the rules the agent is about to follow are not the rules this kit expects. Set by
 	// the caller, which is the only layer that can see the embedded protocol.
@@ -205,6 +210,8 @@ func Survey(r *Repo) Plan {
 			NeedsHuman: waiting.Feature.NeedsHuman(),
 		})
 	}
+	// After the work, so it reports what actually went unanswered.
+	plan.RemoteUnanswered = r.RemoteUnanswered()
 	plan.Guidance = guidanceFor(r, plan)
 	return plan
 }
