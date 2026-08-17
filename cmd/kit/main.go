@@ -215,6 +215,7 @@ func runNew(args []string) int {
 
 func runAccept(args []string) int {
 	fs := newFlagSet("accept")
+	review := fs.Bool("review", false, "a human merges this one, whatever the trunk allows")
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
 		fmt.Fprintf(os.Stderr, "kit accept: need one feature id\n\n%s\n", commandHelp["accept"])
@@ -230,7 +231,7 @@ func runAccept(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit accept: %v\n", err)
 		return 2
 	}
-	res, err := kit.Accept(repo, id)
+	res, err := kit.Accept(repo, id, *review)
 	if err != nil {
 		// Exit 2 throughout: unlike `claim`, none of these is another agent holding the
 		// feature, so "take something else" would be the wrong instruction.
@@ -239,6 +240,9 @@ func runAccept(args []string) int {
 	}
 
 	fmt.Printf("\n  accepted  %s  (was Draft)\n", res.Doc)
+	if res.NeedsHuman {
+		fmt.Printf("  review: human — a person merges this one, whatever the trunk allows\n")
+	}
 	fmt.Printf("\nnext:\n")
 	// Where the edit lands is the whole reason this prints anything. Accepting inside the
 	// draft's own pull request is one review and one merge per feature; accepting after it

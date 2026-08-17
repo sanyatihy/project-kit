@@ -67,7 +67,7 @@ the work is.
 ## Tasks
 - [x] `review:` parsed on `Feature`, empty and absent both meaning the coordinator may
       merge; conformance that existing docs are unaffected
-- [ ] `kit accept <id> --review` writes the field; conformance for with and without
+- [x] `kit accept <id> --review` writes the field; conformance for with and without
 - [ ] The awaiting-review board marks entries needing a human, in text and `--json`
 - [ ] `templates/features-TEMPLATE.md` documents the field beside `check:`
 - [ ] The protocol says who sets it, that a coordinator honours it, and that branch
@@ -78,3 +78,7 @@ the work is.
 ## Log
 - 2026-08-16 — scoped after per-project protection turned out too coarse: within one
   project the operator wants to see some implementations and not others.
+- 2026-08-17 — `SetField` claimed in its comment to add a missing key and did not, which
+  matters here: no doc written before today carries `review:`. `AddField` does the
+  insertion, and `SetField` keeps refusing — a doc with no `status:` is malformed, and
+  `accept` and `ship` should say so rather than quietly writing one in.

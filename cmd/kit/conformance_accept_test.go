@@ -129,3 +129,30 @@ func fullDoc(id, title, status, tasks string) string {
 		"## Tasks\n" + tasks + "\n\n" +
 		"## Log\n- 2026-01-01 — proposed.\n"
 }
+
+func TestAcceptWritesTheReviewMarkOnlyWhenAsked(t *testing.T) {
+	// The field is the human's to set and this is the human's command, so it is the one
+	// place it can be written without an agent deciding it. A doc written before the
+	// field existed has to take it, which is every doc there is on the day this lands.
+	p := cleanProject(t)
+	p.write("docs/features/0002-marked.md",
+		doc("0002", "Marked", "Draft", "", "- [ ] Something"))
+	p.write("docs/features/0003-plain.md",
+		doc("0003", "Plain", "Draft", "", "- [ ] Something"))
+
+	p.run("accept", "0002", "--review").ok().has("review: human")
+	marked := p.read("docs/features/0002-marked.md")
+	if !strings.Contains(marked, "review: human") {
+		t.Errorf("accept --review wrote no review: line:\n%s", marked)
+	}
+	if !strings.Contains(marked, "status: Accepted") {
+		t.Errorf("accept --review did not accept the doc:\n%s", marked)
+	}
+
+	// Without the flag nothing is marked: the default is that a coordinator may merge,
+	// and a mark nobody asked for would be the kit deciding what a human decides.
+	p.run("accept", "0003").ok()
+	if plain := p.read("docs/features/0003-plain.md"); strings.Contains(plain, "review:") {
+		t.Errorf("accept wrote a review: line without --review:\n%s", plain)
+	}
+}

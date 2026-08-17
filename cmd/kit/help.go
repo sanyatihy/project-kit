@@ -137,7 +137,7 @@ yourself.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
 
-	"accept": `kit accept <id>
+	"accept": `kit accept <id> [--review]
 
 Settle a Draft: set status to Accepted. This is the human's call, and it is a
 signal rather than a gate — agents can work a Draft, and accepting says the design
@@ -153,6 +153,11 @@ settled yet:
 Run it on the draft's own branch, so the acceptance lands in the same review
 as the draft. Accepting after that request merges means a second one for a one-line
 change.
+
+--review writes "review: human" into the doc: a person merges this one, whatever the
+trunk allows. Set it now rather than later — this is the moment the whole round is in
+front of you, and nobody has sunk work into the outcome yet. It marks the entry on
+"kit next"'s review board; branch protection is what enforces anything.
 
 No date is stamped. "created:" already records when the feature was proposed.
 
