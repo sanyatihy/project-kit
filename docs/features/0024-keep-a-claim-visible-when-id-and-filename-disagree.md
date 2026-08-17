@@ -35,9 +35,8 @@ work is taken, so it escalates or retries instead of moving on.
 `duplicate-id` is HIGH because the ID is the primary key. This is the same key
 disagreeing with itself and it is a severity lower.
 
-`needs: 0023, 0025` is file contention, not logic: 0023 rewrites the same refusal
-block in `ClaimFeature` and 0025 adds a check to the same registry in `audit.go`.
-Judged by whether the work could *start* now, it cannot without conflicting.
+`needs: 0023, 0025` is file contention, not logic: both touch the same refusal block and
+the same check registry.
 
 ## Non-goals
 - **Renaming files.** The kit does not move a project's docs; the fix is a report the

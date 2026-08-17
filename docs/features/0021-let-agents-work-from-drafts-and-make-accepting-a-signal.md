@@ -51,14 +51,8 @@ once. Docs reach `main` at whatever status they reached.
 This deletes the name collision rather than patching it, so 0014's delete-the-branch rule
 goes with it.
 
-**`status:` orders the board instead of gating it.** `ActiveFeatures` already ranks
-In progress before Accepted; Draft joins below:
-
-| status | offered | means |
-|---|---|---|
-| In progress | first | someone is on it |
-| Accepted | next | blessed — work it hard |
-| Draft | last | invented, not blessed — expect to think |
+**`status:` orders the board instead of gating it**: In progress first, then Accepted
+(blessed — work it hard), then Draft (invented, not blessed — expect to think).
 
 **`kit claim` accepts a Draft, and refuses an empty one.** This is the load-bearing half.
 `unfilled-template` exempts Draft only because Drafts cannot be claimed today; lift the
@@ -90,8 +84,5 @@ permanently instead of being a branch you delete.
 ## Log
 - 2026-08-15 — measured `kit next` against a project that adopted the kit: five drafts on
   five branches, board reports nothing planned.
-- 2026-08-15 — accepting happens in rounds too: one small pull request touching only
-  `status:` lines, so blessing a Draft already on `main` does not reintroduce a
-  per-feature review.
-- 2026-08-15 — ship this before ID reservation. Batching collides five IDs where one
-  collided before, but the cost is a rename and the fix deserves its own feature.
+- 2026-08-15 — shipped before ID reservation: batching collides five IDs where one collided
+  before, but the cost is a rename and the fix deserves its own feature.
