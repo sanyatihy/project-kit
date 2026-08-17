@@ -17,6 +17,25 @@ templates/        what `kit init` writes, embedded via assets.go
 
 Requires only git at runtime. Python is not used anywhere.
 
+## Enforce, do not instruct
+
+A constraint in prose is one an agent can skim, misread, or reason its way past; a
+refusal in the tool is one it has to deliberately route around. Measured in one session:
+the rule against merging your own work was violated twice by an agent that had read it,
+and `ship`'s coded refusal was obeyed the first time it fired — on that same agent,
+minutes later.
+
+| tier | example | an agent gets past it by |
+| --- | --- | --- |
+| the remote | branch protection, credentials | nothing it can do |
+| the kit | `claim` refusing unmet `needs:` | not using the kit |
+| prose | "push the branch and stop" | reading carelessly |
+
+A rule belongs at the highest tier it can reach, so a sentence in the protocol is a last
+resort rather than a first one: whenever one is added, the question is what would make it
+unnecessary. Where prose is genuinely the only option — judgement, taste, what to write
+down — it says so plainly instead of sounding like a guarantee.
+
 ## The model
 
 A project has one markdown file per feature, `docs/features/NNNN-name.md`, whose
@@ -42,6 +61,21 @@ Mechanisms worth knowing before changing anything:
   at the commit being pushed says "Everything up-to-date" and exits 0; trusting the
   exit code hands one feature to two agents. Creating the ref is a compare-and-swap
   server-side, so simultaneous claimants produce exactly one winner.
+- **Ship has a far side, and the kit reports it.** `kit next` ends with **awaiting
+  review**: a branch the remote has, carrying a doc that says Shipped, not yet reachable
+  from the trunk. The status is read *from the branch*, because that is the only place it
+  exists — a coordinator stands on the trunk, where an unmerged feature's doc still says
+  what it said when the round landed. `shipped-not-pushed` is the other half at HIGH, and
+  it needs two independent negatives before it fires: no branch the remote has names the
+  feature, and no remote-tracking ref contains the commit that last wrote its doc. Either
+  alone misfires — the live branch list cannot see a feature merged and then deleted, and
+  the tracking refs are only as fresh as the last fetch.
+- **Separation of duties is legibility here and enforcement on the remote.** The board
+  marks what the reader built, from the claim it stands on or the branch's authorship.
+  Both are advisory: an agent can merge its own branch with git directly, so what stops
+  it is branch protection. And none of it distinguishes anybody while agents share one
+  credential — measured on this repo, four agents' commits all carried the operator's
+  name.
 - **A claim branches from the trunk, never from the round that planned it.** The doc
   must be in `trunkRef()`'s tree as well as in `HEAD`'s. A doc committed only on the
   plan branch passes the HEAD check, and the branch pushed is then a child of that plan

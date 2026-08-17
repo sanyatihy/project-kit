@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // WIPLimit is how many features may be In progress before finishing beats
@@ -29,6 +30,18 @@ type Item struct {
 	Mine      bool     `json:"mine,omitempty"`
 }
 
+// Waiting is one feature on the review board: shipped by its builder, pushed, and not
+// on the trunk. It carries no task and no claim — there is nothing left to build, and
+// what to do with it is somebody else's decision.
+type Waiting struct {
+	ID     string    `json:"id"`
+	Title  string    `json:"title"`
+	Doc    string    `json:"doc"`
+	Branch string    `json:"branch"`
+	Since  time.Time `json:"since"`          // when the branch last moved
+	Mine   bool      `json:"mine,omitempty"` // the reader built it, so it is not theirs to merge
+}
+
 // Plan sorts the open features into what is yours, what you can start, what is
 // taken, and what is blocked.
 type Plan struct {
@@ -39,6 +52,11 @@ type Plan struct {
 	Ready   []Item `json:"ready"`
 	Taken   []Item `json:"taken"`
 	Blocked []Item `json:"blocked"`
+
+	// AwaitingReview is the far side of ship: work that has left its builder and
+	// arrived nowhere. Not part of the board above — none of it is claimable, and
+	// nothing here is anybody's to build.
+	AwaitingReview []Waiting `json:"awaiting_review,omitempty"`
 
 	// Branch is the checkout's own branch, and Claiming is the feature that branch
 	// claims, empty when it claims none.
@@ -168,6 +186,16 @@ func Survey(r *Repo) Plan {
 			group[i].Task = ""
 		}
 	}
+	for _, waiting := range r.AwaitingReview() {
+		plan.AwaitingReview = append(plan.AwaitingReview, Waiting{
+			ID:     waiting.Feature.ID,
+			Title:  waiting.Feature.Title,
+			Doc:    waiting.Feature.Rel,
+			Branch: waiting.Branch,
+			Since:  waiting.Since,
+			Mine:   waiting.Mine,
+		})
+	}
 	plan.Guidance = guidanceFor(r, plan)
 	return plan
 }
@@ -210,10 +238,16 @@ func guidanceFor(r *Repo, plan Plan) string {
 		return "work the box named under yours, in this checkout. It is already claimed by you."
 	case len(plan.Ready) > 0:
 		return "take one with kit claim <id>, then work it in the worktree it prints."
+	case !plan.Empty() && len(plan.AwaitingReview) > 0:
+		return "nothing is free to build: every feature is claimed or waiting on something. " +
+			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
+			reviewing(len(plan.AwaitingReview))
 	case !plan.Empty():
 		return "nothing is free: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
 			"Stopping here is the right outcome: say so and wait."
+	case len(plan.AwaitingReview) > 0:
+		return "nothing is planned. " + reviewing(len(plan.AwaitingReview))
 	// The branch that used to sit here said drafts were waiting on a human to accept
 	// them. It is gone with the gate: a Draft is active work now, so it reaches Ready
 	// or Blocked like anything else and never leaves the plan empty.
@@ -223,6 +257,18 @@ func guidanceFor(r *Repo, plan Plan) string {
 		// on its own line.
 		return "nothing is planned yet. Read docs/VISION.md and draft a feature, or stop."
 	}
+}
+
+// reviewing is the instruction when what is left is not building. Telling an agent to
+// stop while work sits pushed and unmerged is the vacuum 0013 exists to close: the board
+// had an answer and did not say it.
+func reviewing(n int) string {
+	what := fmt.Sprintf("%d features are", n)
+	if n == 1 {
+		what = "One feature is"
+	}
+	return what + " awaiting review, listed above. Reviewing and merging one somebody " +
+		"else built is the work here; your own is never yours to merge."
 }
 
 // Progress is "3/6", or "" for a feature with no boxes to count. It reports what

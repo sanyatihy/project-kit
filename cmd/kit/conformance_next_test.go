@@ -590,3 +590,97 @@ func TestNextStillRefusesASinglePathItCannotRead(t *testing.T) {
 	r.errHas("kit next: not a directory: " + gone)
 	r.lacks("start here")
 }
+
+// shipOnItsBranch builds and ships a feature the way the protocol does — on its claim
+// branch, pushed, with the trunk left untouched — and leaves the checkout back on the
+// trunk. That is the state a coordinator reads, and the one where the trunk's copy of
+// the doc still says what it said when the round landed.
+func shipOnItsBranch(p *project, id, slug, title string) {
+	p.t.Helper()
+	trunk := p.headBranch()
+	p.run("claim", id).ok()
+	p.git("checkout", "-q", id+"-"+slug)
+	p.write("thing.txt", "the work\n")
+	feature(p, id, slug, title, "Shipped", "- [x] Build it")
+	p.commitAll("build and ship " + id)
+	p.git("push", "-q", "origin", "HEAD:refs/heads/"+id+"-"+slug)
+	p.git("checkout", "-q", trunk)
+}
+
+func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
+	// 0013's rule: never leave an agent without an instruction. A board with nothing
+	// free and a feature pushed and unmerged has work on it, so "stopping here is the
+	// right outcome" is the one answer that must not be printed.
+	a, _ := twoAgents(t)
+	shipOnItsBranch(a, "0007", "widget", "A widget")
+
+	r := a.run("next").ok().has("awaiting review", "is the work here")
+	if strings.Contains(r.Stdout, "Stopping here is the right outcome") {
+		t.Errorf("next told the agent to stop while a feature waits for review%s", r.context())
+	}
+
+	// The same conclusion in the format agents parse, per the reason Guidance ships in
+	// both: a board with no instruction is where an agent decides for itself.
+	if guidance := a.plan("next", "--json").Guidance; !strings.Contains(guidance, "awaiting review") {
+		t.Errorf("--json guidance says %q, which never mentions the review waiting", guidance)
+	}
+}
+
+func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
+	// The blind spot this closes: from the trunk, a feature shipped on its branch and
+	// never merged is invisible. The doc here still says Accepted — the status that
+	// matters is the one on the branch, which is the only place the ship happened.
+	a, _ := twoAgents(t)
+	shipOnItsBranch(a, "0007", "widget", "A widget")
+
+	a.run("next").ok().has("awaiting review", "0007-widget", "waiting")
+
+	plan := a.plan("next", "--json")
+	if len(plan.AwaitingReview) != 1 {
+		t.Fatalf("--json reports %d awaiting review, want 1: %+v", len(plan.AwaitingReview),
+			plan.AwaitingReview)
+	}
+	if got := plan.AwaitingReview[0]; got.ID != "0007" || got.Branch != "0007-widget" {
+		t.Errorf("awaiting review entry is %+v, want 0007 on 0007-widget", got)
+	}
+	if plan.AwaitingReview[0].Since.IsZero() {
+		t.Errorf("the entry says nothing about how long it has waited: %+v",
+			plan.AwaitingReview[0])
+	}
+
+	// The quiet half: once the work is on the trunk there is nothing to say, whether or
+	// not the branch was deleted afterwards.
+	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+	if got := a.plan("next", "--json").AwaitingReview; len(got) != 0 {
+		t.Errorf("after landing, %d still awaiting review: %+v", len(got), got)
+	}
+}
+
+func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
+	// A coordinator that is itself an agent needs one fact from this board: which
+	// entries are its own. Its own work is the work it may not merge, and nothing else
+	// on the board answers it.
+	a, b := twoAgents(t)
+	// The identity the fixture commits with. Real agents need distinct ones for any of
+	// this to mean anything — measured on this repo, four agents shared the operator's.
+	gitIn(t, a.Root, "config", "user.email", "kit@example.invalid")
+	shipOnItsBranch(a, "0007", "widget", "A widget")
+
+	// The builder's own checkout: the branch's commits carry its identity.
+	if got := a.plan("next", "--json").AwaitingReview; len(got) != 1 || !got[0].Mine {
+		t.Errorf("the builder's own board does not say it built 0007: %+v", got)
+	}
+	a.run("next").ok().has("you built this")
+
+	// A different checkout, with an identity of its own, is free to merge it — and
+	// saying "you built this" there would be the kit inventing a reason to stop.
+	gitIn(t, b.Root, "config", "user.email", "coordinator@example.invalid")
+	b.git("fetch", "-q", "origin")
+	got := b.plan("next", "--json").AwaitingReview
+	if len(got) != 1 {
+		t.Fatalf("the coordinator's board reports %d awaiting review, want 1: %+v", len(got), got)
+	}
+	if got[0].Mine {
+		t.Errorf("0007 is marked as the coordinator's own work: %+v", got[0])
+	}
+}

@@ -1,9 +1,9 @@
 ---
 id: 0028
 title: See what is waiting for review
-status: Draft
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs: 0027
@@ -134,23 +134,24 @@ only option — judgement, taste, what to write down — it says so plainly rath
 sounding like a guarantee.
 
 ## Tasks
-- [ ] `Repo.AwaitingReview()` — Shipped, branch on the remote, not reachable from the
+- [x] `Repo.AwaitingReview()` — Shipped, branch on the remote, not reachable from the
       trunk — reusing `remoteHeads` and `trunkRef`
-- [ ] `kit next` prints an `awaiting review` section, in text and `--json`
-- [ ] Closing guidance names reviewing as the work when that is all there is
-- [ ] `shipped-not-pushed` at HIGH, quiet offline and quiet when the work is on the
+- [x] `kit next` prints an `awaiting review` section, in text and `--json`
+- [x] Closing guidance names reviewing as the work when that is all there is
+- [x] `shipped-not-pushed` at HIGH, quiet offline and quiet when the work is on the
       trunk; conformance for each
-- [ ] Each awaiting-review entry says whether the reader built it, so a coordinator
+- [x] Each awaiting-review entry says whether the reader built it, so a coordinator
       agent knows what it may not merge
-- [ ] Rule 13 reworded around separation of duties, with the three roles, the landing
+- [x] Rule 13 reworded around separation of duties, with the three roles, the landing
       barrier, distinct agent identities, and the policy living in branch protection,
       in `templates/AGENTS-section.md`
-- [ ] Rule 2 states what exit 1 now means, rule 12 warns that `ship` has refusals the
+- [x] Rule 2 states what exit 1 now means, rule 12 warns that `ship` has refusals the
       gate does not cover, rule 3 describes what `next` actually does, and somebody is
       named as opening the pull request
-- [ ] "Enforce, do not instruct" in the protocol and `docs/TECH.md`, with the three
+- [x] "Enforce, do not instruct" in the protocol and `docs/TECH.md`, with the three
       tiers, so a future rule is weighed against making itself unnecessary
-- [ ] README and `kit help next` describe the review board and who reads it
+- [x] README and `kit help next` describe the review board and who reads it
+- [x] `remoteHeads` is asked once per command, not once per Shipped feature
 
 ## Log
 - 2026-08-16 — scoped after shipping four features without pushing any of them, with
@@ -162,3 +163,24 @@ sounding like a guarantee.
   enforceable only on the remote: anything the kit checks, an agent skips by calling
   git directly, so a config flag would be a control the controlled party can rewrite.
   Legibility here, enforcement in branch protection.
+- 2026-08-17 — the status is read from the claim branch, not from this checkout. A
+  coordinator stands on the trunk, where an unmerged feature's doc still says what it
+  said when the round landed, so a board read from the working tree would be empty in
+  exactly the case it exists to report. Measured: from the trunk the doc says `Accepted`
+  while the branch says `Shipped`. The cost is that a branch whose objects were never
+  fetched cannot be read, and is passed over rather than guessed at.
+- 2026-08-17 — the wait is measured from the branch's last commit, not the doc's
+  `shipped:`, which is a date and cannot tell an hour from a day. A feature awaiting
+  review still appears under `taken` as well: from the trunk its claim branch does
+  exist and it is not claimable, so both lines are true and they answer different
+  questions.
+- 2026-08-17 — `shipped-not-pushed` needs two independent negatives, not one. The
+  remote's live branch list says nothing about a feature whose branch was deleted after
+  merging, and the remote-tracking refs that do know are only as fresh as the last
+  fetch. It fires when both agree the work is nowhere: no branch on the remote names it,
+  and no remote-tracking ref contains the commit that last wrote the doc.
+- 2026-08-17 — a box added after the others were ticked, per rule 7. `shipped-not-pushed`
+  calls `remoteHeads` per Shipped doc, and it was not memoised: on this repo, with 24
+  shipped features, `kit audit` went from under a second to one minute fifty-seven. The
+  answer cannot change under a single command, so it is now asked once — 5 seconds — the
+  same reasoning that already caches `Trunk()`.

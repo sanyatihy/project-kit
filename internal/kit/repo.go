@@ -157,6 +157,13 @@ type Repo struct {
 	// from a past fetch. Only the second can produce a claim nobody holds, so only the
 	// second earns a message about pruning.
 	refsAuthoritative bool
+
+	// The remote's branch list, asked once. It cannot change under a single command, and
+	// `audit` asks it per Shipped feature: unmemoised, one ls-remote per doc took this
+	// repo's audit from under a second to two minutes.
+	heads      []string
+	headsKnown bool
+	headsAsked bool
 }
 
 type commit struct {
@@ -456,6 +463,10 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 	if r.Offline {
 		return nil, false
 	}
+	if r.headsAsked {
+		return r.heads, r.headsKnown
+	}
+	r.headsAsked = true
 	var out []string
 	answered := false
 	for _, remote := range r.remotes() {
@@ -479,6 +490,7 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 			}
 		}
 	}
+	r.heads, r.headsKnown = out, answered
 	return out, answered
 }
 
@@ -673,6 +685,145 @@ func (r *Repo) BranchBuildsOn(branch, rel string) bool {
 		}
 	}
 	return false
+}
+
+// Review is one feature whose builder has finished and whose work has not landed.
+type Review struct {
+	Feature *Feature
+	Branch  string
+	Since   time.Time // the branch's last commit: when it stopped moving
+	Mine    bool      // this reader built it, so it is not this reader's to merge
+}
+
+// AwaitingReview lists the features waiting for somebody other than their builder: a
+// claim branch the remote has, carrying a copy of the doc that says Shipped, and not yet
+// reachable from the trunk.
+//
+// The status is read from the branch rather than from this checkout, because the branch
+// is the only place it exists yet. A coordinator stands on the trunk, where an unmerged
+// feature's doc still says whatever it said when the plan round landed — read from here,
+// every entry would be missing in exactly the case this exists to report.
+//
+// Silent rather than wrong wherever the answer cannot be had: offline, no remote, or a
+// remote that did not answer reports nothing, and so does a branch whose objects this
+// checkout has never fetched. Both are the kit's standing answer to a fact it cannot
+// read, and both are recoverable with a fetch.
+func (r *Repo) AwaitingReview() []Review {
+	heads, ok := r.remoteHeads()
+	if !ok {
+		return nil
+	}
+	trunk := r.trunkRef()
+	var out []Review
+	for _, f := range r.Features {
+		ids := claimIDs(f)
+		for _, name := range heads {
+			if r.isTrunk(name) || !mentionsAny(name, ids) {
+				continue
+			}
+			rev := r.resolveBranch(name)
+			if rev == "" || r.statusOn(rev, f.Rel) != StatusShipped {
+				continue
+			}
+			// A merged branch the remote still carries is not waiting for anybody. The
+			// local trunk ref answers it, so this asks the network nothing beyond the
+			// one ls-remote — the same bargain `claim` makes.
+			if trunk != "" && r.reaches(rev, trunk) {
+				continue
+			}
+			out = append(out, Review{Feature: f, Branch: name, Since: r.commitDate(rev),
+				Mine: r.BuiltHere(f.ID, rev)})
+			break
+		}
+	}
+	return out
+}
+
+// OnlyHere reports whether a feature's work exists nowhere but this checkout: no branch
+// the remote has claims it, and the commit that last wrote its doc is on no
+// remote-tracking ref either.
+//
+// Two independent negatives, because either alone misfires. The remote's branch list is
+// live but says nothing about a feature whose branch was deleted after merging; the
+// remote-tracking refs know that one and are only as fresh as the last fetch. Both have
+// to agree that the work is nowhere before this says so.
+//
+// Unknown answers false throughout: offline, no remote, a remote that did not answer, or
+// a doc git has never seen. Nothing here is worth a finding invented from silence.
+func (r *Repo) OnlyHere(f *Feature) bool {
+	heads, ok := r.remoteHeads()
+	if !ok {
+		return false
+	}
+	for _, name := range heads {
+		if !r.isTrunk(name) && mentionsAny(name, claimIDs(f)) {
+			return false
+		}
+	}
+	rev := strings.TrimSpace(r.git("log", "-1", "--format=%H", "--", f.Rel))
+	if rev == "" {
+		return false
+	}
+	return strings.TrimSpace(r.git("branch", "--remotes", "--contains", rev)) == ""
+}
+
+// BuiltHere reports whether the reader built this feature — the one thing a coordinator
+// that is itself an agent has to know, because its own work is the work it may not merge.
+//
+// Two answers, weakest last. The checkout standing on the claim is unambiguous. Otherwise
+// the branch's author is compared with this checkout's git identity, which is only worth
+// anything where agents have identities of their own: measured on this repo, every commit
+// from four different agents carried the operator's name, and nothing — not this, not a
+// forge rule requiring a non-author reviewer — could tell them apart. Unknown answers
+// false: this makes the invariant legible, and legibility is all a well-behaved agent
+// needs.
+func (r *Repo) BuiltHere(id, rev string) bool {
+	if r.Mine(id) {
+		return true
+	}
+	who := strings.TrimSpace(r.git("config", "user.email"))
+	return who != "" && strings.TrimSpace(r.git("log", "-1", "--format=%ae", rev)) == who
+}
+
+// claimIDs are the strings a branch may cite to claim a feature: the id it declares, and
+// its filename prefix where the two disagree — the state that makes a claim invisible to
+// a search for the id alone.
+func claimIDs(f *Feature) []string {
+	ids := []string{f.ID}
+	if prefix := f.FilenamePrefix(); prefix != "" && prefix != f.ID {
+		ids = append(ids, prefix)
+	}
+	return ids
+}
+
+// commitDate is when a revision was last committed, or the zero time. How long a branch
+// has waited is measured from here rather than from the doc's shipped:, which is a date
+// and so cannot tell an hour from a day.
+func (r *Repo) commitDate(rev string) time.Time {
+	if out := strings.TrimSpace(r.git("log", "-1", "--format=%cI", rev)); out != "" {
+		if when, err := time.Parse(time.RFC3339, out); err == nil {
+			return when
+		}
+	}
+	return time.Time{}
+}
+
+// statusOn reads a doc's status: from a revision's copy of it, empty when that revision
+// does not carry the doc, cannot be read, or the doc declares no status.
+func (r *Repo) statusOn(rev, rel string) string {
+	out, err := r.gitRun("show", rev+":"+rel)
+	if err != nil {
+		return ""
+	}
+	fields, _ := ParseFrontmatter(Normalise(out))
+	return fields["status"]
+}
+
+// reaches reports whether a revision has landed on another — whether the branch's work
+// is already contained in the trunk.
+func (r *Repo) reaches(rev, trunk string) bool {
+	_, err := r.gitRun("merge-base", "--is-ancestor", rev, trunk)
+	return err == nil
 }
 
 // OrphanClaims lists branches named like a claim — a leading four-digit ID — that cite a
