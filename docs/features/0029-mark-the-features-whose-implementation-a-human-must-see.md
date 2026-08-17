@@ -1,9 +1,9 @@
 ---
 id: 0029
 title: Mark the features whose implementation a human must see
-status: In progress
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs: 0028

@@ -70,6 +70,14 @@ Mechanisms worth knowing before changing anything:
   feature, and no remote-tracking ref contains the commit that last wrote its doc. Either
   alone misfires — the live branch list cannot see a feature merged and then deleted, and
   the tracking refs are only as fresh as the last fetch.
+- **Review policy is two decisions at two granularities.** Branch protection is the
+  floor and covers the whole project; `review: human` in a doc's frontmatter is the
+  per-feature exception within whatever that allows, and the board marks it as **needs a
+  human**. Any non-empty value counts, so a value the kit does not recognise asks for a
+  person rather than waving the change through. It is written by `kit accept --review`,
+  the human's own command, at the moment the whole round is in front of them — and it is
+  read from the checkout rather than from the branch, so a builder that strips it on its
+  own branch changes nothing.
 - **Separation of duties is legibility here and enforcement on the remote.** The board
   marks what the reader built, from the claim it stands on or the branch's authorship.
   Both are advisory: an agent can merge its own branch with git directly, so what stops
