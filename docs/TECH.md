@@ -242,6 +242,15 @@ Mechanisms worth knowing before changing anything:
   its own short timeout because `kit next ~/code/*` walks every project. `--offline`
   keeps the old path for a network that is not there, and the cost is stated rather than
   hidden. `claim` never takes it — a claim decided against a cache is not a claim.
+- **An unanswered remote is said out loud, and the bound is 15 seconds.** It was 5, which
+  a working remote did not fit inside: `ls-remote` over SSH to GitHub measured 5.58s, so
+  the review board printed nothing and `shipped-not-pushed` never ran while a feature sat
+  pushed and unmerged — `--strict` green throughout. Both halves were wrong. A bound too
+  small for an ordinary connection is one failure; reporting expiry as an empty page is
+  the worse one, because absence and ignorance render identically. `RemoteUnanswered`
+  separates *asked and got nothing* from *nothing to ask*, and `next` and `audit` both say
+  which checks they could not run. `--offline` stays silent: it is an instruction, not a
+  failure.
 - **A claim must carry the plan.** The push is `HEAD:refs/heads/<branch>`, so anything
   uncommitted does not travel with it. Without a check, claiming an uncommitted plan
   reported a won claim, pushed a branch holding nothing, and sent the agent to a worktree

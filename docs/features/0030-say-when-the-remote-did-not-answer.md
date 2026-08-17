@@ -1,9 +1,9 @@
 ---
 id: 0030
 title: Say when the remote did not answer
-status: In progress
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs: 0029
