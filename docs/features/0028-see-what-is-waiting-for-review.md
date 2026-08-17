@@ -142,7 +142,7 @@ sounding like a guarantee.
       trunk; conformance for each
 - [x] Each awaiting-review entry says whether the reader built it, so a coordinator
       agent knows what it may not merge
-- [ ] Rule 13 reworded around separation of duties, with the three roles, the landing
+- [x] Rule 13 reworded around separation of duties, with the three roles, the landing
       barrier, distinct agent identities, and the policy living in branch protection,
       in `templates/AGENTS-section.md`
 - [ ] Rule 2 states what exit 1 now means, rule 12 warns that `ship` has refusals the

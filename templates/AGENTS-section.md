@@ -88,9 +88,18 @@ whole model, and `kit help template` prints the feature doc format.
     `kit ship <id>`.** Those two are the gate: green means the code holds and the docs
     and the repo agree. Shipping by hand is where `unticked-shipped` and
     `shipped-no-date` come from. Then move durable facts into `docs/TECH.md`.
-13. **Shipping is a handoff, not a finish.** Push the branch and stop; reviewing and
-    merging are not yours. With no remote the work has nowhere to go — say so and leave
-    it on the branch rather than merging it yourself.
+13. **Shipping is a handoff: you never merge your own work.** Push the branch and stop.
+    Three roles, one to an agent per feature: a **drafter** plans the round, a **builder**
+    claims a feature and ships it, a **coordinator** merges what somebody else built. The
+    trunk is the barrier between them — a plan lands before anything on it can be claimed,
+    and a claim lands only through somebody who did not build it. `kit next` lists what is
+    waiting under **awaiting review**, and marks the entries you built.
+    Two things hold this up and neither is the kit's to give: agents need **distinct git
+    identities**, because an agent pushing with the operator's credential *is* the
+    operator to every check that exists; and the policy lives in **branch protection**,
+    the one place the controlled party cannot rewrite. Everything the kit does here is
+    legibility. With no remote the work has nowhere to go — say so and leave it on the
+    branch.
 
 ### Where two agents can still collide
 
