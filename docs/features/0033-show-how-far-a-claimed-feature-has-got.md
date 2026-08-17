@@ -1,9 +1,9 @@
 ---
 id: 0033
 title: Show how far a claimed feature has got
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs: 0032
@@ -54,11 +54,16 @@ fires at three days:
 ```
 
 ## Tasks
-- [ ] Box counts for a claimed feature come from its claim branch, falling back to the
+- [x] Box counts for a claimed feature come from its claim branch, falling back to the
       checkout when the branch cannot be read; conformance for both
-- [ ] Each taken entry says when its branch last moved, in text and `--json`
-- [ ] README and `kit help next` say the counter follows the claim
+- [x] Each taken entry says when its branch last moved, in text and `--json`
+- [x] README and `kit help next` say the counter follows the claim
 
 ## Log
 - 2026-08-17 — found while demonstrating the operator's flow: two agents mid-feature, and
   the board reported 0/3 for both.
+- 2026-08-17 — the documentation commit landed with `make check` red: `kit help next` went
+  one line over its ceiling, and piping the command through `tail` had thrown away its exit
+  code, so the `&&` chain that gates the commit saw success. Fixed in the next commit by
+  cutting a sentence from the paths paragraph. The gate only gates if its status survives
+  the pipe.

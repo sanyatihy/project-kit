@@ -214,6 +214,14 @@ Land the round, and `kit next` hands you the first box and the command to start:
        kit claim 0001
 ```
 
+While an agent works, the board reads its progress off the claim branch — the boxes are
+ticked there, and the trunk's copy of the doc would say `0/3` however far along it is:
+
+```
+  taken
+    0002  1/3   Resolve a short link — 0002-resolve-a-short-link, 20 minutes ago
+```
+
 `kit claim` pushes the branch that takes the feature and prints the worktree to work in.
 It refuses until the plan is on the default branch, for two reasons: the claim pushes
 `HEAD`, so an uncommitted doc would not travel with the branch you were sent to, and a

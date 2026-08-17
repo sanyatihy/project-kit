@@ -563,7 +563,15 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 	if len(plan.Taken) > 0 {
 		fmt.Printf("\n  %s\n", paint("taken", "2", color))
 		for _, item := range plan.Taken {
-			fmt.Printf("    %s  %-5s %s — %s\n", item.ID, item.Progress(), kit.Show(item.Title, 38), item.ClaimedBy)
+			// When it last moved, because a count alone cannot tell an agent working
+			// steadily from one that stopped an hour in. `stalled` only speaks at three
+			// days, and by then the answer has cost two.
+			moved := ""
+			if !item.Moved.IsZero() {
+				moved = ", " + ago(item.Moved)
+			}
+			fmt.Printf("    %s  %-5s %s — %s%s\n", item.ID, item.Progress(),
+				kit.Show(item.Title, 34), item.ClaimedBy, moved)
 		}
 	}
 
@@ -614,6 +622,28 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		}
 	}
 	fmt.Println()
+}
+
+// ago renders how long ago something happened, in the coarsest unit that is still
+// informative: minutes while an agent is working, days once it has stopped.
+func ago(when time.Time) string {
+	switch d := time.Since(when); {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return plural(int(d.Minutes()), "minute") + " ago"
+	case d < 24*time.Hour:
+		return plural(int(d.Hours()), "hour") + " ago"
+	default:
+		return plural(int(d.Hours()/24), "day") + " ago"
+	}
+}
+
+func plural(n int, unit string) string {
+	if n == 1 {
+		return "1 " + unit
+	}
+	return fmt.Sprintf("%d %ss", n, unit)
 }
 
 // waited says how long a branch has been sitting there, in the coarsest unit that is

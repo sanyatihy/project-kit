@@ -847,6 +847,19 @@ func (r *Repo) commitDate(rev string) time.Time {
 	return time.Time{}
 }
 
+// TasksOn counts the boxes in a revision's copy of a doc. Reports false when that
+// revision cannot be read or does not carry the doc, which is the caller's cue to keep
+// whatever the checkout says rather than report a count of nothing.
+func (r *Repo) TasksOn(rev, rel string) (open, total int, ok bool) {
+	out, err := r.gitRun("show", rev+":"+rel)
+	if err != nil {
+		return 0, 0, false
+	}
+	_, body := ParseFrontmatter(Normalise(out))
+	open, total = CountTasks(ParseSections(body)["Tasks"])
+	return open, total, true
+}
+
 // statusOn reads a doc's status: from a revision's copy of it, empty when that revision
 // does not carry the doc, cannot be read, or the doc declares no status.
 func (r *Repo) statusOn(rev, rel string) string {

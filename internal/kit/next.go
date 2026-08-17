@@ -28,6 +28,10 @@ type Item struct {
 	ClaimedBy string   `json:"claimed_by,omitempty"`
 	WaitingOn string   `json:"waiting_on,omitempty"`
 	Mine      bool     `json:"mine,omitempty"`
+
+	// Moved is the claim branch's last commit — how long the work has been sitting
+	// where it is. Zero when nothing claims the feature or the branch cannot be read.
+	Moved time.Time `json:"moved,omitempty"`
 }
 
 // Waiting is one feature on the review board: shipped by its builder, pushed, and not
@@ -139,6 +143,19 @@ func Survey(r *Repo) Plan {
 		}
 		if item.Mine = r.Mine(f.ID); item.Mine {
 			plan.Claiming = f.ID
+		}
+		// Boxes are ticked on the claim branch and stay there until it merges, so the
+		// checkout's copy reports 0/3 however far along somebody else is — which reads as
+		// an agent that has done nothing, the same picture `stalled` paints. Read the
+		// branch instead. Not for your own claim: there the working tree is this branch,
+		// and fresher than any commit on it.
+		if rev := r.resolveBranch(claim); claim != "" && rev != "" {
+			item.Moved = r.commitDate(rev)
+			if !item.Mine {
+				if open, total, ok := r.TasksOn(rev, f.Rel); ok {
+					item.Done, item.Total = total-open, total
+				}
+			}
 		}
 		// Both are "cannot start yet, and here is why", reported the same way. A
 		// question comes first because a human already has to answer it, so the
