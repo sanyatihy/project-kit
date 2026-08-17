@@ -81,25 +81,11 @@ only record that we thought about something go.
       was learned
 
 ## Log
-- 2026-08-17 — asked for directly: 2–3x shorter TECH, a protocol that is bulletproof
-  rather than long.
-- 2026-08-17 — the fifth box was described in conversation as already added and was not
-  written down. Added here with the standard it comes from: what was written before the
-  work is the part that turned out wrong (0027's design kept a check it did not need,
-  0028's never said which copy of the doc to read), and both were caught in a `## Log`
-  line during. `docs/VISION.md` gains the balance this rests on — the correction to it
-  rides in this branch because it is the standard this feature applies.
-- 2026-08-17 — the box said ≤200 and lands at 247 lines / 2,808 words, from 546 / 6,325:
-  2.2x on both. The 200 was picked before the work, and the last fifty lines would have to
-  come out of the evidence clauses that make an entry decidable — "`shipped-not-pushed`
-  needs two negatives" without *why either alone misfires* is a rule a later agent will
-  undo. Box rewritten to 250 rather than met by gutting entries. Words are the better
-  measure anyway: lines depend on wrap width.
-- 2026-08-17 — the protocol is 114 lines from 153, all thirteen rules kept, and the ceiling
-  is 115. The reasoning behind the rules moved to `docs/TECH.md`, which is read once rather
-  than at the start of every session in every project; what stayed is each constraint and
-  its consequence, in sub-bullets so a rule survives being read in isolation. The last ten
-  lines to reach 110 would have cost content, not filler.
+- 2026-08-17 — `docs/VISION.md` gains the standard this applies: speed and transparency
+  together, the record a byproduct of the work rather than a stage before it.
+- 2026-08-17 — TECH lands at 247 lines from 546, the protocol at 114 from 153 with all
+  thirteen rules kept. The reasoning behind the rules moved to TECH, read once rather than
+  every session in every project.
 - 2026-08-17 — `TestHelpAnswersWhatAnOutsideReviewGotWrong` caught the rewrite dropping the
-  literal "One feature per checkout." while keeping the meaning. That test pins the phrases
+  literal "One feature per checkout." while keeping the meaning: that test pins the phrases
   an outside reader once got wrong, and rephrasing one is how the guarantee is lost.

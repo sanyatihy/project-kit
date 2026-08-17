@@ -16,11 +16,9 @@ related: 0012-kit-init-refreshes-the-docs-it-owns.md
 GitLab one that already has a working `.gitlab-ci.yml`. It never runs, and no check
 reports it.
 
-Everything else already works. Measured against a private project on a self-hosted
-GitLab: `audit` and `next` were correct with no changes, because nothing calls a forge
-API, `claim` is a ref compare-and-swap every git host implements, and `Trunk()` asks
-`origin/HEAD`. The host did not resolve during the measurement and `audit` finished in
-0.087s on the mirror fallback.
+Everything else already works. Measured against a private project on a self-hosted GitLab:
+`audit` and `next` needed no changes — nothing calls a forge API, `claim` is a ref
+compare-and-swap every host implements, and `Trunk()` asks `origin/HEAD`.
 
 Two smaller gaps travel with it: `secret-in-doc` knows `ghp_` and `github_pat_` but not
 `glpat-`, so the one HIGH credential check is blind on GitLab; and the protocol says
@@ -52,24 +50,13 @@ Two smaller gaps travel with it: `secret-in-doc` knows `ghp_` and `github_pat_` 
    when it names a recognised forge. `internal.corp` falls through rather than defaulting.
 4. Nothing → unknown.
 
-Rung 1 outranks rung 2 because a hostname cannot separate self-hosted GitLab from Gitea.
-Rung 3 is the only one that answers on a fresh `git init` with no remote — the state where
-the alternative is stopping to ask a human.
+Rung 1 outranks rung 2 because a hostname cannot separate self-hosted GitLab from Gitea;
+rung 3 is the only one that answers on a fresh `git init` with no remote. `stackLayout`
+becomes keyed by forge, and `--forge` overrides every rung.
 
-`stackLayout` becomes keyed by forge, and the go stack gains a `.gitlab-ci.yml` template
-mirroring the existing one. `--forge` overrides every rung.
-
-**Unknown writes no CI file** and closes with an instruction the agent can act on, per
-0013 and 0014 — a missing file is visible, a wrong one is not:
-
-```
-  no CI file — nothing here says which forge this project is on.
-  after git remote add, run kit init again and it will detect one.
-  or say so now: kit init . --stack go --forge gitlab
-```
-
-Not an inbox line: the inbox is for decisions only a human can make, and the forge is a
-discoverable fact.
+**Unknown writes no CI file** and closes with both ways to resolve it — a missing file is
+visible, a wrong one is not. Not an inbox line: the forge is a discoverable fact, and the
+inbox is for decisions only a human can make.
 
 `glpat-` and GitLab deploy-token shapes join the secret scan. The protocol says it once,
 neutrally: *a feature is one pull request (merge request on GitLab)*.

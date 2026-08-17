@@ -24,15 +24,9 @@ kit next: not a directory: …/does-not-exist          (exit 2)
 directory that merely is not a project is handled correctly — only a missing or
 non-directory path is fatal.
 
-The failure mode is the one the codebase already rejected elsewhere. `remoteTimeout`
-exists because *"a board that hangs because one remote is unreachable is worse than
-a board that falls back to a stale mirror and says so"*. A path is the same argument:
-the surveyed projects are independent, and one of them being gone says nothing about
-the others.
-
-It fails quietly in the direction that matters. An operator who globs a directory
-that has since been tidied gets an error about the path they did not care about and
-silence about the four projects they did.
+Same argument as `remoteTimeout`: the surveyed projects are independent, so one being
+gone says nothing about the others. An operator who globs a tidied directory gets an error
+about the path they did not care about and silence about the four they did.
 
 ## Non-goals
 - **Guessing what a bad path meant.** No fuzzy matching, no skipping silently. The
@@ -69,15 +63,6 @@ survey reads the same way twice.
 - [x] README's fleet example says what happens when one path is unusable
 
 ## Log
-- 2026-08-16 — found probing the fleet view while two agents built 0023 and 0025.
-- 2026-08-16 — the two `--json` payloads carry a failure differently, because their
-  value types differ. `next`'s is one object per project, so the failure is an
-  `error` field on the plan and the shape is unchanged. `audit`'s was a bare list of
-  findings, which has nowhere to put one; a synthetic finding would have meant a code
-  outside the registry `kit help checks` prints from, which is the drift the registry
-  exists to prevent. So audit's entry is now `{"findings": [...], "error": "..."}` —
-  a shape change for anything parsing `audit --json`.
-- 2026-08-16 — a failed path is written twice on purpose: as a line in the board on
-  stdout, so a fleet survey reads in order and both formats agree on what was
-  surveyed, and as the same one-line diagnostic on stderr, which is where a
-  single-path run has always reported it and what keeps `--json` pipe-clean.
+- 2026-08-16 — `audit --json` changed shape to `{"findings": [...], "error": "..."}`. A
+  bare list has nowhere to say why it is empty, and a synthetic finding would mean a code
+  outside the registry `kit help checks` prints from. Breaking for anything parsing it.

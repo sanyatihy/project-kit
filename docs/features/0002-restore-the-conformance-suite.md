@@ -10,28 +10,22 @@ related: ../../AGENTS.md
 ---
 
 ## Problem
-`./test` — the suite that built the binary and drove `init`, `next`, and `audit`
-from the outside — was deleted while untracked, so it is unrecoverable. It was the
-behavioural specification: the Go port was verified against it, and several rules
-hold only because a test pinned them. Without it `make check` covers parsing and doc
-creation but nothing a user actually runs, and the kit has already taken changes
-under that weaker gate.
+`./test` — the suite that built the binary and drove `init`, `next` and `audit` from the
+outside — was deleted while untracked and is unrecoverable. It was the behavioural
+specification, and the kit has already taken changes under the weaker gate that remains.
 
 ## Non-goals
-- Reproducing the old file line for line. The behaviour is the spec, not the text.
-- Replacing the Go unit tests. They cover the parsing primitives well and stay.
-- A coverage target. Coverage is not the goal; exercising the commands is.
+- Reproducing the old file line for line: the behaviour is the spec, not the text.
+- A coverage target. Exercising the commands is the goal.
 
 ## Design
-Rewrite as a Go test in `cmd/kit`, not as an external script. The old suite was
-Python driving a binary, which made sense while the kit *was* Python; now it means a
-second language and a build step to test one. A Go test can build the binary once
-with `go test`'s own tooling, run it against temporary projects, and assert on
-stdout, exit codes, and the files produced — the same black-box contract, in-tree.
+Rewrite as a Go test in `cmd/kit` rather than an external script. The old suite was Python
+driving a binary, which is how it could be deleted without anything noticing — untracked
+and outside the build. A Go test builds the binary once and asserts on stdout, exit codes
+and the files produced: the same black-box contract, in-tree.
 
-Each command gets both directions: a case proving a check fires, and a case proving
-it stays quiet when it should. The quiet cases are the ones that matter, because a
-noisy check trains people to ignore the tool.
+Every check gets both directions, a case that it fires and a case that it stays quiet. The
+quiet ones matter more: a noisy check trains people to ignore the tool.
 
 ## Tasks
 - [x] Harness in `cmd/kit`: build the binary once, helpers to make a temp project and run subcommands
@@ -42,24 +36,9 @@ noisy check trains people to ignore the tool.
 - [x] Robustness: BOM/CRLF, missing frontmatter, unparseable dates, non-git dirs, `--json`, `--strict` exit codes
 - [x] Put `conformance` back in `make check` and delete the missing-file guard
 
-## Open questions
-<!-- none -->
-
 ## Log
-- 2026-08-11 — moving the suite in-tree as a Go test: the external Python script was
-  a holdover from when the kit itself was Python, and it could be deleted without
-  anything noticing because it was untracked and outside the build.
-- 2026-08-11 — shipped. 50 conformance test functions across six files in `cmd/kit`, one of
-  them a 16-case table over every audit check. `go test ./cmd/kit` reports 79 passes
-  including the existing unit tests, all under `make check`.
-  Each was verified by planting the regression it guards and confirming the suite
-  fails; the table is in the PR.
-- 2026-08-11 — two probes initially missed, and both were faults in the tests. A
-  fenced example sat under `## Design`, which `OpenTasks` never reads, and a
-  comment-stripping test asserted a doc's status instead. Both would have passed
-  forever while testing nothing. Planting the regression is what found them, which
-  is the argument for doing it on every case rather than on the ones that look
-  risky.
-- 2026-08-11 — `TestEveryRegisteredCheckIsExercised` turned AGENTS.md's "add a test
-  that it fires" from an honour-system rule into a build failure. That is the part
-  most likely to still be earning its keep in a year.
+- 2026-08-11 — every case was verified by planting the regression it guards. Two probes
+  passed while testing nothing: a fenced example under `## Design`, which `OpenTasks` never
+  reads, and a comment test asserting a status. Planting is why they were found.
+- 2026-08-11 — `TestEveryRegisteredCheckIsExercised` turns "add a test that it fires" from
+  an honour-system rule into a build failure.

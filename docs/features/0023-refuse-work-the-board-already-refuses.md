@@ -27,39 +27,19 @@ claims by ID without reading the board builds on a foundation that is not there,
 edit. TECH.md's own rule is *prevent before detecting* — `ship` exists because
 hand-stamping frontmatter produced findings, and it is now producing one itself.
 
-This got worse when 0021 landed. `status:` no longer gates anything, so `needs:` is
-the only ordering constraint left, and it is unenforced at the two moments that
-matter.
+0021 made it worse: `status:` no longer gates anything, so `needs:` is the only ordering
+constraint left and it is unenforced at the two moments that matter.
 
-`ship` has a second, worse version of it. From a checkout whose own board says the
-feature is **taken**, with two agents and a real remote:
-
-```
-$ kit next          taken   0001  — 0001-contested
-$ kit ship 0001     shipped  (was Accepted)                    (exit 0)
-```
-
-One agent froze another's feature mid-flight. `status: Shipped` is history the
-protocol forbids anyone to edit, so the agent actually holding the branch can no
-longer touch its own doc, and `audit` reports nothing at all.
+`ship` has a worse version — from a checkout whose own board says **taken**, `kit ship`
+exits 0 and freezes another agent's feature mid-flight. `Shipped` is history nobody may
+edit, so the agent holding the branch can no longer touch its own doc, and `audit` reports
+nothing.
 
 `kit drop` has two silent failures of its own. Dropping a feature others declare in
-`needs:` strands them without a word — `audit` reports `needs-unknown` afterwards, and
-`next` goes on saying *"waiting on: needs 0001 to ship first"* about a feature that is
-Dropped and can never ship. And on a doc with no `## Log` section, the reason is
-discarded:
-
-```
-$ kit drop 0001 "superseded by a better idea"
-  dropped  docs/features/0001-nolog.md  (was Draft)
-$ grep -c "superseded" docs/features/0001-nolog.md
-0
-```
-
-`AppendToSection` reports that the heading was absent and `Drop` ignores the answer.
-The command exists to record the reason — its help says so — and the one warning it
-prints fires only when *no* reason was given, so the operator who supplied one is
-never told it was thrown away.
+`needs:` strands them without a word, and `next` goes on promising *"needs 0001 to ship
+first"* about a feature that can never ship. And on a doc with no `## Log` section the
+reason is discarded: `AppendToSection` reports the heading was absent and `Drop` ignores
+the answer, while its only warning fires when *no* reason was given.
 
 ## Non-goals
 - **Making `needs:` mandatory.** An unanswered field is a real problem and a separate

@@ -11,62 +11,29 @@ related: 0013-never-leave-an-agent-without-an-instruction.md
 ---
 
 ## Problem
-`kit next` answers *what do I build*. Nothing answers *what needs review*, so the far
-side of `ship` is unobserved: a shipped feature leaves the board and the kit never
-mentions it again.
+`kit next` answers *what do I build*. Nothing answers *what needs review*, so the far side
+of `ship` is unobserved. Both failures this session live there: four features were shipped
+and never pushed with `audit --strict` green throughout, and in another project five drafts
+sat on unmerged branches while the board reported *"nothing is planned"*.
 
-Both failures this session live in that blind spot. Four features were shipped and
-never pushed, with `audit --strict` green throughout — rule 13 says push and nothing
-checks it. And in `observer`, five drafts sat on unmerged branches while the board
-reported *"nothing is planned"*. Same gap, reached from opposite ends: work that has
-left the builder and not arrived anywhere.
-
-There is also no role for a coordinator to hold. Rule 13 says *"reviewing and merging
-are not yours"*, which reads as human-only — but the invariant it protects is that
-**the builder does not approve its own work**. A second agent can hold that role; a
-human never being involved is a separate decision.
+There is also no role for a coordinator to hold. Rule 13's *"reviewing and merging are not
+yours"* reads as human-only, but the invariant it protects is that **the builder does not
+approve its own work** — which a second agent can hold.
 
 Reading the protocol against the code turned up three more defects in the same
-neighbourhood:
-
-- **Rule 2's account of exit 1 is now false.** It says *"exit 1 means somebody was
-  first — run `kit next` and take something else."* Since 0023 and 0024 it also means
-  unmet `needs:`, a doc nobody wrote, or an id that disagrees with its filename. An
-  agent that believes the protocol concludes the feature is taken when it may be
-  claimable by nobody, runs `next`, finds it *blocked* instead, and has no account of
-  what happened.
-- **Nobody opens the pull request.** Rule 5 says *"you do not open the PR"* and rule 13
-  says *"push the branch and stop"*. Between them it is never opened.
-- **Rule 12's gate is incomplete.** `make check` and `audit --strict` can both be green
-  and `ship` still refuse — unmet `needs:`, or the feature claimed by another checkout.
-  Unannounced, that reads as a malfunction.
-
-Minor, and worth fixing while the section is open: rule 3 says `next` *"will not offer
-you another to start"*. It does list them, under **free, but not in this checkout**,
-pointing `kit claim` elsewhere. The behaviour is right and the sentence is not.
+neighbourhood: rule 2's account of exit 1 was falsified by 0023 and 0024 and never updated,
+so an agent refused for an unmet `needs:` concludes the feature is taken; nobody opens the
+pull request, between rule 5's *"you do not open the PR"* and rule 13's *"push and stop"*;
+and rule 12's gate is not the whole gate, since `ship` refuses past it.
 
 ## Non-goals
-- **A new status.** `Shipped` already means the builder is finished, which is the
-  builder's own statement about its own work. Whether it landed is not its call and
-  git already answers it — a `Reviewed` status would be a field an agent could set
-  about a decision it does not own.
-- **Merging, or reading approvals.** No forge API, unchanged from 0018 and 0020. The
-  kit reports what is waiting; a coordinator merges with its own tools. This is what
-  keeps it identical on GitHub and on a self-hosted GitLab.
-- **Judging whether work is any good.** `audit` reports what is checkable.
-- **Assigning reviewers.** The kit does not know who exists.
-- **Holding the review policy.** Whether a human must see a change before it lands is a
-  per-project decision, and it already has a home the controlled party cannot rewrite:
-  branch protection on the trunk. A `.kit.toml` saying `review: human` would be a
-  control an agent can edit, and a second copy of a fact the forge already enforces —
-  the drift `Repo`'s "no config" line exists to prevent. The kit reports; the forge
-  enforces.
-- **Classifying risk.** "Low risk, let it self-merge" is a real judgement and not a
-  checkable one. Protection set per project *is* that judgement, made once by whoever
-  is entitled to make it.
+- **A new status.** `Shipped` is the builder's statement about its own work; whether it landed is not its call and git answers it.
+- **Merging, or reading approvals.** No forge API — that is what keeps this identical on GitHub and self-hosted GitLab.
+- **Holding the review policy.** Per-project, and it already has a home the controlled party cannot rewrite: branch protection. A `.kit.toml` saying `review: human` would be a control an agent can edit.
+- **Classifying risk.** "Low risk, let it self-merge" is a real judgement and not a checkable one.
 
 ## Design
-Three git facts already available decide the state, and no new one is stored:
+Three facts already available decide the state, and none is stored:
 
 | `status:` | branch on remote | on trunk | state |
 |---|---|---|---|
@@ -75,63 +42,30 @@ Three git facts already available decide the state, and no new one is stored:
 | Shipped | yes | no | **awaiting review** |
 | Shipped | — | yes | landed — nothing to say |
 
-**`kit next` gains an `awaiting review` section**, after the board and before the
-guidance. It lists the feature, its branch, and how long it has waited. It is the
-coordinator's board and it is the same command everyone else runs, so there is one
-place to look rather than a second tool to remember.
+**`kit next` gains an `awaiting review` section**, after the board and before the guidance:
+the feature, its branch, how long it has waited. The same command everyone runs, so a
+coordinator has one place to look. The closing guidance accounts for it — a board with
+nothing free and three features waiting must not say *"stop"*.
 
-The closing guidance accounts for it, per 0013: a project with nothing free and three
-features awaiting review must not say *"stop"* — the work to do is reviewing.
+**`shipped-not-pushed`, HIGH** — Shipped, no branch on the remote, not on the trunk: the
+work exists on one machine. HIGH because it is silent and the fix is one push. Both read
+`remoteHeads` and both go quiet offline rather than guessing.
 
-**`shipped-not-pushed`**, HIGH. A feature whose doc says Shipped, whose branch is not
-on the remote, and whose work is not on the trunk exists only on one machine. HIGH
-because it is silent, and because the fix is one push — the same reasoning that makes
-`stalled` HIGH.
+**Each entry says whether the reader built it**, from the claim it stands on or the branch's
+authorship. That is all a well-behaved coordinator agent needs; a badly-behaved one is the
+forge's problem.
 
-Both read `remoteHeads`, which `Claims` already calls, and both degrade the way the
-rest of the kit does: with `--offline`, or a remote that cannot be reached, neither
-reports rather than guessing. A claim read from a stale mirror is already handled by
-`RefsAreAuthoritative`, and this uses the same answer.
+**Rule 13 is reworded** to the invariant it means — you do not merge your own work — with
+the three roles and two things it rests on: agents need **distinct git identities**
+(measured: every commit from four agents here carries the operator's name, so nothing can
+tell builder from coordinator), and the policy lives in **branch protection**, where the
+agent has no authority.
 
-**Each entry says whether the reader built it.** A coordinator that is itself an agent
-needs to know which of these it may not merge, and the claim already answers it —
-`Repo.Mine` for the checkout it is standing in, the claim branch's authorship
-otherwise. Marking it is the kit making the invariant legible, which is all a
-well-behaved agent needs; a badly-behaved one is the forge's problem.
-
-**Rule 13 is reworded** from "reviewing and merging are not yours" to the invariant it
-means: *you do not merge your own work; a different checkout — another agent, or a
-human — reviews it.* The protocol gains the three roles, the barrier that separates
-them, and two things that must be true for any of it to hold:
-
-- **Agents need distinct git identities.** Measured on this repo: every commit from
-  all four agents in the last round is authored by the operator, so nothing — not the
-  kit, not a forge rule requiring a non-author reviewer — can tell builder from
-  coordinator. Separation of duties is unverifiable until the identities differ, and
-  the credential matters more than the checkout: an agent pushing with the operator's
-  token *is* the operator to every check that exists.
-- **The policy lives in branch protection.** Enforcement has to sit where the agent
-  has no authority. Everything the kit does here is legibility, and it says so rather
-  than implying a guarantee it cannot make.
-
-**Enforce, do not instruct — the general rule this session earned.** A constraint in
-prose is one an agent can skim, misread, or reason its way past; a refusal in the tool
-is one it has to deliberately route around. Measured here: rule 13 was violated twice
-by an agent that had read it, and `ship`'s coded refusal was obeyed the first time it
-fired — on that same agent, minutes later.
-
-Three tiers, and a rule should sit at the highest one it can reach:
-
-| tier | example | an agent gets past it by |
-|---|---|---|
-| the remote | branch protection, credentials | nothing it can do |
-| the kit | `claim` refusing unmet `needs:` | not using the kit |
-| prose | "push the branch and stop" | reading carelessly |
-
-So a protocol sentence is a last resort, not a first one: whenever a rule is added
-here, the question is what would make it unnecessary. Where prose is genuinely the
-only option — judgement, taste, what to write down — it says so plainly rather than
-sounding like a guarantee.
+**Enforce, do not instruct**, the general rule this session earned: rule 13 was violated
+twice by an agent that had read it, and `ship`'s coded refusal was obeyed the first time it
+fired, on that same agent minutes later. A rule belongs at the highest tier it can reach —
+the remote, then the kit, then prose — so a protocol sentence is a last resort. The tiers
+are in `docs/TECH.md`.
 
 ## Tasks
 - [x] `Repo.AwaitingReview()` — Shipped, branch on the remote, not reachable from the
@@ -154,33 +88,14 @@ sounding like a guarantee.
 - [x] `remoteHeads` is asked once per command, not once per Shipped feature
 
 ## Log
-- 2026-08-16 — scoped after shipping four features without pushing any of them, with
-  every check green the whole way.
-- 2026-08-16 — read the whole protocol against the code and folded the findings in:
-  rule 2's account of exit 1 was falsified by 0023 and 0024, rule 12's gate is not the
-  whole gate, and nobody opens the pull request.
-- 2026-08-16 — the review policy stays out of the kit. It is optional per project and
-  enforceable only on the remote: anything the kit checks, an agent skips by calling
-  git directly, so a config flag would be a control the controlled party can rewrite.
-  Legibility here, enforcement in branch protection.
-- 2026-08-17 — the status is read from the claim branch, not from this checkout. A
-  coordinator stands on the trunk, where an unmerged feature's doc still says what it
-  said when the round landed, so a board read from the working tree would be empty in
-  exactly the case it exists to report. Measured: from the trunk the doc says `Accepted`
-  while the branch says `Shipped`. The cost is that a branch whose objects were never
-  fetched cannot be read, and is passed over rather than guessed at.
-- 2026-08-17 — the wait is measured from the branch's last commit, not the doc's
-  `shipped:`, which is a date and cannot tell an hour from a day. A feature awaiting
-  review still appears under `taken` as well: from the trunk its claim branch does
-  exist and it is not claimable, so both lines are true and they answer different
-  questions.
-- 2026-08-17 — `shipped-not-pushed` needs two independent negatives, not one. The
-  remote's live branch list says nothing about a feature whose branch was deleted after
-  merging, and the remote-tracking refs that do know are only as fresh as the last
-  fetch. It fires when both agree the work is nowhere: no branch on the remote names it,
-  and no remote-tracking ref contains the commit that last wrote the doc.
-- 2026-08-17 — a box added after the others were ticked, per rule 7. `shipped-not-pushed`
-  calls `remoteHeads` per Shipped doc, and it was not memoised: on this repo, with 24
-  shipped features, `kit audit` went from under a second to one minute fifty-seven. The
-  answer cannot change under a single command, so it is now asked once — 5 seconds — the
-  same reasoning that already caches `Trunk()`.
+- 2026-08-16 — the review policy stays out of the kit: it is optional per project and
+  enforceable only on the remote, so a config flag would be a control the controlled party
+  can rewrite.
+- 2026-08-17 — the status is read from the claim branch, not this checkout. A coordinator
+  stands on the trunk, where an unmerged feature's doc still says what it said when the
+  round landed, so a board read from the working tree would be empty exactly when it matters.
+- 2026-08-17 — `shipped-not-pushed` needs two independent negatives: the remote's live branch
+  list cannot see a feature merged and then deleted, and the tracking refs are only as fresh
+  as the last fetch.
+- 2026-08-17 — a box added late: `remoteHeads` was unmemoised and `audit` on this repo went
+  from under a second to 1m57s with 24 shipped features.
