@@ -179,18 +179,16 @@ whole model, and `kit help template` prints the feature doc format.
     or a claim held by another checkout — and neither is a malfunction. Then move durable
     facts into `docs/TECH.md`.
 13. **Shipping is a handoff: you never merge your own work.** Push the branch, open the
-    pull request if the forge has them — opening is not approving — and stop.
-    Three roles, one to an agent per feature: a **drafter** plans the round, a **builder**
-    claims a feature and ships it, a **coordinator** merges what somebody else built. The
-    trunk is the barrier between them — a plan lands before anything on it can be claimed,
-    and a claim lands only through somebody who did not build it. `kit next` lists what is
-    waiting under **awaiting review**, and marks the entries you built.
-    Two things hold this up and neither is the kit's to give: agents need **distinct git
-    identities**, because an agent pushing with the operator's credential *is* the
-    operator to every check that exists; and the policy lives in **branch protection**,
-    the one place the controlled party cannot rewrite. Everything the kit does here is
-    legibility. With no remote the work has nowhere to go — say so and leave it on the
-    branch.
+    pull request if the forge has them — opening is not approving — and stop. Three roles,
+    one to an agent per feature: a **drafter** plans the round, a **builder** claims a
+    feature and ships it, a **coordinator** merges what somebody else built. The trunk is
+    the barrier between them — a plan lands before anything on it can be claimed, and a
+    claim lands only through somebody who did not build it. `kit next` lists what waits
+    under **awaiting review**, marking what you built and what a human must see:
+    `review: human`, written by whoever accepts the round (`kit accept --review`) — honour
+    it, never write it. All of that is legibility, resting on agents having git identities
+    of their own and on branch protection doing the enforcing; `docs/TECH.md` says why.
+    With no remote the work has nowhere to go — say so and leave it on the branch.
 
 ### Where two agents can still collide
 

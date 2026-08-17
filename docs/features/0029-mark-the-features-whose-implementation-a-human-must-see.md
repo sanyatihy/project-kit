@@ -70,7 +70,7 @@ the work is.
 - [x] `kit accept <id> --review` writes the field; conformance for with and without
 - [x] The awaiting-review board marks entries needing a human, in text and `--json`
 - [x] `templates/features-TEMPLATE.md` documents the field beside `check:`
-- [ ] The protocol says who sets it, that a coordinator honours it, and that branch
+- [x] The protocol says who sets it, that a coordinator honours it, and that branch
       protection is what enforces it
 - [ ] README describes the two-level policy: protection as the floor, `review:` as the
       per-feature exception
@@ -86,3 +86,7 @@ the work is.
   opposite of the status 0028 reads. It is set when the round is accepted, so it reaches
   the trunk with the doc — and a builder that strips it on its own branch changes
   nothing, because that is not the copy anybody reads.
+- 2026-08-17 — rule 13 got shorter, not longer. Adding the mark took it over the
+  protocol's line ceiling, and the fix was to move the reasoning behind separation of
+  duties — distinct identities, protection as the enforcer — to `docs/TECH.md`, which is
+  read once rather than every session. The protocol keeps the rule and points at the why.
