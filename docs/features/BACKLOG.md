@@ -106,22 +106,22 @@ that would refuse claims people legitimately make mid-edit.
 
 Promote when: a worktree is found holding an older doc than the one that was claimed.
 
-## `In progress` is a second copy of what the claim branch already says
+## Steps the operator still runs by hand
 
-Rule 1 forbids hand-editing `status:` — "that is what `accept`, `ship` and `drop` are
-for" — and `kit claim` prints "set status: In progress in the doc". No command sets it,
-and rule 8 tells you to hand-edit it back when releasing a claim. So the protocol
-forbids the only available means for two transitions it requires.
+Three, each one a command the kit prints or a rule the protocol states, and each a place
+work stops while a person types:
 
-Three fixes: `claim` sets it (but claim deliberately does not edit docs), a new
-`kit start <id>`, or drop the status entirely. The third is the one the "enforce, do
-not instruct" rule points at — it does not move the constraint to a stronger tier, it
-removes the need for one. `no-claim` exists only to reconcile the two copies and would
-go with it. The cost is that `next`'s "finishing beats starting" would key off having
-a claim rather than the field.
+- `kit claim` prints a `git worktree add` line to copy. `--worktree` could create it and
+  print where to work.
+- Rule 8 — releasing a claim — is "delete the branch locally and on the remote, and say
+  why in the Log", done by hand under an agent that is already stopping. `kit release
+  <id>` is the command that does not exist.
+- `make install` after every merge. Nothing checks it, and the kit already records what
+  it cost once: a project built against a binary two features behind, with nothing
+  reporting anything wrong.
 
-Promote when: someone hits the contradiction for real, or `no-claim` fires on a project
-where the claim branch plainly exists.
+Promote when: one of them is forgotten and costs something, or when several agents run
+often enough that the typing is the slow part.
 
 ## Frontmatter values are truncated at ` #`
 
