@@ -56,7 +56,7 @@ fires at three days:
 ## Tasks
 - [x] Box counts for a claimed feature come from its claim branch, falling back to the
       checkout when the branch cannot be read; conformance for both
-- [ ] Each taken entry says when its branch last moved, in text and `--json`
+- [x] Each taken entry says when its branch last moved, in text and `--json`
 - [ ] README and `kit help next` say the counter follows the claim
 
 ## Log

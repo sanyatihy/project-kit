@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sanyatihy/project-kit/internal/kit"
 )
@@ -783,4 +784,26 @@ func TestTheBoardKeepsItsOwnCountWhenTheBranchCannotBeRead(t *testing.T) {
 		t.Errorf("the board says %d/%d; with an unreadable branch it keeps the checkout's 1/3",
 			taken[0].Done, taken[0].Total)
 	}
+}
+
+func TestATakenEntrySaysWhenItsBranchLastMoved(t *testing.T) {
+	// A count alone cannot tell an agent working steadily from one that stopped an hour
+	// in. `stalled` only speaks at three days, and by then the answer has cost two.
+	p := setUp(t)
+	feature(p, "0001", "widget", "Widget", "Accepted", "- [ ] One\n- [ ] Two")
+	p.commitAll("the plan")
+	trunk := p.headBranch()
+	p.git("checkout", "-q", "-b", "0001-widget")
+	p.write("widget.go", "package widget\n")
+	p.commitAllAt("0001: started", daysAgo(2))
+	p.git("checkout", "-q", trunk)
+
+	taken := p.plan("next", "--json").Taken
+	if len(taken) != 1 || taken[0].Moved.IsZero() {
+		t.Fatalf("--json carries no moved time for a taken feature: %+v", taken)
+	}
+	if days := int(time.Since(taken[0].Moved).Hours() / 24); days != 2 {
+		t.Errorf("moved reads %d days old, want 2", days)
+	}
+	p.run("next").ok().has("0001-widget, 2 days ago")
 }
