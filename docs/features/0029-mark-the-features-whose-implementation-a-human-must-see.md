@@ -1,9 +1,9 @@
 ---
 id: 0029
 title: Mark the features whose implementation a human must see
-status: Draft
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs: 0028
@@ -65,16 +65,28 @@ merged, so changing it afterwards is another pull request — visible in the sam
 the work is.
 
 ## Tasks
-- [ ] `review:` parsed on `Feature`, empty and absent both meaning the coordinator may
+- [x] `review:` parsed on `Feature`, empty and absent both meaning the coordinator may
       merge; conformance that existing docs are unaffected
-- [ ] `kit accept <id> --review` writes the field; conformance for with and without
-- [ ] The awaiting-review board marks entries needing a human, in text and `--json`
-- [ ] `templates/features-TEMPLATE.md` documents the field beside `check:`
-- [ ] The protocol says who sets it, that a coordinator honours it, and that branch
+- [x] `kit accept <id> --review` writes the field; conformance for with and without
+- [x] The awaiting-review board marks entries needing a human, in text and `--json`
+- [x] `templates/features-TEMPLATE.md` documents the field beside `check:`
+- [x] The protocol says who sets it, that a coordinator honours it, and that branch
       protection is what enforces it
-- [ ] README describes the two-level policy: protection as the floor, `review:` as the
+- [x] README describes the two-level policy: protection as the floor, `review:` as the
       per-feature exception
 
 ## Log
 - 2026-08-16 — scoped after per-project protection turned out too coarse: within one
   project the operator wants to see some implementations and not others.
+- 2026-08-17 — `SetField` claimed in its comment to add a missing key and did not, which
+  matters here: no doc written before today carries `review:`. `AddField` does the
+  insertion, and `SetField` keeps refusing — a doc with no `status:` is malformed, and
+  `accept` and `ship` should say so rather than quietly writing one in.
+- 2026-08-17 — the mark is read from the checkout, not from the branch, which is the
+  opposite of the status 0028 reads. It is set when the round is accepted, so it reaches
+  the trunk with the doc — and a builder that strips it on its own branch changes
+  nothing, because that is not the copy anybody reads.
+- 2026-08-17 — rule 13 got shorter, not longer. Adding the mark took it over the
+  protocol's line ceiling, and the fix was to move the reasoning behind separation of
+  duties — distinct identities, protection as the enforcer — to `docs/TECH.md`, which is
+  read once rather than every session. The protocol keeps the rule and points at the why.

@@ -237,13 +237,29 @@ what is waiting on the other side of that handoff:
 ```
   awaiting review
     0001  Shorten URLs
-          0001-shorten-urls · waiting 2 days · you built this — not yours to merge
+          0001-shorten-urls · waiting 2 days · needs a human · you built this — not
+          yours to merge
 ```
 
 Shipped on the branch, pushed, and not on the trunk. The status is read from the branch,
 since on the trunk it still says what it said when the round landed — so a coordinator
 standing on the trunk sees the whole queue in the command everyone else already runs.
 `shipped-not-pushed` catches the other half at HIGH: shipped, and on no remote at all.
+
+**Who may merge it is two decisions, at two granularities.** Branch protection on the
+trunk is the floor — the only thing an agent cannot route around — and its granularity is
+the whole project: protect the trunk and a log-field rename waits for a person, leave it
+open and the change to billing merges unseen. So
+within whatever it allows, one feature at a time can be marked as a person's:
+
+```sh
+kit accept 0001 --review         # writes review: human into the doc
+```
+
+A marked feature shows as **needs a human** on the board above, and a coordinator agent
+leaves it alone. It is set by whoever accepts the round — the moment the whole set is in
+front of them, before anyone has sunk work into the outcome — and never by an agent.
+Unmarked, and not your own, means a coordinator may merge it.
 
 What the kit does here is make the invariant legible, and nothing more. An agent can
 merge its own branch with git directly; what stops it is branch protection on the trunk,

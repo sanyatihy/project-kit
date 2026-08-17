@@ -40,6 +40,11 @@ type Waiting struct {
 	Branch string    `json:"branch"`
 	Since  time.Time `json:"since"`          // when the branch last moved
 	Mine   bool      `json:"mine,omitempty"` // the reader built it, so it is not theirs to merge
+
+	// NeedsHuman is the doc's review: mark. A coordinator agent may merge what is not
+	// marked and not its own; this is the rest, and it says so rather than the agent
+	// having to open the doc to find out.
+	NeedsHuman bool `json:"needs_human,omitempty"`
 }
 
 // Plan sorts the open features into what is yours, what you can start, what is
@@ -194,6 +199,10 @@ func Survey(r *Repo) Plan {
 			Branch: waiting.Branch,
 			Since:  waiting.Since,
 			Mine:   waiting.Mine,
+
+			// Read from this checkout, unlike the status: the mark is set when the round
+			// is accepted, so it landed on the trunk with the doc and is here to read.
+			NeedsHuman: waiting.Feature.NeedsHuman(),
 		})
 	}
 	plan.Guidance = guidanceFor(r, plan)

@@ -72,9 +72,9 @@ func FrontmatterBounds(text string) (start, end int, ok bool) {
 	return 4, at + 4, true
 }
 
-// SetField rewrites one `key: value` line inside the frontmatter, adding it directly
-// after the `status:` line when it is absent. Reports false when there is no frontmatter
-// or no line to change.
+// SetField rewrites one `key: value` line inside the frontmatter. Reports false when
+// there is no frontmatter or no such line — see AddField for a field a doc may not carry
+// at all.
 //
 // Confined to the frontmatter on purpose. The document-wide `(?m)^status:.*$` this
 // replaces would also rewrite a `status:` line inside a fenced example — and feature docs
@@ -94,6 +94,33 @@ func SetField(text, key, value string) (string, bool) {
 		}
 	}
 	return text, false
+}
+
+// AddField is SetField for an optional field, writing the line in after `status:` when
+// the doc does not already carry it. Reports false only when there is no frontmatter.
+//
+// Separate from SetField because inserting is wrong for the fields that must already be
+// there: a doc with no `status:` is malformed, and `accept` and `ship` say so rather than
+// quietly writing one in. A field added to the template later is the opposite case —
+// every doc written before it is fine, and it has to be settable on those.
+func AddField(text, key, value string) (string, bool) {
+	if updated, ok := SetField(text, key, value); ok {
+		return updated, true
+	}
+	start, end, ok := FrontmatterBounds(text)
+	if !ok {
+		return text, false
+	}
+	lines := strings.Split(text[start:end], "\n")
+	at := len(lines) // no status: to sit under — the end of the block is as good as anywhere
+	for i, line := range lines {
+		if k, _, found := strings.Cut(line, ":"); found && strings.TrimSpace(k) == "status" {
+			at = i + 1
+			break
+		}
+	}
+	lines = append(lines[:at], append([]string{key + ": " + value}, lines[at:]...)...)
+	return text[:start] + strings.Join(lines, "\n") + text[end:], true
 }
 
 // SetStatus rewrites the frontmatter's `status:`.
