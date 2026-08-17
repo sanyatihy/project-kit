@@ -286,9 +286,9 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 
 ## The four rules
 
-1. `In progress`, then `Accepted`, then `Draft`, and lowest ID first within each.
-   Finishing beats starting, and blessed beats unblessed. `status:` orders the
-   board; it does not gate it.
+1. `Accepted` before `Draft`, lowest ID first within each, and whatever this checkout
+   already claims ahead of anything free. Blessed beats unblessed, finishing beats
+   starting, and `status:` orders the board rather than gating it.
 2. Within a feature, do the topmost unticked box. List order is the order of work.
 3. One agent per feature, one feature per checkout. `kit claim <id>` pushes the
    branch named after the doc, and creating that ref on the remote is what decides
@@ -367,7 +367,7 @@ Thresholds are constants in `internal/kit`.
 
 One file per feature in `docs/features/`, named `NNNN-name.md`. The directory listing
 is the board. Frontmatter carries `id`, `title`, `status`
-(`Draft → Accepted → In progress → Shipped`, exits `Dropped`/`Superseded`), `created`,
+(`Draft → Accepted → Shipped`, exits `Dropped`/`Superseded`), `created`,
 `shipped`. Sections: `Problem`, `Non-goals`, `Design`, `Tasks`, `Open questions`
 (optional), `Log`.
 

@@ -15,10 +15,9 @@ import (
 )
 
 const (
-	StatusDraft      = "Draft"
-	StatusAccepted   = "Accepted"
-	StatusInProgress = "In progress"
-	StatusShipped    = "Shipped"
+	StatusDraft    = "Draft"
+	StatusAccepted = "Accepted"
+	StatusShipped  = "Shipped"
 
 	gitLogLimit = "500"
 	gitTimeout  = 30 * time.Second
@@ -37,8 +36,12 @@ const (
 )
 
 // AllStatuses is every status a feature doc may declare.
-var AllStatuses = []string{StatusAccepted, StatusDraft, "Dropped", StatusInProgress,
-	StatusShipped, "Superseded"}
+//
+// There is deliberately no "In progress": the claim branch says work has started, and a
+// second copy of that fact in the doc could only ever disagree with it. A doc still
+// carrying the old value is reported as `bad-status`, which is the migration.
+var AllStatuses = []string{StatusAccepted, StatusDraft, "Dropped", StatusShipped,
+	"Superseded"}
 
 // terminal reports whether a status is an end state, after which a branch bearing the
 // feature's name is a merged leftover rather than somebody's work in progress.
@@ -1094,13 +1097,17 @@ func isFYI(text string) bool {
 // invented and not yet blessed, so it goes out last and the agent should expect to
 // settle its `## Open questions` before building. Neither is permission.
 func (r *Repo) ActiveFeatures() []*Feature {
-	rank := map[string]int{StatusInProgress: 0, StatusAccepted: 1, StatusDraft: 2}
+	rank := map[string]int{StatusAccepted: 0, StatusDraft: 1}
 	var out []*Feature
 	for _, f := range r.Features {
 		if _, ok := rank[f.Status]; ok {
 			out = append(out, f)
 		}
 	}
+	// No claim-first rank here: "finishing beats starting" is structural now. `next`
+	// renders this checkout's own claim as **yours** above everything, and somebody
+	// else's under **taken** below what is free, so ordering inside the list cannot move
+	// a claimed feature anywhere the groups do not already put it.
 	sort.SliceStable(out, func(i, j int) bool {
 		if rank[out[i].Status] != rank[out[j].Status] {
 			return rank[out[i].Status] < rank[out[j].Status]

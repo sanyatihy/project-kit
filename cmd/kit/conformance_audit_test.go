@@ -72,14 +72,31 @@ func daysAgo(n int) string {
 
 // commitAllAt commits with a specific date, for the checks that compare a doc's
 // age in git against a date written in a doc.
+// abandonedClaim is what `stalled` now looks for: a doc on the trunk, a claim branch
+// carrying work beyond the doc, and no commit citing it since. The status says nothing —
+// there is no longer one that could.
+func abandonedClaim(p *project, id, slug string, daysOld int) {
+	p.t.Helper()
+	feature(p, id, slug, "Stuck", "Accepted", "- [ ] Never finished")
+	p.commitAllAt("the plan", daysAgo(daysOld))
+	trunk := p.headBranch()
+	p.git("checkout", "-q", "-b", id+"-"+slug)
+	p.write("internal/"+slug+"/work.go", "package "+slug+"\n")
+	p.commitAllAt(id+": started and left", daysAgo(daysOld))
+	p.git("checkout", "-q", trunk)
+}
+
 func (p *project) commitAllAt(message, isoDate string) {
 	p.t.Helper()
 	p.git("add", "-A")
 	cmd := exec.Command("git", "commit", "-q", "-m", message)
 	cmd.Dir = p.Root
+	// Midnight, because `audit` compares against today truncated to a whole day: a commit
+	// stamped at noon N days ago is N-and-a-half days from midnight today, which floors to
+	// N-1 and reads a day younger than it is. Every threshold test would sit one day off.
 	cmd.Env = gitEnv(
-		"GIT_AUTHOR_DATE="+isoDate+"T12:00:00Z",
-		"GIT_COMMITTER_DATE="+isoDate+"T12:00:00Z",
+		"GIT_AUTHOR_DATE="+isoDate+"T00:00:00Z",
+		"GIT_COMMITTER_DATE="+isoDate+"T00:00:00Z",
 	)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		p.t.Fatalf("dated commit: %v\n%s", err, out)
@@ -101,11 +118,7 @@ var auditCases = []struct {
 			"Accepted", "", "- [ ] Something"))
 	}},
 	{"stalled", func(p *project) {
-		feature(p, "0002", "stuck", "Stuck", "In progress", "- [ ] Never finished")
-		old := time.Now().AddDate(0, 0, -40)
-		if err := os.Chtimes(p.path("docs/features/0002-stuck.md"), old, old); err != nil {
-			p.t.Fatalf("ageing the doc: %v", err)
-		}
+		abandonedClaim(p, "0002", "stuck", 40)
 	}},
 	{"shipped-not-pushed", func(p *project) {
 		// The state four features reached in one session: Shipped in the doc, committed
@@ -196,9 +209,6 @@ var auditCases = []struct {
 		p.run("new", "Never written").ok()
 		path := "docs/features/0002-never-written.md"
 		p.write(path, strings.Replace(p.read(path), "status: Draft", "status: Accepted", 1))
-	}},
-	{"no-claim", func(p *project) {
-		feature(p, "0002", "working", "Working", "In progress", "- [ ] Something")
 	}},
 	{"split-claim", func(p *project) {
 		feature(p, "0002", "contested", "Contested", "Accepted", "- [ ] Something")
@@ -646,10 +656,9 @@ func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
 			p.commitAllAt("the plan", daysAgo(tc.age))
 			trunk := p.headBranch()
 
-			// The claim branch carries the work, and the status only ever set there.
+			// The claim branch carries the work, and that is the whole signal.
 			p.git("checkout", "-q", "-b", "0002-widget")
 			p.write("internal/widget.go", "package widget\n")
-			feature(p, "0002", "widget", "Widget", "In progress", "- [ ] Build it")
 			p.commitAllAt("0002: start building", daysAgo(tc.age))
 			p.git("checkout", "-q", trunk)
 
@@ -776,15 +785,6 @@ func TestClaimChecksDoNotFireOnOrdinaryWork(t *testing.T) {
 		}
 	})
 
-	t.Run("Accepted without a branch is not a missing claim", func(t *testing.T) {
-		// Only In progress asserts that work is happening.
-		p := cleanProject(t)
-		for _, code := range p.auditCodes() {
-			if code == "no-claim" {
-				t.Error("an unstarted Accepted feature was reported as unclaimed")
-			}
-		}
-	})
 }
 
 func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
@@ -847,14 +847,7 @@ func TestTheThresholdsFireAtTheirBoundaryAndNotBefore(t *testing.T) {
 			want bool
 		}{{kit.StalledDays - 1, false}, {kit.StalledDays, true}} {
 			p := cleanProject(t)
-			feature(p, "0002", "stuck", "Stuck", "In progress", "- [ ] Never finished")
-			// Midnight-aligned, because audit compares against today truncated to a
-			// whole day. An mtime taken straight off the clock lands a few hours
-			// short of the boundary and reads as a day younger than it is.
-			when := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -tc.idle)
-			if err := os.Chtimes(p.path("docs/features/0002-stuck.md"), when, when); err != nil {
-				t.Fatalf("ageing the doc: %v", err)
-			}
+			abandonedClaim(p, "0002", "stuck", tc.idle)
 
 			if got := slices.Contains(p.auditCodes(), "stalled"); got != tc.want {
 				t.Errorf("idle for %d day(s): reported=%v, want %v", tc.idle, got, tc.want)
@@ -1083,4 +1076,24 @@ func TestAuditRanksAnUnreadablePathAboveAStrictFinding(t *testing.T) {
 	p.run("audit", "--strict", p.Root).fails(1)
 	// With a path it could not read, 2 — and the finding is still reported.
 	p.run("audit", "--strict", p.Root, gone).fails(2).has("unticked-shipped")
+}
+
+func TestADocLeftSayingInProgressIsReported(t *testing.T) {
+	// The migration path. `In progress` left the vocabulary because nothing could set it
+	// without breaking rule 1, so a doc still carrying it is a leftover — most likely a
+	// claim released without deleting the branch — and `bad-status` says so rather than
+	// the board quietly ignoring the feature.
+	p := cleanProject(t)
+	p.write("docs/features/0002-working.md",
+		doc("0002", "Working", "In progress", "", "- [ ] Something"))
+
+	if codes := p.auditCodes(); !slices.Contains(codes, "bad-status") {
+		t.Errorf("a doc saying In progress reported %v, want bad-status", codes)
+	}
+	// Nothing else breaks: it is not offered as work, and claiming it is refused with the
+	// message for a status nobody can work, not a crash or a raw git error.
+	if got := boardGroup(p.plan("next", "--json"), "0002"); got != "absent" {
+		t.Errorf("0002 is %s on the board; a doc with an unrecognised status is not work", got)
+	}
+	p.run("claim", "0002").fails(1).errHas("not open work")
 }

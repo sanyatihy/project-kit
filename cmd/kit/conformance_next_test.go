@@ -87,21 +87,26 @@ func TestNextHandsBackTheTopmostUntickedBox(t *testing.T) {
 	r.lacks("The redirect")
 }
 
-func TestNextOffersInProgressBeforeAccepted(t *testing.T) {
-	// Finishing beats starting, so a half-done feature outranks a fresh one even
-	// though its ID is higher.
+func TestFinishingBeatsStartingWithoutAStatusToSaySo(t *testing.T) {
+	// What `In progress` used to order, done by the groups instead. In the checkout
+	// holding a claim, that feature is what `next` names — ahead of anything free, and
+	// with no status anywhere asserting that work had started.
 	p := setUp(t)
 	feature(p, "0001", "first", "First", "Accepted", "- [ ] Do the first thing")
-	feature(p, "0002", "second", "Second", "In progress", "- [ ] Do the second thing")
+	feature(p, "0002", "second", "Second", "Accepted", "- [ ] Do the second thing")
+	p.commitAll("two features")
+	p.git("checkout", "-q", "-b", "0002-second")
 
-	out := p.run("next").ok().Stdout
-	inProgress := strings.Index(out, "0002")
-	accepted := strings.Index(out, "0001")
-	if inProgress == -1 || accepted == -1 {
-		t.Fatalf("both features should be listed:\n%s", out)
+	plan := p.plan("next", "--json")
+	if len(plan.Yours) != 1 || plan.Yours[0].ID != "0002" {
+		t.Fatalf("the checkout's own claim is not what next names: %+v", plan.Yours)
 	}
-	if inProgress > accepted {
-		t.Errorf("Accepted 0001 was offered before In progress 0002:\n%s", out)
+	if plan.Yours[0].Status == "In progress" {
+		t.Errorf("0002 carries a status the kit no longer has: %+v", plan.Yours[0])
+	}
+	out := p.run("next").ok().Stdout
+	if strings.Index(out, "0002") > strings.Index(out, "0001") {
+		t.Errorf("free 0001 was listed before the claim this checkout holds:\n%s", out)
 	}
 }
 
@@ -376,17 +381,25 @@ func TestNextRanksAcceptedAboveDraft(t *testing.T) {
 }
 
 func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
+	// Counted from claims, which is the only record that somebody started something.
 	const warning = "in progress at once"
 
+	claimed := func(p *project, ids ...string) {
+		for _, id := range ids {
+			feature(p, id, id, "Feature "+id, "Accepted", "- [ ] Task "+id)
+		}
+		p.commitAll("the features")
+		for _, id := range ids {
+			p.git("branch", id+"-"+id)
+		}
+	}
+
 	atLimit := setUp(t)
-	feature(atLimit, "0001", "a", "A", "In progress", "- [ ] Task a")
-	feature(atLimit, "0002", "b", "B", "In progress", "- [ ] Task b")
+	claimed(atLimit, "0001", "0002")
 	atLimit.run("next").ok().lacks(warning)
 
 	over := setUp(t)
-	feature(over, "0001", "a", "A", "In progress", "- [ ] Task a")
-	feature(over, "0002", "b", "B", "In progress", "- [ ] Task b")
-	feature(over, "0003", "c", "C", "In progress", "- [ ] Task c")
+	claimed(over, "0001", "0002", "0003")
 	over.run("next").ok().has(warning)
 }
 
@@ -412,7 +425,7 @@ func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
 	// under "start here". Followed literally that begins a second feature in the
 	// first one's branch, and the two ship as one.
 	p := setUp(t)
-	feature(p, "0001", "mine", "Mine", "In progress", "- [ ] Finish this")
+	feature(p, "0001", "mine", "Mine", "Accepted", "- [ ] Finish this")
 	feature(p, "0002", "other", "Other", "Accepted", "- [ ] A different thing")
 	p.commitAll("two features")
 	p.git("checkout", "-q", "-b", "0001-mine")
@@ -430,7 +443,7 @@ func TestAClaimedCheckoutIsNotOfferedOtherWorkEvenWhenItsOwnIsBlocked(t *testing
 	// feature happens to be workable. A blocked feature is still the reason this
 	// branch exists, and starting a second one here would still be wrong.
 	p := setUp(t)
-	feature(p, "0001", "mine", "Mine", "In progress", "- [ ] Finish this")
+	feature(p, "0001", "mine", "Mine", "Accepted", "- [ ] Finish this")
 	feature(p, "0002", "other", "Other", "Accepted", "- [ ] A different thing")
 	p.commitAll("two features")
 	p.git("checkout", "-q", "-b", "0001-mine")

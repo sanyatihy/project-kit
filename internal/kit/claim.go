@@ -72,7 +72,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	// claim is an unwritten plan (below) and a BLOCKING inbox line — the facts that mean
 	// nobody can build this yet, rather than nobody has blessed it.
 	switch target.Status {
-	case StatusAccepted, StatusInProgress, StatusDraft:
+	case StatusAccepted, StatusDraft:
 	case "":
 		return nil, &NotYours{target.Name() + " has no status:, so there is no work to claim",
 			"give it one: " + strings.Join(AllStatuses, ", ")}

@@ -12,7 +12,7 @@ import (
 func TestShipRefusesWhileABoxIsOpen(t *testing.T) {
 	// unticked-shipped, prevented rather than reported.
 	p := setUp(t)
-	feature(p, "0007", "half", "Half done", "In progress", "- [x] One\n- [ ] Two")
+	feature(p, "0007", "half", "Half done", "Accepted", "- [x] One\n- [ ] Two")
 
 	r := p.run("ship", "0007").fails(2)
 	r.errHas("unticked", "Two")
@@ -24,7 +24,7 @@ func TestShipRefusesWhileABoxIsOpen(t *testing.T) {
 func TestShipStampsTheDate(t *testing.T) {
 	// shipped-no-date, prevented rather than reported.
 	p := setUp(t)
-	feature(p, "0007", "done", "All done", "In progress", "- [x] One\n- [x] Two")
+	feature(p, "0007", "done", "All done", "Accepted", "- [x] One\n- [x] Two")
 
 	p.run("ship", "0007").ok().has("shipped")
 
@@ -94,7 +94,7 @@ func TestShipRefusesWhileItsNeedsHaveNotShipped(t *testing.T) {
 	p := setUp(t)
 	feature(p, "0001", "base", "Base", "Accepted", "- [ ] Do it")
 	p.write("docs/features/0002-store.md",
-		doc("0002", "Store", "In progress", "needs: 0001", "- [x] Done"))
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [x] Done"))
 
 	p.run("ship", "0002").fails(2).errHas("0001", "not shipped")
 	if strings.Contains(p.read("docs/features/0002-store.md"), "status: Shipped") {
@@ -109,7 +109,7 @@ func TestShipAllowsAFeatureWhoseNeedsHaveShipped(t *testing.T) {
 	p.write("docs/features/0001-base.md",
 		doc("0001", "Base", "Shipped", "shipped: 2026-01-02", "- [x] Do it"))
 	p.write("docs/features/0002-store.md",
-		doc("0002", "Store", "In progress", "needs: 0001", "- [x] Done"))
+		doc("0002", "Store", "Accepted", "needs: 0001", "- [x] Done"))
 
 	p.run("ship", "0002").ok().has("shipped")
 }
@@ -122,7 +122,7 @@ func TestShipRefusesAFeatureAnotherCheckoutClaims(t *testing.T) {
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok() // the branch is the claim; this checkout is not on it
 	a.write("docs/features/0007-widget.md",
-		doc("0007", "A widget", "In progress", "", "- [x] Build it"))
+		doc("0007", "A widget", "Accepted", "", "- [x] Build it"))
 
 	r := a.run("ship", "0007").fails(2)
 	// Naming the branch and the way out: refusing without one is how an agent gets stuck.
@@ -139,7 +139,7 @@ func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
 	a.run("claim", "0007").ok()
 	a.git("checkout", "-q", "0007-widget")
 	a.write("docs/features/0007-widget.md",
-		doc("0007", "A widget", "In progress", "", "- [x] Build it"))
+		doc("0007", "A widget", "Accepted", "", "- [x] Build it"))
 
 	a.run("ship", "0007").ok().has("shipped")
 }

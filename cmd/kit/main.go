@@ -349,7 +349,9 @@ func runClaim(args []string) int {
 	}
 	fmt.Printf("\nnext:\n")
 	fmt.Printf("  git worktree add ../%s-%s %s\n", repo.Name, id, claimed.Branch)
-	fmt.Printf("  set status: In progress in the doc, and work there — not here\n\n")
+	// No status edit to instruct: the branch just pushed is what says this is started,
+	// and asking for a second copy of that in the doc is what rule 1 forbade all along.
+	fmt.Printf("  work there, not here — the branch is the claim, so nothing else to set\n\n")
 	return 0
 }
 

@@ -132,9 +132,7 @@ var (
 	checkShippedEarly = Check{"shipped-early", Medium,
 		"Shipped while something in its needs: has not shipped"}
 	checkNoTasks = Check{"no-tasks", Medium,
-		"Accepted or In progress with no ## Tasks boxes at all, so there is nothing to do"}
-	checkNoClaim = Check{"no-claim", Medium,
-		"In progress but no branch claims it, so the doc says work is happening and nothing shows it"}
+		"Accepted with no ## Tasks boxes at all, so there is nothing to do"}
 	checkSplitClaim = Check{"split-claim", Medium,
 		"two branches claim one feature — two agents believe they own it"}
 	checkOrphanClaim = Check{"orphan-claim", Medium,
@@ -168,7 +166,7 @@ var Checks = []Check{
 	checkUnchecked,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkInboxUnparsed, checkInboxUnknown,
-	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkNoClaim, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
+	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
 	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
 }
@@ -309,7 +307,7 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		// and neither carries a date to read. `next` reports those as taken.
 		if !terminal(f.Status) {
 			claim := r.ClaimFor(f.ID)
-			if f.Status == StatusInProgress || (claim != "" && r.BranchBuildsOn(claim, f.Rel)) {
+			if claim != "" && r.BranchBuildsOn(claim, f.Rel) {
 				// Not the doc's mtime. For a tracked file that records when git last
 				// wrote it out, which a merge or a checkout resets to now — so on the
 				// trunk checkout a freshly merged draft looked like activity and masked
@@ -326,10 +324,7 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 					continue // nothing to measure from; inventing an age is worse
 				}
 				if idle := Days(newest, today); idle >= StalledDays {
-					held := "In progress"
-					if f.Status != StatusInProgress {
-						held = f.Status + ", claimed by " + claim
-					}
+					held := f.Status + ", claimed by " + claim
 					report(checkStalled, at,
 						fmt.Sprintf("%s: %s, nothing has happened in %s",
 							f.Name(), held, countDays(idle)),
@@ -338,7 +333,7 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 			}
 		}
 
-		if f.Status == StatusInProgress || f.Status == StatusAccepted {
+		if f.Status == StatusAccepted {
 			open, total := f.TaskCount()
 			switch {
 			// Claimable with nothing in it: an agent takes this and finds no work.
@@ -398,14 +393,9 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		// Only a feature still being worked can have a claim problem. Once it is
 		// Shipped its branches are merged leftovers, and reporting those would fire
 		// on every project where nobody deletes branches — which is most of them.
-		if f.ID != "" && (f.Status == StatusInProgress || f.Status == StatusAccepted ||
-			f.Status == StatusDraft) {
+		if f.ID != "" && (f.Status == StatusAccepted || f.Status == StatusDraft) {
 			claims := r.Claims(f.ID)
 			switch {
-			case f.Status == StatusInProgress && len(claims) == 0:
-				report(checkNoClaim, at,
-					f.Name()+": In progress, but no branch claims it",
-					"branch and push it, or set the status back")
 			case len(claims) > 1:
 				report(checkSplitClaim, at,
 					fmt.Sprintf("%s: claimed by %s", f.Name(), strings.Join(claims, " and ")),

@@ -91,12 +91,13 @@ type Plan struct {
 	Guidance string `json:"guidance"`
 }
 
-// InProgress counts features currently In progress, for the WIP warning.
+// InProgress counts the features somebody is holding, for the WIP warning. A claim is
+// what says work has started; there is no status for it to disagree with.
 func (p Plan) InProgress() int {
 	n := 0
 	for _, group := range [][]Item{p.Yours, p.Ready, p.Taken, p.Blocked} {
 		for _, item := range group {
-			if item.Status == StatusInProgress {
+			if item.Mine || item.ClaimedBy != "" {
 				n++
 			}
 		}

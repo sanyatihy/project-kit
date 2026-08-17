@@ -34,7 +34,7 @@ How it works:
   The directory listing is the board and "status:" in the frontmatter is canonical.
   There is no database and no queue: the docs and the git branches are the state.
 
-    Draft -> Accepted -> In progress -> Shipped   (exits: Dropped, Superseded)
+    Draft -> Accepted -> Shipped   (exits: Dropped, Superseded)
 
   "status:" orders the board rather than gating it. Accepted is a human saying they
   have looked and blessed the design, so it is offered first; a Draft is invented
@@ -43,8 +43,8 @@ How it works:
   is a doc nobody wrote, and a BLOCKING line in docs/INBOX.md.
 
 The four rules:
-  1. In progress, then Accepted, then Draft, and lowest ID first within each.
-     Finishing beats starting, and blessed beats unblessed.
+  1. Accepted before Draft, lowest ID first within each, and the claim you already
+     hold before anything free. Blessed beats unblessed; finishing beats starting.
   2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
      order of work, so ordering needs no extra syntax.
   3. One agent per feature, one feature per checkout. "kit claim <id>" pushes the
@@ -194,9 +194,9 @@ Nothing local is written unless the push wins, so a lost race leaves no branch
 behind. On a project with no remote the branch is still created and the command
 says so — that claim is invisible to everyone else.
 
-This does not fetch first and does not edit the doc. A stale view only ever costs
-you a clearer error, because the remote decides; set status: In progress yourself
-once you start.
+This does not fetch first and does not edit the doc. A stale view only ever costs you
+a clearer error, because the remote decides. Nothing to set afterwards either: the
+branch is what says the work started.
 
   kit claim 0007
   kit claim 7`,
@@ -268,8 +268,8 @@ says so too, rather than promising a wait that will not end.
 
 What should I work on? Reads the feature docs and git, and names one task.
 
-Ranks In progress before Accepted before Draft, then by lowest ID, and within a
-feature returns the topmost unticked "## Tasks" box.
+Ranks Accepted before Draft, then by lowest ID, and within a feature returns the
+topmost unticked "## Tasks" box. What this checkout claims comes first of all.
 
 A Draft is offered like anything else — accepting promotes work rather than
 unlocking it. A doc with an empty ## Problem or ## Design is reported as blocked
