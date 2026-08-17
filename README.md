@@ -246,6 +246,13 @@ since on the trunk it still says what it said when the round landed — so a coo
 standing on the trunk sees the whole queue in the command everyone else already runs.
 `shipped-not-pushed` catches the other half at HIGH: shipped, and on no remote at all.
 
+Both ask the remote which branches exist, bounded at 15 seconds, and **both say so when
+it does not answer** rather than printing a page with nothing on it — claims fall back to
+the last fetch, `shipped-not-pushed` does not run, and the notice names that. It is the
+one output that has to be explicit: an unreachable remote and a project with nothing
+waiting otherwise look identical, and the board is read as good news. `--offline` skips
+the question and stays quiet, because that is an instruction rather than a failure.
+
 **Who may merge it is two decisions, at two granularities.** Branch protection on the
 trunk is the floor — the only thing an agent cannot route around — and its granularity is
 the whole project: protect the trunk and a log-field rename waits for a person, leave it
