@@ -44,10 +44,15 @@ Nothing else in the protocol changes.
 - [x] Template guidance for `## Log` and `## Design`
 - [x] 0001–0012 trimmed
 - [x] 0013–0024 trimmed
-- [ ] 0025–0036 trimmed
-- [ ] `kit audit --strict` green, and a spot check that a trimmed doc still answers why the
+- [x] 0025–0036 trimmed
+- [x] `kit audit --strict` green, and a spot check that a trimmed doc still answers why the
       feature exists and what it decided
 
 ## Log
 - 2026-08-17 — one-off, authorised directly: shipped docs are agent context rather than an
   archive, and rule 11 stands unchanged for everything else.
+- 2026-08-17 — 3,551 lines to 2,489 across 38 docs, 66 average. The oldest cut hardest
+  (0001–0012 by 45%); the newest least, being written under tighter guidance already.
+- 2026-08-17 — `shipped-not-pushed` fires on every trimmed doc until the branch is pushed:
+  it reads the commit that last wrote the doc, and editing a shipped doc is now a thing that
+  happens. Cleared by pushing; worth knowing before the next trim.

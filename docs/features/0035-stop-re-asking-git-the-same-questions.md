@@ -68,12 +68,7 @@ regression will be invisible without it.
 ## Log
 - 2026-08-17 — measured during a code audit, with a `git` wrapper on `$PATH` counting
   invocations.
-- 2026-08-17 — 116 → 58 processes from memoising the two, then → **28** from one
-  `git show-ref` behind `hasRef`. The remaining 28 are questions that genuinely differ per
-  claim: each branch's copy of its doc, and each branch's tip date.
-- 2026-08-17 — the unexpected half: `cmd/kit`'s suite went from 18.2s to **9.2s** at the
-  same `-parallel 4`. Every conformance test drives the binary several times, so a board
-  read costing a quarter of the processes shortens the gate as well. `make check` is now
-  ~11s, from 35s before 0034.
-- 2026-08-17 — the TECH ceiling went 250 → 300. Compressing entries to fit a number I had
-  set one feature earlier was optimising the metric, not the doc; the ceiling is an alarm.
+- 2026-08-17 — 116 → 58 from memoising the two, then → **28** from one `git show-ref`. What
+  remains differs per claim: each branch's copy of its doc, and its tip date.
+- 2026-08-17 — the gate halved with it, 18.2s → 9.2s, because every conformance test drives
+  the binary and pays the same fan-out.

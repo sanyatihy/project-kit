@@ -27,21 +27,13 @@ claims by ID without reading the board builds on a foundation that is not there,
 edit. TECH.md's own rule is *prevent before detecting* — `ship` exists because
 hand-stamping frontmatter produced findings, and it is now producing one itself.
 
-This got worse when 0021 landed. `status:` no longer gates anything, so `needs:` is
-the only ordering constraint left, and it is unenforced at the two moments that
-matter.
+0021 made it worse: `status:` no longer gates anything, so `needs:` is the only ordering
+constraint left and it is unenforced at the two moments that matter.
 
-`ship` has a second, worse version of it. From a checkout whose own board says the
-feature is **taken**, with two agents and a real remote:
-
-```
-$ kit next          taken   0001  — 0001-contested
-$ kit ship 0001     shipped  (was Accepted)                    (exit 0)
-```
-
-One agent froze another's feature mid-flight. `status: Shipped` is history the
-protocol forbids anyone to edit, so the agent actually holding the branch can no
-longer touch its own doc, and `audit` reports nothing at all.
+`ship` has a worse version — from a checkout whose own board says **taken**, `kit ship`
+exits 0 and freezes another agent's feature mid-flight. `Shipped` is history nobody may
+edit, so the agent holding the branch can no longer touch its own doc, and `audit` reports
+nothing.
 
 `kit drop` has two silent failures of its own. Dropping a feature others declare in
 `needs:` strands them without a word, and `next` goes on promising *"needs 0001 to ship

@@ -20,15 +20,10 @@ $ git ls-tree origin/main docs/features/ | grep -c 0001    0
 $ kit claim 0001    claimed  0001-planned      (exit 0)
 ```
 
-The consequence is not a bad branch, it is a broken review. Every claim taken this way
-is a child of the plan branch rather than a sibling off the trunk, so the only way to
-integrate any of it is to merge into that branch — and whoever does that is merging
-work they coordinated. It happened here: four features were built this way, three merge
-commits landed under the builder's name, and no branch was ever pushed for review.
-
-Rule 13 was violated downstream of this, not independently of it. The tool enforced the
-weaker half of a rule whose whole purpose is to keep implementation branches
-independent.
+The consequence is a broken review, not a bad branch: every claim taken this way is a
+child of the plan branch, so the only way to integrate it is a merge into the branch its
+own author coordinated. It happened here — four features built this way, three merge
+commits under the builder's name, nothing pushed for review.
 
 ## Non-goals
 - **Checking the plan is merged on the *remote* trunk.** The local trunk ref is what
@@ -40,22 +35,13 @@ independent.
   correct; it is taking work that must wait.
 
 ## Design
-`ClaimFeature` replaces `TrackedAtHEAD(target.Rel)` with the same test against the
-trunk: the doc must exist in `trunkRef()`'s tree. `trunkRef` already widens from the
-local trunk to each remote-tracking one, so a fresh clone with only `origin/main`
-resolves.
+`ClaimFeature` also requires the doc in `trunkRef()`'s tree, which widens from the local
+trunk to each remote-tracking one. An ordinary error at exit 2, not `NotYours`: nothing on
+an unlanded round is claimable, so an agent that takes the next id hits the same wall.
 
-Refused as an ordinary error, exit 2, not `NotYours`. This is not "somebody else has
-it, take another" — nothing is claimable until the plan lands, so an agent that moves
-on to the next id hits the same wall. The message says to land the round first.
-
-When no trunk resolves at all, the check is skipped and the existing behaviour stands:
-a project with one branch and no remote has no trunk to be absent from, and refusing
-there would break the first claim of every new project.
-
-`TrackedAtHEAD` stays for what it was for — a doc uncommitted in the working tree does
-not travel with the pushed branch — because the trunk check does not cover it: a doc
-can be on the trunk and edited-but-uncommitted here.
+`TrackedAtHEAD` stays for the case the trunk check does not cover — a doc on the trunk but
+edited and uncommitted here. Where no trunk resolves the check is skipped, or the first
+claim of every new project would be refused.
 
 ## Tasks
 - [x] `ClaimFeature` requires the doc on `trunkRef()`, exit 2, naming the round to land

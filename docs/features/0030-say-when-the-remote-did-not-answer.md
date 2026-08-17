@@ -75,6 +75,5 @@ at all. Silence is the one output that cannot be told from good news.
 - 2026-08-17 — found on the first real run of 0028's board: `kit next` said "nothing is
   planned yet" while 0029 sat pushed and unmerged, because `ls-remote` took 5.58s against
   a 5s bound.
-- 2026-08-17 — `kit help next` was already at its 45-line ceiling, so the paragraph was
-  paid for by tightening three others rather than by raising the number. Nothing was cut
-  but restatement.
+- 2026-08-17 — the bound was the smaller half: reporting expiry as an empty page is worse,
+  because absence and ignorance render identically.

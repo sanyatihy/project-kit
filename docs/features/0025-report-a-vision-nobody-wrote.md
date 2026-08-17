@@ -18,10 +18,9 @@ while telling it nothing — the check is silenced by the act of not answering i
 Live in two projects adopted this week: both carry a `docs/VISION.md` that is entirely
 template prose and HTML comments, and both audit clean.
 
-This is the defect `unfilled-template` exists for, one file over. Rule 1 of the
-protocol sends every agent to `docs/VISION.md` before drafting, and says a feature
-that cannot be traced to it is the wrong feature. Against a stub that traceability is
-theatre: anything traces to nothing.
+This is `unfilled-template`'s defect one file over. Rule 1 sends every agent to
+`docs/VISION.md` before drafting and says a feature that cannot be traced to it is the
+wrong feature — against a stub, anything traces to nothing.
 
 ## Non-goals
 - **Judging whether a vision is any good.** Only whether it was written. `audit`

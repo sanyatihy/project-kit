@@ -46,10 +46,6 @@ transfers no objects, and answers exactly what `Claims` needs. Where a remote ex
 replaces `refs/remotes/*` entirely; local and worktree branches still count, being this
 machine's own state.
 
-```
-Claims(id) = local branches ∪ worktree branches ∪ (ls-remote heads, if reachable)
-```
-
 Cached per `Repo` and timeout-bounded, because `kit next ~/code/*` fans out over every
 project. On failure or `--offline` it falls back to the mirror — the one case where a
 phantom claim is possible, which is why that message names `git fetch --prune`. `claim`

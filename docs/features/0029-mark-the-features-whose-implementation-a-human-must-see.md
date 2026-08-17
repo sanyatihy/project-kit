@@ -11,15 +11,10 @@ related: 0018-give-the-human-an-accept-command.md
 ---
 
 ## Problem
-Branch protection is the only enforceable review policy, and its granularity is the
-whole project. Real projects are not uniform: in one repo the operator wants to read
-the change that touches billing and not the one that renames a log field. Protect the
-trunk and every trivial change waits on a human; leave it open and the billing change
-merges unseen.
-
-There is nowhere to say *this one*. The awaiting-review board 0028 adds shows a
-coordinator everything that is waiting and gives it no way to know which entries are
-not its to merge.
+Branch protection is the only enforceable review policy and its granularity is the whole
+project. Protect the trunk and a log-field rename waits on a human; leave it open and the
+billing change merges unseen. There is nowhere to say *this one*, and 0028's board gives a
+coordinator no way to know which entries are not its to merge.
 
 ## Non-goals
 - **Replacing branch protection.** It stays the floor and the only thing that stops a
@@ -43,26 +38,16 @@ review: human        # a person merges this one, whatever the trunk allows
 Empty means the coordinator may merge it. Absent behaves as empty, so every existing
 doc keeps working and no migration is needed.
 
-**Set when the plan round is accepted, not when the feature is built.** That is the
-moment the operator has the whole set in front of them and is already deciding, and it
-is a decision made before anyone has sunk work into the outcome. `kit accept <id>
---review` writes the field, so the marking happens through the command that already
-belongs to the human rather than by hand.
+**Set when the round is accepted, not when the feature is built** — the moment the
+operator has the whole set in front of them, before anyone has sunk work into the outcome.
+`kit accept <id> --review` writes it, through the command that already belongs to the human.
 
-**The board carries it.** 0028's awaiting-review entries show `needs a human` against
-the marked ones. Together with 0028's "you built this" marking, a coordinator agent has
-the two facts it needs: what is not mine to merge, and what is nobody's but a person's.
+**The board carries it**, so a coordinator agent has both facts: what is not mine to merge,
+and what is nobody's but a person's.
 
-**`audit` reports nothing about it.** There is no drift to detect — the field says what
-somebody decided, and a coordinator that ignores it is not producing a state the kit
-can see. That is the forge's job, and the protocol says so plainly instead of implying
-the kit is a gate.
-
-The honest limit, stated in the protocol rather than left to be discovered: this is
-legibility. An agent can edit the field, exactly as it can skip any other check. What
-makes it hold is that the field arrives on the trunk through a pull request a human
-merged, so changing it afterwards is another pull request — visible in the same place
-the work is.
+**`audit` reports nothing about it.** There is no drift to detect — a coordinator that
+ignores the mark produces no state the kit can see. What makes it hold is that the field
+arrives on the trunk through a pull request a human merged.
 
 ## Tasks
 - [x] `review:` parsed on `Feature`, empty and absent both meaning the coordinator may

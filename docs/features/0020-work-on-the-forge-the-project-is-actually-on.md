@@ -54,17 +54,9 @@ Rung 1 outranks rung 2 because a hostname cannot separate self-hosted GitLab fro
 rung 3 is the only one that answers on a fresh `git init` with no remote. `stackLayout`
 becomes keyed by forge, and `--forge` overrides every rung.
 
-**Unknown writes no CI file** and closes with an instruction the agent can act on, per
-0013 and 0014 — a missing file is visible, a wrong one is not:
-
-```
-  no CI file — nothing here says which forge this project is on.
-  after git remote add, run kit init again and it will detect one.
-  or say so now: kit init . --stack go --forge gitlab
-```
-
-Not an inbox line: the inbox is for decisions only a human can make, and the forge is a
-discoverable fact.
+**Unknown writes no CI file** and closes with both ways to resolve it — a missing file is
+visible, a wrong one is not. Not an inbox line: the forge is a discoverable fact, and the
+inbox is for decisions only a human can make.
 
 `glpat-` and GitLab deploy-token shapes join the secret scan. The protocol says it once,
 neutrally: *a feature is one pull request (merge request on GitLab)*.
