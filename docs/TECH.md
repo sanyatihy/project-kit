@@ -80,6 +80,10 @@ next command refuses.
   checkout, any non-empty value counting. Branch protection is the floor and the only real
   enforcement; none of this distinguishes anybody while agents share one credential, as four
   agents' commits here all carried the operator's name.
+- **An answer that cannot change inside one command is asked once** — the trunk, this
+  checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`).
+  Per feature instead, a 30-feature board read cost 116 git processes against 28 now.
+  `make gitcount` counts them.
 - **Claims are read from the remote, not from `refs/remotes/*`**, which git prunes on
   neither `fetch` nor `pull`, so a branch deleted on merge read as a live claim for ever.
   One `ls-remote` per remote, bounded at 15s — it was 5, which a working remote did not fit

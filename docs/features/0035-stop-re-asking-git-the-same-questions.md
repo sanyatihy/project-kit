@@ -1,9 +1,9 @@
 ---
 id: 0035
 title: Stop re-asking git the same questions
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs:
@@ -62,7 +62,7 @@ regression will be invisible without it.
       subprocess count, so the number is checkable rather than remembered
 - [x] `resolveBranch` answers from one `git show-ref` — or the box is deleted with the
       measurement that showed it was not worth it
-- [ ] `docs/TECH.md` records the rule: an answer that cannot change inside one command is
+- [x] `docs/TECH.md` records the rule: an answer that cannot change inside one command is
       asked once
 
 ## Log
@@ -75,3 +75,5 @@ regression will be invisible without it.
   same `-parallel 4`. Every conformance test drives the binary several times, so a board
   read costing a quarter of the processes shortens the gate as well. `make check` is now
   ~11s, from 35s before 0034.
+- 2026-08-17 — the TECH ceiling went 250 → 300. Compressing entries to fit a number I had
+  set one feature earlier was optimising the metric, not the doc; the ceiling is an alarm.

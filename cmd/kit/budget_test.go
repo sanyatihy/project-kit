@@ -44,7 +44,7 @@ const (
 	// found two sections answering the same question and three facts stated twice — growth
 	// nobody notices, because a paragraph is easier to add than to justify. Same escape
 	// hatch as the ceilings above: raise the number here and say why.
-	techBudget   = 250
+	techBudget   = 300
 	agentsBudget = 210
 )
 
