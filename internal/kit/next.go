@@ -38,7 +38,8 @@ type Waiting struct {
 	Title  string    `json:"title"`
 	Doc    string    `json:"doc"`
 	Branch string    `json:"branch"`
-	Since  time.Time `json:"since"` // when the branch last moved
+	Since  time.Time `json:"since"`          // when the branch last moved
+	Mine   bool      `json:"mine,omitempty"` // the reader built it, so it is not theirs to merge
 }
 
 // Plan sorts the open features into what is yours, what you can start, what is
@@ -192,6 +193,7 @@ func Survey(r *Repo) Plan {
 			Doc:    waiting.Feature.Rel,
 			Branch: waiting.Branch,
 			Since:  waiting.Since,
+			Mine:   waiting.Mine,
 		})
 	}
 	plan.Guidance = guidanceFor(r, plan)

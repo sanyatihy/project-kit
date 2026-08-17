@@ -680,6 +680,7 @@ type Review struct {
 	Feature *Feature
 	Branch  string
 	Since   time.Time // the branch's last commit: when it stopped moving
+	Mine    bool      // this reader built it, so it is not this reader's to merge
 }
 
 // AwaitingReview lists the features waiting for somebody other than their builder: a
@@ -718,7 +719,8 @@ func (r *Repo) AwaitingReview() []Review {
 			if trunk != "" && r.reaches(rev, trunk) {
 				continue
 			}
-			out = append(out, Review{Feature: f, Branch: name, Since: r.commitDate(rev)})
+			out = append(out, Review{Feature: f, Branch: name, Since: r.commitDate(rev),
+				Mine: r.BuiltHere(f.ID, rev)})
 			break
 		}
 	}
@@ -751,6 +753,24 @@ func (r *Repo) OnlyHere(f *Feature) bool {
 		return false
 	}
 	return strings.TrimSpace(r.git("branch", "--remotes", "--contains", rev)) == ""
+}
+
+// BuiltHere reports whether the reader built this feature — the one thing a coordinator
+// that is itself an agent has to know, because its own work is the work it may not merge.
+//
+// Two answers, weakest last. The checkout standing on the claim is unambiguous. Otherwise
+// the branch's author is compared with this checkout's git identity, which is only worth
+// anything where agents have identities of their own: measured on this repo, every commit
+// from four different agents carried the operator's name, and nothing — not this, not a
+// forge rule requiring a non-author reviewer — could tell them apart. Unknown answers
+// false: this makes the invariant legible, and legibility is all a well-behaved agent
+// needs.
+func (r *Repo) BuiltHere(id, rev string) bool {
+	if r.Mine(id) {
+		return true
+	}
+	who := strings.TrimSpace(r.git("config", "user.email"))
+	return who != "" && strings.TrimSpace(r.git("log", "-1", "--format=%ae", rev)) == who
 }
 
 // claimIDs are the strings a branch may cite to claim a feature: the id it declares, and

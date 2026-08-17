@@ -576,7 +576,13 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		fmt.Printf("\n  %s\n", paint("awaiting review", "36", color))
 		for _, item := range plan.AwaitingReview {
 			fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
-			fmt.Printf("          %s · %s\n", item.Branch, waited(item.Since))
+			// Whose it is decides what the reader may do with it, so it goes on the
+			// same line as the branch rather than being left to the guidance.
+			mine := ""
+			if item.Mine {
+				mine = " · " + paint("you built this — not yours to merge", "33", color)
+			}
+			fmt.Printf("          %s · %s%s\n", item.Branch, waited(item.Since), mine)
 		}
 	}
 

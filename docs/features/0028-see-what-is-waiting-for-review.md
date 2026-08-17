@@ -140,7 +140,7 @@ sounding like a guarantee.
 - [x] Closing guidance names reviewing as the work when that is all there is
 - [x] `shipped-not-pushed` at HIGH, quiet offline and quiet when the work is on the
       trunk; conformance for each
-- [ ] Each awaiting-review entry says whether the reader built it, so a coordinator
+- [x] Each awaiting-review entry says whether the reader built it, so a coordinator
       agent knows what it may not merge
 - [ ] Rule 13 reworded around separation of duties, with the three roles, the landing
       barrier, distinct agent identities, and the policy living in branch protection,

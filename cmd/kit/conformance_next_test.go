@@ -655,3 +655,32 @@ func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 		t.Errorf("after landing, %d still awaiting review: %+v", len(got), got)
 	}
 }
+
+func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
+	// A coordinator that is itself an agent needs one fact from this board: which
+	// entries are its own. Its own work is the work it may not merge, and nothing else
+	// on the board answers it.
+	a, b := twoAgents(t)
+	// The identity the fixture commits with. Real agents need distinct ones for any of
+	// this to mean anything — measured on this repo, four agents shared the operator's.
+	gitIn(t, a.Root, "config", "user.email", "kit@example.invalid")
+	shipOnItsBranch(a, "0007", "widget", "A widget")
+
+	// The builder's own checkout: the branch's commits carry its identity.
+	if got := a.plan("next", "--json").AwaitingReview; len(got) != 1 || !got[0].Mine {
+		t.Errorf("the builder's own board does not say it built 0007: %+v", got)
+	}
+	a.run("next").ok().has("you built this")
+
+	// A different checkout, with an identity of its own, is free to merge it — and
+	// saying "you built this" there would be the kit inventing a reason to stop.
+	gitIn(t, b.Root, "config", "user.email", "coordinator@example.invalid")
+	b.git("fetch", "-q", "origin")
+	got := b.plan("next", "--json").AwaitingReview
+	if len(got) != 1 {
+		t.Fatalf("the coordinator's board reports %d awaiting review, want 1: %+v", len(got), got)
+	}
+	if got[0].Mine {
+		t.Errorf("0007 is marked as the coordinator's own work: %+v", got[0])
+	}
+}
