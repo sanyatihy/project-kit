@@ -71,9 +71,9 @@ only record that we thought about something go.
 
 ## Tasks
 - [x] `docs/TECH.md` merged and cut to ≤250 lines, with no fact stated twice
-- [ ] `templates/AGENTS-section.md` cut to ≤110 lines, every rule kept, and the repo's
+- [x] `templates/AGENTS-section.md` cut to ≤115 lines, every rule kept, and the repo's
       own `AGENTS.md` regenerated
-- [ ] Ceilings for both in `cmd/kit/budget_test.go`, with the reasoning for the numbers
+- [x] Ceilings for both in `cmd/kit/budget_test.go`, with the reasoning for the numbers
 - [ ] `kit help as-built` and README describe what TECH is for, in one place rather than
       three
 - [ ] The template and protocol shift weight from writing before the work to writing
@@ -95,3 +95,11 @@ only record that we thought about something go.
   needs two negatives" without *why either alone misfires* is a rule a later agent will
   undo. Box rewritten to 250 rather than met by gutting entries. Words are the better
   measure anyway: lines depend on wrap width.
+- 2026-08-17 — the protocol is 114 lines from 153, all thirteen rules kept, and the ceiling
+  is 115. The reasoning behind the rules moved to `docs/TECH.md`, which is read once rather
+  than at the start of every session in every project; what stayed is each constraint and
+  its consequence, in sub-bullets so a rule survives being read in isolation. The last ten
+  lines to reach 110 would have cost content, not filler.
+- 2026-08-17 — `TestHelpAnswersWhatAnOutsideReviewGotWrong` caught the rewrite dropping the
+  literal "One feature per checkout." while keeping the meaning. That test pins the phrases
+  an outside reader once got wrong, and rephrasing one is how the guarantee is lost.
