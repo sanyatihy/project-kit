@@ -40,10 +40,13 @@ whole model, and `kit help template` prints the feature doc format.
    draft settles them before building. Anything only a human can answer goes to
    `docs/INBOX.md` with `kit block` — the one thing that still stops a claim.
 2. **One agent per feature. Take it with `kit claim <id>`.** It pushes the branch named
-   after the doc, and creating that ref on the remote is what decides: exit 0 is yours,
-   exit 1 means somebody was first — run `kit next` and take something else. Losing is
-   normal. Never create the claim branch by hand: a branch only you can see is not a
-   claim, and a push reporting "up to date" found somebody else's.
+   after the doc, and creating that ref on the remote is what decides. Exit 0 is yours.
+   Exit 1 means not yours: somebody was first, or the board would not have offered it —
+   an unmet `needs:`, a BLOCKING question, a doc nobody wrote, an id that disagrees with
+   its filename. Either way run `kit next` and take something else; losing is normal.
+   Exit 2 is the command unable to run, a plan that has not landed on the default branch
+   among the reasons. Never create the claim branch by hand: a branch only you can see is
+   not a claim, and a push reporting "up to date" found somebody else's.
 
    **A feature `kit next` lists as taken is not yours.** Not to work on, not to tick a
    box in, not to "help with" because it looked slow. Two agents in one feature produce
@@ -52,14 +55,15 @@ whole model, and `kit help template` prints the feature doc format.
    **If nothing is free, stop.** Everything claimed or waiting is a real answer — say
    so and wait. An idle agent costs nothing; two in one feature costs the feature.
 3. **One feature per checkout. Work in the worktree `kit claim` prints.** Git provides
-   the isolation; the kit only refuses to hand out work in a checkout that is occupied.
-   Starting a second feature where you stand puts both in one branch and they ship as
-   one.
+   the isolation; the kit refuses to name a starting point in a checkout that already
+   holds one. It still lists what is free, under **free, but not in this checkout**, and
+   points `kit claim` at a worktree of its own. Starting a second feature where you stand
+   puts both in one branch and they ship as one.
 4. **Read the feature doc for the design.** Never restate or re-derive design
    anywhere else.
 5. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the
-   order of work. Tick it in the same commit that implements it — you do not open the
-   PR, so the commit is the unit that has to be honest. Among features of equal
+   order of work. Tick it in the same commit that implements it — nobody re-reads the
+   branch to check, so the commit is the unit that has to be honest. Among features of equal
    status, `kit next` goes by ID, lowest first.
 6. **Discovered work** becomes a new `## Tasks` box, a new feature doc
    (`kit new "<title>"`), or a line in `docs/features/BACKLOG.md` if it is real but
@@ -87,8 +91,11 @@ whole model, and `kit help template` prints the feature doc format.
 12. **When the last box is ticked, run `make check` and `kit audit --strict`, then
     `kit ship <id>`.** Those two are the gate: green means the code holds and the docs
     and the repo agree. Shipping by hand is where `unticked-shipped` and
-    `shipped-no-date` come from. Then move durable facts into `docs/TECH.md`.
-13. **Shipping is a handoff: you never merge your own work.** Push the branch and stop.
+    `shipped-no-date` come from. `ship` refuses past that gate too — an unmet `needs:`,
+    or a claim held by another checkout — and neither is a malfunction. Then move durable
+    facts into `docs/TECH.md`.
+13. **Shipping is a handoff: you never merge your own work.** Push the branch, open the
+    pull request if the forge has them — opening is not approving — and stop.
     Three roles, one to an agent per feature: a **drafter** plans the round, a **builder**
     claims a feature and ships it, a **coordinator** merges what somebody else built. The
     trunk is the barrier between them — a plan lands before anything on it can be claimed,

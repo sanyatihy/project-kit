@@ -22,7 +22,13 @@ const (
 	// The protocol is written into every project and re-read at the start of every
 	// session, so its length is a tax paid per session per project — the only text
 	// here where growth compounds. It earns the tightest number.
-	protocolBudget = 145
+	//
+	// Raised from 145 by 0028, which added the far side of ship: the three roles, the
+	// barrier between them, and what each exit code of `claim` now means. Every line of
+	// it is a rule an agent got wrong in practice, and the alternative to writing them
+	// down was a session spent rediscovering them. The tiers behind the rules live in
+	// docs/TECH.md, which is read once, rather than here.
+	protocolBudget = 155
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.

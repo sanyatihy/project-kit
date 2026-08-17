@@ -145,7 +145,7 @@ sounding like a guarantee.
 - [x] Rule 13 reworded around separation of duties, with the three roles, the landing
       barrier, distinct agent identities, and the policy living in branch protection,
       in `templates/AGENTS-section.md`
-- [ ] Rule 2 states what exit 1 now means, rule 12 warns that `ship` has refusals the
+- [x] Rule 2 states what exit 1 now means, rule 12 warns that `ship` has refusals the
       gate does not cover, rule 3 describes what `next` actually does, and somebody is
       named as opening the pull request
 - [ ] "Enforce, do not instruct" in the protocol and `docs/TECH.md`, with the three
