@@ -224,34 +224,27 @@ Each of these has already caused a bug.
 ## Verifying
 
 ```sh
-make check     # fmt-check, vet, unit tests, conformance suite
+make check     # fmt-check, vet, unit tests, conformance suite — the whole gate
 make vuln      # govulncheck against the module
 make install   # go install ./cmd/kit
-kit audit .    # the kit passes its own audit
 ```
 
-Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. CI runs
-`golangci-lint`, `make check`, `make vuln` and `go run ./cmd/kit audit . --strict` on every
-PR and push to `main` — `go run` so it needs no credential.
+Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. CI runs the same
+gate plus `golangci-lint`, `make vuln` and `go run ./cmd/kit audit . --strict` — `go run`
+so it needs no credential.
 
 **The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
 it against throwaway projects, asserting on stdout, stderr, exit codes and the files left
-behind. It is a Go test in-tree because the previous suite was an external script, which is
-how it got deleted without anything noticing. Two properties are load-bearing:
+behind. In-tree because the previous suite was an external script, which is how it got
+deleted without anything noticing. Three properties are load-bearing:
 `TestEveryRegisteredCheckIsExercised` compares the cases against `kit.Checks` both ways, so
-a check with no test fails the build; and every audit case starts from the same clean
-project, which must report nothing, or the firing cases are vacuous.
-
-Every test declares `t.Parallel()`, capped by `PARALLEL` in the Makefile — 4 of 12 cores by
-default, because the gate runs beside whatever else the operator is doing. What buys that
-is independence the suite already had: a `t.TempDir()` per test, no `os.Chdir` or
-`os.Setenv` anywhere, and the binary built once behind `sync.Once`. Give any of the three
-up and the gate goes back to 32.8s from 17.4s capped, or 8.8s uncapped.
-
-`cmd/kit` coverage
-reads about 4% and stays there — these tests drive a subprocess, so nothing is instrumented.
+a check with no test fails the build; every audit case starts from the same clean project,
+which must report nothing; and every test is independent — own `t.TempDir()`, no
+`os.Chdir` or `os.Setenv`, binary built once behind `sync.Once` — which is what lets them
+declare `t.Parallel()`. `PARALLEL` caps how many run at once, 4 of 12 cores by default
+since the gate runs beside other work: 32.8s serial, 17.4s capped, 8.8s uncapped. Coverage
+reads 4% — subprocess tests instrument nothing.
 
 ## State of play
 
-Private repo, tagged `v0.2.0`, installed with `go install …/cmd/kit@latest`; four projects
-run it. `make check` is the whole gate and the kit passes its own audit in CI.
+Private repo, tagged `v0.2.0`, `go install …/cmd/kit@latest`; four projects run it.
