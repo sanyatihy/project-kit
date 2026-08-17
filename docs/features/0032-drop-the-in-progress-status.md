@@ -1,9 +1,9 @@
 ---
 id: 0032
 title: Drop the In progress status
-status: In progress
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs: 0031
