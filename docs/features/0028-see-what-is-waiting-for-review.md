@@ -136,7 +136,7 @@ sounding like a guarantee.
 ## Tasks
 - [x] `Repo.AwaitingReview()` — Shipped, branch on the remote, not reachable from the
       trunk — reusing `remoteHeads` and `trunkRef`
-- [ ] `kit next` prints an `awaiting review` section, in text and `--json`
+- [x] `kit next` prints an `awaiting review` section, in text and `--json`
 - [ ] Closing guidance names reviewing as the work when that is all there is
 - [ ] `shipped-not-pushed` at HIGH, quiet offline and quiet when the work is on the
       trunk; conformance for each
@@ -168,3 +168,8 @@ sounding like a guarantee.
   exactly the case it exists to report. Measured: from the trunk the doc says `Accepted`
   while the branch says `Shipped`. The cost is that a branch whose objects were never
   fetched cannot be read, and is passed over rather than guessed at.
+- 2026-08-17 — the wait is measured from the branch's last commit, not the doc's
+  `shipped:`, which is a date and cannot tell an hour from a day. A feature awaiting
+  review still appears under `taken` as well: from the trunk its claim branch does
+  exist and it is not claimable, so both lines are true and they answer different
+  questions.

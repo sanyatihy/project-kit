@@ -569,6 +569,17 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		}
 	}
 
+	// The far side of ship, below the board because none of it is claimable and above
+	// the guidance because the guidance may send the reader here. It is the same command
+	// everyone runs, so a coordinator has one place to look rather than a second tool.
+	if len(plan.AwaitingReview) > 0 {
+		fmt.Printf("\n  %s\n", paint("awaiting review", "36", color))
+		for _, item := range plan.AwaitingReview {
+			fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
+			fmt.Printf("          %s · %s\n", item.Branch, waited(item.Since))
+		}
+	}
+
 	if plan.Guidance != "" && len(plan.Yours) == 0 && len(plan.Ready) == 0 {
 		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
 		// The command goes on its own line, unwrapped, so it can be copied. The
@@ -578,6 +589,23 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 		}
 	}
 	fmt.Println()
+}
+
+// waited says how long a branch has been sitting there, in the coarsest unit that is
+// still true. A day is the useful granularity: what the reader decides is whether this
+// has been ignored, and nothing about an hour answers that.
+func waited(since time.Time) string {
+	if since.IsZero() {
+		return "waiting"
+	}
+	switch days := kit.Days(since, time.Now()); {
+	case days <= 0:
+		return "waiting since today"
+	case days == 1:
+		return "waiting 1 day"
+	default:
+		return fmt.Sprintf("waiting %d days", days)
+	}
 }
 
 // ---------------------------------------------------------------- audit

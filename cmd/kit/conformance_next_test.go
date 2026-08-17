@@ -590,3 +590,40 @@ func TestNextStillRefusesASinglePathItCannotRead(t *testing.T) {
 	r.errHas("kit next: not a directory: " + gone)
 	r.lacks("start here")
 }
+
+func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
+	// The blind spot this closes: from the trunk, a feature shipped on its branch and
+	// never merged is invisible. The doc here still says Accepted — the status that
+	// matters is the one on the branch, which is the only place the ship happened.
+	a, _ := twoAgents(t)
+	trunk := a.headBranch()
+	a.run("claim", "0007").ok()
+	a.git("checkout", "-q", "0007-widget")
+	a.write("thing.txt", "the work\n")
+	feature(a, "0007", "widget", "A widget", "Shipped", "- [x] Build it")
+	a.commitAll("build and ship 0007")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
+	a.git("checkout", "-q", trunk)
+
+	a.run("next").ok().has("awaiting review", "0007-widget", "waiting")
+
+	plan := a.plan("next", "--json")
+	if len(plan.AwaitingReview) != 1 {
+		t.Fatalf("--json reports %d awaiting review, want 1: %+v", len(plan.AwaitingReview),
+			plan.AwaitingReview)
+	}
+	if got := plan.AwaitingReview[0]; got.ID != "0007" || got.Branch != "0007-widget" {
+		t.Errorf("awaiting review entry is %+v, want 0007 on 0007-widget", got)
+	}
+	if plan.AwaitingReview[0].Since.IsZero() {
+		t.Errorf("the entry says nothing about how long it has waited: %+v",
+			plan.AwaitingReview[0])
+	}
+
+	// The quiet half: once the work is on the trunk there is nothing to say, whether or
+	// not the branch was deleted afterwards.
+	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+	if got := a.plan("next", "--json").AwaitingReview; len(got) != 0 {
+		t.Errorf("after landing, %d still awaiting review: %+v", len(got), got)
+	}
+}

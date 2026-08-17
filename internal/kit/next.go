@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // WIPLimit is how many features may be In progress before finishing beats
@@ -29,6 +30,17 @@ type Item struct {
 	Mine      bool     `json:"mine,omitempty"`
 }
 
+// Waiting is one feature on the review board: shipped by its builder, pushed, and not
+// on the trunk. It carries no task and no claim — there is nothing left to build, and
+// what to do with it is somebody else's decision.
+type Waiting struct {
+	ID     string    `json:"id"`
+	Title  string    `json:"title"`
+	Doc    string    `json:"doc"`
+	Branch string    `json:"branch"`
+	Since  time.Time `json:"since"` // when the branch last moved
+}
+
 // Plan sorts the open features into what is yours, what you can start, what is
 // taken, and what is blocked.
 type Plan struct {
@@ -39,6 +51,11 @@ type Plan struct {
 	Ready   []Item `json:"ready"`
 	Taken   []Item `json:"taken"`
 	Blocked []Item `json:"blocked"`
+
+	// AwaitingReview is the far side of ship: work that has left its builder and
+	// arrived nowhere. Not part of the board above — none of it is claimable, and
+	// nothing here is anybody's to build.
+	AwaitingReview []Waiting `json:"awaiting_review,omitempty"`
 
 	// Branch is the checkout's own branch, and Claiming is the feature that branch
 	// claims, empty when it claims none.
@@ -167,6 +184,15 @@ func Survey(r *Repo) Plan {
 		for i := range group {
 			group[i].Task = ""
 		}
+	}
+	for _, waiting := range r.AwaitingReview() {
+		plan.AwaitingReview = append(plan.AwaitingReview, Waiting{
+			ID:     waiting.Feature.ID,
+			Title:  waiting.Feature.Title,
+			Doc:    waiting.Feature.Rel,
+			Branch: waiting.Branch,
+			Since:  waiting.Since,
+		})
 	}
 	plan.Guidance = guidanceFor(r, plan)
 	return plan

@@ -679,6 +679,7 @@ func (r *Repo) BranchBuildsOn(branch, rel string) bool {
 type Review struct {
 	Feature *Feature
 	Branch  string
+	Since   time.Time // the branch's last commit: when it stopped moving
 }
 
 // AwaitingReview lists the features waiting for somebody other than their builder: a
@@ -720,11 +721,23 @@ func (r *Repo) AwaitingReview() []Review {
 			if trunk != "" && r.reaches(rev, trunk) {
 				continue
 			}
-			out = append(out, Review{Feature: f, Branch: name})
+			out = append(out, Review{Feature: f, Branch: name, Since: r.commitDate(rev)})
 			break
 		}
 	}
 	return out
+}
+
+// commitDate is when a revision was last committed, or the zero time. How long a branch
+// has waited is measured from here rather than from the doc's shipped:, which is a date
+// and so cannot tell an hour from a day.
+func (r *Repo) commitDate(rev string) time.Time {
+	if out := strings.TrimSpace(r.git("log", "-1", "--format=%cI", rev)); out != "" {
+		if when, err := time.Parse(time.RFC3339, out); err == nil {
+			return when
+		}
+	}
+	return time.Time{}
 }
 
 // statusOn reads a doc's status: from a revision's copy of it, empty when that revision
