@@ -17,6 +17,25 @@ templates/        what `kit init` writes, embedded via assets.go
 
 Requires only git at runtime. Python is not used anywhere.
 
+## Enforce, do not instruct
+
+A constraint in prose is one an agent can skim, misread, or reason its way past; a
+refusal in the tool is one it has to deliberately route around. Measured in one session:
+the rule against merging your own work was violated twice by an agent that had read it,
+and `ship`'s coded refusal was obeyed the first time it fired — on that same agent,
+minutes later.
+
+| tier | example | an agent gets past it by |
+| --- | --- | --- |
+| the remote | branch protection, credentials | nothing it can do |
+| the kit | `claim` refusing unmet `needs:` | not using the kit |
+| prose | "push the branch and stop" | reading carelessly |
+
+A rule belongs at the highest tier it can reach, so a sentence in the protocol is a last
+resort rather than a first one: whenever one is added, the question is what would make it
+unnecessary. Where prose is genuinely the only option — judgement, taste, what to write
+down — it says so plainly instead of sounding like a guarantee.
+
 ## The model
 
 A project has one markdown file per feature, `docs/features/NNNN-name.md`, whose

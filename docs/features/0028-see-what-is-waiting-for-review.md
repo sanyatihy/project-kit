@@ -148,7 +148,7 @@ sounding like a guarantee.
 - [x] Rule 2 states what exit 1 now means, rule 12 warns that `ship` has refusals the
       gate does not cover, rule 3 describes what `next` actually does, and somebody is
       named as opening the pull request
-- [ ] "Enforce, do not instruct" in the protocol and `docs/TECH.md`, with the three
+- [x] "Enforce, do not instruct" in the protocol and `docs/TECH.md`, with the three
       tiers, so a future rule is weighed against making itself unnecessary
 - [ ] README and `kit help next` describe the review board and who reads it
 

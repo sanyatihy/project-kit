@@ -228,6 +228,10 @@ over speed on anything non-trivial. Use judgement on trivial tasks.
 - **Define success, then loop.** Say what "done" looks like before starting, and
   verify it yourself rather than reporting completion and hoping. A box you cannot
   check the truth of was too big; split it.
+- **Enforce, do not instruct.** A rule in prose is one an agent can skim past; a refusal
+  in the tool is one it has to route around deliberately. Before adding a rule here, ask
+  what would remove the need for it — a refusal in `kit`, or protection on the remote.
+  Prose is the last tier, honest only for judgement and taste; `docs/TECH.md` has why.
 - **Write as much as necessary and no more.** Cut restatement, hedging and padding.
   Never cut a decision, a constraint, or the evidence behind it — terseness is not a
   virtue on its own. Both failures are real: a doc nobody reads spends the context
