@@ -57,7 +57,7 @@ The status line in the docs becomes `Draft -> Accepted -> Shipped`, with `Droppe
 `Superseded` as exits, and the claim branch is what says work is happening.
 
 ## Tasks
-- [ ] `In progress` leaves the vocabulary — `AllStatuses`, `claim`, `stalled`, `no-tasks`
+- [x] `In progress` leaves the vocabulary — `AllStatuses`, `claim`, `stalled`, `no-tasks`
       — and `next` orders by claim with the WIP warning counting claims; `no-claim` is
       retired from the registry and its conformance case; conformance that a claimed
       feature still sorts ahead of an unclaimed one
@@ -76,3 +76,12 @@ The status line in the docs becomes `Draft -> Accepted -> Shipped`, with `Droppe
 - 2026-08-17 — this doc is `In progress` while the feature that removes that status is
   built, which is the contradiction it exists to end. `ship` sets `Shipped` from whatever
   it finds, so the last edit clears it.
+- 2026-08-17 — the design said `next` would sort a claimed feature ahead of an unclaimed
+  one. Built, it changed nothing observable and was removed: the board already renders
+  this checkout's claim as **yours** above everything and somebody else's under **taken**
+  below what is free, so no ordering inside the list can move a feature anywhere the
+  groups do not already put it. The conformance asserts the invariant the groups give.
+- 2026-08-17 — `commitAllAt` stamped commits at noon, so a fixture aged N days sat
+  N-and-a-half days from midnight today and floored to N-1. It never showed while
+  `stalled` could fire on the status alone; keying it to the claim branch made every
+  threshold test a day off. Commits are stamped at midnight now.
