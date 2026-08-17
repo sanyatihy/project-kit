@@ -11,58 +11,51 @@ related: 0031-cut-the-kit-s-own-docs-to-what-gets-read.md
 ---
 
 ## Problem
-The kit's writing guidance says how *much* to write and not what to leave out, so agents
-following it produce padding that passes every check. Measured here against
-`../localcode`, built with the same protocol:
+Feature docs are agent context, and this repo's are 3,551 lines / 31k words across 37
+docs. The guidance says how much to write, never what to leave out, so every doc is padded
+and still passes every check.
 
-| | this repo | localcode |
+| | here | target |
 |---|---|---|
-| `docs/TECH.md` | 254 lines | 77 |
-| typical `## Log` entry | 4–6 lines | 1–3 |
-
-The three failures, in what they cost:
-
-- **`## Log` reads as a diary.** "Committed once with `make check` red", "the box said
-  ≤200 and lands at 247", "paid for by folding it into the conformance paragraph". None
-  changes a later decision; all of it is read by every agent that opens the doc.
-- **TECH retells incidents where a fact would do.** localcode states the parameter and
-  links the feature doc for the argument; this repo carries the argument twice.
-- **Ceilings became targets.** Three features in a row ended by compressing content to fit
-  a number set in an earlier feature — the metric optimising itself, at the cost of the
-  entries that made a rule decidable.
+| feature doc | 96 lines avg, 186 worst | ≤60, most far less |
+| `## Log` entry | 4–6 lines | 1 |
+| `docs/TECH.md` | 254 | ≤150 |
 
 ## Non-goals
-- **Editing shipped docs.** Frozen history stays frozen; this changes what gets written
-  next. A cleanup pass is a separate decision.
-- **A verbosity check.** Nothing separates a long necessary entry from a long unnecessary
-  one, and a check that fires on healthy docs is worse than no check.
+- **Cutting decisions or evidence.** Compression removes narration, never a constraint or
+  the measurement behind a choice.
+- **Trimming the existing docs.** That is 0038, once the rules exist to trim against.
 
 ## Design
-The enforcement point is the template and the protocol, because they are what an agent
-reads at the moment it writes. All three edits say what to leave out.
+Budgets per section, stated where they are read — in the template's own guidance — and
+small enough to force a choice:
 
-**`## Log` is decisions, not a diary.** What earns an entry: a box rewritten, a premise
-falsified, an open question settled, a measurement that changes what to do next. What
-never does: mistakes made and fixed, compliance with a rule, restatement of the diff.
-One or two lines each, in the doc whose plan changed.
+| section | budget | rule |
+|---|---|---|
+| `## Problem` | 5 lines | what is broken and the signal it matters now |
+| `## Non-goals` | 1 line each | the boundary and where it lives instead |
+| `## Design` | 20 lines | decisions a builder cannot derive; no walkthrough |
+| `## Tasks` | 1 line per box | the outcome, not the activity |
+| `## Log` | **1 line per entry** | only: a box rewritten, a premise falsified, a question settled |
 
-**TECH states facts.** Parameters as tables, the argument left in the feature doc and
-linked. An incident belongs in that feature's `## Problem`, not retold here.
+**`## Log` is not a diary.** Mistakes made and fixed, compliance with a rule, and anything
+the diff shows earn no entry at all.
 
-**Ceilings are alarms.** `budget_test` already says to raise the number and give a reason;
-the protocol gains the other half — never compress an entry that earns its place to fit
-one. Growth should be visible, not prevented.
+**Shipping compacts the doc.** `kit ship` prints the instruction: cut what the code now
+says, keep the decisions. Rule 11 changes from *never edit a Shipped doc* to *never change
+what a Shipped doc decided* — compaction is allowed, reversal is not.
 
-The kit's own `docs/TECH.md` is the worked example: it goes back through the same rule.
+**`doc-bloat`, LOW.** A feature doc over 80 lines. Low because length is hygiene, not
+drift; it exists so growth is visible without blocking a ship.
 
 ## Tasks
-- [ ] `templates/features-TEMPLATE.md`: `## Log` says what earns an entry and what never
-      does; `## Design` and `## Problem` say the same in one line each
-- [ ] `templates/TECH.md` and `kit help as-built`: facts and tables, argument in the
-      feature doc, no incident retelling
-- [ ] Protocol's writing rule: ceilings are alarms, raised with a reason, never met by
-      compressing what earns its place
-- [ ] `docs/TECH.md` rewritten to that rule, and the ceiling set from what it lands at
+- [ ] Template: per-section budgets and what earns a `## Log` entry
+- [ ] Protocol: rule 11 allows compaction; the writing rule says ceilings are alarms,
+      raised with a reason, never met by compressing what earns its place
+- [ ] `doc-bloat` at LOW, with conformance both ways
+- [ ] `templates/TECH.md` and `kit help as-built`: facts and tables, argument left in the
+      feature doc
 
 ## Log
-- 2026-08-17 — asked for after comparing this repo's docs with `../localcode`.
+- 2026-08-17 — asked for after comparing with `../localcode`, whose docs are shorter than
+  this repo's and still too long.
