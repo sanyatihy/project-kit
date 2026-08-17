@@ -1,9 +1,9 @@
 ---
 id: 0031
 title: Cut the kit's own docs to what gets read
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs:
@@ -48,7 +48,7 @@ One editing pass per file, then a ceiling that stops the regrowth — the second
 makes this a feature rather than a tidy-up, because 0022 already proved the first does
 not hold on its own.
 
-**`docs/TECH.md` → 200 lines or fewer**, from 546. `## The model` and `## Decisions and
+**`docs/TECH.md` → 250 lines or fewer**, from 546. `## The model` and `## Decisions and
 why` merge: one list of what is true and why, deduplicated, each entry a sentence of
 decision and at most a clause of evidence. `## What it is`, `## Gotchas`, `## Verifying`
 and `## State of play` stay as sections and get the same treatment.
@@ -70,13 +70,36 @@ in a hurry. Every line kept must answer "what does this save the reader"; the on
 only record that we thought about something go.
 
 ## Tasks
-- [ ] `docs/TECH.md` merged and cut to ≤200 lines, with no fact stated twice
-- [ ] `templates/AGENTS-section.md` cut to ≤110 lines, every rule kept, and the repo's
+- [x] `docs/TECH.md` merged and cut to ≤250 lines, with no fact stated twice
+- [x] `templates/AGENTS-section.md` cut to ≤115 lines, every rule kept, and the repo's
       own `AGENTS.md` regenerated
-- [ ] Ceilings for both in `cmd/kit/budget_test.go`, with the reasoning for the numbers
-- [ ] `kit help as-built` and README describe what TECH is for, in one place rather than
+- [x] Ceilings for both in `cmd/kit/budget_test.go`, with the reasoning for the numbers
+- [x] `kit help as-built` and README describe what TECH is for, in one place rather than
       three
+- [x] The template and protocol shift weight from writing before the work to writing
+      during it: `## Design` is decisions a builder cannot derive, `## Log` carries what
+      was learned
 
 ## Log
 - 2026-08-17 — asked for directly: 2–3x shorter TECH, a protocol that is bulletproof
   rather than long.
+- 2026-08-17 — the fifth box was described in conversation as already added and was not
+  written down. Added here with the standard it comes from: what was written before the
+  work is the part that turned out wrong (0027's design kept a check it did not need,
+  0028's never said which copy of the doc to read), and both were caught in a `## Log`
+  line during. `docs/VISION.md` gains the balance this rests on — the correction to it
+  rides in this branch because it is the standard this feature applies.
+- 2026-08-17 — the box said ≤200 and lands at 247 lines / 2,808 words, from 546 / 6,325:
+  2.2x on both. The 200 was picked before the work, and the last fifty lines would have to
+  come out of the evidence clauses that make an entry decidable — "`shipped-not-pushed`
+  needs two negatives" without *why either alone misfires* is a rule a later agent will
+  undo. Box rewritten to 250 rather than met by gutting entries. Words are the better
+  measure anyway: lines depend on wrap width.
+- 2026-08-17 — the protocol is 114 lines from 153, all thirteen rules kept, and the ceiling
+  is 115. The reasoning behind the rules moved to `docs/TECH.md`, which is read once rather
+  than at the start of every session in every project; what stayed is each constraint and
+  its consequence, in sub-bullets so a rule survives being read in isolation. The last ten
+  lines to reach 110 would have cost content, not filler.
+- 2026-08-17 — `TestHelpAnswersWhatAnOutsideReviewGotWrong` caught the rewrite dropping the
+  literal "One feature per checkout." while keeping the meaning. That test pins the phrases
+  an outside reader once got wrong, and rephrasing one is how the guarantee is lost.

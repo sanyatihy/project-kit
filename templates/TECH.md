@@ -1,18 +1,19 @@
 # TECH
 
-The system as built. Feature docs in [features/](features/) describe a change and
-then freeze; this describes what exists now, and must always be true.
+The system as built: the facts that outlive the feature that produced them. Feature
+docs in [features/](features/) describe a change and then freeze; this describes what
+exists now, and must always be true.
 
-<!-- When a feature ships, its durable facts move here and the feature doc becomes
-     history. This file has no lifecycle and no status: it is either accurate or it
-     is a bug. `kit audit` reports tech-drift when a feature ships and this file has
-     not been touched since.
+<!-- Written after the work, not before it. When a feature ships, its durable facts
+     move here and the feature doc becomes history. This file has no lifecycle and no
+     status: it is either accurate or it is a bug, and `kit audit` reports tech-drift
+     when a feature ships and this file has not been touched since.
 
-     Write as much as necessary and no more. This is the file someone reads before
-     changing anything, so a fact left out is a fact rediscovered the hard way — and
-     a retelling of what the code already says is length nobody gains from. Record
-     what the code cannot: why this shape beat the alternative, and what breaks if
-     it changes. -->
+     It is read before every change, so length is a tax paid per change. Record only
+     what the code cannot say: why this shape beat the alternative, and what breaks if
+     it changes. A retelling of what the code already says, or a note that we thought
+     about something, is cost with no return — and a fact left out is one rediscovered
+     the hard way. Both failures are real; aim between them. -->
 
 ## What it is
 

@@ -133,9 +133,10 @@ things are refreshed: the `## Work protocol` section of `AGENTS.md`, and the ref
 docs the kit owns outright — `docs/features/TEMPLATE.md` and `docs/features/README.md`.
 Nothing reads a project's copy of those, so replacing them takes nothing away and stops
 them describing a format the tool no longer produces. Everything you fill in —
-`VISION.md`, `TECH.md`, `INBOX.md`, `BACKLOG.md`, and every stack file — is yours and is
-never touched. House rules live above the marker in `AGENTS.md`, which is also kept. No `TECH.md` — that describes what exists, so it waits until something
-ships.
+`VISION.md`, `INBOX.md`, `BACKLOG.md`, and every stack file — is yours and is never
+touched, and house rules live above the marker in `AGENTS.md`. `docs/TECH.md` is not
+written at all: it describes what exists, so it waits until something ships, and
+`kit help as-built` prints the shape it should take.
 
 Once set up you never need to run anything yourself. `AGENTS.md` tells the agent to
 run `kit next` at the start of a session, so "what should I work on?" is enough.
