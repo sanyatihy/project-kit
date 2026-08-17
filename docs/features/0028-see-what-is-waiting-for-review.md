@@ -138,7 +138,7 @@ sounding like a guarantee.
       trunk — reusing `remoteHeads` and `trunkRef`
 - [x] `kit next` prints an `awaiting review` section, in text and `--json`
 - [x] Closing guidance names reviewing as the work when that is all there is
-- [ ] `shipped-not-pushed` at HIGH, quiet offline and quiet when the work is on the
+- [x] `shipped-not-pushed` at HIGH, quiet offline and quiet when the work is on the
       trunk; conformance for each
 - [ ] Each awaiting-review entry says whether the reader built it, so a coordinator
       agent knows what it may not merge
@@ -173,3 +173,8 @@ sounding like a guarantee.
   review still appears under `taken` as well: from the trunk its claim branch does
   exist and it is not claimable, so both lines are true and they answer different
   questions.
+- 2026-08-17 — `shipped-not-pushed` needs two independent negatives, not one. The
+  remote's live branch list says nothing about a feature whose branch was deleted after
+  merging, and the remote-tracking refs that do know are only as fresh as the last
+  fetch. It fires when both agree the work is nowhere: no branch on the remote names it,
+  and no remote-tracking ref contains the commit that last wrote the doc.

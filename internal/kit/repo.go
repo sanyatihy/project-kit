@@ -703,10 +703,7 @@ func (r *Repo) AwaitingReview() []Review {
 	trunk := r.trunkRef()
 	var out []Review
 	for _, f := range r.Features {
-		ids := []string{f.ID}
-		if prefix := f.FilenamePrefix(); prefix != "" && prefix != f.ID {
-			ids = append(ids, prefix)
-		}
+		ids := claimIDs(f)
 		for _, name := range heads {
 			if r.isTrunk(name) || !mentionsAny(name, ids) {
 				continue
@@ -726,6 +723,45 @@ func (r *Repo) AwaitingReview() []Review {
 		}
 	}
 	return out
+}
+
+// OnlyHere reports whether a feature's work exists nowhere but this checkout: no branch
+// the remote has claims it, and the commit that last wrote its doc is on no
+// remote-tracking ref either.
+//
+// Two independent negatives, because either alone misfires. The remote's branch list is
+// live but says nothing about a feature whose branch was deleted after merging; the
+// remote-tracking refs know that one and are only as fresh as the last fetch. Both have
+// to agree that the work is nowhere before this says so.
+//
+// Unknown answers false throughout: offline, no remote, a remote that did not answer, or
+// a doc git has never seen. Nothing here is worth a finding invented from silence.
+func (r *Repo) OnlyHere(f *Feature) bool {
+	heads, ok := r.remoteHeads()
+	if !ok {
+		return false
+	}
+	for _, name := range heads {
+		if !r.isTrunk(name) && mentionsAny(name, claimIDs(f)) {
+			return false
+		}
+	}
+	rev := strings.TrimSpace(r.git("log", "-1", "--format=%H", "--", f.Rel))
+	if rev == "" {
+		return false
+	}
+	return strings.TrimSpace(r.git("branch", "--remotes", "--contains", rev)) == ""
+}
+
+// claimIDs are the strings a branch may cite to claim a feature: the id it declares, and
+// its filename prefix where the two disagree — the state that makes a claim invisible to
+// a search for the id alone.
+func claimIDs(f *Feature) []string {
+	ids := []string{f.ID}
+	if prefix := f.FilenamePrefix(); prefix != "" && prefix != f.ID {
+		ids = append(ids, prefix)
+	}
+	return ids
 }
 
 // commitDate is when a revision was last committed, or the zero time. How long a branch

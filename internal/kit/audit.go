@@ -84,6 +84,11 @@ var (
 		"a check: date passed and nobody recorded the outcome"}
 	checkSecretInDoc = Check{"secret-in-doc", High,
 		"a doc contains something shaped like a real credential"}
+	// HIGH for stalled's reasons: it is silent — every command exits 0, the doc says
+	// finished, and the board has nothing to add — and the fix is one push. Four features
+	// were shipped and never pushed with `audit --strict` green throughout.
+	checkShippedNotPushed = Check{"shipped-not-pushed", High,
+		"Shipped, but the work is on no remote — it exists on one machine"}
 	checkNeedsCycle = Check{"needs-cycle", High,
 		"features need each other in a loop, so none of them can ever start"}
 	// HIGH because `kit claim` does not consult `audit`: this has to fail --strict to
@@ -159,6 +164,7 @@ var (
 var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
 	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
+	checkShippedNotPushed,
 	checkUnchecked,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkInboxUnparsed, checkInboxUnknown,
@@ -281,6 +287,14 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 				report(checkShippedNoDate, at,
 					f.Name()+": Shipped with no shipped: date",
 					"add the date it actually shipped")
+			}
+			// Shipping is a handoff, and this is the far side of it: the doc says the
+			// builder is finished and the work reached nobody. Silent by construction —
+			// the feature has left the board, so nothing else would ever mention it again.
+			if r.OnlyHere(f) {
+				report(checkShippedNotPushed, at,
+					f.Name()+": Shipped, but no remote carries the work",
+					"push it: git push -u origin "+f.Branch())
 			}
 		}
 

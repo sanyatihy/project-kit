@@ -305,7 +305,7 @@ even when something goes wrong.
 `audit` names the file, the problem, and the fix. It reports:
 
 - **HIGH** — `secret-in-doc`, `needs-cycle`, `unfilled-template`, `stalled`,
-  `unticked-shipped`, `inbox-stale`, `unchecked`, `id-mismatch`
+  `unticked-shipped`, `shipped-not-pushed`, `inbox-stale`, `unchecked`, `id-mismatch`
 - **MEDIUM** — `no-plan`, `done-not-shipped`, `tech-drift`, `shipped-no-date`,
   `unfilled-vision`,
   `missing-section`, `inbox-unparsed`, `inbox-unknown`,

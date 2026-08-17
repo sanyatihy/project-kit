@@ -47,9 +47,9 @@ func visionStub(p *project) {
 	p.run("init").ok()
 }
 
-func (p *project) auditCodes() []string {
+func (p *project) auditCodes(flags ...string) []string {
 	p.t.Helper()
-	r := p.run("audit", "--json")
+	r := p.run(append([]string{"audit", "--json"}, flags...)...)
 	if r.Code > 1 {
 		p.t.Fatalf("audit --json failed: %s", r.context())
 	}
@@ -106,6 +106,17 @@ var auditCases = []struct {
 		if err := os.Chtimes(p.path("docs/features/0002-stuck.md"), old, old); err != nil {
 			p.t.Fatalf("ageing the doc: %v", err)
 		}
+	}},
+	{"shipped-not-pushed", func(p *project) {
+		// The state four features reached in one session: Shipped in the doc, committed
+		// here, and on no remote. A remote has to exist for the question to have an
+		// answer at all — with none, the kit says nothing about where work is not.
+		origin := p.t.TempDir()
+		gitIn(p.t, origin, "init", "-q", "--bare", ".")
+		p.git("remote", "add", "origin", origin)
+		p.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
+			"shipped: "+daysAgo(1), "- [x] Built it"))
+		p.commitAll("ship 0002 and tell nobody")
 	}},
 	{"unticked-shipped", func(p *project) {
 		p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
@@ -485,6 +496,53 @@ func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 	}
 	if !slices.Contains(codes, "no-vision") {
 		t.Errorf("no-vision stopped firing on a missing VISION.md: %v", codes)
+	}
+}
+
+func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
+	// Three ways for the work to be somewhere, and the check has to be silent in all of
+	// them. A HIGH that fires on work already pushed is one nobody reads for long.
+	a, _ := twoAgents(t)
+	trunk := a.headBranch()
+	a.run("claim", "0007").ok()
+	a.git("checkout", "-q", "0007-widget")
+	a.write("thing.txt", "the work\n")
+	feature(a, "0007", "widget", "A widget", "Shipped", "- [x] Build it")
+	a.commitAll("build and ship 0007")
+
+	// One: shipped here and pushed to its own branch.
+	a.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
+	if codes := a.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
+		t.Errorf("fired on work pushed to its own branch: %v", codes)
+	}
+
+	// Two: merged, and the branch deleted afterwards — the remote no longer has a
+	// branch naming the feature, and the work is on the trunk.
+	a.git("checkout", "-q", trunk)
+	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
+	a.git("push", "-q", "origin", "--delete", "0007-widget")
+	a.git("fetch", "-q", "--prune", "origin")
+	if codes := a.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
+		t.Errorf("fired on work that is on the trunk: %v", codes)
+	}
+
+	// Three: offline. The one fact this needs comes from the remote, so without it the
+	// honest answer is nothing — the same bargain every other claim check makes.
+	b := cleanProject(t)
+	origin := t.TempDir()
+	gitIn(t, origin, "init", "-q", "--bare", ".")
+	b.git("remote", "add", "origin", origin)
+	b.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
+		"shipped: "+daysAgo(1), "- [x] Built it"))
+	b.commitAll("ship 0002 and tell nobody")
+	if codes := b.auditCodes("--offline"); slices.Contains(codes, "shipped-not-pushed") {
+		t.Errorf("fired with --offline, where nothing about the remote is known: %v", codes)
+	}
+	// And the same project, asked properly, still reports it — otherwise the case above
+	// proves nothing.
+	if codes := b.auditCodes(); !slices.Contains(codes, "shipped-not-pushed") {
+		t.Errorf("stopped firing on work that is on no remote: %v", codes)
 	}
 }
 
