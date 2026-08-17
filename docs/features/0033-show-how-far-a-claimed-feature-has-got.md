@@ -62,3 +62,8 @@ fires at three days:
 ## Log
 - 2026-08-17 — found while demonstrating the operator's flow: two agents mid-feature, and
   the board reported 0/3 for both.
+- 2026-08-17 — the documentation commit landed with `make check` red: `kit help next` went
+  one line over its ceiling, and piping the command through `tail` had thrown away its exit
+  code, so the `&&` chain that gates the commit saw success. Fixed in the next commit by
+  cutting a sentence from the paths paragraph. The gate only gates if its status survives
+  the pipe.

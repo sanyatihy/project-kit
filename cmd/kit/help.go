@@ -275,9 +275,8 @@ A Draft is offered like anything else — accepting promotes work rather than
 unlocking it. A doc with an empty ## Problem or ## Design is reported as blocked
 instead, because "kit claim" would refuse it.
 
-Several paths survey several projects at once. One that cannot be read is reported
-in its place and sets the exit code to 2; the others still report, in the order
-given, because a tidied directory says nothing about the projects beside it.
+Several paths survey several projects at once. One that cannot be read is reported in
+its place and exits 2; the others still report, in the order given.
 
 Each feature shows ticked-over-total, "2/4", carried in --json as "done" and "total".
 For a feature somebody else holds the count comes from its claim branch, where the
