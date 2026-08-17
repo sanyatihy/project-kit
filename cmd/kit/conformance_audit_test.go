@@ -1077,3 +1077,23 @@ func TestAuditRanksAnUnreadablePathAboveAStrictFinding(t *testing.T) {
 	// With a path it could not read, 2 — and the finding is still reported.
 	p.run("audit", "--strict", p.Root, gone).fails(2).has("unticked-shipped")
 }
+
+func TestADocLeftSayingInProgressIsReported(t *testing.T) {
+	// The migration path. `In progress` left the vocabulary because nothing could set it
+	// without breaking rule 1, so a doc still carrying it is a leftover — most likely a
+	// claim released without deleting the branch — and `bad-status` says so rather than
+	// the board quietly ignoring the feature.
+	p := cleanProject(t)
+	p.write("docs/features/0002-working.md",
+		doc("0002", "Working", "In progress", "", "- [ ] Something"))
+
+	if codes := p.auditCodes(); !slices.Contains(codes, "bad-status") {
+		t.Errorf("a doc saying In progress reported %v, want bad-status", codes)
+	}
+	// Nothing else breaks: it is not offered as work, and claiming it is refused with the
+	// message for a status nobody can work, not a crash or a raw git error.
+	if got := boardGroup(p.plan("next", "--json"), "0002"); got != "absent" {
+		t.Errorf("0002 is %s on the board; a doc with an unrecognised status is not work", got)
+	}
+	p.run("claim", "0002").fails(1).errHas("not open work")
+}

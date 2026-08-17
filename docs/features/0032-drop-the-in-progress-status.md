@@ -64,7 +64,7 @@ The status line in the docs becomes `Draft -> Accepted -> Shipped`, with `Droppe
 - [x] `claim` no longer instructs a status edit, and prints what to do instead
 - [x] Protocol rules 1, 2, 5 and 8, the template, `kit help` and README drop the status
       and say the claim is what marks work as started
-- [ ] Conformance: a doc still saying `In progress` is reported as `bad-status` and
+- [x] Conformance: a doc still saying `In progress` is reported as `bad-status` and
       nothing else breaks
 
 ## Log
