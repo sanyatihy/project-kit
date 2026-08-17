@@ -1,9 +1,9 @@
 ---
 id: 0028
 title: See what is waiting for review
-status: In progress
+status: Shipped
 created: 2026-08-16
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs: 0027
