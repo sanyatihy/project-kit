@@ -1,9 +1,9 @@
 ---
 id: 0033
 title: Show how far a claimed feature has got
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs: 0032
