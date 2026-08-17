@@ -140,6 +140,18 @@ func Survey(r *Repo) Plan {
 		if item.Mine = r.Mine(f.ID); item.Mine {
 			plan.Claiming = f.ID
 		}
+		// Boxes are ticked on the claim branch and stay there until it merges, so the
+		// checkout's copy reports 0/3 however far along somebody else is — which reads as
+		// an agent that has done nothing, the same picture `stalled` paints. Read the
+		// branch instead. Not for your own claim: there the working tree is this branch,
+		// and fresher than any commit on it.
+		if claim != "" && !item.Mine {
+			if rev := r.resolveBranch(claim); rev != "" {
+				if open, total, ok := r.TasksOn(rev, f.Rel); ok {
+					item.Done, item.Total = total-open, total
+				}
+			}
+		}
 		// Both are "cannot start yet, and here is why", reported the same way. A
 		// question comes first because a human already has to answer it, so the
 		// dependency is not the thing standing in the way.

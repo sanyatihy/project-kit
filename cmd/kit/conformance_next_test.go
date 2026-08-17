@@ -736,3 +736,51 @@ func TestTheReviewBoardMarksWhatNeedsAHuman(t *testing.T) {
 	}
 	a.run("next").ok().has("needs a human")
 }
+
+func TestTheBoardCountsBoxesFromTheClaimBranch(t *testing.T) {
+	// The ticks live on the claim branch until it merges, so counting the checkout's copy
+	// reported 0/3 for a feature somebody was two-thirds through — indistinguishable from
+	// an agent that had done nothing.
+	p := setUp(t)
+	feature(p, "0001", "widget", "Widget", "Accepted", "- [ ] One\n- [ ] Two\n- [ ] Three")
+	p.commitAll("the plan")
+	trunk := p.headBranch()
+
+	p.git("checkout", "-q", "-b", "0001-widget")
+	feature(p, "0001", "widget", "Widget", "Accepted", "- [x] One\n- [x] Two\n- [ ] Three")
+	p.write("widget.go", "package widget\n")
+	p.commitAll("0001: two boxes")
+	p.git("checkout", "-q", trunk)
+
+	taken := p.plan("next", "--json").Taken
+	if len(taken) != 1 {
+		t.Fatalf("want 0001 taken, got %+v", taken)
+	}
+	if taken[0].Done != 2 || taken[0].Total != 3 {
+		t.Errorf("the board says %d/%d; the branch has two of three ticked",
+			taken[0].Done, taken[0].Total)
+	}
+	p.run("next").ok().has("2/3")
+}
+
+func TestTheBoardKeepsItsOwnCountWhenTheBranchCannotBeRead(t *testing.T) {
+	// A claim branch that predates the doc — or one whose objects were never fetched —
+	// carries no copy to count. Reporting nothing there would be worse than reporting the
+	// checkout's number, which is at least the plan as the trunk knows it.
+	p := setUp(t)
+	p.write("seed.txt", "before any feature\n")
+	p.commitAll("seed")
+	p.git("branch", "0001-widget")
+
+	feature(p, "0001", "widget", "Widget", "Accepted", "- [x] One\n- [ ] Two\n- [ ] Three")
+	p.commitAll("the plan")
+
+	taken := p.plan("next", "--json").Taken
+	if len(taken) != 1 {
+		t.Fatalf("want 0001 taken, got %+v", taken)
+	}
+	if taken[0].Done != 1 || taken[0].Total != 3 {
+		t.Errorf("the board says %d/%d; with an unreadable branch it keeps the checkout's 1/3",
+			taken[0].Done, taken[0].Total)
+	}
+}
