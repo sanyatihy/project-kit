@@ -67,7 +67,7 @@ at all. Silence is the one output that cannot be told from good news.
 - [x] `kit next` says the board may be incomplete when the remote did not answer, in
       text and `--json`
 - [x] `kit audit` names the checks it could not run instead of reporting nothing
-- [ ] Conformance: a remote that cannot be reached produces the notice rather than a
+- [x] Conformance: a remote that cannot be reached produces the notice rather than a
       blank board, and `--offline` stays quiet
 - [ ] README and `kit help next` say what an unanswered remote does to the board
 
