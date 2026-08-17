@@ -42,12 +42,21 @@ a daemon, a server, or an account.
 
 ## What it is measured by
 
-Speed and transparency, and nothing else. Faster: every field, rule, command and document
-either removes a step or it is a cost — a markdown file written for the sake of having one
-is pure cost, and so is a check that guards a step nobody needed. Visible: at any moment
-the operator can see who is building what, what is waiting for them, and what has drifted,
-without opening a worktree or reading a diff. An addition that serves neither does not
-belong in the kit, whatever else it improves.
+Speed and transparency **together** — each one alone is a failure mode, and the kit exists
+at the balance between them. Grinding code with no record is fast until the week after,
+when nobody can say what was done or why and the only source left is the diff. Writing
+documents as a phase of their own is slow while it happens and produces files nobody
+finishes reading. Neither is the goal.
+
+So the record has to be a **byproduct of the work rather than a stage before it**: written
+while doing, not in advance of doing, and only the parts that a person or an agent coming
+back later cannot recover from the code. A ticked box in the commit that implemented it
+costs nothing and says what happened; a design essay written before the work is expensive
+and frequently wrong by the end.
+
+Every field, rule, command and document is weighed both ways: what it costs the person
+doing the work now, and what it saves the one who has to understand it later. Something
+that fails both does not belong in the kit, whatever else it improves.
 
 ## Constraints
 

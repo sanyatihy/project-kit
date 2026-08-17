@@ -1,7 +1,7 @@
 ---
 id: 0031
 title: Cut the kit's own docs to what gets read
-status: Draft
+status: In progress
 created: 2026-08-17
 shipped:
 check:
@@ -76,7 +76,16 @@ only record that we thought about something go.
 - [ ] Ceilings for both in `cmd/kit/budget_test.go`, with the reasoning for the numbers
 - [ ] `kit help as-built` and README describe what TECH is for, in one place rather than
       three
+- [ ] The template and protocol shift weight from writing before the work to writing
+      during it: `## Design` is decisions a builder cannot derive, `## Log` carries what
+      was learned
 
 ## Log
 - 2026-08-17 — asked for directly: 2–3x shorter TECH, a protocol that is bulletproof
   rather than long.
+- 2026-08-17 — the fifth box was described in conversation as already added and was not
+  written down. Added here with the standard it comes from: what was written before the
+  work is the part that turned out wrong (0027's design kept a check it did not need,
+  0028's never said which copy of the doc to read), and both were caught in a `## Log`
+  line during. `docs/VISION.md` gains the balance this rests on — the correction to it
+  rides in this branch because it is the standard this feature applies.
