@@ -61,8 +61,8 @@ The status line in the docs becomes `Draft -> Accepted -> Shipped`, with `Droppe
       — and `next` orders by claim with the WIP warning counting claims; `no-claim` is
       retired from the registry and its conformance case; conformance that a claimed
       feature still sorts ahead of an unclaimed one
-- [ ] `claim` no longer instructs a status edit, and prints what to do instead
-- [ ] Protocol rules 1, 2, 5 and 8, the template, `kit help` and README drop the status
+- [x] `claim` no longer instructs a status edit, and prints what to do instead
+- [x] Protocol rules 1, 2, 5 and 8, the template, `kit help` and README drop the status
       and say the claim is what marks work as started
 - [ ] Conformance: a doc still saying `In progress` is reported as `bad-status` and
       nothing else breaks

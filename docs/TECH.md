@@ -39,7 +39,7 @@ so rather than implying a guarantee.
 One markdown file per feature, `docs/features/NNNN-name.md`, with `status:` canonical:
 
 ```
-Draft -> Accepted -> In progress -> Shipped     (exits: Dropped, Superseded)
+Draft -> Accepted -> Shipped     (exits: Dropped, Superseded)
 ```
 
 `status:` **orders the board rather than gating it** — accepting says a human blessed the
@@ -87,10 +87,12 @@ next command refuses.
   half the bug: expiry reported as an empty page is worse, because absence and ignorance
   render identically, so `RemoteUnanswered` separates *asked and got nothing* from *nothing
   to ask*. `--offline` stays quiet, being an instruction; `claim` never reads the cache.
-- **Liveness comes from the claim branch, not from `status: In progress`**, which is set on
-  the branch and never reaches the trunk, so from the only checkout anyone audits the doc
-  reads `Accepted` and `stalled` could not fire. The log is read `--all` for the same
-  reason. A doc's mtime is not a signal: a merge resets it to now.
+- **Liveness comes from the claim branch, and there is no status for it.** An
+  `In progress` field was set on the feature branch and never reached the trunk, so from
+  the only checkout anyone audits the doc read `Accepted` and `stalled` could not fire —
+  and the protocol forbade the hand edit that was the only way to set it. Dropping it took
+  `no-claim` with it, which existed only to reconcile the two copies. The log is read
+  `--all` for the same reason; a doc's mtime is not a signal, since a merge resets it.
 - **A claim finding needs positive evidence, not absence.** From the trunk an in-flight
   feature's doc is *always* missing, and `orphan-claim` reported every open feature while
   advising a fix that deletes the draft. A branch is an orphan only if its own tree says so;
