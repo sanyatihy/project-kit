@@ -582,11 +582,14 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 			fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
 			// Whose it is decides what the reader may do with it, so it goes on the
 			// same line as the branch rather than being left to the guidance.
-			mine := ""
-			if item.Mine {
-				mine = " · " + paint("you built this — not yours to merge", "33", color)
+			marks := ""
+			if item.NeedsHuman {
+				marks += " · " + paint("needs a human", "33", color)
 			}
-			fmt.Printf("          %s · %s%s\n", item.Branch, waited(item.Since), mine)
+			if item.Mine {
+				marks += " · " + paint("you built this — not yours to merge", "33", color)
+			}
+			fmt.Printf("          %s · %s%s\n", item.Branch, waited(item.Since), marks)
 		}
 	}
 

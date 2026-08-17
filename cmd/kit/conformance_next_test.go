@@ -706,3 +706,20 @@ func TestAReviewMarkChangesNothingElseOnTheBoard(t *testing.T) {
 		t.Errorf("the unmarked feature is %s on the board, want ready", got)
 	}
 }
+
+func TestTheReviewBoardMarksWhatNeedsAHuman(t *testing.T) {
+	// The two facts a coordinator agent needs before merging anything: what it built,
+	// and what is nobody's but a person's. This is the second.
+	a, _ := twoAgents(t)
+	a.write("docs/features/0007-widget.md",
+		doc("0007", "A widget", "Accepted", "review: human", "- [ ] Build it"))
+	a.commitAll("mark 0007 for a human")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/"+a.headBranch())
+	shipOnItsBranch(a, "0007", "widget", "A widget")
+
+	got := a.plan("next", "--json").AwaitingReview
+	if len(got) != 1 || !got[0].NeedsHuman {
+		t.Fatalf("the board does not mark 0007 as needing a human: %+v", got)
+	}
+	a.run("next").ok().has("needs a human")
+}

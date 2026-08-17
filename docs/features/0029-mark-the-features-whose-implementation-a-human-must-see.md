@@ -68,7 +68,7 @@ the work is.
 - [x] `review:` parsed on `Feature`, empty and absent both meaning the coordinator may
       merge; conformance that existing docs are unaffected
 - [x] `kit accept <id> --review` writes the field; conformance for with and without
-- [ ] The awaiting-review board marks entries needing a human, in text and `--json`
+- [x] The awaiting-review board marks entries needing a human, in text and `--json`
 - [ ] `templates/features-TEMPLATE.md` documents the field beside `check:`
 - [ ] The protocol says who sets it, that a coordinator honours it, and that branch
       protection is what enforces it
@@ -82,3 +82,7 @@ the work is.
   matters here: no doc written before today carries `review:`. `AddField` does the
   insertion, and `SetField` keeps refusing — a doc with no `status:` is malformed, and
   `accept` and `ship` should say so rather than quietly writing one in.
+- 2026-08-17 — the mark is read from the checkout, not from the branch, which is the
+  opposite of the status 0028 reads. It is set when the round is accepted, so it reaches
+  the trunk with the doc — and a builder that strips it on its own branch changes
+  nothing, because that is not the copy anybody reads.
