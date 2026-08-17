@@ -1,9 +1,9 @@
 ---
 id: 0031
 title: Cut the kit's own docs to what gets read
-status: In progress
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs:
