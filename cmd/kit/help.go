@@ -280,8 +280,9 @@ in its place and sets the exit code to 2; the others still report, in the order
 given, because a tidied directory says nothing about the projects beside it.
 
 Each feature shows ticked-over-total, "2/4", carried in --json as "done" and "total".
-A count of boxes and not an estimate: boxes are not equal sizes, so nothing here
-forecasts how much is left.
+For a feature somebody else holds the count comes from its claim branch, where the
+boxes are actually ticked, and the entry says when that branch last moved. A count of
+boxes and not an estimate: boxes are not equal sizes.
 
 A feature is reported as taken when a branch cites its id — local branches, remote
 branches and worktrees all count, so a stale fetch hides someone else's claim. The

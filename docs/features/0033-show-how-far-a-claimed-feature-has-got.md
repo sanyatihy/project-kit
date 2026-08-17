@@ -57,7 +57,7 @@ fires at three days:
 - [x] Box counts for a claimed feature come from its claim branch, falling back to the
       checkout when the branch cannot be read; conformance for both
 - [x] Each taken entry says when its branch last moved, in text and `--json`
-- [ ] README and `kit help next` say the counter follows the claim
+- [x] README and `kit help next` say the counter follows the claim
 
 ## Log
 - 2026-08-17 — found while demonstrating the operator's flow: two agents mid-feature, and
