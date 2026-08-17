@@ -1,9 +1,9 @@
 ---
 id: 0037
 title: Trim the feature docs to their durable core
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs:
