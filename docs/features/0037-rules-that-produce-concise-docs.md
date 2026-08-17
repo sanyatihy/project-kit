@@ -41,7 +41,7 @@ entry and only when the plan changed, `## Design` says decisions rather than wal
 Nothing else in the protocol changes.
 
 ## Tasks
-- [ ] Template guidance for `## Log` and `## Design`
+- [x] Template guidance for `## Log` and `## Design`
 - [ ] 0001–0012 trimmed
 - [ ] 0013–0024 trimmed
 - [ ] 0025–0036 trimmed

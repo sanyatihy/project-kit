@@ -35,10 +35,10 @@ related:             # other docs worth reading first
      a reason with each, or the next person reopens the argument. -->
 
 ## Design
-<!-- Only what a builder cannot derive: the decisions, the constraints, and why each beat
-     the alternative. Call out data-model, migration, API and config changes explicitly.
-     Written before the work, so it is the part most likely to be wrong by the end — keep
-     it under a screen and let `## Log` carry what the doing teaches. -->
+<!-- Decisions only: what was chosen, what it beat, what it costs. Not a walkthrough — the
+     code will say what the code does, and this is read alongside it. Call out data-model,
+     migration, API and config changes explicitly. Written before the work, so it is the
+     part most likely to be wrong by the end; let `## Log` carry what the doing teaches. -->
 
 ## Tasks
 <!-- Each box is one PR-sized outcome you can verify without asking anyone, in the
@@ -53,8 +53,9 @@ related:             # other docs worth reading first
 <!-- Optional. Delete when empty. Each with a leaning if you have one. -->
 
 ## Log
-<!-- Written while you work, and the cheapest record there is: a dated line for anything
-     the doing settled or contradicted — a decision, a measurement, a box that turned out
-     wrong. Append-only; the argument lives in the PR.
-       - YYYY-MM-DD — decided X over Y because … (#PR) -->
+<!-- One line per entry, and only when the plan changed: a box rewritten, a premise
+     falsified, an open question settled, a measurement that changes what to do next.
+     Not a diary — nothing about mistakes made and fixed, rules complied with, or what
+     the diff already shows. Append-only.
+       - YYYY-MM-DD — decided X over Y because … -->
 
