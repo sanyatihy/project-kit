@@ -42,7 +42,7 @@ Nothing else in the protocol changes.
 
 ## Tasks
 - [x] Template guidance for `## Log` and `## Design`
-- [ ] 0001–0012 trimmed
+- [x] 0001–0012 trimmed
 - [ ] 0013–0024 trimmed
 - [ ] 0025–0036 trimmed
 - [ ] `kit audit --strict` green, and a spot check that a trimmed doc still answers why the
