@@ -69,7 +69,7 @@ the work is.
       merge; conformance that existing docs are unaffected
 - [x] `kit accept <id> --review` writes the field; conformance for with and without
 - [x] The awaiting-review board marks entries needing a human, in text and `--json`
-- [ ] `templates/features-TEMPLATE.md` documents the field beside `check:`
+- [x] `templates/features-TEMPLATE.md` documents the field beside `check:`
 - [ ] The protocol says who sets it, that a coordinator honours it, and that branch
       protection is what enforces it
 - [ ] README describes the two-level policy: protection as the floor, `review:` as the

@@ -21,3 +21,6 @@ Run `kit next` to be told which feature and task to pick up.
 - **IDs are stable** (`0007`). Cite them in commits and branch names; files never move.
 - **`check:` is optional.** Set it only when the feature is a bet worth revisiting —
   a pricing change, a growth experiment. Most features do not need one.
+- **`review:` is optional and the human's.** `kit accept <id> --review` writes
+  `review: human`: a person merges this one, whatever branch protection allows on its
+  own. Empty means a coordinator may. No agent sets it.
