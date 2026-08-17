@@ -40,6 +40,15 @@ whether work is any good: `audit` reports what is checkable and never guesses, b
 being believed is the only thing it has. And not a service — nothing here may require
 a daemon, a server, or an account.
 
+## What it is measured by
+
+Speed and transparency, and nothing else. Faster: every field, rule, command and document
+either removes a step or it is a cost — a markdown file written for the sake of having one
+is pure cost, and so is a check that guards a step nobody needed. Visible: at any moment
+the operator can see who is building what, what is waiting for them, and what has drifted,
+without opening a worktree or reading a diff. An addition that serves neither does not
+belong in the kit, whatever else it improves.
+
 ## Constraints
 
 One binary, no runtime dependencies, and state that is only markdown and git. An

@@ -106,6 +106,23 @@ that would refuse claims people legitimately make mid-edit.
 
 Promote when: a worktree is found holding an older doc than the one that was claimed.
 
+## Steps the operator still runs by hand
+
+Three, each one a command the kit prints or a rule the protocol states, and each a place
+work stops while a person types:
+
+- `kit claim` prints a `git worktree add` line to copy. `--worktree` could create it and
+  print where to work.
+- Rule 8 — releasing a claim — is "delete the branch locally and on the remote, and say
+  why in the Log", done by hand under an agent that is already stopping. `kit release
+  <id>` is the command that does not exist.
+- `make install` after every merge. Nothing checks it, and the kit already records what
+  it cost once: a project built against a binary two features behind, with nothing
+  reporting anything wrong.
+
+Promote when: one of them is forgotten and costs something, or when several agents run
+often enough that the typing is the slow part.
+
 ## Frontmatter values are truncated at ` #`
 
 `trailingRe` strips ` # comment` from every frontmatter value so template scaffolding

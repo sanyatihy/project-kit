@@ -16,6 +16,10 @@ start of every session — the protocol in every project, TECH before any change
 kit — so their length is a tax paid per session, and past a point it is paid for
 nothing: a long file is skimmed, and a skimmed rule is one an agent gets wrong.
 
+The cost is time, which is the only thing the kit is for. `docs/VISION.md` now says the
+kit is measured by speed and transparency, and a document nobody finishes reading is the
+clearest case of a cost with no return.
+
 It grew the way 0022 predicted, one justified paragraph at a time, and 0022's ceilings
 only cover text the binary *ships*. TECH has no ceiling at all, and it shows:
 
@@ -62,7 +66,8 @@ failure message and the same escape hatch — raise it in the test and say why.
 
 The measure of success is not the number. It is that an agent reading the protocol once,
 quickly, follows it correctly — so each rule has to survive being read in isolation and
-in a hurry.
+in a hurry. Every line kept must answer "what does this save the reader"; the ones that
+only record that we thought about something go.
 
 ## Tasks
 - [ ] `docs/TECH.md` merged and cut to ≤200 lines, with no fact stated twice
