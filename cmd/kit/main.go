@@ -654,6 +654,8 @@ func runAudit(args []string) int {
 			if findings := kit.Audit(s.Repo, today, currentProtocol()); findings != nil {
 				one.Findings = findings
 			}
+			// After the audit, so it reports what actually went unanswered.
+			one.RemoteUnanswered = s.Repo.RemoteUnanswered()
 		}
 		results[s.Name] = one
 		order = append(order, one)
@@ -691,6 +693,12 @@ func runAudit(args []string) int {
 type audited struct {
 	Findings []kit.Finding `json:"findings"`
 	Error    string        `json:"error,omitempty"`
+
+	// RemoteUnanswered says the remote was asked and did not answer, so this is a
+	// weaker statement than it looks: shipped-not-pushed could not run at all, and the
+	// claim checks read the last fetch. Without it a clean bill and an unreachable
+	// remote print the same page.
+	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
 }
 
 func printFindings(all []surveyed, results []audited, color bool) {
@@ -706,6 +714,10 @@ func printFindings(all []surveyed, results []audited, color bool) {
 		if s.Repo.FeaturesDir == "" {
 			fmt.Printf("  not set up yet — run:  kit init %s\n\n", s.Repo.Root)
 			continue
+		}
+		if results[i].RemoteUnanswered {
+			fmt.Printf("  %s\n", paint("! the remote did not answer: shipped-not-pushed "+
+				"did not run, and the claim\n    checks read the last fetch", "33", color))
 		}
 		findings := results[i].Findings
 		if len(findings) == 0 {
