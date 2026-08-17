@@ -9,6 +9,7 @@ import (
 )
 
 func TestInitWritesTheDocsLayout(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	p.run("init").ok()
 
@@ -31,6 +32,7 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 }
 
 func TestInitCreatesAGitRepoButLeavesAnExistingOneAlone(t *testing.T) {
+	t.Parallel()
 	// The model depends on git: branches are claims and staleness reads the log.
 	fresh := newProject(t)
 	fresh.run("init").ok().has("git repository")
@@ -44,6 +46,7 @@ func TestInitCreatesAGitRepoButLeavesAnExistingOneAlone(t *testing.T) {
 }
 
 func TestInitNeverOverwrites(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	p.write("docs/INBOX.md", "MINE — do not touch\n")
 	// A project that already states its vision is the common case for adopting the
@@ -65,6 +68,7 @@ func TestInitNeverOverwrites(t *testing.T) {
 }
 
 func TestInitRefreshesTheDocsItOwnsAndNothingElse(t *testing.T) {
+	t.Parallel()
 	// The line this pins: a file the kit owns is one whose project copy nothing
 	// reads, so replacing it takes nothing away. Everything a project fills in is
 	// the only copy there is and must survive every re-run forever.
@@ -97,6 +101,7 @@ func TestInitRefreshesTheDocsItOwnsAndNothingElse(t *testing.T) {
 }
 
 func TestInitDoesNotClaimToRefreshWhatItDidNotChange(t *testing.T) {
+	t.Parallel()
 	// A refresh reported on every run makes the word meaningless in the output
 	// where it matters.
 	p := newProject(t)
@@ -105,6 +110,7 @@ func TestInitDoesNotClaimToRefreshWhatItDidNotChange(t *testing.T) {
 }
 
 func TestInitIsIdempotent(t *testing.T) {
+	t.Parallel()
 	// Re-running is the documented way to pick up protocol changes, so a second
 	// run must report keeping things rather than creating them again.
 	p := newProject(t)
@@ -118,6 +124,7 @@ func TestInitIsIdempotent(t *testing.T) {
 }
 
 func TestInitAppendsTheProtocolToAnExistingAgentsFile(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	p.write("AGENTS.md", "# House rules\n\nNever deploy on Friday.\n")
 
@@ -133,6 +140,7 @@ func TestInitAppendsTheProtocolToAnExistingAgentsFile(t *testing.T) {
 }
 
 func TestInitRefreshesOnlyTheProtocolSection(t *testing.T) {
+	t.Parallel()
 	// The protocol is kit-owned content inside a user-owned file. Everything
 	// outside that one section belongs to the project and must survive.
 	p := newProject(t)
@@ -166,6 +174,7 @@ Below the section.
 }
 
 func TestInitRespectsAnExistingFeaturesLayout(t *testing.T) {
+	t.Parallel()
 	// A project already using features/ must not end up with both that and
 	// docs/features/ — re-running would otherwise fork the board in two.
 	p := newProject(t)
@@ -182,6 +191,7 @@ func TestInitRespectsAnExistingFeaturesLayout(t *testing.T) {
 }
 
 func TestInitStackGoScaffoldsTheCodeLayout(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	// --forge because a temp directory names no forge, and the CI file is the one part
 	// of a stack that depends on where the project is hosted.
@@ -214,6 +224,7 @@ func TestInitStackGoScaffoldsTheCodeLayout(t *testing.T) {
 }
 
 func TestInitStackGoInfersTheModulePathFromDisk(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	p.write("github.com/acme/widget/.keep", "")
 	p.run("init", "github.com/acme/widget", "--stack", "go").ok()
@@ -225,6 +236,7 @@ func TestInitStackGoInfersTheModulePathFromDisk(t *testing.T) {
 }
 
 func TestInitStackGoDoesNotAddASecondEntryPoint(t *testing.T) {
+	t.Parallel()
 	// Scaffolding fills gaps; it never duplicates. A project with an entry point
 	// must not gain a second one named after its directory.
 	atRoot := newProject(t)
@@ -240,6 +252,7 @@ func TestInitStackGoDoesNotAddASecondEntryPoint(t *testing.T) {
 }
 
 func TestInitRejectsAnUnknownStack(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	r := p.run("init", "--stack", "brainfuck").fails(2)
 	r.errHas("unknown stack")
@@ -251,6 +264,7 @@ func TestInitRejectsAnUnknownStack(t *testing.T) {
 // GitLab project never runs and nothing reports it. These four cases are the ladder.
 
 func TestInitBelievesTheProjectsOwnCIFile(t *testing.T) {
+	t.Parallel()
 	// Rung 1. A hostname cannot tell a self-hosted GitLab from a Gitea; the CI file the
 	// project already carries can, and it outranks everything below it.
 	p := newProject(t)
@@ -267,6 +281,7 @@ func TestInitBelievesTheProjectsOwnCIFile(t *testing.T) {
 }
 
 func TestInitReadsTheForgeFromTheRemote(t *testing.T) {
+	t.Parallel()
 	// Rung 2.
 	p := newProject(t)
 	p.git("init", "-q")
@@ -279,6 +294,7 @@ func TestInitReadsTheForgeFromTheRemote(t *testing.T) {
 }
 
 func TestInitWritesNoCIFileWhenNothingNamesAForge(t *testing.T) {
+	t.Parallel()
 	// Rung 4, and the reason the whole ladder exists: a missing pipeline is visible,
 	// and a pipeline for the wrong forge is not. The closing line has to give an agent
 	// both ways out, because the forge is a discoverable fact and not a human's call.
@@ -294,6 +310,7 @@ func TestInitWritesNoCIFileWhenNothingNamesAForge(t *testing.T) {
 }
 
 func TestInitForgeOverridesDetection(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	p.git("init", "-q")
 	p.git("remote", "add", "origin", "https://github.com/owner/thing.git")
@@ -308,6 +325,7 @@ func TestInitForgeOverridesDetection(t *testing.T) {
 }
 
 func TestInitRejectsAnUnknownForge(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 	r := p.run("init", "--forge", "bitbucket").fails(2)
 	r.errHas("unknown forge")

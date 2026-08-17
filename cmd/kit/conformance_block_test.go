@@ -17,6 +17,7 @@ func blockable(t *testing.T) *project {
 }
 
 func TestBlockWritesALineTheParserAccepts(t *testing.T) {
+	t.Parallel()
 	// The round-trip is the point: whatever `block` writes, `next` must read as a
 	// blocker on that feature and `audit` must not call it unparsed.
 	p := blockable(t)
@@ -27,6 +28,7 @@ func TestBlockWritesALineTheParserAccepts(t *testing.T) {
 }
 
 func TestBlockAcceptsAShortID(t *testing.T) {
+	t.Parallel()
 	// Nobody types leading zeros reliably, and refusing them would push people back
 	// to editing the file by hand.
 	p := blockable(t)
@@ -38,6 +40,7 @@ func TestBlockAcceptsAShortID(t *testing.T) {
 }
 
 func TestBlockFYIRecordsWithoutBlocking(t *testing.T) {
+	t.Parallel()
 	p := blockable(t)
 	p.run("block", "0007", "Using base62 for slugs.", "--fyi").ok()
 
@@ -50,6 +53,7 @@ func TestBlockFYIRecordsWithoutBlocking(t *testing.T) {
 }
 
 func TestBlockRefusesAFeatureThatDoesNotExist(t *testing.T) {
+	t.Parallel()
 	// A question against a nonexistent feature can never unblock anything, and
 	// nothing downstream would notice it.
 	p := blockable(t)
@@ -60,6 +64,7 @@ func TestBlockRefusesAFeatureThatDoesNotExist(t *testing.T) {
 }
 
 func TestBlockNeedsAnIDAndAQuestion(t *testing.T) {
+	t.Parallel()
 	p := blockable(t)
 	p.run("block").fails(2)
 	p.run("block", "0007").fails(2)
@@ -67,6 +72,7 @@ func TestBlockNeedsAnIDAndAQuestion(t *testing.T) {
 }
 
 func TestBlockKeepsTheQuestionOnOneLine(t *testing.T) {
+	t.Parallel()
 	// One item per line is what makes the file parseable. A pasted multi-line
 	// question would otherwise split into an unparseable tail.
 	p := blockable(t)
@@ -81,6 +87,7 @@ func TestBlockKeepsTheQuestionOnOneLine(t *testing.T) {
 }
 
 func TestBlockPreservesWhatIsAlreadyInTheInbox(t *testing.T) {
+	t.Parallel()
 	p := blockable(t)
 	before := p.read("docs/INBOX.md")
 	p.run("block", "0007", "A question.").ok()
@@ -92,6 +99,7 @@ func TestBlockPreservesWhatIsAlreadyInTheInbox(t *testing.T) {
 }
 
 func TestBlockWithoutAnInboxSaysHowToFixIt(t *testing.T) {
+	t.Parallel()
 	p := blockable(t)
 	p.run("audit").ok() // sanity: the inbox exists first
 	if err := os.Remove(p.path("docs/INBOX.md")); err != nil {

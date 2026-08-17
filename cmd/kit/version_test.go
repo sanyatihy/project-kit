@@ -6,6 +6,7 @@ import "testing"
 // without the build-info fallback a tagged release reports "dev" and there is no way
 // to tell which version is on your PATH.
 func TestResolveVersionPrefersTheStampButFallsBackToBuildInfo(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name              string
 		stamped, embedded string
@@ -49,6 +50,7 @@ func TestResolveVersionPrefersTheStampButFallsBackToBuildInfo(t *testing.T) {
 // version() must never print an empty string: `kit version` is how an agent checks
 // what it is running, and "kit " with nothing after it is worse than a wrong answer.
 func TestVersionAlwaysReportsSomething(t *testing.T) {
+	t.Parallel()
 	if got := version(); got == "" {
 		t.Error("version() returned empty, so `kit version` would print a bare \"kit \"")
 	}

@@ -25,9 +25,18 @@ build:
 .PHONY: check
 check: fmt-check vet test
 
+# How many tests run at once. The suite is 190-odd independent tests, each with its own
+# temporary directory, so this is pure wall clock: on a 12-core machine `go test -race`
+# measured 32.8s serial, 22.2s at 2, 17.4s at 4, 12.0s at 6 and 8.8s uncapped.
+#
+# 4 is a third of that machine on purpose. The gate runs beside whatever else the operator
+# is doing, and a check that takes the box with it is one people stop running. Raise it for
+# a build server: make check PARALLEL=8
+PARALLEL ?= 4
+
 .PHONY: test
 test:
-	$(GO) test -race -cover $(PKG)
+	$(GO) test -race -cover -parallel $(PARALLEL) $(PKG)
 
 .PHONY: fmt
 fmt:

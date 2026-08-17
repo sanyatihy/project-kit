@@ -10,6 +10,7 @@ import (
 )
 
 func TestDropRetiresAFeatureAndRecordsWhy(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	path := "docs/features/0001-shorten.md"
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
@@ -31,6 +32,7 @@ func TestDropRetiresAFeatureAndRecordsWhy(t *testing.T) {
 }
 
 func TestDropSaysWhenNoReasonWasGiven(t *testing.T) {
+	t.Parallel()
 	// Not an error — refusing would only get an empty string typed at it. Saying so
 	// is what makes the omission visible while the person is still here.
 	p := setUp(t)
@@ -40,6 +42,7 @@ func TestDropSaysWhenNoReasonWasGiven(t *testing.T) {
 }
 
 func TestDropRefusesAShippedDoc(t *testing.T) {
+	t.Parallel()
 	// Frozen history, and the work is in the repo. Retiring it would make the record
 	// say the feature was never built.
 	p := setUp(t)
@@ -49,6 +52,7 @@ func TestDropRefusesAShippedDoc(t *testing.T) {
 }
 
 func TestDropReportsWhoWasWaitingOnIt(t *testing.T) {
+	t.Parallel()
 	// Dropping stranded every feature declaring the id in needs: without a word — `audit`
 	// said needs-unknown afterwards and `next` went on promising a wait that can never
 	// end. Reported and not refused: this is exactly when you want to know who was waiting.
@@ -67,6 +71,7 @@ func TestDropReportsWhoWasWaitingOnIt(t *testing.T) {
 }
 
 func TestDropCreatesTheLogWhenTheDocHasNone(t *testing.T) {
+	t.Parallel()
 	// Measured: on a doc with no ## Log the reason was discarded. AppendToSection reports
 	// that the heading was absent and Drop ignored the answer, while the one warning it
 	// prints fires only when *no* reason was given — so the operator who supplied one was
@@ -96,6 +101,7 @@ func TestDropCreatesTheLogWhenTheDocHasNone(t *testing.T) {
 }
 
 func TestDropReportsALeftoverClaimRatherThanDeletingIt(t *testing.T) {
+	t.Parallel()
 	// The doc is this command's to retire and the branch is not. A branch named after
 	// the doc still reads as a claim, so the board would show work nobody is doing.
 	p := cleanProject(t)

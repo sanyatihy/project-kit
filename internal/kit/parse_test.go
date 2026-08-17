@@ -6,6 +6,7 @@ import (
 )
 
 func TestParseFrontmatter(t *testing.T) {
+	t.Parallel()
 	fields, body := ParseFrontmatter("---\nid: 0007\n" +
 		"status: Accepted        # Draft | Accepted\n" +
 		"# a comment line\nshipped:\n---\n\n## Problem\np\n")
@@ -28,6 +29,7 @@ func TestParseFrontmatter(t *testing.T) {
 }
 
 func TestParseFrontmatterAbsent(t *testing.T) {
+	t.Parallel()
 	fields, body := ParseFrontmatter("no frontmatter here\n")
 	if len(fields) != 0 {
 		t.Errorf("fields = %v, want empty", fields)
@@ -38,6 +40,7 @@ func TestParseFrontmatterAbsent(t *testing.T) {
 }
 
 func TestParseSectionsIgnoresCommentGuidance(t *testing.T) {
+	t.Parallel()
 	sections := ParseSections("## Tasks\n<!-- guidance only -->\n\n## Log\n- a note\n")
 	if got := sections["Tasks"]; got != "" {
 		t.Errorf("Tasks = %q, want empty — comment-only content is not filled in", got)
@@ -48,6 +51,7 @@ func TestParseSectionsIgnoresCommentGuidance(t *testing.T) {
 }
 
 func TestUntickedSkipsFencedExamples(t *testing.T) {
+	t.Parallel()
 	got := Unticked("- [x] done\n- [ ] real work\n```\n- [ ] an example\n```\n")
 	if len(got) != 1 || got[0] != "real work" {
 		t.Errorf("Unticked = %q, want [real work]", got)
@@ -55,6 +59,7 @@ func TestUntickedSkipsFencedExamples(t *testing.T) {
 }
 
 func TestMentionsRequiresWholeNumber(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		text, id string
 		want     bool
@@ -75,6 +80,7 @@ func TestMentionsRequiresWholeNumber(t *testing.T) {
 }
 
 func TestParseDate(t *testing.T) {
+	t.Parallel()
 	if got := ParseDate("2026-08-11 · 0001 · BLOCKING"); !got.Equal(
 		time.Date(2026, 8, 11, 0, 0, 0, 0, time.UTC)) {
 		t.Errorf("ParseDate = %v, want 2026-08-11", got)
@@ -85,12 +91,14 @@ func TestParseDate(t *testing.T) {
 }
 
 func TestNormalise(t *testing.T) {
+	t.Parallel()
 	if got := Normalise("\uFEFFa\r\nb\rc"); got != "a\nb\nc" {
 		t.Errorf("Normalise = %q, want %q", got, "a\nb\nc")
 	}
 }
 
 func TestShowKeepsIdentifiersIntact(t *testing.T) {
+	t.Parallel()
 	got := Show("Migrate `links(id, created_at)` **now**", 80)
 	if want := "Migrate links(id, created_at) now"; got != want {
 		t.Errorf("Show = %q, want %q", got, want)
@@ -101,6 +109,7 @@ func TestShowKeepsIdentifiersIntact(t *testing.T) {
 // instead blocks any feature the question happens to mention, which halts work for
 // a reason nobody can see.
 func TestParseInboxLine(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, line string
 		wantID     string
@@ -129,6 +138,7 @@ func TestParseInboxLine(t *testing.T) {
 }
 
 func TestParseIDList(t *testing.T) {
+	t.Parallel()
 	// Written by hand as often as by a tool, so the shapes people actually type all
 	// have to work, and junk has to be dropped rather than change the board.
 	for _, tc := range []struct {

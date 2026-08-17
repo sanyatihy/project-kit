@@ -338,6 +338,7 @@ var fakeSecrets = []struct {
 }
 
 func TestADraftAwaitingReviewOnABranchIsNotAClaim(t *testing.T) {
+	t.Parallel()
 	// The first step of the loop: an agent drafts a feature and leaves it for a
 	// human. Nothing goes to the default branch, so the proposal waits on a branch
 	// of its own. Reporting that as "someone is building on a design nobody settled"
@@ -354,6 +355,7 @@ func TestADraftAwaitingReviewOnABranchIsNotAClaim(t *testing.T) {
 }
 
 func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
+	t.Parallel()
 	// The shape every real project has: a chain, a diamond, and a feature depending
 	// on nothing. None of it is a defect, and a check that fired here would fire on
 	// almost every project that used the field at all.
@@ -377,6 +379,7 @@ func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
 }
 
 func TestSecretInDocFiresOnEveryShape(t *testing.T) {
+	t.Parallel()
 	for _, s := range fakeSecrets {
 		t.Run(s.what, func(t *testing.T) {
 			p := cleanProject(t)
@@ -389,6 +392,7 @@ func TestSecretInDocFiresOnEveryShape(t *testing.T) {
 }
 
 func TestSecretInDocScansEveryDocAgentsWriteTo(t *testing.T) {
+	t.Parallel()
 	// Rule 6 sends discovered work to BACKLOG.md, so agents write to it as freely as to
 	// a feature doc, and it is committed like everything else. It was the one
 	// agent-writable document the scan did not open.
@@ -409,6 +413,7 @@ func TestSecretInDocScansEveryDocAgentsWriteTo(t *testing.T) {
 }
 
 func TestSecretInDocStaysQuietOnProseAboutSecrets(t *testing.T) {
+	t.Parallel()
 	// Docs discuss credentials constantly — naming the variable is what the protocol
 	// asks for. A check that fires on the correct behaviour would train people to
 	// ignore it, and audit has nothing but being believed.
@@ -427,6 +432,7 @@ func TestSecretInDocStaysQuietOnProseAboutSecrets(t *testing.T) {
 }
 
 func TestSecretInDocNeverEchoesTheValue(t *testing.T) {
+	t.Parallel()
 	// Reporting the match would copy the secret into a terminal, a CI log, and
 	// anything consuming --json — turning the finding into a second leak.
 	p := cleanProject(t)
@@ -439,6 +445,7 @@ func TestSecretInDocNeverEchoesTheValue(t *testing.T) {
 }
 
 func TestAuditEveryCheckFires(t *testing.T) {
+	t.Parallel()
 	for _, tc := range auditCases {
 		t.Run(tc.code, func(t *testing.T) {
 			p := cleanProject(t)
@@ -451,6 +458,7 @@ func TestAuditEveryCheckFires(t *testing.T) {
 }
 
 func TestAuditIsQuietOnACleanProject(t *testing.T) {
+	t.Parallel()
 	// The half that matters. Every case above starts from this project, so a noisy
 	// baseline would make all of them meaningless.
 	p := cleanProject(t)
@@ -461,6 +469,7 @@ func TestAuditIsQuietOnACleanProject(t *testing.T) {
 }
 
 func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
+	t.Parallel()
 	// The baseline covers a project that has both. This pins the other half of the
 	// rule: with no features there is nothing to decompose, so a fresh `kit init`
 	// must not be greeted with a finding at the moment the tool is being judged.
@@ -475,6 +484,7 @@ func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
 }
 
 func TestUnfilledVisionStaysQuietOnAPartlyWrittenVision(t *testing.T) {
+	t.Parallel()
 	// One written section is somebody having started, and a check that nags at work in
 	// progress is one people learn to ignore. Only the untouched stub is reported.
 	p := cleanProject(t)
@@ -493,6 +503,7 @@ func TestUnfilledVisionStaysQuietOnAPartlyWrittenVision(t *testing.T) {
 }
 
 func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
+	t.Parallel()
 	// The missing-file case belongs to no-vision, which is LOW and unchanged. Reporting
 	// both would make one gap produce two findings with two different fixes.
 	p := cleanProject(t)
@@ -510,6 +521,7 @@ func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 }
 
 func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
+	t.Parallel()
 	// Three ways for the work to be somewhere, and the check has to be silent in all of
 	// them. A HIGH that fires on work already pushed is one nobody reads for long.
 	a, _ := twoAgents(t)
@@ -557,6 +569,7 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 }
 
 func TestEveryRegisteredCheckIsExercised(t *testing.T) {
+	t.Parallel()
 	// AGENTS.md requires a test that a new check fires and one that it stays quiet.
 	// This is what makes that enforceable rather than aspirational.
 	covered := map[string]bool{}
@@ -576,6 +589,7 @@ func TestEveryRegisteredCheckIsExercised(t *testing.T) {
 }
 
 func TestAuditNamesTheFileTheProblemAndTheFix(t *testing.T) {
+	t.Parallel()
 	// A finding nobody can act on is noise.
 	p := cleanProject(t)
 	feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
@@ -585,6 +599,7 @@ func TestAuditNamesTheFileTheProblemAndTheFix(t *testing.T) {
 }
 
 func TestAuditNeverWrites(t *testing.T) {
+	t.Parallel()
 	// An auditor that fixes things stops being read.
 	p := cleanProject(t)
 	feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
@@ -598,6 +613,7 @@ func TestAuditNeverWrites(t *testing.T) {
 }
 
 func TestAuditStrictExitsOnHighOnly(t *testing.T) {
+	t.Parallel()
 	// --strict is the CI gate, so the boundary between severities is a contract.
 	high := cleanProject(t)
 	high.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
@@ -616,6 +632,7 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 }
 
 func TestIDMismatchFailsStrict(t *testing.T) {
+	t.Parallel()
 	// Raised from MEDIUM. A doc whose id: and filename disagree is not untidy: the
 	// branch comes from the filename and the board looks for the id, so the feature's
 	// own claim is invisible and it keeps being handed out. --strict is rule 12's
@@ -633,6 +650,7 @@ func TestIDMismatchFailsStrict(t *testing.T) {
 }
 
 func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
+	t.Parallel()
 	// The failure this closes: `In progress` is set on the feature branch, so the trunk
 	// checkout — the only one a human or a supervising agent audits — sees `Accepted`
 	// and reported nothing. An agent that died holding a feature was indistinguishable
@@ -672,6 +690,7 @@ func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
 }
 
 func TestAClaimCarryingNoWorkIsNeverCalledStalled(t *testing.T) {
+	t.Parallel()
 	// A branch cut from the trunk's tip is byte-identical to one whose pull request
 	// merged, and neither carries a date the kit can read. Ageing it would invent a
 	// finding, so `next` reports it as taken and audit says nothing.
@@ -687,6 +706,7 @@ func TestAClaimCarryingNoWorkIsNeverCalledStalled(t *testing.T) {
 }
 
 func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
+	t.Parallel()
 	// The trunk used to be the first of `main`/`master` that resolved. A project whose
 	// default branch is neither had no trunk to compare against, so BranchBuildsOn
 	// answered "nothing changed" for every branch — and every check built on it went
@@ -730,6 +750,7 @@ func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
 }
 
 func TestAnFYINeverFailsTheShipGate(t *testing.T) {
+	t.Parallel()
 	// `kit block --fyi` promises the feature is not blocked and work continues.
 	// BlockersFor kept that promise and inbox-stale broke it anyway: FYI was reported at
 	// HIGH, so rule 12's `kit audit --strict` refused to let anything ship over a note
@@ -756,6 +777,7 @@ func TestAnFYINeverFailsTheShipGate(t *testing.T) {
 // generate noise about work that is perfectly fine. Each of these is a situation
 // that must stay silent.
 func TestClaimChecksDoNotFireOnOrdinaryWork(t *testing.T) {
+	t.Parallel()
 	t.Run("an ordinary branch cites no feature", func(t *testing.T) {
 		p := cleanProject(t)
 		p.commitAll("something")
@@ -788,6 +810,7 @@ func TestClaimChecksDoNotFireOnOrdinaryWork(t *testing.T) {
 }
 
 func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
+	t.Parallel()
 	// Found by running the check against this repo: 0001-publish-the-kit and
 	// 0001-ship both cite 0001, which is Shipped. Those are merged leftovers, not
 	// two agents competing, and most projects never delete merged branches.
@@ -807,6 +830,7 @@ func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
 }
 
 func TestTheThresholdsFireAtTheirBoundaryAndNotBefore(t *testing.T) {
+	t.Parallel()
 	// Retuning a threshold is only real if the boundary moved with the constant.
 	// Both are read from the package, so this keeps testing whatever they become.
 	t.Run("inbox-stale", func(t *testing.T) {
@@ -857,6 +881,7 @@ func TestTheThresholdsFireAtTheirBoundaryAndNotBefore(t *testing.T) {
 }
 
 func TestDuplicateIDDoesNotFireOnDocsWithNoIDAtAll(t *testing.T) {
+	t.Parallel()
 	// The quiet half. Docs missing an id: share the empty string, and grouping on
 	// that would report them as duplicates of each other — a second, wrong finding
 	// on top of the no-status one that is already telling the truth about them.
@@ -875,6 +900,7 @@ func TestDuplicateIDDoesNotFireOnDocsWithNoIDAtAll(t *testing.T) {
 }
 
 func TestDuplicateIDNamesBothDocs(t *testing.T) {
+	t.Parallel()
 	// Naming one file is not actionable: the fix is to renumber a specific doc, and
 	// you cannot pick which without seeing both.
 	p := cleanProject(t)
@@ -886,6 +912,7 @@ func TestDuplicateIDNamesBothDocs(t *testing.T) {
 }
 
 func TestInboxChecksStayQuietOnAWellFormedQuestion(t *testing.T) {
+	t.Parallel()
 	// A question written by `kit block` against a real feature is the normal case
 	// and must produce nothing.
 	p := cleanProject(t)
@@ -899,6 +926,7 @@ func TestInboxChecksStayQuietOnAWellFormedQuestion(t *testing.T) {
 }
 
 func TestNextNeverHandsOverWorkThatIsNotYours(t *testing.T) {
+	t.Parallel()
 	// `task` means "the box to do now". Attaching one to a feature the board has
 	// just reported as somebody else's is the payload contradicting the prose — and
 	// --json is the format agents are told to read, so it is the one that matters.
@@ -925,6 +953,7 @@ func TestNextNeverHandsOverWorkThatIsNotYours(t *testing.T) {
 }
 
 func TestADraftOnItsOwnBranchIsNotAnOrphan(t *testing.T) {
+	t.Parallel()
 	// The protocol requires exactly this: a draft waits on a branch of its own and
 	// nothing is committed to the trunk. Audited from the trunk, the doc is missing —
 	// and the kit reported the protocol being followed as two MEDIUM defects, one
@@ -948,6 +977,7 @@ func TestADraftOnItsOwnBranchIsNotAnOrphan(t *testing.T) {
 }
 
 func TestOrphanClaimStillFiresOnABranchWithNoDoc(t *testing.T) {
+	t.Parallel()
 	// The check has to keep working, or standing it down for in-flight features would
 	// have bought silence rather than accuracy. A branch citing an ID nobody wrote means
 	// a doc was deleted or renamed and that ID is now unclaimable.
@@ -961,6 +991,7 @@ func TestOrphanClaimStillFiresOnABranchWithNoDoc(t *testing.T) {
 }
 
 func TestABranchThatCannotBeResolvedIsNotJudged(t *testing.T) {
+	t.Parallel()
 	// A branch on a remote nobody has fetched cannot have its tree read, so nothing is
 	// known about whether it carries a doc. Reporting it would be a guess, and the guess
 	// that costs the most is the one that says "delete this".
@@ -992,6 +1023,7 @@ func TestABranchThatCannotBeResolvedIsNotJudged(t *testing.T) {
 }
 
 func TestBuildingOnASettledDraftIsNotAFinding(t *testing.T) {
+	t.Parallel()
 	// The normal flow now: an agent claims a Draft and builds. `status:` orders the
 	// board and does not gate it, so reporting this would fire on correct behaviour —
 	// the one thing audit cannot afford. What draft-claimed still reports is the
@@ -1011,6 +1043,7 @@ func TestBuildingOnASettledDraftIsNotAFinding(t *testing.T) {
 }
 
 func TestAuditSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
+	t.Parallel()
 	// Same failure as `next`, and the same reason it matters: an operator auditing a
 	// fleet got an error about the path they did not care about and silence about the
 	// projects they did.
@@ -1043,6 +1076,7 @@ func TestAuditSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
 }
 
 func TestAuditJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
+	t.Parallel()
 	p := cleanProject(t)
 	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
 		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
@@ -1063,6 +1097,7 @@ func TestAuditJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
 }
 
 func TestAuditRanksAnUnreadablePathAboveAStrictFinding(t *testing.T) {
+	t.Parallel()
 	// The two codes mean different things to the script running them: 1 is "the audit
 	// found something HIGH", 2 is "the command could not do what it was asked". A path
 	// that could not be read is the second, and reporting it as the first would have a
@@ -1079,6 +1114,7 @@ func TestAuditRanksAnUnreadablePathAboveAStrictFinding(t *testing.T) {
 }
 
 func TestADocLeftSayingInProgressIsReported(t *testing.T) {
+	t.Parallel()
 	// The migration path. `In progress` left the vocabulary because nothing could set it
 	// without breaking rule 1, so a doc still carrying it is a leftover — most likely a
 	// claim released without deleting the branch — and `bad-status` says so rather than

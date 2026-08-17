@@ -64,6 +64,7 @@ func overBudget(t *testing.T, what, text string, budget int) {
 }
 
 func TestTheProtocolStaysUnderItsCeiling(t *testing.T) {
+	t.Parallel()
 	raw, err := fs.ReadFile(assets.FS, "templates/AGENTS-section.md")
 	if err != nil {
 		t.Fatalf("reading the protocol: %v", err)
@@ -74,6 +75,7 @@ func TestTheProtocolStaysUnderItsCeiling(t *testing.T) {
 // The kit's own docs, held to the same rule as the text it ships. They are not embedded, so
 // they are read from disk rather than from assets.FS.
 func TestTheKitsOwnDocsStayUnderTheirCeilings(t *testing.T) {
+	t.Parallel()
 	for _, doc := range []struct {
 		path   string
 		budget int
@@ -90,6 +92,7 @@ func TestTheKitsOwnDocsStayUnderTheirCeilings(t *testing.T) {
 }
 
 func TestEveryCommandHelpStaysUnderItsCeiling(t *testing.T) {
+	t.Parallel()
 	for name, text := range commandHelp {
 		overBudget(t, "commandHelp["+name+"]", text, commandHelpBudget)
 	}
@@ -97,6 +100,7 @@ func TestEveryCommandHelpStaysUnderItsCeiling(t *testing.T) {
 }
 
 func TestEveryTopicStaysUnderItsCeiling(t *testing.T) {
+	t.Parallel()
 	for name, path := range topics {
 		raw, err := fs.ReadFile(assets.FS, path)
 		if err != nil {

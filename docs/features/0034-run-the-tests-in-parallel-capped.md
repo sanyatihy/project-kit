@@ -1,9 +1,9 @@
 ---
 id: 0034
 title: Run the tests in parallel, capped
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-17
 check:
 checked:
 needs:
@@ -52,11 +52,23 @@ Verified before drafting: all 190 marked parallel, run twice under `-race`, all 
 8.81s and 8.86s.
 
 ## Tasks
-- [ ] `t.Parallel()` on every top-level test in `cmd/kit` and `internal/kit`
-- [ ] `PARALLEL ?= 4` in the Makefile, used by the `test` target, with the measurements
+- [x] `t.Parallel()` on every top-level test in `cmd/kit` and `internal/kit`
+- [x] `PARALLEL ?= 4` in the Makefile, used by the `test` target, with the measurements
       in a comment so the number can be re-judged rather than guessed
-- [ ] The suite passes three consecutive `-race` runs, and `docs/TECH.md` records that
+- [x] The suite passes three consecutive `-race` runs, and `docs/TECH.md` records that
       test independence is what buys this
 
 ## Log
 - 2026-08-17 — measured during a code audit: 190 tests, 28.6s of work, 32.8s of wall clock.
+- 2026-08-17 — 214 tests marked, not the 190 the audit measured: that count was `cmd/kit`
+  alone and `internal/kit` has 24 more. `make check` went from 35s to 20s wall clock at
+  `PARALLEL=4`, using 3.4 cores of 12. Three consecutive `-race` runs passed at 14.0s,
+  15.2s and 14.3s, so the spread is a second either way rather than flakiness.
+- 2026-08-17 — the fact went into `docs/TECH.md` at exactly its 250-line ceiling, paid for
+  by folding it into the conformance paragraph and cutting restatement, not by raising the
+  number one feature after setting it.
+- 2026-08-17 — committed once with `make check` red, for the second time today: the shell
+  ran `make check; git commit` with a semicolon, so the commit did not depend on the gate.
+  Both times the failure was a ceiling, both times it was caught on the next run. The
+  lesson is mechanical — the gate has to be the thing the commit hangs off, `&&` and no
+  pipe.

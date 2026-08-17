@@ -5,6 +5,7 @@ import "testing"
 // The whole claim rests on telling these four outcomes apart, and three of them
 // exit 0 from git. The lines are verbatim `git push --porcelain` output.
 func TestPushFlagTellsACreatedRefFromOneThatWasAlreadyThere(t *testing.T) {
+	t.Parallel()
 	const ref = "refs/heads/0007-widget"
 	for _, tc := range []struct {
 		name string

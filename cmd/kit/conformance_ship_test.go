@@ -10,6 +10,7 @@ import (
 )
 
 func TestShipRefusesWhileABoxIsOpen(t *testing.T) {
+	t.Parallel()
 	// unticked-shipped, prevented rather than reported.
 	p := setUp(t)
 	feature(p, "0007", "half", "Half done", "Accepted", "- [x] One\n- [ ] Two")
@@ -22,6 +23,7 @@ func TestShipRefusesWhileABoxIsOpen(t *testing.T) {
 }
 
 func TestShipStampsTheDate(t *testing.T) {
+	t.Parallel()
 	// shipped-no-date, prevented rather than reported.
 	p := setUp(t)
 	feature(p, "0007", "done", "All done", "Accepted", "- [x] One\n- [x] Two")
@@ -39,6 +41,7 @@ func TestShipStampsTheDate(t *testing.T) {
 }
 
 func TestShipFillsAnExistingEmptyDateKey(t *testing.T) {
+	t.Parallel()
 	// The template ships a bare "shipped:" line, so this is the common path — and
 	// it is a different branch from inserting one.
 	p := setUp(t)
@@ -59,6 +62,7 @@ func TestShipFillsAnExistingEmptyDateKey(t *testing.T) {
 }
 
 func TestShipAddsTheDateKeyWhenTheDocHasNone(t *testing.T) {
+	t.Parallel()
 	// An older doc may have no shipped: line at all. Stamping has to insert one
 	// rather than silently do nothing.
 	p := setUp(t)
@@ -73,6 +77,7 @@ func TestShipAddsTheDateKeyWhenTheDocHasNone(t *testing.T) {
 }
 
 func TestShipRefusesAFeatureWithNoBoxesAtAll(t *testing.T) {
+	t.Parallel()
 	// Nothing to have finished. Shipping it would assert work that was never planned.
 	p := setUp(t)
 	feature(p, "0007", "empty", "Empty", "Accepted", "")
@@ -80,6 +85,7 @@ func TestShipRefusesAFeatureWithNoBoxesAtAll(t *testing.T) {
 }
 
 func TestShipRefusesTwice(t *testing.T) {
+	t.Parallel()
 	// The second run would rewrite frozen history and restamp the date.
 	p := setUp(t)
 	feature(p, "0007", "done", "Done", "Accepted", "- [x] One")
@@ -88,6 +94,7 @@ func TestShipRefusesTwice(t *testing.T) {
 }
 
 func TestShipRefusesWhileItsNeedsHaveNotShipped(t *testing.T) {
+	t.Parallel()
 	// shipped-early, prevented rather than reported: `ship` was minting a finding on a
 	// doc the protocol then forbids anyone to edit. Exit 2 and not 1 — nobody else holds
 	// this, the work is done and the plan is wrong, so the operator has to look.
@@ -104,6 +111,7 @@ func TestShipRefusesWhileItsNeedsHaveNotShipped(t *testing.T) {
 }
 
 func TestShipAllowsAFeatureWhoseNeedsHaveShipped(t *testing.T) {
+	t.Parallel()
 	// The quiet half: the foundation is there, so nothing is in the way.
 	p := setUp(t)
 	p.write("docs/features/0001-base.md",
@@ -115,6 +123,7 @@ func TestShipAllowsAFeatureWhoseNeedsHaveShipped(t *testing.T) {
 }
 
 func TestShipRefusesAFeatureAnotherCheckoutClaims(t *testing.T) {
+	t.Parallel()
 	// Measured from a checkout whose own board says the feature is taken: `ship` exited 0
 	// and froze another agent's work mid-flight. `status: Shipped` is history the protocol
 	// forbids anyone to edit, so the agent holding the branch could no longer touch its
@@ -133,6 +142,7 @@ func TestShipRefusesAFeatureAnotherCheckoutClaims(t *testing.T) {
 }
 
 func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
+	t.Parallel()
 	// The quiet half, and the documented path: the worktree that holds the claim is
 	// where the work was done and where it ships from.
 	a, _ := twoAgents(t)
@@ -145,12 +155,14 @@ func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
 }
 
 func TestShipRefusesAnUnknownFeature(t *testing.T) {
+	t.Parallel()
 	p := setUp(t)
 	feature(p, "0007", "done", "Done", "Accepted", "- [x] One")
 	p.run("ship", "0099").fails(2).errHas("no feature")
 }
 
 func TestShipSaysTheWorkIsHandedOffNotFinished(t *testing.T) {
+	t.Parallel()
 	// The first real project to run the loop reached the end of ship, found no
 	// instruction about what happens next, and merged its own work to main. The
 	// protocol is read at the start of a session; this decision is made at the end
@@ -168,6 +180,7 @@ func TestShipSaysTheWorkIsHandedOffNotFinished(t *testing.T) {
 }
 
 func TestShipPointsAtTheAsBuiltDoc(t *testing.T) {
+	t.Parallel()
 	// Rule 10 says move durable facts across; nothing enforced it, so the prompt is
 	// the enforcement.
 	// The creation case is TestShipCreatesTheAsBuiltDocOnce; this is the reminder
@@ -182,6 +195,7 @@ func TestShipPointsAtTheAsBuiltDoc(t *testing.T) {
 }
 
 func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
+	t.Parallel()
 	// Rule 10 says move durable facts into the as-built doc. Until now nothing said
 	// what that doc looks like, and shipping is exactly when it first has to exist.
 	p := setUp(t)
@@ -206,6 +220,7 @@ func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
 }
 
 func TestShipRespectsAnExistingAsBuiltDocUnderAnotherName(t *testing.T) {
+	t.Parallel()
 	// ARCHITECTURE.md is an accepted name. Creating docs/TECH.md alongside it would
 	// give the project two as-built docs and no way to tell which is true.
 	p := setUp(t)

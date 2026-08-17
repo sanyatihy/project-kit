@@ -7,6 +7,7 @@ import (
 )
 
 func TestHostFromRemoteURL(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ raw, want string }{
 		{"https://gitlab.example.com/infra/thing.git", "gitlab.example.com"},
 		{"https://user@gitlab.example.com:8443/infra/thing.git", "gitlab.example.com"},
@@ -24,6 +25,7 @@ func TestHostFromRemoteURL(t *testing.T) {
 }
 
 func TestForgeFromHostNeedsRecognition(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ host, want string }{
 		{"github.com", ForgeGitHub},
 		{"gitlab.com", ForgeGitLab},
@@ -44,6 +46,7 @@ func TestForgeFromHostNeedsRecognition(t *testing.T) {
 }
 
 func TestHostSegment(t *testing.T) {
+	t.Parallel()
 	cases := []struct{ modulePath, want string }{
 		{"gitlab.example.com/infra/thing", "gitlab.example.com"},
 		{"github.com/owner/thing", "github.com"},
@@ -61,6 +64,7 @@ func TestHostSegment(t *testing.T) {
 // carrying its own CI file is believed over anything a directory name suggests, because
 // a hostname cannot tell a self-hosted GitLab from a Gitea and the file can.
 func TestDetectForgeRungOneOutranksThePath(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join(t.TempDir(), "github.com", "owner", "thing")
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
@@ -74,6 +78,7 @@ func TestDetectForgeRungOneOutranksThePath(t *testing.T) {
 }
 
 func TestDetectForgeReadsTheDirectoryConvention(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join(t.TempDir(), "gitlab.example.com", "infra", "thing")
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
@@ -84,6 +89,7 @@ func TestDetectForgeReadsTheDirectoryConvention(t *testing.T) {
 }
 
 func TestDetectForgeAdmitsItDoesNotKnow(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join(t.TempDir(), "thing")
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)

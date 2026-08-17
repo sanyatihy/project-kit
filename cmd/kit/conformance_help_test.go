@@ -14,6 +14,7 @@ import (
 )
 
 func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
+	t.Parallel()
 	p := newProject(t)
 
 	// Everything the binary can tell someone, in one place.
@@ -68,6 +69,7 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 }
 
 func TestEveryTopicIsReachableFromTheOverview(t *testing.T) {
+	t.Parallel()
 	// A topic nobody is told about may as well not be embedded — which is exactly
 	// how the INBOX format stayed invisible while the tool enforced it.
 	p := newProject(t)
