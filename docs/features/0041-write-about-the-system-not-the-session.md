@@ -64,7 +64,7 @@ too-big/too-small guidance that already draws the feature's other boundary.
 ## Tasks
 - [x] Rule in `templates/AGENTS-section.md`: write about the system, not the session, with
       the keep/cut test; and rule 1 says what earns a doc rather than a BACKLOG line
-- [ ] `## Log` template guidance rewritten to what the doing taught, and `## Problem` given
+- [x] `## Log` template guidance rewritten to what the doing taught, and `## Problem` given
       back its stated budget
 - [ ] `session-narration` at LOW over the marker set, with conformance that it fires and
       that a doc without the markers stays quiet

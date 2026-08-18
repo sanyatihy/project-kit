@@ -27,8 +27,9 @@ related:             # other docs worth reading first
 
 
 ## Problem
-<!-- 1-3 sentences: what is broken or missing, and the signal that justifies it now.
-     Shorter than that and nobody can tell whether it was worth doing. -->
+<!-- 1-3 sentences: the standing tension and the signal that justifies it now — not the
+     incident that surfaced it, which the pull request holds. Shorter and nobody can tell
+     whether it was worth doing; longer and the doc is arguing instead of deciding. -->
 
 ## Non-goals
 <!-- What this deliberately does not do, and where that lives instead. One line each;
@@ -53,9 +54,10 @@ related:             # other docs worth reading first
 <!-- Optional. Delete when empty. Each with a leaning if you have one. -->
 
 ## Log
-<!-- One line per entry, and only when the plan changed: a box rewritten, a premise
-     falsified, an open question settled, a measurement that changes what to do next.
-     Not a diary — nothing about mistakes made and fixed, rules complied with, or what
-     the diff already shows. Append-only.
+<!-- What the doing taught that the plan did not know: a measurement, a falsified premise,
+     an open question settled, what a dependency's outcome changed downstream. Take the room
+     it needs — this is the section a later reader gains most from, and the one most docs
+     are thinnest in. Not a diary: nothing about mistakes made and fixed, rules complied
+     with, or what the diff already shows. Append-only.
        - YYYY-MM-DD — decided X over Y because … -->
 
