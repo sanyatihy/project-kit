@@ -237,7 +237,12 @@ shipped-no-date — so the command removes the mistake rather than reporting it
 afterwards.
 
 A Shipped doc is frozen history: durable facts belong in docs/TECH.md from then
-on, and the doc itself must not be edited again.
+on, and what the doc decided must not be edited again.
+
+Shipping is also when a working document becomes context every later session carries,
+so the closing line asks you to compact it: keep every decision, constraint and
+measurement, and cut only what the code now says. "doc-bloat" reports a doc that grew
+past what anyone reads.
 
   kit ship 0007
   kit ship 7`,
