@@ -1,9 +1,9 @@
 ---
 id: 0044
 title: Route each fact to one home
-status: Draft
+status: Shipped
 created: 2026-08-18
-shipped:
+shipped: 2026-08-18
 check:
 checked:
 review:
