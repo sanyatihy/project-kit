@@ -71,7 +71,7 @@ duplication lives is why this shipped twice.
 ## Tasks
 - [x] Projects audited and surveyed concurrently under 0034's cap, output in path order, with
       a test that a failing path still reports in place and still exits 2
-- [ ] The remote branch list requested before the local walk, `--offline` unchanged
+- [x] The remote branch list requested before the local walk, `--offline` unchanged
 - [ ] `OnlyHere` reads the trunk's copy of the doc, batched for all features in one pass:
       conformance that an edit to a merged doc is silent, that a Shipped doc never pushed
       still fires, and that awaiting-review and `--offline` stay silent

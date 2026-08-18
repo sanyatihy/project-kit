@@ -190,6 +190,11 @@ type Repo struct {
 	// nothing to report.
 	headsFailed bool
 
+	// The answer while it is still in flight. The round trip is the whole cost of a board
+	// read, and no local answer depends on it, so it is started first and collected after.
+	// Buffered, so the goroutine never outlives the command still holding a send.
+	headsPending chan headsResult
+
 	// The branch this checkout is on and the remotes it has, asked once each. Neither can
 	// change while one command runs, and both were being asked per feature: 62 of the 116
 	// git processes a board read spawned on a 30-feature project were these two.
@@ -457,6 +462,11 @@ func (r *Repo) loadGit() {
 		r.commits = append(r.commits, commit{When: parsed, Message: message})
 	}
 
+	// Ask the remote before the local walk rather than after it. One `ls-remote` is 2.3s
+	// against GitHub over SSH where everything else here is under a tenth of that, and no
+	// local answer depends on it, so the wait overlaps the work instead of following it.
+	r.startRemoteHeads()
+
 	// Local branches and worktree branches are this machine's own state and cannot be
 	// stale. What the remote has is a different question, and `refs/remotes/*` is only a
 	// cache of the last fetch — git prunes it on neither fetch nor pull, so a branch
@@ -504,12 +514,54 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 		return nil, false
 	}
 	if r.headsAsked {
+		r.collectRemoteHeads()
 		return r.heads, r.headsKnown
 	}
 	r.headsAsked = true
+	r.apply(r.fetchHeads(r.remotes()))
+	return r.heads, r.headsKnown
+}
+
+// headsResult is one round's answer, carried back from the goroutine that asked so that
+// nothing on the Repo is written from two places at once.
+type headsResult struct {
+	heads  []string
+	known  bool
+	failed bool
+}
+
+// startRemoteHeads sends the round trip off to run beside the local walk. The remotes are
+// resolved here, on the caller's goroutine, so the one below touches nothing but the root
+// path — the memo it would otherwise fill is shared, and this keeps it single-writer.
+func (r *Repo) startRemoteHeads() {
+	if r.Offline || r.headsAsked {
+		return
+	}
+	r.headsAsked = true
+	remotes := r.remotes()
+	r.headsPending = make(chan headsResult, 1)
+	go func() { r.headsPending <- r.fetchHeads(remotes) }()
+}
+
+// collectRemoteHeads waits for a round trip started earlier, once.
+func (r *Repo) collectRemoteHeads() {
+	if r.headsPending == nil {
+		return
+	}
+	r.apply(<-r.headsPending)
+	r.headsPending = nil
+}
+
+func (r *Repo) apply(res headsResult) {
+	r.heads, r.headsKnown, r.headsFailed = res.heads, res.known, res.failed
+}
+
+// fetchHeads does the asking and touches no memo, so it is safe on a goroutine of its
+// own: everything it decides comes back in the result.
+func (r *Repo) fetchHeads(remotes []string) headsResult {
 	var out []string
 	answered := false
-	for _, remote := range r.remotes() {
+	for _, remote := range remotes {
 		ctx, cancel := context.WithTimeout(context.Background(), remoteTimeout)
 		cmd := exec.CommandContext(ctx, "git", "-C", r.Root, "ls-remote", "--heads", remote)
 		raw, err := cmd.Output()
@@ -517,8 +569,7 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 		if err != nil {
 			// One unreachable remote does not invalidate another's answer, but it does
 			// mean this one's branches are unknown, so nothing here can be authoritative.
-			r.headsFailed = true
-			return nil, false
+			return headsResult{failed: true}
 		}
 		answered = true
 		for _, line := range strings.Split(string(raw), "\n") {
@@ -531,8 +582,7 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 			}
 		}
 	}
-	r.heads, r.headsKnown = out, answered
-	return out, answered
+	return headsResult{heads: out, known: answered}
 }
 
 // RemoteUnanswered reports whether something this command needed from the remote could
@@ -545,7 +595,10 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 //
 // Read it after the work, not before: it reports what actually went unanswered rather
 // than provoking a call nobody needed.
-func (r *Repo) RemoteUnanswered() bool { return r.headsFailed }
+func (r *Repo) RemoteUnanswered() bool {
+	r.collectRemoteHeads()
+	return r.headsFailed
+}
 
 // branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
 // recognised as one branch rather than two claims on the same feature.
