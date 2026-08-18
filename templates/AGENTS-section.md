@@ -20,8 +20,8 @@ format. Every rule below is a rule some agent got wrong; none is style.
      could *start* now: a shared composition root, a shared router, or numbered migrations
      make a feature dependent however separate it looks.
    - **One drafting session is one plan round:** all its docs on one `plan/<something>`
-     branch, merged once. Never name a branch after a feature — a leading four-digit ID *is*
-     a claim, so a draft on one claims itself.
+     branch, merged once. The name must not mention a feature id anywhere in it — any
+     branch citing one is a claim, so a draft on one claims itself.
    - **The round must reach the default branch before anything on it can be claimed.**
      `claim` refuses otherwise; land it at whatever statuses its docs reached.
    - **Leave every doc `Draft`, and never edit `status:` by hand** — `accept`, `ship` and

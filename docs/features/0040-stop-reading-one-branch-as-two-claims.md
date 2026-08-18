@@ -1,9 +1,9 @@
 ---
 id: 0040
 title: Stop reading one branch as two claims
-status: Draft
+status: Shipped
 created: 2026-08-18
-shipped:
+shipped: 2026-08-18
 check:
 checked:
 review:
@@ -47,11 +47,13 @@ is a claim on 0039 by the same rule, and it was written by an agent that had rea
 One word, at the tier where prose is all there is.
 
 ## Tasks
-- [ ] The worktree branch parsed by stripping `refs/heads/`, with conformance that a namespaced
+- [x] The worktree branch parsed by stripping `refs/heads/`, with conformance that a namespaced
       branch in a worktree is one claim and that two real branches still report `split-claim`
-- [ ] `docs/TECH.md` and the plan-branch guidance say a plan branch must not *mention* a
+- [x] `docs/TECH.md` and the plan-branch guidance say a plan branch must not *mention* a
       feature id anywhere in its name
 
 ## Log
 - 2026-08-18 — found by accident, not by review: the plan branch drafting 0039 was named after
   it, and `kit audit` reported the checkout as fighting itself.
+- 2026-08-18 — the protocol text changed, so every project carrying the old wording reports
+  `protocol-stale` until `kit init` refreshes it. This repo's own AGENTS.md included.
