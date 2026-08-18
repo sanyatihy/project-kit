@@ -33,7 +33,13 @@ const (
 	// system rather than the session. Both delete a class of writing from every doc after
 	// them, which is the trade that buys protocol growth; a rule that only adds something
 	// to remember does not.
-	protocolBudget = 121
+	//
+	// 0044 raised it to 123 for the routing rule — every fact has one home, chosen as the
+	// sentence is written. It deletes the transcript of the work from every doc after it,
+	// which "write about the system" alone did not: a run that taught something read as
+	// durable and landed in the ## Log. The evidence rule folded into the bullet above it
+	// rather than adding a third.
+	protocolBudget = 123
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.

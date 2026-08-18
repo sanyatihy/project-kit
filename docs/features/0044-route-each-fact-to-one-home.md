@@ -65,7 +65,7 @@ and it is the worked example; left as it is, it teaches the old shape to everyth
 reads it. `techBudget` is retaken from the result — a ceiling, not a target.
 
 ## Tasks
-- [ ] The protocol states the three destinations and the name-the-change test, replacing
+- [x] The protocol states the three destinations and the name-the-change test, replacing
       "Write the record while you work"; the ceiling holds, or the raise says which class
       of writing it deletes
 - [ ] `## Log` guidance in the feature template says name the change and routes what is not
