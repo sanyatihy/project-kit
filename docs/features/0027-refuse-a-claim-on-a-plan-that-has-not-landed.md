@@ -52,8 +52,8 @@ claim of every new project would be refused.
 - [x] `kit help claim` and README state the barrier and why it exists
 
 ## Log
-- 2026-08-16 — found while reviewing how four features came to be merged by their own
-  builder: the ordering rule was documented and only half enforced.
+- 2026-08-16 — the ordering rule was documented and only half enforced: four features
+  reached the trunk merged by their own builder.
 - 2026-08-16 — a fresh single-branch project turns out never to reach the skip:
   `Trunk()` falls back to the branch the checkout is on, so the doc is on the trunk
   and the check passes outright. The skip covers the states with no trunk at all — a

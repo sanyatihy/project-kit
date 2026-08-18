@@ -90,5 +90,5 @@ that is Dropped or Superseded, the line says so instead of *"to ship first"* —
 - [x] README and `kit help` for claim, ship and drop describe the new refusals
 
 ## Log
-- 2026-08-16 — found bootstrapping url-shortener from an empty directory: the board
-  refused 0003 and `kit claim 0003` took it anyway.
+- 2026-08-16 — the board refused 0003 and `kit claim 0003` took it anyway, on a project
+  bootstrapped from an empty directory.

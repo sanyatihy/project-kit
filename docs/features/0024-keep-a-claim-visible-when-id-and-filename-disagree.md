@@ -76,6 +76,5 @@ rather than being orphaned by it. `FilenamePrefix` exists and is already used by
       agree — the loop 0013 exists to stop
 
 ## Log
-- 2026-08-16 — found probing the lifecycle after the url-shortener bootstrap.
 - 2026-08-16 — the refusal leaves `next` offering a feature `claim` turns away, which
   is the 0013 loop. Appended as a box rather than widening this change.

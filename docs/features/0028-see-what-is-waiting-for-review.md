@@ -12,7 +12,7 @@ related: 0013-never-leave-an-agent-without-an-instruction.md
 
 ## Problem
 `kit next` answers *what do I build*. Nothing answers *what needs review*, so the far side
-of `ship` is unobserved. Both failures this session live there: four features were shipped
+of `ship` is unobserved. Both failures live there: four features were shipped
 and never pushed with `audit --strict` green throughout, and in another project five drafts
 sat on unmerged branches while the board reported *"nothing is planned"*.
 
@@ -59,8 +59,8 @@ three roles and two things it rests on: **distinct git identities** (measured: e
 from four agents here carries the operator's name) and **branch protection**, where the agent
 has no authority.
 
-**Enforce, do not instruct**, the general rule this session earned: rule 13 was violated
-twice by an agent that had read it, and `ship`'s coded refusal was obeyed the first time it
+**Enforce, do not instruct**, the general rule this earned: rule 13 was violated twice by
+an agent that had read it, and `ship`'s coded refusal was obeyed the first time it
 fired, on that same agent minutes later. A rule belongs at the highest tier it can reach —
 the remote, then the kit, then prose — so a protocol sentence is a last resort. The tiers
 are in `docs/TECH.md`.

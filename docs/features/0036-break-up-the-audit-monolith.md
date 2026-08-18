@@ -75,8 +75,8 @@ the honest answer may be two small slices rather than one clever interface.
       `## Log`
 
 ## Log
-- 2026-08-17 — found in a code audit. `golangci-lint` is clean and there is no dead API;
-  this is the one structural finding worth a feature.
+- 2026-08-17 — `golangci-lint` is clean and there is no dead API; this is the one
+  structural finding worth a feature.
 - 2026-08-18 — open question settled: two slices, not one signature. They take different
   arguments and share nothing but the registry entry, so unifying them would be an
   abstraction with two implementations and no caller that wants either.
