@@ -53,6 +53,10 @@ func TestABoardReadStaysWithinItsGitBudget(t *testing.T) {
 	p := budgetFixture(t)
 
 	offline, breakdown := countGit(t, p, "next", "--offline")
+	// Logged whether or not it fails: `make gitcount` is how the numbers are read, and a
+	// count that has quietly halved is worth knowing about too.
+	t.Logf("%d features, %d claims: %d git processes offline (ceiling %d)\n%s",
+		budgetFeatures, budgetClaims, offline, offlineBudget, breakdown)
 	if offline > offlineBudget {
 		t.Errorf("`kit next --offline` spawned %d git processes, over its %d ceiling.\n"+
 			"An answer that cannot change inside one command is asked once. If this is a "+
@@ -63,6 +67,8 @@ func TestABoardReadStaysWithinItsGitBudget(t *testing.T) {
 	shipEverything(t, p)
 
 	online, breakdown := countGit(t, p, "audit")
+	t.Logf("%d features, %d claims: %d git processes online (ceiling %d)\n%s",
+		budgetFeatures, budgetClaims, online, onlineBudget, breakdown)
 	if online > onlineBudget {
 		t.Errorf("`kit audit` spawned %d git processes, over its %d ceiling.\n"+
 			"The checks that need the remote are the half a `--offline` measurement cannot "+

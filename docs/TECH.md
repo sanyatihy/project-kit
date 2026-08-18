@@ -89,8 +89,11 @@ next command refuses.
   checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`), and
   every feature doc's status on the trunk, which `ls-tree` and one `cat-file --batch` read in
   two processes. Per feature instead, a 30-feature board read cost 116 git processes against
-  28 now. `make gitcount` counts them **online as well as off**: the same regression hid for a
-  release behind an offline-only measurement, where the count was identical either way.
+  29 now, and 10 online. **Both are ceilings the gate fails on**, and both are measured,
+  because the third regression hid behind an offline-only number that was identical either
+  way. A measurement nobody is required to read is the prose tier. `make gitcount` prints
+  them; raising one is allowed and the failure says so, but a count that grows with the
+  board is the bug.
 - **The board is read concurrently, capped at 8, in the order the paths were given.** What a
   board read spends is one `ls-remote` per project — 2.3s against GitHub over SSH where the
   rest is under a tenth of that — so a fleet costs one round trip rather than one each: four
