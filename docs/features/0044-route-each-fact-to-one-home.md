@@ -72,11 +72,17 @@ reads it. `techBudget` is retaken from the result — a ceiling, not a target.
       one; `features-README.md`'s Log line agrees with it rather than stating a second thing
 - [x] `templates/TECH.md` carries the rule-then-clause shape, so a scaffolded project starts
       with it
-- [ ] `session-narration` covers the revision shapes, markers chosen by measuring both
+- [x] `session-narration` covers the revision shapes, markers chosen by measuring both
       corpora and kept only where they misfire on neither; conformance covers a fire and a
       quiet doc
+- [ ] README's account of `## Log` states the routing rule rather than "takes the room
+      that needs"
 - [ ] `kit ship` names the three destinations where it now says "move durable facts"
 - [ ] `docs/TECH.md` is rewritten to rule-then-clause with the incidents left in the feature
       docs that hold them, and `techBudget` is retaken from the result
 
 ## Log
+- 2026-08-18 — the box grew a fix: every marker is several words and the scan was
+  line-at-a-time, so any marker the wrap split matched nothing. `Narration` now scans a
+  two-line window; the new markers and what they were measured against are in
+  `NarrationMarkers`.
