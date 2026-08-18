@@ -33,7 +33,13 @@ const (
 	// system rather than the session. Both delete a class of writing from every doc after
 	// them, which is the trade that buys protocol growth; a rule that only adds something
 	// to remember does not.
-	protocolBudget = 121
+	//
+	// 0044 raised it to 123 for the routing rule — every fact has one home, chosen as the
+	// sentence is written. It deletes the transcript of the work from every doc after it,
+	// which "write about the system" alone did not: a run that taught something read as
+	// durable and landed in the ## Log. The evidence rule folded into the bullet above it
+	// rather than adding a third.
+	protocolBudget = 123
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -49,7 +55,12 @@ const (
 	// found two sections answering the same question and three facts stated twice — growth
 	// nobody notices, because a paragraph is easier to add than to justify. Same escape
 	// hatch as the ceilings above: raise the number here and say why.
-	techBudget   = 300
+	//
+	// 0044 retook it at 295 against a 289-line file, rewritten to state the rule and give
+	// the evidence a trailing clause. The headroom is deliberate and small: under the
+	// routing rule a shipped feature adds one line, so a jump means facts arrived with
+	// their history attached again.
+	techBudget   = 295
 	agentsBudget = 210
 )
 

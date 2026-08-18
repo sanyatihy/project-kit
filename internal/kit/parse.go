@@ -305,13 +305,18 @@ func AppendToSection(text, heading, line string) (string, bool) {
 }
 
 // NarrationMarkers are phrases that appear when a doc narrates the work rather than
-// describing the system. Precision over recall by a wide margin: measured over 54 real
-// feature docs, this set fires on 4 and never on a doc that was not narrating.
+// describing the system. Precision over recall by a wide margin: measured over 58 real
+// feature docs, this set fires on 6 and never on a doc that was not narrating.
 //
 // Most narration carries no stock phrase at all — one doc here argues for thirty lines
 // without tripping a marker — so the recall is poor and meant to be. This is a backstop
 // and the rule in the protocol is the rule, exactly as `secret-in-doc` backstops "never
 // put a secret in a doc" while matching nothing in a password written as prose.
+//
+// The second group is a ## Log revising itself: an entry that corrects an earlier entry
+// is the transcript of the work, and what survives it is one line about the system. They
+// were taken from an R&D corpus, where the shape is common — candidates that also fire on
+// a settled premise ("turns out", "turned out to be") were dropped for it.
 var NarrationMarkers = []string{
 	"this session",
 	"last session",
@@ -322,6 +327,13 @@ var NarrationMarkers = []string{
 	"it turned out",
 	"nobody noticed",
 	"never noticed",
+
+	"was wrong",
+	"wrong as written",
+	"misread",
+	"entry above",
+	"entry below",
+	"the general lesson",
 }
 
 // Narration reports the first narration marker in text and the 1-based line holding it.
@@ -330,11 +342,28 @@ var NarrationMarkers = []string{
 // about the doc format quotes the things being ruled on, and the template's own guidance
 // lives entirely in comments — scanning either reports the rule as a violation of itself.
 // Blanking rather than dropping keeps the line numbers the ones a reader sees.
+//
+// Each line is scanned joined to the one after it, because docs are hard-wrapped around
+// 95 characters and every marker here is several words: "wrong as written" straddled the
+// wrap in the doc it was taken from, so a line-at-a-time scan matched nothing. The line
+// reported is the one the marker starts on.
 func Narration(text string) (marker string, line int) {
-	for i, l := range strings.Split(blankQuoted(Normalise(text)), "\n") {
+	lines := strings.Split(blankQuoted(Normalise(text)), "\n")
+	for i, l := range lines {
 		lower := strings.ToLower(l)
 		for _, m := range NarrationMarkers {
 			if strings.Contains(lower, m) {
+				return m, i + 1
+			}
+		}
+		if i+1 >= len(lines) {
+			continue
+		}
+		joined := lower + " " + strings.ToLower(strings.TrimSpace(lines[i+1]))
+		for _, m := range NarrationMarkers {
+			// Only a marker that straddles the wrap: one lying wholly in the next line
+			// is that line's, and reporting it here would name the wrong one.
+			if at := strings.Index(joined, m); at >= 0 && at < len(lower) {
 				return m, i + 1
 			}
 		}

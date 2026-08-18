@@ -1,9 +1,9 @@
 ---
 id: 0044
 title: Route each fact to one home
-status: Draft
+status: Shipped
 created: 2026-08-18
-shipped:
+shipped: 2026-08-18
 check:
 checked:
 review:
@@ -65,18 +65,28 @@ and it is the worked example; left as it is, it teaches the old shape to everyth
 reads it. `techBudget` is retaken from the result — a ceiling, not a target.
 
 ## Tasks
-- [ ] The protocol states the three destinations and the name-the-change test, replacing
+- [x] The protocol states the three destinations and the name-the-change test, replacing
       "Write the record while you work"; the ceiling holds, or the raise says which class
       of writing it deletes
-- [ ] `## Log` guidance in the feature template says name the change and routes what is not
+- [x] `## Log` guidance in the feature template says name the change and routes what is not
       one; `features-README.md`'s Log line agrees with it rather than stating a second thing
-- [ ] `templates/TECH.md` carries the rule-then-clause shape, so a scaffolded project starts
+- [x] `templates/TECH.md` carries the rule-then-clause shape, so a scaffolded project starts
       with it
-- [ ] `session-narration` covers the revision shapes, markers chosen by measuring both
+- [x] `session-narration` covers the revision shapes, markers chosen by measuring both
       corpora and kept only where they misfire on neither; conformance covers a fire and a
       quiet doc
-- [ ] `kit ship` names the three destinations where it now says "move durable facts"
-- [ ] `docs/TECH.md` is rewritten to rule-then-clause with the incidents left in the feature
+- [x] README's account of `## Log` states the routing rule rather than "takes the room
+      that needs"
+- [x] `kit ship` names the three destinations where it now says "move durable facts"
+- [x] `docs/TECH.md` is rewritten to rule-then-clause with the incidents left in the feature
       docs that hold them, and `techBudget` is retaken from the result
 
 ## Log
+- 2026-08-18 — the box grew a fix: every marker is several words and the scan was
+  line-at-a-time, so any marker the wrap split matched nothing. `Narration` now scans a
+  two-line window; the new markers and what they were measured against are in
+  `NarrationMarkers`.
+- 2026-08-18 — the incident narration was clauses, not the bulk. Rewriting `docs/TECH.md`
+  to rule-then-clause rewrote 84 of 293 lines and left the file 4 shorter, where the
+  Problem implied roughly half was archaeology: what a newcomer skips there is mostly
+  maintainer-facing rules, and those stay. `techBudget` 300 to 295 rather than the cut.

@@ -197,3 +197,20 @@ func TestNarrationSkipsWhatADocAboutTheRuleQuotes(t *testing.T) {
 		t.Errorf("got %q at line %d, want \"this session\" at 2", m, line)
 	}
 }
+
+func TestNarrationCatchesAMarkerSplitByTheWrap(t *testing.T) {
+	t.Parallel()
+	// Docs are hard-wrapped, and every marker is several words, so a line-at-a-time scan
+	// misses whichever ones the wrap happens to split. "wrong as written" straddled it in
+	// the doc the markers were taken from.
+	split := "## Log\n- 2026-01-01 — the cap diagnosis was\n  wrong, and here is the real one.\n"
+	if m, line := Narration(split); m != "was wrong" || line != 2 {
+		t.Errorf("got %q at line %d, want \"was wrong\" at 2", m, line)
+	}
+	// The line reported is where the marker starts. A marker lying wholly in the next
+	// line belongs to that line, not to the one the scan happened to join it to.
+	next := "## Log\n- 2026-01-01 — a decision, stated plainly.\n- 2026-01-02 — that was wrong.\n"
+	if m, line := Narration(next); m != "was wrong" || line != 3 {
+		t.Errorf("got %q at line %d, want \"was wrong\" at 3", m, line)
+	}
+}

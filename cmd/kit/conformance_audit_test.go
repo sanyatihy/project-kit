@@ -622,6 +622,14 @@ func TestSessionNarrationIsAPreciseBackstop(t *testing.T) {
 	if codes := p.auditCodes(); slices.Contains(codes, "session-narration") {
 		t.Errorf("fired on a Shipped doc, which rule 11 forbids editing: %v", codes)
 	}
+
+	// A ## Log revising an earlier entry is the transcript of the work: what survives the
+	// revision is one line about the system, and the argument belongs in the PR. The
+	// marker straddles the wrap here, which is how it is written in a real doc.
+	p.write("docs/features/0004-revised.md", doc("0004", "Revised", "Accepted", "",
+		"- [ ] Something")+
+		"- 2026-01-01 — capped at 2048.\n- 2026-01-02 — that diagnosis was\n  wrong: the cap was fine.\n")
+	p.run("audit").ok().has("session-narration", "was wrong")
 }
 
 func TestDocBloatMeasuresTheWholeDocAndNothingInsideIt(t *testing.T) {

@@ -2,8 +2,9 @@
 
 The kit as built: the facts that outlive the feature that produced them. Feature docs in
 [features/](features/) carry what is planned and what was decided while doing it; this
-carries what is true now. It is read before every change, so it stays short — a fact that
-only records that we thought about something does not belong here.
+carries what is true now. It is read before every change, so it stays short — one fact,
+one line, and the evidence only where it stops the rule being reversed. How a fact was
+found stays in the feature doc that found it.
 
 ## What it is
 
@@ -20,9 +21,9 @@ templates/        what `kit init` writes, embedded via assets.go
 ## Enforce, do not instruct
 
 Prose can be skimmed, misread or reasoned past; a refusal in the tool has to be routed
-around deliberately. Measured: the rule against merging your own work was broken twice by
-an agent that had read it, and `ship`'s coded refusal was obeyed the first time it fired,
-on that same agent minutes later.
+around deliberately. Measured: the prose rule against merging your own work was broken
+twice by an agent that had read it, and the coded refusal that replaced it was obeyed the
+first time it fired.
 
 | tier | example | an agent gets past it by |
 | --- | --- | --- |
@@ -54,9 +55,8 @@ next command refuses.
   0, which hands one feature to two agents. Ref creation is a server-side compare-and-swap,
   so exactly one claimant wins. A leftover branch is indistinguishable from a fresh claim,
   so `claim` names both possibilities and `stalled` never ages a claim carrying no work. A
-  name is read **whole**, namespace included: keeping only the last path segment entered one
-  worktree's branch twice and reported the checkout as two agents fighting over its own
-  feature, with a fix line that deletes the work.
+  name is read **whole**, namespace included: on the last path segment alone, a worktree
+  reads its own checkout as a rival claim and the fix line deletes the work.
 - **A claim carries the plan, and branches from the trunk.** The doc must be in `HEAD`'s
   tree — the push is `HEAD:refs/heads/<branch>` — and in `trunkRef()`'s, or the claim is a
   child of the plan branch and only its own author can integrate it. Exit 2, not `NotYours`:
@@ -76,27 +76,23 @@ next command refuses.
   is read *from the branch* — the only place it exists, since a coordinator stands on the
   trunk where the doc still says what it said when the round landed. `shipped-not-pushed` is
   the other half at HIGH, and needs two negatives: no branch on the remote names it, and the
-  remote's trunk carries no copy of the doc saying Shipped. **Status, never presence** — a doc
-  reaches the trunk when it is *drafted*, so testing presence silences the check for every
-  feature — and on **any** branch the repo counts as a trunk, since a clone whose
-  `origin/HEAD` predates a default-branch rename points at one nothing merges to, and
-  reading only that one fires HIGH on every shipped feature. Reading the commit that last wrote the doc was the earlier answer and misfired the
-  other way, once compaction made editing a shipped doc routine.
+  remote's trunk carries no copy of the doc saying Shipped. **Status, never presence** — a
+  doc reaches the trunk when it is *drafted*, so testing presence silences the check for
+  every feature — and on **any** branch the repo counts as a trunk, since a clone whose
+  `origin/HEAD` predates a default-branch rename points at one nothing merges to.
 - **You never merge your own work: legibility here, enforcement on the remote.** The board
   marks what the reader built (the claim it stands on, or the branch's authorship) and what
   `review: human` reserves for a person — written by `kit accept --review`, read from the
   checkout, any non-empty value counting. Branch protection is the floor and the only real
-  enforcement; none of this distinguishes anybody while agents share one credential, as four
-  agents' commits here all carried the operator's name.
+  enforcement; none of this distinguishes anybody while agents share one credential.
 - **An answer that cannot change inside one command is asked once** — the trunk, this
   checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`), and
   every feature doc's status on the trunk, which `ls-tree` and one `cat-file --batch` read in
   two processes. Per feature instead, a 30-feature board read cost 116 git processes against
   29 now, and 10 online. **Both are ceilings the gate fails on**, and both are measured,
-  because the third regression hid behind an offline-only number that was identical either
-  way. A measurement nobody is required to read is the prose tier. `make gitcount` prints
-  them; raising one is allowed and the failure says so, but a count that grows with the
-  board is the bug.
+  because a regression can leave the offline number identical. A measurement nobody is
+  required to read is the prose tier. `make gitcount` prints them; raising one is allowed and
+  the failure says so, but a count that grows with the board is the bug.
 - **The board is read concurrently, capped at 8, in the order the paths were given.** What a
   board read spends is one `ls-remote` per project — 2.3s against GitHub over SSH where the
   rest is under a tenth of that — so a fleet costs one round trip rather than one each: four
@@ -104,70 +100,72 @@ next command refuses.
   reason. The cap bounds connections to one forge, not CPU, and the order is what lets one
   board be compared with the last.
 - **Claims are read from the remote, not from `refs/remotes/*`**, which git prunes on
-  neither `fetch` nor `pull`, so a branch deleted on merge read as a live claim for ever.
-  One `ls-remote` per remote, bounded at 15s — it was 5, which a working remote did not fit
-  inside (5.58s to GitHub over SSH), and the board silently printed nothing. The bound was
-  half the bug: expiry reported as an empty page is worse, because absence and ignorance
-  render identically, so `RemoteUnanswered` separates *asked and got nothing* from *nothing
-  to ask*. `--offline` stays quiet, being an instruction; `claim` never reads the cache.
-- **Liveness comes from the claim branch, and there is no status for it.** An
-  `In progress` field was set on the feature branch and never reached the trunk, so from
-  the only checkout anyone audits the doc read `Accepted` and `stalled` could not fire —
-  and the protocol forbade the hand edit that was the only way to set it. Dropping it took
-  `no-claim` with it, which existed only to reconcile the two copies. The log is read
-  `--all` for the same reason; a doc's mtime is not a signal, since a merge resets it.
+  neither `fetch` nor `pull`, so a branch deleted on merge reads as a live claim for ever.
+  One `ls-remote` per remote, bounded at 15s — 5 is inside a working remote's latency (5.58s
+  to GitHub over SSH) and the board silently printed nothing. Expiry reported as an empty
+  page is worse than a slow one, because absence and ignorance render identically, so
+  `RemoteUnanswered` separates *asked and got nothing* from *nothing to ask*. `--offline`
+  stays quiet, being an instruction; `claim` never reads the cache.
+- **Liveness comes from the claim branch, and there is no status for it.** A status set on
+  the feature branch never reaches the trunk, which is the only checkout anyone audits, so
+  the doc there reads `Accepted` and `stalled` cannot fire. The log is read `--all` for the
+  same reason; a doc's mtime is not a signal, since a merge resets it.
 - **A claim finding needs positive evidence, not absence.** From the trunk an in-flight
-  feature's doc is *always* missing, and `orphan-claim` reported every open feature while
+  feature's doc is *always* missing, so absence would report every open feature while
   advising a fix that deletes the draft. A branch is an orphan only if its own tree says so;
   an unfetched branch is passed over rather than guessed at.
 - **The trunk is asked for, not assumed:** `origin/HEAD`, then `main`, then `master`, then a
-  HEAD that is not claim-shaped. Hard-coding the two names left a project whose default is
-  neither with nothing to diff against, and every check built on it went quiet.
+  HEAD that is not claim-shaped. Hard-coding the two names leaves a project whose default is
+  neither with nothing to diff against, and every check built on it goes quiet.
 - **Drafting is a plan round, and drafts live on the trunk.** One `plan/<something>` branch
   per session, merged once, at whatever statuses its docs reached — and its name must not
   mention a feature id *anywhere*, since any branch citing one is a claim and such a draft
-  claims itself. Not only the first segment: `plan/fold-the-fix-into-0039` was read as a
-  claim on 0039, written by an agent that had just read the rule. A
-  branch carrying only its doc is a proposal, which is what `draft-claimed` diffs for.
-  `kit drop` exists because a doc on the trunk cannot be retired by deleting a branch.
+  claims itself. Not only the first segment: `plan/fold-the-fix-into-0039` is a claim on
+  0039. A branch carrying only its doc is a proposal, which is what `draft-claimed` diffs
+  for. `kit drop` exists because a doc on the trunk cannot be retired by deleting a branch.
 - **Accepting is a command, and only a human runs it.** It refuses a non-Draft, an unemptied
   `## Open questions`, and a doc a BLOCKING line names — via `BlockersFor`, so `accept` and
   `next` cannot disagree about what is blocked.
 - **Blocking is an INBOX line naming the feature in its id field**, never the prose, which
-  used to stop work invisibly; an unparseable line matches whole-line, which over-blocks —
-  the safe direction. `next` skips at once, `audit` escalates after two days, because a line
-  carries a date and no time. BLOCKING and FYI differ in severity too — HIGH and LOW — since
-  `--fyi` promises the feature is not blocked, and HIGH broke that promise through the
-  `--strict` gate in front of `ship`.
+  stops work invisibly; an unparseable line matches whole-line, which over-blocks — the safe
+  direction. `next` skips at once, `audit` escalates after two days, because a line carries a
+  date and no time. BLOCKING and FYI differ in severity too — HIGH and LOW — since `--fyi`
+  promises the feature is not blocked, and HIGH breaks that promise through the `--strict`
+  gate in front of `ship`.
 - **The feature template's guidance lives in HTML comments, and that is load-bearing.**
   Comments are stripped before parsing, so guidance reaches the author and not the tool.
-  Visible placeholder prose and two `- [ ] …` boxes once made an unwritten doc parse as a
-  finished plan: `next` handed an agent `…` to build and `audit` agreed. `unfilled-template`
-  is HIGH on the back of that, and cannot misfire because an unwritten section parses empty.
+  Visible placeholder prose and two `- [ ] …` boxes make an unwritten doc parse as a finished
+  plan, which `next` then hands an agent to build. `unfilled-template` is HIGH on the back of
+  that, and cannot misfire because an unwritten section parses empty.
 - **Three docs, three tenses:** VISION what the project is becoming, `features/` what is
   being done now, TECH what exists. **A file is the kit's to refresh when nothing reads the
   project's copy** — `TEMPLATE.md` and `features/README.md` are written from the embedded
   copy, so `init` replaces them and they cannot describe a format the tool no longer
   produces. Anything a project fills in is never touched; house rules go above the marker.
+- **Every fact has one home, and the routing is decided at ship.** Still true afterwards and
+  it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,
+  naming the change; neither and it belongs in the pull request. Written twice is two facts
+  to keep true, and a `## Log` that records every run is the transcript of the work rather
+  than the result. The protocol states it, `kit ship` prints it where the choice is actually
+  made, and `session-narration` catches at LOW the shapes of the failure a grep can see.
 - **A feature is one pull request, and that decides the decomposition.** Too big is one
-  nobody reviews in a sitting; too small changes nothing observable. "One agent's reach" was
-  satisfied by seven features and by one covering a project. Boundaries come from the
+  nobody reviews in a sitting; too small changes nothing observable. Not "one agent's
+  reach", which fits seven features and one whole project alike. Boundaries come from the
   vision's `## What done looks like`.
-- **Every run of `next` ends with an instruction**, in all four states: three vacuums were
-  closed the same way, each an agent reaching the end of the documented path and deciding
-  sensibly and wrongly. `Plan.Guidance` is decided once and carried by both formats; a taken
-  or blocked feature carries no `task`.
+- **Every run of `next` ends with an instruction**, in all four states: an agent that reaches
+  the end of the documented path decides sensibly and wrongly. `Plan.Guidance` is decided
+  once and carried by both formats; a taken or blocked feature carries no `task`.
 - **`protocol-stale` compares the project's protocol section with the kit's**, because
   shipping a protocol change does not deliver one — `AGENTS.md` is rewritten only by `init`.
-  **Rules are cited by name, never by number**, with a test: two cross-references pointed at
-  the wrong rules for months after later features shifted the list.
+  **Rules are cited by name, never by number**, with a test, because a later feature shifts
+  the list and nothing else notices.
 - **`secret-in-doc` matches shapes, not entropy** — seven formats whose issuer publishes a
   fixed prefix. HIGH, because a published credential is the one finding late discovery
   cannot fix. The patterns live in `audit.go` only; in a template they would trip the check.
 - **Checks are a table, not a function.** `featureChecks` runs per feature and `repoChecks`
   once per project; each entry names the registry codes it can report, and a test fails the
-  build if a registered check has no implementation or two claim one code. They were one
-  362-line function, where no check could be read or tested alone.
+  build if a registered check has no implementation or two claim one code. As one 362-line
+  function, no check could be read or tested alone.
 - **`audit` has one job:** find where the docs disagree with the repo. It never writes — an
   auditor that fixes things stops being read — and it counts boxes rather than estimating.
 - **The kit owns the work, not the runtime.** Where agents run — panes, restarts, noticing
@@ -193,11 +191,10 @@ next command refuses.
   says so — a missing pipeline is visible, one for the wrong forge is not. Not
   configuration: the answer becomes a file at init, so nothing can drift.
 - **Prevent before detecting.** `kit block` and `kit ship` exist because hand-writing an
-  INBOX line and shipping by hand produced four findings. A command that makes the mistake
-  impossible beats a check that reports it.
+  INBOX line and shipping by hand produced findings a command makes impossible.
 - **The commands refuse exactly what the board refuses** — `Survey`, `ClaimFeature` and
-  `Ship` share `UnmetNeeds`, and `Ship` reuses `Repo.Mine`. They disagreed once: `next`
-  withheld a feature whose needs had not shipped and `claim` handed it over.
+  `Ship` share `UnmetNeeds`, and `Ship` reuses `Repo.Mine`. Separately, `next` withholds a
+  feature whose needs have not shipped and `claim` hands it over.
 - **An `id:` disagreeing with its filename is HIGH, not tidiness.** The branch comes from
   the file and the claim is looked up by the id, so the board keeps offering a feature
   somebody holds.
@@ -206,11 +203,11 @@ next command refuses.
   get is the worse answer. Hence `audit --json` is `{"findings": […], "error": …}` — a bare
   list has nowhere to say why it is empty.
 - **`unfilled-vision` closes the gap `unfilled-template` did, one file over:** `init` writes
-  a stub, so `no-vision` fired only when the file was missing, and the run that created the
-  stub silenced the check.
+  a stub, so a presence check fires only when the file is missing and the run that creates
+  the stub silences it.
 - **Exit codes are a contract**, pinned by a test: `0` worked, `1` only ever means
   `--strict` found something HIGH, `2` means the command could not run.
-- **Dates are passed in, never read inside** — a clock inside left tests unable to catch a
+- **Dates are passed in, never read inside** — a clock inside leaves tests unable to catch a
   UTC-midnight off-by-one.
 - **Standing guidance is embedded, never copied into projects.** `go-checklist` and
   `deployment` are practice, not documentation of the kit, and `audit` cannot check a word
@@ -221,17 +218,14 @@ next command refuses.
 - **Feature docs are agent context, and `doc-bloat` watches them at LOW.** 150 lines, an
   alarm rather than a target: the fix line offers "say in the Log why it earns the length",
   and `kit ship` asks for the compaction at the moment a working document becomes context.
-- **Calibrate a doc threshold against a corpus written to the standard you want.** 0038 took
-  its numbers from this repo just after 0037 trimmed it, so they only confirmed the trim;
-  against `localcode` the same two fire on 7 of 14 docs and 13 of 56 `## Log` entries. 0041
-  retook the line limit from there and dropped the entry cap outright — entry length was
-  never the signal, and what it caught was what the doing taught.
-- **The words go in the wrong sections, which is what "too verbose" meant.** Over 40 docs
-  here against those 14: `## Problem` 12.9 lines to 7.2, `## Design` 17.9 to 35.6, `## Log`
-  5.0 to 17.1 — shorter docs overall, spent arguing the work rather than recording the
-  decision. `session-narration` catches the shapes of that a grep can see and misses the
-  rest; the `## Problem` ≥ `## Design` ratio separates the two corpora exactly and is in
-  BACKLOG awaiting a corpus written under the new rule.
+- **Calibrate a doc threshold against a corpus written to the standard you want** — this
+  repo just after a trim only confirms the trim. The corpus has to be checked for the
+  standard it was actually written to: `localcode`'s were R&D working notes, so its `## Log`
+  length was the defect and not the target, and only its length limits survive.
+- **The words go in the wrong sections, which is what "too verbose" meant** — shorter docs
+  overall, spent arguing the work rather than recording the decision. The `## Problem` ≥
+  `## Design` ratio separates a corpus that argues from one that decides exactly, and is in
+  BACKLOG awaiting a corpus written under the routing rule.
 - **Shipped text has line ceilings** (`cmd/kit/budget_test.go`), because nothing else stops
   a doc growing and no reviewer counts lines. Tiered by how often it is read: the protocol
   tightest, then command help, then topics. Ceilings only — a floor rewards padding — and
@@ -261,6 +255,9 @@ Each of these has already caused a bug.
   A green `make check` on a Mac is not evidence about Linux.
 - **Guidance the binary does not print may as well not exist.** An outside review reached
   four wrong conclusions, every one a fair reading of `kit help`. Two tests keep that shut.
+- **A narration marker is matched across the line wrap**, two lines at a time: the docs are
+  hard-wrapped and every marker is several words, so a line-at-a-time scan misses whichever
+  ones the wrap happens to split.
 - **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.** Append
   to an existing company value; the `-w` write is inert when the variable is exported.
 
@@ -278,15 +275,14 @@ so it needs no credential.
 
 **The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
 it against throwaway projects, asserting on stdout, stderr, exit codes and the files left
-behind. In-tree because the previous suite was an external script, which is how it got
-deleted without anything noticing. Three properties are load-bearing:
-`TestEveryRegisteredCheckIsExercised` compares the cases against `kit.Checks` both ways, so
-a check with no test fails the build; every audit case starts from the same clean project,
-which must report nothing; and every test is independent — own `t.TempDir()`, no
-`os.Chdir` or `os.Setenv`, binary built once behind `sync.Once` — which is what lets them
-declare `t.Parallel()`. `PARALLEL` caps how many run at once, 4 of 12 cores by default
-since the gate runs beside other work: 32.8s serial, 17.4s capped, 8.8s uncapped. Coverage
-reads 4% — subprocess tests instrument nothing.
+behind. In-tree, because an external script is deleted without anything noticing. Three
+properties are load-bearing: `TestEveryRegisteredCheckIsExercised` compares the cases
+against `kit.Checks` both ways, so a check with no test fails the build; every audit case
+starts from the same clean project, which must report nothing; and every test is
+independent — own `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind
+`sync.Once` — which is what lets them declare `t.Parallel()`. `PARALLEL` caps how many run
+at once, 4 of 12 cores by default since the gate runs beside other work: 32.8s serial, 17.4s
+capped, 8.8s uncapped. Coverage reads 4% — subprocess tests instrument nothing.
 
 ## State of play
 
