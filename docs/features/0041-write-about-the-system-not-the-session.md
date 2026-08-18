@@ -62,7 +62,7 @@ decided anything, so this one is prose that stays prose — it goes in rule 1, b
 too-big/too-small guidance that already draws the feature's other boundary.
 
 ## Tasks
-- [ ] Rule in `templates/AGENTS-section.md`: write about the system, not the session, with
+- [x] Rule in `templates/AGENTS-section.md`: write about the system, not the session, with
       the keep/cut test; and rule 1 says what earns a doc rather than a BACKLOG line
 - [ ] `## Log` template guidance rewritten to what the doing taught, and `## Problem` given
       back its stated budget
@@ -77,3 +77,6 @@ too-big/too-small guidance that already draws the feature's other boundary.
 - 2026-08-18 — measured before drafting: `## Design` 17.9 lines here against 35.6 in the
   reference corpus, `## Log` 5.0 against 17.1, `## Problem` 12.9 against 7.2. 0038's two
   thresholds fire on 7 of 14 docs and 13 of 56 log entries there.
+- 2026-08-18 — the protocol ceiling goes 115 to 121. Both rules delete a class of writing
+  from every doc after them, which is the trade that buys protocol growth; a rule that only
+  adds something to remember does not, and the number is there to force that question.
