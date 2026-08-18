@@ -52,14 +52,12 @@ work exists on one machine. HIGH because it is silent and the fix is one push. B
 `remoteHeads` and both go quiet offline rather than guessing.
 
 **Each entry says whether the reader built it**, from the claim it stands on or the branch's
-authorship. That is all a well-behaved coordinator agent needs; a badly-behaved one is the
-forge's problem.
+authorship — all a well-behaved coordinator needs; a badly-behaved one is the forge's problem.
 
-**Rule 13 is reworded** to the invariant it means — you do not merge your own work — with
-the three roles and two things it rests on: agents need **distinct git identities**
-(measured: every commit from four agents here carries the operator's name, so nothing can
-tell builder from coordinator), and the policy lives in **branch protection**, where the
-agent has no authority.
+**Rule 13 is reworded** to the invariant it means — you do not merge your own work — with the
+three roles and two things it rests on: **distinct git identities** (measured: every commit
+from four agents here carries the operator's name) and **branch protection**, where the agent
+has no authority.
 
 **Enforce, do not instruct**, the general rule this session earned: rule 13 was violated
 twice by an agent that had read it, and `ship`'s coded refusal was obeyed the first time it

@@ -168,3 +168,31 @@ func TestParseIDList(t *testing.T) {
 		}
 	}
 }
+
+func TestBloatFindsTheLogSectionByHeadingNotByText(t *testing.T) {
+	t.Parallel()
+	// A doc about the feature-doc format quotes `## Log` in prose and in task boxes. A
+	// substring search reads the first of those as the section start and measures the
+	// task list as one enormous entry, which is how the first attempt at this reported
+	// entries four times longer than any that exist.
+	doc := "---\nid: 0001\n---\n\n## Tasks\n" +
+		"- [x] narrow `missing-section` to `## Log` at Shipped\n" +
+		"- [x] a second box, so a run-together measurement would notice\n\n" +
+		"## Log\n- 2026-01-01 — one line.\n"
+
+	lines, entry := Bloat(doc)
+	if lines != 10 {
+		t.Errorf("Bloat counted %d lines, want 10", lines)
+	}
+	if entry != 1 {
+		t.Errorf("longest log entry is %d lines, want 1 — the ## Tasks boxes were counted as log", entry)
+	}
+}
+
+func TestBloatMeasuresTheLongestEntryAndIgnoresBlankLines(t *testing.T) {
+	t.Parallel()
+	doc := "## Log\n- one line.\n\n- two\n  lines.\n\n- three\n  lines\n  here.\n"
+	if _, entry := Bloat(doc); entry != 3 {
+		t.Errorf("longest entry is %d lines, want 3", entry)
+	}
+}

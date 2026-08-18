@@ -42,7 +42,7 @@ That is the whole instruction. It names no target and no number: a doc that is a
 short passes it untouched, and a doc that is long because it decided a lot stays long.
 
 ## Tasks
-- [ ] `doc-bloat` at LOW over a feature doc's length and its `## Log` entries, with N taken
+- [x] `doc-bloat` at LOW over a feature doc's length and its `## Log` entries, with N taken
       from the trimmed corpus and the sample in the comment; conformance both ways
 - [ ] `kit ship` prints the compaction line, and `kit help ship` says what it means
 - [ ] README and `kit help checks` carry the new code
