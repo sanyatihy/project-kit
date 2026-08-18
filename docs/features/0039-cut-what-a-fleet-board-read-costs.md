@@ -8,7 +8,7 @@ check:
 checked:
 review:
 needs:
-related: docs/features/0035-stop-re-asking-git-the-same-questions.md
+related: docs/features/0028-see-what-is-waiting-for-review.md, docs/features/0035-stop-re-asking-git-the-same-questions.md
 ---
 
 ## Problem
@@ -16,69 +16,73 @@ related: docs/features/0035-stop-re-asking-git-the-same-questions.md
 The operator's normal call is one board read over every repo, and it is serial: `kit audit .`
 takes 3.0s, `kit audit . .` takes 5.8s, and ten projects would take half a minute. Almost all
 of it is waiting — the same audit `--offline` costs 0.09s, and one `git ls-remote` to GitHub
-over SSH is 2.3s of the 3.0s. Inside a single project the online path also repeats an answer
-it already has: 60 git processes for 38 features, 25 of them `branch --remotes --contains` for
-three distinct revisions. That is the regression `make gitcount` exists to catch, and it is
-invisible to it, because the harness measures `next --offline` where none of this runs.
+over SSH is 2.3s of the 3.0s. The rest is fan-out the kit already has answers for: 60 git
+processes for 38 features, 25 of them `branch --remotes --contains` for three distinct
+revisions. That is the regression `make gitcount` exists to catch, and it is invisible to it,
+because the harness measures `next --offline` where none of this runs.
+
+The same code is also wrong. `OnlyHere` proves the work reached the remote by asking whether
+the commit that last wrote the doc is on a remote ref — a proxy that broke the day editing a
+shipped doc became routine, which 0038 made it by having `kit ship` ask for compaction. One
+blank line appended to a doc merged weeks ago produces `shipped-not-pushed` at HIGH, failing
+`--strict`, with a fix line that recreates a stale claim branch the board then reads as a live
+claim on a Shipped feature.
 
 ## Non-goals
 
-- **Not a change to what any check decides.** Memoising and parallelising must leave the
-  findings byte-identical; the one check whose *answer* is wrong on an edited shipped doc is
-  a separate feature, and rewriting `OnlyHere`'s test belongs there, not here.
-- **No cache that outlives the process.** A remote branch list held between runs would make
-  the board report a claim that was released seconds ago; the kit's rule is that claims are
-  read from the remote, not from a cache.
-- **Not a fix for leftover branches on the remote** beyond reporting them. Deleting a
-  branch is the forge's job or the operator's, and `audit` never writes.
+- **No cache that outlives the process.** A remote branch list held between runs would report
+  a claim that was released seconds ago; claims are read from the remote, never from a cache.
+- **Not leftover-branch cleanup.** Twelve merged claim branches sit on this remote; the answer
+  is delete-on-merge on the forge, not a kit check that fires on a healthy repo. Nothing here
+  deletes a branch either — `audit` does not write.
 
 ## Design
 
 **Projects are read concurrently, capped.** They share nothing — each is its own `Repo`, and
 the fleet board already merges independent results — so the whole serial cost is avoidable.
 The cap follows 0034's precedent rather than inventing a second parallelism idiom. Output
-order stays the order the paths were given: a board whose lines move between runs is unusable
-for comparing two runs, and 0026 fixed reporting to be positional.
+order stays the order the paths were given: 0026 made reporting positional, and a board whose
+lines move between runs cannot be compared with the last one.
 
 **Within a project, the network call starts before the local walk.** Parse, `show-ref` and the
 per-feature reads do not need the remote's answer until the checks run, so the round trip
-overlaps the work instead of preceding it. Worth about 0.8s per project on this repo and
-nothing on a project with no remote.
+overlaps the work instead of preceding it. Worth about 0.8s per project here, nothing where
+there is no remote.
 
-**`branch --remotes --contains` is memoised by revision.** Many docs share one commit — a trim
-or a compaction round writes thirty in one — so the count collapses from 25 to 3 here. This is
-the same rule 0035 applied to per-repo answers, extended to per-revision ones: the same
-question, asked once.
+**`shipped-not-pushed` asks the trunk's copy of the doc what its status is.** The handoff
+happened if and only if a copy saying `Shipped` reached the trunk on the remote, and that is
+what to test — not the age of a commit, which any later edit resets. Presence of the doc is
+not the test and cannot be: a doc reaches the trunk when it is *drafted*, so 0039's own copy
+on `origin/main` says `Draft` while this is being written, and a presence test would silence
+the check for every feature. The branch-list negative stays as it is, because a Shipped doc on
+a pushed branch is the awaiting-review state and must not fire.
+
+**That replaces the per-feature fan-out with a batched read.** `ls-tree` on the trunk plus one
+`cat-file --batch` reads every doc in two processes — 20ms for 40 docs here — where the
+current pair of questions costs one `log -1` per feature and one `branch --contains` per
+revision, 63 processes for the same answer. The memoisation 0035 applied to per-repo answers
+is not needed if the question is asked once for all of them.
 
 **`gitcount` measures the online path too.** It stays offline by default and grows a second
 line for the online fan-out against a local remote, so the network is one cheap process and
-what is measured is still the per-feature growth. A guard that cannot see the path where the
-duplication lives is the reason this shipped twice.
-
-**Leftover claim branches are reported at LOW, not deleted.** Twelve merged claim branches sit
-on this remote; each costs a `git show` on every `next`, and each one suppresses
-`shipped-not-pushed`'s first negative, so the HIGH check is off for the twelve most recent
-features. LOW because nothing here is untrue and the repo is healthy — the finding is that a
-check has been quietly disarmed, which the operator can fix in one command or by turning on
-delete-on-merge.
+what is measured is still per-feature growth. A guard that cannot see the path where the
+duplication lives is why this shipped twice.
 
 ## Tasks
-- [ ] Projects audited and surveyed concurrently under 0034's cap, output in path order,
-      with a test that a failing path still reports in place and still exits 2
-- [ ] The remote branch list requested before the local walk, and `--offline` unchanged
-- [ ] `branch --remotes --contains` memoised by revision, with the findings pinned identical
-      on a fixture that exercises the online path
-- [ ] `gitcount` reports the online fan-out against a local remote, and the numbers land in
-      the `## Log`
-- [ ] `merged-claim` at LOW: a Shipped feature whose claim branch the remote still has, with
-      the fix line naming the delete and the forge setting
-
-## Open questions
-- Does `merged-claim` earn its place at all? It fires twelve times on this repo today, and
-  "a check that fires on healthy projects is worse than no check" is a constraint in the
-  vision. Leaning: yes at LOW, because what it reports is a disarmed HIGH check rather than
-  untidiness — but dropping the box and letting delete-on-merge handle it is a real answer.
+- [ ] Projects audited and surveyed concurrently under 0034's cap, output in path order, with
+      a test that a failing path still reports in place and still exits 2
+- [ ] The remote branch list requested before the local walk, `--offline` unchanged
+- [ ] `OnlyHere` reads the trunk's copy of the doc, batched for all features in one pass:
+      conformance that an edit to a merged doc is silent, that a Shipped doc never pushed
+      still fires, and that awaiting-review and `--offline` stay silent
+- [ ] `gitcount` reports the online fan-out against a local remote, with the before and after
+      numbers in the `## Log`
 
 ## Log
 - 2026-08-18 — measured before drafting: 3.0s one project, 5.8s two, 2.3s of each in
   `ls-remote`, 60 git processes for 38 features with 25 of them three distinct questions.
+- 2026-08-18 — `merged-claim` dropped rather than shipped at LOW: it would fire twelve times
+  on a healthy repo, and delete-on-merge stops the branches at the source.
+- 2026-08-18 — the `shipped-not-pushed` fix folded in rather than drafted beside this: it is
+  the same fan-out, and the batched read is what makes the correct test cheap enough to be the
+  obvious one.
