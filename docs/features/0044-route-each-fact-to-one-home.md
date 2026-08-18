@@ -68,7 +68,7 @@ reads it. `techBudget` is retaken from the result — a ceiling, not a target.
 - [x] The protocol states the three destinations and the name-the-change test, replacing
       "Write the record while you work"; the ceiling holds, or the raise says which class
       of writing it deletes
-- [ ] `## Log` guidance in the feature template says name the change and routes what is not
+- [x] `## Log` guidance in the feature template says name the change and routes what is not
       one; `features-README.md`'s Log line agrees with it rather than stating a second thing
 - [ ] `templates/TECH.md` carries the rule-then-clause shape, so a scaffolded project starts
       with it
