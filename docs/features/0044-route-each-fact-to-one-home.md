@@ -77,7 +77,7 @@ reads it. `techBudget` is retaken from the result — a ceiling, not a target.
       quiet doc
 - [x] README's account of `## Log` states the routing rule rather than "takes the room
       that needs"
-- [ ] `kit ship` names the three destinations where it now says "move durable facts"
+- [x] `kit ship` names the three destinations where it now says "move durable facts"
 - [ ] `docs/TECH.md` is rewritten to rule-then-clause with the incidents left in the feature
       docs that hold them, and `techBudget` is retaken from the result
 

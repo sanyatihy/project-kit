@@ -192,6 +192,9 @@ func TestShipPointsAtTheAsBuiltDoc(t *testing.T) {
 	r := p.run("ship", "0007").ok()
 	r.has("move durable facts", "docs/TECH.md")
 	r.lacks("created docs/TECH.md")
+	// And the other two destinations, since this is where the routing is decided: a
+	// rule stated only in the protocol is read at the start of a session, not here.
+	r.has("only what changed the plan", "the PR")
 }
 
 func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
