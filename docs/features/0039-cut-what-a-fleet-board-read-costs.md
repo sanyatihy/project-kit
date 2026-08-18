@@ -72,10 +72,10 @@ duplication lives is why this shipped twice.
 - [x] Projects audited and surveyed concurrently under 0034's cap, output in path order, with
       a test that a failing path still reports in place and still exits 2
 - [x] The remote branch list requested before the local walk, `--offline` unchanged
-- [ ] `OnlyHere` reads the trunk's copy of the doc, batched for all features in one pass:
+- [x] `OnlyHere` reads the trunk's copy of the doc, batched for all features in one pass:
       conformance that an edit to a merged doc is silent, that a Shipped doc never pushed
       still fires, and that awaiting-review and `--offline` stay silent
-- [ ] `gitcount` reports the online fan-out against a local remote, with the before and after
+- [x] `gitcount` reports the online fan-out against a local remote, with the before and after
       numbers in the `## Log`
 
 ## Log
@@ -86,3 +86,14 @@ duplication lives is why this shipped twice.
 - 2026-08-18 — the `shipped-not-pushed` fix folded in rather than drafted beside this: it is
   the same fan-out, and the batched read is what makes the correct test cheap enough to be the
   obvious one.
+- 2026-08-18 — 0034 is not the precedent the design claimed: its cap is `go test -parallel` in
+  the Makefile, a CPU-bound resource. The cap here is 8 and bounds connections to one forge.
+- 2026-08-18 — asking the remote first bought 0.16s, not the 0.8s predicted: `OnlyHere` called
+  it per feature, so the local fan-out sat behind the round trip rather than beside it. The
+  batched read is what freed the rest.
+- 2026-08-18 — an answered-but-empty branch list is evidence, not ignorance: a remote with no
+  trunk at all carries nothing, which is the case the check exists for. Missing that turned it
+  silent on its own fixture.
+- 2026-08-18 — 62 git processes to 12 on this repo, and 67 to 10 in the harness where the
+  offline count is 28 either way. Four projects 11.2s to 2.5s; one project 2.77s to 2.48s,
+  against a floor of 2.3s that is `ls-remote` itself.
