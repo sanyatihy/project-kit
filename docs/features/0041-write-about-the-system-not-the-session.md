@@ -70,7 +70,7 @@ too-big/too-small guidance that already draws the feature's other boundary.
       that a doc without the markers stays quiet
 - [x] `doc-bloat` loses its `## Log` entry arm, and `DocLineLimit` is retaken from the
       reference corpus with the sample and date in the comment; conformance updated
-- [ ] README and `kit help checks` carry the change, and this doc's own sections are
+- [x] README and `kit help checks` carry the change, and this doc's own sections are
       measured against the rule it adds
 
 ## Log
@@ -93,3 +93,6 @@ too-big/too-small guidance that already draws the feature's other boundary.
   median 104, p90 146, longest 211 over 14 docs. One doc there is still over it, which is
   the wanted behaviour — the escape hatch is for exactly that doc, and a limit above the
   longest thing ever written is not an alarm.
+- 2026-08-18 — this doc against the shape it argues for: Problem 8 lines, Design 25, Log 19.
+  The reference corpus averages 7.2 / 35.6 / 17.1 and this repo's forty averaged 12.9 / 17.9
+  / 5.0, so the Log grew as the work taught things and the Problem never did.
