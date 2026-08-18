@@ -163,18 +163,22 @@ var (
 	checkSessionNarration = Check{"session-narration", Low,
 		"a feature doc narrates the work rather than describing the system"}
 	checkDocBloat = Check{"doc-bloat", Low,
-		fmt.Sprintf("a feature doc is over %d lines, or a ## Log entry over %d — agent context, paid per session",
-			DocLineLimit, LogEntryLimit)}
+		fmt.Sprintf("a feature doc is over %d lines — agent context, paid per session",
+			DocLineLimit)}
 )
 
-// DocLineLimit and LogEntryLimit are alarms, not targets. Measured over this repo's 38
-// docs after the 0037 trim: median 63 lines, p90 88, longest 101; and 71 log entries with
-// a median of 2 lines and a longest of 5. So both numbers sit above everything a
-// deliberately-written doc produced, and only growth trips them.
-const (
-	DocLineLimit  = 100
-	LogEntryLimit = 5
-)
+// DocLineLimit is an alarm, not a target.
+//
+// 0038 took it from this repo immediately after 0037 cut it — median 63 lines, p90 88 — so
+// it measured a corpus that had just been trimmed, and only confirmed the trim. 0041 retakes
+// it from a corpus written to the standard the kit wants rather than the one it had:
+// localcode's 14 feature docs on 2026-08-18, median 104, p90 146, longest 211. The number is
+// that p90 rounded up, the statistic 0038 named.
+//
+// One doc in that sample is over it, and that is the behaviour wanted rather than a
+// miscalibration: it is a measurement-heavy feature whose length is earned, and the check's
+// own escape hatch — say in the ## Log why it earns the length — is what such a doc uses.
+const DocLineLimit = 150
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
@@ -412,15 +416,10 @@ func docBloat(s *docState) []Finding {
 	if err != nil {
 		return nil
 	}
-	switch lines, entry := Bloat(string(raw)); {
-	case lines > DocLineLimit:
+	if lines := Bloat(string(raw)); lines > DocLineLimit {
 		return []Finding{finding(checkDocBloat, s.at,
 			fmt.Sprintf("%s: %d lines, over %d", s.f.Name(), lines, DocLineLimit),
 			"cut the narration — or say in ## Log why it earns the length")}
-	case entry > LogEntryLimit:
-		return []Finding{finding(checkDocBloat, s.at,
-			fmt.Sprintf("%s: a ## Log entry runs %d lines, over %d", s.f.Name(), entry, LogEntryLimit),
-			"one entry records one decision; move the detail into ## Design or docs/TECH.md")}
 	}
 	return nil
 }

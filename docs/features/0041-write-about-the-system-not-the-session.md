@@ -68,7 +68,7 @@ too-big/too-small guidance that already draws the feature's other boundary.
       back its stated budget
 - [x] `session-narration` at LOW over the marker set, with conformance that it fires and
       that a doc without the markers stays quiet
-- [ ] `doc-bloat` loses its `## Log` entry arm, and `DocLineLimit` is retaken from the
+- [x] `doc-bloat` loses its `## Log` entry arm, and `DocLineLimit` is retaken from the
       reference corpus with the sample and date in the comment; conformance updated
 - [ ] README and `kit help checks` carry the change, and this doc's own sections are
       measured against the rule it adds
@@ -89,3 +89,7 @@ too-big/too-small guidance that already draws the feature's other boundary.
   11 forbids the fix, so on the corpus it was aimed at the check could only ever be noise.
   The window where a doc can still be edited is also the only window where the rule changes
   what gets written.
+- 2026-08-18 — `DocLineLimit` 100 to 150, from the reference corpus rather than this one:
+  median 104, p90 146, longest 211 over 14 docs. One doc there is still over it, which is
+  the wanted behaviour — the escape hatch is for exactly that doc, and a limit above the
+  longest thing ever written is not an alarm.
