@@ -898,50 +898,66 @@ func (r *Repo) OnlyHere(f *Feature) bool {
 	if !ok {
 		return false
 	}
-	trunk := r.Trunk()
-	onRemote := false
+	trunked := false
 	for _, name := range heads {
 		if !r.isTrunk(name) && mentionsAny(name, claimIDs(f)) {
 			return false
 		}
-		onRemote = onRemote || name == trunk
-	}
-	if trunk == "" {
-		return false
-	}
-	if !onRemote {
-		return true
+		trunked = trunked || r.isTrunk(name)
 	}
 	statuses, ok := r.trunkStatuses()
 	if !ok {
-		return false
+		// Nothing of the trunk to read. A remote holding no trunk at all carries nothing
+		// and has said so; a trunk that exists and has not been fetched is ignorance.
+		return !trunked
 	}
 	return statuses[f.Rel] != StatusShipped
 }
 
-// trunkStatuses is every feature doc's status: in the remote's copy of the trunk, read in
-// one pass and memoised. False when there is no such copy to read, which is a fetch away
-// and never a finding.
+// trunkStatuses is every feature doc's status on the remote's trunk, read in one pass and
+// memoised. False when there is no copy of a trunk to read, which is a fetch away and
+// never a finding.
 //
 // The remote's trunk and not the local one: the question is whether the work reached
 // anybody else, and a local trunk holding a merge nobody has seen answers a different one.
 //
-// Two processes for the whole board — `ls-tree` names the blobs, one `cat-file --batch`
-// reads them — where asking per feature cost a `log` each plus a `branch --contains` per
-// revision: 63 processes on this repo, 25 of them three distinct questions.
+// Every branch this repo counts as a trunk, not only the one `origin/HEAD` names, and
+// Shipped anywhere wins. A stale `origin/HEAD` — the ordinary state of a clone made before
+// a default branch was renamed — points at a branch nothing merges to any more, and one
+// that fires this HIGH on every shipped feature is worse than no check at all.
+//
+// Two processes per trunk — `ls-tree` names the blobs, one `cat-file --batch` reads them —
+// where asking per feature cost a `log` each plus a `branch --contains` per revision: 63
+// processes on this repo, 25 of them three distinct questions.
 func (r *Repo) trunkStatuses() (map[string]string, bool) {
 	if r.trunkDocsAsked {
 		return r.trunkDocs, r.trunkDocs != nil
 	}
 	r.trunkDocsAsked = true
-
-	ref := r.remoteTrunkRef()
-	if ref == "" || r.FeaturesDir == "" {
+	if r.FeaturesDir == "" {
 		return nil, false
 	}
+	var found map[string]string
+	for _, ref := range r.remoteTrunkRefs() {
+		for rel, status := range r.statusesOn(ref) {
+			if found == nil {
+				found = map[string]string{}
+			}
+			if found[rel] != StatusShipped {
+				found[rel] = status
+			}
+		}
+	}
+	r.trunkDocs = found
+	return found, found != nil
+}
+
+// statusesOn reads every feature doc's status from one revision's tree, nil when it cannot
+// be read at all.
+func (r *Repo) statusesOn(ref string) map[string]string {
 	listing, err := r.gitRun("ls-tree", "-r", ref, "--", r.FeaturesDir)
 	if err != nil {
-		return nil, false
+		return nil
 	}
 	paths := map[string]string{} // blob sha -> path
 	var wanted strings.Builder
@@ -958,11 +974,11 @@ func (r *Repo) trunkStatuses() (map[string]string, bool) {
 		wanted.WriteString(fields[2] + "\n")
 	}
 	if len(paths) == 0 {
-		return nil, false
+		return nil
 	}
 	batch, err := r.gitFed(wanted.String(), "cat-file", "--batch")
 	if err != nil {
-		return nil, false
+		return nil
 	}
 
 	// `<sha> blob <size>` and then the bytes, so the size is what says where one object
@@ -988,24 +1004,26 @@ func (r *Repo) trunkStatuses() (map[string]string, bool) {
 		}
 		rest = strings.TrimPrefix(body[size:], "\n")
 	}
-	r.trunkDocs = out
-	return out, true
+	return out
 }
 
-// remoteTrunkRef is the remote's copy of the trunk as this checkout last saw it, empty
-// when nothing has fetched one. Deliberately not trunkRef, which prefers a local branch
-// of the same name.
-func (r *Repo) remoteTrunkRef() string {
-	trunk := r.Trunk()
-	if trunk == "" {
-		return ""
-	}
+// remoteTrunkRefs is every remote-tracking copy of a trunk this checkout has. Deliberately
+// not trunkRef, which prefers a local branch of the same name: what is on this machine is
+// not what the work was handed off to.
+func (r *Repo) remoteTrunkRefs() []string {
+	var out []string
+	seen := map[string]bool{}
 	for _, remote := range r.remotes() {
-		if r.hasRef("refs/remotes/" + remote + "/" + trunk) {
-			return remote + "/" + trunk
+		for _, name := range []string{r.Trunk(), "main", "master"} {
+			ref := remote + "/" + name
+			if name == "" || seen[ref] || !r.hasRef("refs/remotes/"+ref) {
+				continue
+			}
+			seen[ref] = true
+			out = append(out, ref)
 		}
 	}
-	return ""
+	return out
 }
 
 // BuiltHere reports whether the reader built this feature — the one thing a coordinator

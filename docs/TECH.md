@@ -75,7 +75,9 @@ next command refuses.
   the other half at HIGH, and needs two negatives: no branch on the remote names it, and the
   remote's trunk carries no copy of the doc saying Shipped. **Status, never presence** — a doc
   reaches the trunk when it is *drafted*, so testing presence silences the check for every
-  feature. Reading the commit that last wrote the doc was the earlier answer and misfired the
+  feature — and on **any** branch the repo counts as a trunk, since a clone whose
+  `origin/HEAD` predates a default-branch rename points at one nothing merges to, and
+  reading only that one fires HIGH on every shipped feature. Reading the commit that last wrote the doc was the earlier answer and misfired the
   other way, once compaction made editing a shipped doc routine.
 - **You never merge your own work: legibility here, enforcement on the remote.** The board
   marks what the reader built (the claim it stands on, or the branch's authorship) and what
