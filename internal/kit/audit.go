@@ -158,6 +158,10 @@ var (
 		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
 	// LOW, and it never rises: length is hygiene rather than something untrue, and a doc
 	// that earns its length says so in its Log instead of being cut to fit.
+	// LOW and a backstop: the marker set is precise and shallow, so a quiet doc is not a
+	// doc that obeyed the rule. See NarrationMarkers for what it does and does not catch.
+	checkSessionNarration = Check{"session-narration", Low,
+		"a feature doc narrates the work rather than describing the system"}
 	checkDocBloat = Check{"doc-bloat", Low,
 		fmt.Sprintf("a feature doc is over %d lines, or a ## Log entry over %d — agent context, paid per session",
 			DocLineLimit, LogEntryLimit)}
@@ -177,7 +181,7 @@ var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
 	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
 	checkShippedNotPushed,
-	checkUnchecked,
+	checkUnchecked, checkSessionNarration,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
@@ -302,6 +306,7 @@ func finding(c Check, where, problem, fix string) Finding {
 // featureChecks run in this order, and the order is the report's order.
 var featureChecks = []featureCheck{
 	{[]Check{checkDocBloat}, docBloat},
+	{[]Check{checkSessionNarration}, sessionNarration},
 	{[]Check{checkUntickedShipped}, untickedShipped},
 	{[]Check{checkShippedNoDate}, shippedNoDate},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
@@ -376,6 +381,28 @@ func duplicateID(s *repoState) []Finding {
 				"branch that claims them"))
 	}
 	return out
+}
+
+// sessionNarration reports the first marker only. A doc that narrates usually does it
+// several times, and one finding per doc says the same thing at a fraction of the board.
+func sessionNarration(s *docState) []Finding {
+	// Shipped is frozen by rule 11, so a finding on one is a fix nobody is allowed to
+	// make. The check belongs to the window where the doc is still being written, which
+	// is also the only window where the rule can change what gets written.
+	if s.f.Status == StatusShipped {
+		return nil
+	}
+	raw, err := os.ReadFile(s.f.Path)
+	if err != nil {
+		return nil
+	}
+	marker, line := Narration(string(raw))
+	if marker == "" {
+		return nil
+	}
+	return []Finding{finding(checkSessionNarration, s.at,
+		fmt.Sprintf("%s:%d: %q — that is the work, not the system", s.f.Name(), line, marker),
+		"say what holds instead; the incident belongs in the pull request")}
 }
 
 // Length is measured from the file rather than the parsed sections, because what costs a

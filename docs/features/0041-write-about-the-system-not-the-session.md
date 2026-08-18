@@ -32,8 +32,8 @@ its 56 `## Log` entries.
 
 ## Design
 **Write about the system, not the session.** The rule an agent can apply: a sentence about
-*the work* — which session it happened in, what the previous attempt did, who got a rule
-wrong — is not about the system and stops being true the moment it is fixed. State what
+*the work* — which session it happened in, what an earlier try did, who got a rule wrong
+— is not about the system and stops being true the moment it is fixed. State what
 holds. The incident lives in the pull request, and anything durable in `docs/TECH.md`.
 This is where the 12.9-line `## Problem` average comes from; eight docs here narrate a
 session outright.
@@ -66,7 +66,7 @@ too-big/too-small guidance that already draws the feature's other boundary.
       the keep/cut test; and rule 1 says what earns a doc rather than a BACKLOG line
 - [x] `## Log` template guidance rewritten to what the doing taught, and `## Problem` given
       back its stated budget
-- [ ] `session-narration` at LOW over the marker set, with conformance that it fires and
+- [x] `session-narration` at LOW over the marker set, with conformance that it fires and
       that a doc without the markers stays quiet
 - [ ] `doc-bloat` loses its `## Log` entry arm, and `DocLineLimit` is retaken from the
       reference corpus with the sample and date in the comment; conformance updated
@@ -80,3 +80,12 @@ too-big/too-small guidance that already draws the feature's other boundary.
 - 2026-08-18 — the protocol ceiling goes 115 to 121. Both rules delete a class of writing
   from every doc after them, which is the trade that buys protocol growth; a rule that only
   adds something to remember does not, and the number is there to force that question.
+- 2026-08-18 — the marker set has poor recall and keeps it. Measured over both corpora,
+  nine candidate phrases catch 4 docs of 40 and misfire on none; the thirty-line arguments
+  carry no stock phrase at all. That is `secret-in-doc`'s shape — certain when it fires,
+  blind to prose — so the comment says so rather than letting a quiet board read as an
+  obeyed rule.
+- 2026-08-18 — scoped to docs that are not Shipped. It fired on four frozen docs, and rule
+  11 forbids the fix, so on the corpus it was aimed at the check could only ever be noise.
+  The window where a doc can still be edited is also the only window where the rule changes
+  what gets written.

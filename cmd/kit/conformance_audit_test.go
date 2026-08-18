@@ -131,6 +131,11 @@ var auditCases = []struct {
 			"shipped: "+daysAgo(1), "- [x] Built it"))
 		p.commitAll("ship 0002 and tell nobody")
 	}},
+	{"session-narration", func(p *project) {
+		// The work, not the system: a line that stops being true the moment it is fixed.
+		p.write("docs/features/0002-narrated.md", doc("0002", "Narrated", "Accepted", "",
+			"- [ ] Something")+"- 2026-01-01 — both failures this session live here.\n")
+	}},
 	{"doc-bloat", func(p *project) {
 		// Padding, not content: a doc past the line limit with nothing in it worth
 		// keeping. The quiet half is every other case in this table.
@@ -582,6 +587,40 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	// proves nothing.
 	if codes := b.auditCodes(); !slices.Contains(codes, "shipped-not-pushed") {
 		t.Errorf("stopped firing on work that is on no remote: %v", codes)
+	}
+}
+
+func TestSessionNarrationIsAPreciseBackstop(t *testing.T) {
+	t.Parallel()
+	// The quiet half is the one that decides whether the check is usable: a doc *about*
+	// the rule quotes the markers, and the template's guidance is nothing but comments.
+	// Reporting either would make the rule a violation of itself.
+	p := cleanProject(t)
+	p.write("docs/features/0002-about.md", doc("0002", "About", "Accepted", "",
+		"- [ ] Ban narration")+
+		"<!-- not \"this session\", which is the work -->\n"+
+		"\n```\n- 2026-01-01 — this session went badly\n```\n")
+	if codes := p.auditCodes(); slices.Contains(codes, "session-narration") {
+		t.Errorf("fired on markers quoted in a comment and a fence: %v", codes)
+	}
+
+	// And the loud half, reported once however often the doc narrates.
+	p.write("docs/features/0003-narrated.md", doc("0003", "Narrated", "Accepted", "",
+		"- [ ] Something")+
+		"- 2026-01-01 — this session found it.\n- 2026-01-02 — it turned out to be worse.\n")
+	r := p.run("audit").ok()
+	r.has("session-narration", "this session")
+	if n := strings.Count(r.Stdout, "session-narration"); n != 1 {
+		t.Errorf("reported %d times; one finding per doc is the whole point:\n%s", n, r.Stdout)
+	}
+
+	// Shipped is frozen by rule 11, so the same doc must go quiet the moment it ships —
+	// a finding whose fix the protocol forbids is noise on every later board.
+	p.write("docs/features/0003-narrated.md", doc("0003", "Narrated", "Shipped",
+		"shipped: 2026-01-02", "- [x] Something")+
+		"- 2026-01-01 — this session found it.\n")
+	if codes := p.auditCodes(); slices.Contains(codes, "session-narration") {
+		t.Errorf("fired on a Shipped doc, which rule 11 forbids editing: %v", codes)
 	}
 }
 

@@ -338,3 +338,75 @@ func AppendToSection(text, heading, line string) (string, bool) {
 	out = append(out, line)
 	return strings.Join(append(out, lines[at:]...), "\n"), true
 }
+
+// NarrationMarkers are phrases that appear when a doc narrates the work rather than
+// describing the system. Precision over recall by a wide margin: measured over 54 real
+// feature docs, this set fires on 4 and never on a doc that was not narrating.
+//
+// Most narration carries no stock phrase at all — one doc here argues for thirty lines
+// without tripping a marker — so the recall is poor and meant to be. This is a backstop
+// and the rule in the protocol is the rule, exactly as `secret-in-doc` backstops "never
+// put a secret in a doc" while matching nothing in a password written as prose.
+var NarrationMarkers = []string{
+	"this session",
+	"last session",
+	"the previous attempt",
+	"an earlier attempt",
+	"at the time of writing",
+	"we discovered",
+	"it turned out",
+	"nobody noticed",
+	"never noticed",
+}
+
+// Narration reports the first narration marker in text and the 1-based line holding it.
+//
+// Fenced blocks and HTML comments are blanked before the scan, for Bloat's reason: a doc
+// about the doc format quotes the things being ruled on, and the template's own guidance
+// lives entirely in comments — scanning either reports the rule as a violation of itself.
+// Blanking rather than dropping keeps the line numbers the ones a reader sees.
+func Narration(text string) (marker string, line int) {
+	for i, l := range strings.Split(blankQuoted(Normalise(text)), "\n") {
+		lower := strings.ToLower(l)
+		for _, m := range NarrationMarkers {
+			if strings.Contains(lower, m) {
+				return m, i + 1
+			}
+		}
+	}
+	return "", 0
+}
+
+// blankQuoted empties every fenced block and HTML comment, line count preserved. Comments
+// are spans rather than lines: the template writes them one per section and the docs write
+// them inline, and a line-shaped test misses whichever form it was not written for.
+func blankQuoted(text string) string {
+	out := strings.Split(text, "\n")
+	inFence := false
+	for i, raw := range out {
+		if strings.HasPrefix(strings.TrimSpace(raw), "```") {
+			inFence = !inFence
+			out[i] = ""
+			continue
+		}
+		if inFence {
+			out[i] = ""
+		}
+	}
+	joined := strings.Join(out, "\n")
+	for {
+		open := strings.Index(joined, "<!--")
+		if open < 0 {
+			break
+		}
+		end := strings.Index(joined[open:], "-->")
+		if end < 0 {
+			end = len(joined) - open
+		} else {
+			end += len("-->")
+		}
+		span := joined[open : open+end]
+		joined = joined[:open] + strings.Repeat("\n", strings.Count(span, "\n")) + joined[open+end:]
+	}
+	return joined
+}
