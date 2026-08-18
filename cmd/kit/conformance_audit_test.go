@@ -1107,6 +1107,37 @@ func TestAuditSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
 	}
 }
 
+func TestAuditReportsSeveralProjectsInPathOrder(t *testing.T) {
+	t.Parallel()
+	// The projects are read concurrently, so the order of the page is the one thing the
+	// fan-out could take away — and a board whose lines move between runs cannot be
+	// compared with the last one. Two healthy projects, because the failing-path case
+	// above already pins the order when one of them cannot be read at all.
+	first, second := cleanProject(t), cleanProject(t)
+	first.write("docs/features/0002-alpha.md", doc("0002", "AlphaOne", "Shipped",
+		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	second.write("docs/features/0003-beta.md", doc("0003", "BetaTwo", "Shipped",
+		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+
+	for _, forward := range []bool{true, false} {
+		name := "second project last"
+		args := []string{"audit", first.Root, second.Root}
+		if !forward {
+			name = "second project first"
+			args = []string{"audit", second.Root, first.Root}
+		}
+		t.Run(name, func(t *testing.T) {
+			r := first.run(args...).ok()
+			r.outHas("AlphaOne", "BetaTwo")
+
+			alpha, beta := strings.Index(r.Stdout, "AlphaOne"), strings.Index(r.Stdout, "BetaTwo")
+			if forward != (alpha < beta) {
+				t.Errorf("the report reordered the paths it was given:\n%s", r.Stdout)
+			}
+		})
+	}
+}
+
 func TestAuditJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
 	t.Parallel()
 	p := cleanProject(t)

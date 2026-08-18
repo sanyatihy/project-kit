@@ -69,7 +69,7 @@ what is measured is still per-feature growth. A guard that cannot see the path w
 duplication lives is why this shipped twice.
 
 ## Tasks
-- [ ] Projects audited and surveyed concurrently under 0034's cap, output in path order, with
+- [x] Projects audited and surveyed concurrently under 0034's cap, output in path order, with
       a test that a failing path still reports in place and still exits 2
 - [ ] The remote branch list requested before the local walk, `--offline` unchanged
 - [ ] `OnlyHere` reads the trunk's copy of the doc, batched for all features in one pass:
