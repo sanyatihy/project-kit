@@ -55,7 +55,12 @@ const (
 	// found two sections answering the same question and three facts stated twice — growth
 	// nobody notices, because a paragraph is easier to add than to justify. Same escape
 	// hatch as the ceilings above: raise the number here and say why.
-	techBudget   = 300
+	//
+	// 0044 retook it at 295 against a 289-line file, rewritten to state the rule and give
+	// the evidence a trailing clause. The headroom is deliberate and small: under the
+	// routing rule a shipped feature adds one line, so a jump means facts arrived with
+	// their history attached again.
+	techBudget   = 295
 	agentsBudget = 210
 )
 

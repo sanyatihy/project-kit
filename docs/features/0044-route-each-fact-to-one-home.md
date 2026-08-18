@@ -78,7 +78,7 @@ reads it. `techBudget` is retaken from the result — a ceiling, not a target.
 - [x] README's account of `## Log` states the routing rule rather than "takes the room
       that needs"
 - [x] `kit ship` names the three destinations where it now says "move durable facts"
-- [ ] `docs/TECH.md` is rewritten to rule-then-clause with the incidents left in the feature
+- [x] `docs/TECH.md` is rewritten to rule-then-clause with the incidents left in the feature
       docs that hold them, and `techBudget` is retaken from the result
 
 ## Log
@@ -86,3 +86,7 @@ reads it. `techBudget` is retaken from the result — a ceiling, not a target.
   line-at-a-time, so any marker the wrap split matched nothing. `Narration` now scans a
   two-line window; the new markers and what they were measured against are in
   `NarrationMarkers`.
+- 2026-08-18 — the incident narration was clauses, not the bulk. Rewriting `docs/TECH.md`
+  to rule-then-clause rewrote 84 of 293 lines and left the file 4 shorter, where the
+  Problem implied roughly half was archaeology: what a newcomer skips there is mostly
+  maintainer-facing rules, and those stay. `techBudget` 300 to 295 rather than the cut.
