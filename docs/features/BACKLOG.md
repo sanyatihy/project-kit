@@ -168,3 +168,55 @@ ceilings are the fuller version of the same idea.
 calibration, and it wants it taken after 0041 has changed the corpus rather than before.
 
 Promote when: 0041 has shipped and a round of docs has been written under it.
+
+## Three checks disagree about what a frozen doc is
+
+Rule 11 says a Shipped doc is frozen history, and twice now a human has authorised a
+compaction pass over the whole corpus anyway — 0037, and the pass that followed 0044. The
+checks were each built against one reading of that and now contradict each other and the
+protocol:
+
+- `session-narration` skips Shipped because rule 11 forbade the fix; `doc-bloat` does not.
+  So on a real board the length alarm fires only where the fix is forbidden, and the
+  narration check goes quiet exactly there. Measured on `localcode`: both its `doc-bloat`
+  findings are on Shipped docs, and all 7 narration hits are too.
+- `missing-section` requires a non-empty `## Log` on a Shipped doc, which the routing rule
+  contradicts — an entry naming no change is not an entry, so a feature that changed no
+  plan has an honest empty Log. It is what produced a status-echo entry in `ai-bot`'s 0004.
+- `unticked-shipped` tells you to tick the boxes or move them to BACKLOG, both of which
+  edit a frozen doc.
+
+One change, because it is one question: rule 11 says what it already means — frozen to an
+agent working a feature, editable in a pass a human asks for — the two LOW checks then fire
+on every status and become the worklist for that pass, `missing-section` goes, and
+`unticked-shipped`'s fix line names the exception. The cost to weigh first: a doc that
+earns its length reports LOW for ever, since nothing detects the "say in ## Log why" the
+fix line offers.
+
+Promote when: the next compaction pass is wanted, or a board carries a finding nobody is
+allowed to fix.
+
+## A fact written twice
+
+The routing rule gives every fact one home, and nothing checks it. Token overlap between
+each feature doc and the as-built doc finds real duplicates cheaply — 9 in `localcode`, 4
+here, at a Jaccard of 0.45 over content words.
+
+What stops it being a check today is that some overlap is correct: a `## Design` sentence
+promoted to TECH at ship is the rule working, not breaking. It needs a threshold measured
+against a corpus written under the routing rule, and probably a rule about which section
+the duplicate sits in.
+
+Promote when: a round of docs has been written under the routing rule, or a duplicated
+fact goes stale in one of its two homes.
+
+## `kit defer <id>` moves an unticked box to the backlog
+
+`unticked-shipped` reports a Shipped doc with open boxes and asks for a hand edit of a
+frozen doc plus a hand-written BACKLOG entry — two chances to get it wrong, and the second
+one silently skipped. A command that takes the box out, appends it here with its feature id,
+and leaves the doc consistent is the prevent-tier version.
+
+Promote when: it happens a third time, or the frozen-doc entry above is built and this is
+the cheap half of it.
+
