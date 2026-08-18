@@ -364,7 +364,7 @@ even when something goes wrong.
   `needs-unknown`, `shipped-early`, `protocol-stale`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`
-- **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`, `fyi-stale`
+- **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`, `fyi-stale`, `doc-bloat`
 
 `kit help checks` prints this list from the same registry `audit` reports from, so
 it cannot drift.

@@ -123,6 +123,56 @@ func AddField(text, key, value string) (string, bool) {
 	return text[:start] + strings.Join(lines, "\n") + text[end:], true
 }
 
+// Bloat measures a document against the two shapes of padding worth counting: its total
+// length, and its longest `## Log` entry. Returns 0 for either when it is within its limit.
+//
+// The section is found by a heading *line*, never by searching for the text: docs about the
+// feature-doc format quote `## Log` inside prose and task boxes constantly, and a substring
+// search reads those as the section — which is how a first attempt at this measurement
+// reported entries four times longer than any that exist.
+func Bloat(text string) (lines, longestEntry int) {
+	all := strings.Split(Normalise(text), "\n")
+	for len(all) > 0 && strings.TrimSpace(all[len(all)-1]) == "" {
+		all = all[:len(all)-1]
+	}
+	lines = len(all)
+
+	start := -1
+	for i, l := range all {
+		if strings.TrimSpace(l) == "## Log" {
+			start = i
+			break
+		}
+	}
+	if start == -1 {
+		return lines, 0
+	}
+	end := len(all)
+	for i := start + 1; i < len(all); i++ {
+		if strings.HasPrefix(all[i], "## ") {
+			end = i
+			break
+		}
+	}
+	entry := 0
+	for _, l := range all[start+1 : end] {
+		switch {
+		case strings.HasPrefix(l, "- "):
+			if entry > longestEntry {
+				longestEntry = entry
+			}
+			entry = 1
+		case strings.TrimSpace(l) == "":
+		case entry > 0:
+			entry++
+		}
+	}
+	if entry > longestEntry {
+		longestEntry = entry
+	}
+	return lines, longestEntry
+}
+
 // SetStatus rewrites the frontmatter's `status:`.
 func SetStatus(text, status string) (string, bool) { return SetField(text, "status", status) }
 

@@ -426,6 +426,10 @@ func runShip(args []string) int {
 	if res.TechDoc != "" {
 		fmt.Printf("  move durable facts into %s — the feature doc is frozen history now\n", res.TechDoc)
 	}
+	// The moment a working document becomes agent context that every later session
+	// carries. Worded to lead with what to keep, because the risk is an agent reading
+	// "compact" as "delete": the doc is the only record of why the code is like this.
+	fmt.Printf("  keep every decision, constraint and measurement — cut only what the code now says\n")
 	if res.OpenLogs {
 		fmt.Printf("  ## Log is empty; record what was decided and why\n")
 	}

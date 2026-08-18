@@ -156,6 +156,20 @@ var (
 		"features are being planned but nothing says what the project is for"}
 	checkFYIStale = Check{"fyi-stale", Low,
 		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
+	// LOW, and it never rises: length is hygiene rather than something untrue, and a doc
+	// that earns its length says so in its Log instead of being cut to fit.
+	checkDocBloat = Check{"doc-bloat", Low,
+		fmt.Sprintf("a feature doc is over %d lines, or a ## Log entry over %d — agent context, paid per session",
+			DocLineLimit, LogEntryLimit)}
+)
+
+// DocLineLimit and LogEntryLimit are alarms, not targets. Measured over this repo's 38
+// docs after the 0037 trim: median 63 lines, p90 88, longest 101; and 71 log entries with
+// a median of 2 lines and a longest of 5. So both numbers sit above everything a
+// deliberately-written doc produced, and only growth trips them.
+const (
+	DocLineLimit  = 100
+	LogEntryLimit = 5
 )
 
 // Checks is every check audit can report, in reporting order.
@@ -168,7 +182,7 @@ var Checks = []Check{
 	checkMissingSection, checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
-	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
+	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale, checkDocBloat,
 }
 
 var (
@@ -274,6 +288,21 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 
 	for _, f := range r.Features {
 		at := f.Rel
+
+		// Length is measured from the file rather than the parsed sections, because what
+		// costs a later agent is the whole document it has to read.
+		if raw, err := os.ReadFile(f.Path); err == nil {
+			switch lines, entry := Bloat(string(raw)); {
+			case lines > DocLineLimit:
+				report(checkDocBloat, at,
+					fmt.Sprintf("%s: %d lines, over %d", f.Name(), lines, DocLineLimit),
+					"cut the narration — or say in ## Log why it earns the length")
+			case entry > LogEntryLimit:
+				report(checkDocBloat, at,
+					fmt.Sprintf("%s: a ## Log entry runs %d lines, over %d", f.Name(), entry, LogEntryLimit),
+					"one entry records one decision; move the detail into ## Design or docs/TECH.md")
+			}
+		}
 
 		if f.Status == StatusShipped {
 			if open := len(f.OpenTasks()); open > 0 {

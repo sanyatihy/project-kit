@@ -193,6 +193,11 @@ next command refuses.
 - **Guidance must never use `- [ ]`**, which in a kit project means "a PR-sized unit of
   work"; source material using it for "a property to verify" is converted to prose. A test
   pins it.
+- **Feature docs are agent context, and `doc-bloat` watches them at LOW.** 100 lines a doc
+  and 5 a `## Log` entry, measured from this repo's 38 docs after the 0037 trim rather than
+  guessed: median 63 and 2. Both are alarms — the fix line offers "say in the Log why it
+  earns the length" — and `kit ship` asks for the compaction at the moment a working
+  document becomes context, worded to lead with what to keep.
 - **Shipped text has line ceilings** (`cmd/kit/budget_test.go`), because nothing else stops
   a doc growing and no reviewer counts lines. Tiered by how often it is read: the protocol
   tightest, then command help, then topics. Ceilings only — a floor rewards padding — and

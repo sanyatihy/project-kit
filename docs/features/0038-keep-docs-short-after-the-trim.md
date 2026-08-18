@@ -1,9 +1,9 @@
 ---
 id: 0038
 title: Keep docs short after the trim
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-18
 check:
 checked:
 needs: 0037
@@ -42,10 +42,10 @@ That is the whole instruction. It names no target and no number: a doc that is a
 short passes it untouched, and a doc that is long because it decided a lot stays long.
 
 ## Tasks
-- [ ] `doc-bloat` at LOW over a feature doc's length and its `## Log` entries, with N taken
+- [x] `doc-bloat` at LOW over a feature doc's length and its `## Log` entries, with N taken
       from the trimmed corpus and the sample in the comment; conformance both ways
-- [ ] `kit ship` prints the compaction line, and `kit help ship` says what it means
-- [ ] README and `kit help checks` carry the new code
+- [x] `kit ship` prints the compaction line, and `kit help ship` says what it means
+- [x] README and `kit help checks` carry the new code
 
 ## Log
 - 2026-08-17 — split from 0037 so the threshold can be measured from trimmed docs rather
