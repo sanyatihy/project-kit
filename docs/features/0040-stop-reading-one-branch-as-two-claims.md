@@ -47,7 +47,7 @@ is a claim on 0039 by the same rule, and it was written by an agent that had rea
 One word, at the tier where prose is all there is.
 
 ## Tasks
-- [ ] The worktree branch parsed by stripping `refs/heads/`, with conformance that a namespaced
+- [x] The worktree branch parsed by stripping `refs/heads/`, with conformance that a namespaced
       branch in a worktree is one claim and that two real branches still report `split-claim`
 - [ ] `docs/TECH.md` and the plan-branch guidance say a plan branch must not *mention* a
       feature id anywhere in its name
