@@ -70,7 +70,7 @@ reads it. `techBudget` is retaken from the result — a ceiling, not a target.
       of writing it deletes
 - [x] `## Log` guidance in the feature template says name the change and routes what is not
       one; `features-README.md`'s Log line agrees with it rather than stating a second thing
-- [ ] `templates/TECH.md` carries the rule-then-clause shape, so a scaffolded project starts
+- [x] `templates/TECH.md` carries the rule-then-clause shape, so a scaffolded project starts
       with it
 - [ ] `session-narration` covers the revision shapes, markers chosen by measuring both
       corpora and kept only where they misfire on neither; conformance covers a fire and a
