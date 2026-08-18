@@ -143,6 +143,10 @@ next command refuses.
 - **`secret-in-doc` matches shapes, not entropy** — seven formats whose issuer publishes a
   fixed prefix. HIGH, because a published credential is the one finding late discovery
   cannot fix. The patterns live in `audit.go` only; in a template they would trip the check.
+- **Checks are a table, not a function.** `featureChecks` runs per feature and `repoChecks`
+  once per project; each entry names the registry codes it can report, and a test fails the
+  build if a registered check has no implementation or two claim one code. They were one
+  362-line function, where no check could be read or tested alone.
 - **`audit` has one job:** find where the docs disagree with the repo. It never writes — an
   auditor that fixes things stops being read — and it counts boxes rather than estimating.
 - **The kit owns the work, not the runtime.** Where agents run — panes, restarts, noticing
