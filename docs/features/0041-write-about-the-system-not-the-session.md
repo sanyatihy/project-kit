@@ -1,9 +1,9 @@
 ---
 id: 0041
 title: Write about the system, not the session
-status: Draft
+status: Shipped
 created: 2026-08-18
-shipped:
+shipped: 2026-08-18
 check:
 checked:
 review:
