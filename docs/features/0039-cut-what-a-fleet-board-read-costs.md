@@ -1,9 +1,9 @@
 ---
 id: 0039
 title: Cut what a fleet board read costs
-status: Draft
+status: Shipped
 created: 2026-08-18
-shipped:
+shipped: 2026-08-18
 check:
 checked:
 review:
