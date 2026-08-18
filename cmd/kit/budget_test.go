@@ -28,7 +28,12 @@ const (
 	// moved to docs/TECH.md, which is read once rather than every session, and what stayed
 	// is the constraint and its consequence. A rule an agent must obey in a hurry has to
 	// survive being read in isolation, which is what the sub-bullets are for.
-	protocolBudget = 115
+	//
+	// 0041 raised it to 121 for two rules — what earns a feature doc, and write about the
+	// system rather than the session. Both delete a class of writing from every doc after
+	// them, which is the trade that buys protocol growth; a rule that only adds something
+	// to remember does not.
+	protocolBudget = 121
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.

@@ -131,11 +131,16 @@ var auditCases = []struct {
 			"shipped: "+daysAgo(1), "- [x] Built it"))
 		p.commitAll("ship 0002 and tell nobody")
 	}},
+	{"session-narration", func(p *project) {
+		// The work, not the system: a line that stops being true the moment it is fixed.
+		p.write("docs/features/0002-narrated.md", doc("0002", "Narrated", "Accepted", "",
+			"- [ ] Something")+"- 2026-01-01 — both failures this session live here.\n")
+	}},
 	{"doc-bloat", func(p *project) {
 		// Padding, not content: a doc past the line limit with nothing in it worth
 		// keeping. The quiet half is every other case in this table.
 		p.write("docs/features/0002-long.md", doc("0002", "Long", "Accepted", "",
-			"- [ ] Something")+strings.Repeat("\nrestating what the section above said.\n", 60))
+			"- [ ] Something")+strings.Repeat("\nrestating what the section above said.\n", 90))
 	}},
 	{"unticked-shipped", func(p *project) {
 		p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
@@ -585,30 +590,60 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	}
 }
 
-func TestDocBloatCountsTheDocAndItsLongestLogEntry(t *testing.T) {
+func TestSessionNarrationIsAPreciseBackstop(t *testing.T) {
 	t.Parallel()
-	// Both halves, and the quiet case that matters most: a doc quoting `## Log` inside a
-	// task box must not have its task list measured as one enormous entry.
+	// The quiet half is the one that decides whether the check is usable: a doc *about*
+	// the rule quotes the markers, and the template's guidance is nothing but comments.
+	// Reporting either would make the rule a violation of itself.
 	p := cleanProject(t)
-	p.write("docs/features/0002-quoting.md", doc("0002", "Quoting", "Accepted", "",
-		"- [ ] narrow `missing-section` to `## Log` at Shipped\n- [ ] a second box"))
-	if codes := p.auditCodes(); slices.Contains(codes, "doc-bloat") {
-		t.Errorf("fired on a short doc that quotes ## Log in a task box: %v", codes)
+	p.write("docs/features/0002-about.md", doc("0002", "About", "Accepted", "",
+		"- [ ] Ban narration")+
+		"<!-- not \"this session\", which is the work -->\n"+
+		"\n```\n- 2026-01-01 — this session went badly\n```\n")
+	if codes := p.auditCodes(); slices.Contains(codes, "session-narration") {
+		t.Errorf("fired on markers quoted in a comment and a fence: %v", codes)
 	}
 
-	// A long log entry, with the doc itself well under the line limit.
-	entry := "- 2026-01-01 — a decision"
-	for i := 0; i < kit.LogEntryLimit+1; i++ {
+	// And the loud half, reported once however often the doc narrates.
+	p.write("docs/features/0003-narrated.md", doc("0003", "Narrated", "Accepted", "",
+		"- [ ] Something")+
+		"- 2026-01-01 — this session found it.\n- 2026-01-02 — it turned out to be worse.\n")
+	r := p.run("audit").ok()
+	r.has("session-narration", "this session")
+	if n := strings.Count(r.Stdout, "session-narration"); n != 1 {
+		t.Errorf("reported %d times; one finding per doc is the whole point:\n%s", n, r.Stdout)
+	}
+
+	// Shipped is frozen by rule 11, so the same doc must go quiet the moment it ships —
+	// a finding whose fix the protocol forbids is noise on every later board.
+	p.write("docs/features/0003-narrated.md", doc("0003", "Narrated", "Shipped",
+		"shipped: 2026-01-02", "- [x] Something")+
+		"- 2026-01-01 — this session found it.\n")
+	if codes := p.auditCodes(); slices.Contains(codes, "session-narration") {
+		t.Errorf("fired on a Shipped doc, which rule 11 forbids editing: %v", codes)
+	}
+}
+
+func TestDocBloatMeasuresTheWholeDocAndNothingInsideIt(t *testing.T) {
+	t.Parallel()
+	// A long ## Log is no longer bloat. 0038 capped a single entry using a corpus whose
+	// Logs had just been cut; against one written to the standard the kit wants, that cap
+	// falls on the entries carrying what the doing taught. Only the whole file is measured.
+	p := cleanProject(t)
+	entry := "- 2026-01-01 — a measurement, and what it changed downstream"
+	for i := 0; i < 12; i++ {
 		entry += "\n  spilling onto another line"
 	}
-	p.write("docs/features/0003-diary.md", doc("0003", "Diary", "Accepted", "",
+	p.write("docs/features/0002-taught.md", doc("0002", "Taught", "Accepted", "",
 		"- [ ] Something")+"\n"+entry+"\n")
-	r := p.run("audit").ok()
-	r.has("doc-bloat", "## Log entry")
-	// The doc itself is well inside the line limit, so only the entry may be reported.
-	if strings.Contains(r.Stdout, fmt.Sprintf("over %d", kit.DocLineLimit)) {
-		t.Errorf("reported the doc as too long when only its log entry is:\n%s", r.Stdout)
+	if codes := p.auditCodes(); slices.Contains(codes, "doc-bloat") {
+		t.Errorf("fired on a short doc with a long ## Log entry: %v", codes)
 	}
+
+	// The doc as a whole still has a ceiling, and it is reported in lines.
+	p.write("docs/features/0003-long.md", doc("0003", "Long", "Accepted", "",
+		"- [ ] Something")+strings.Repeat("\nrestating what the section above said.\n", 90))
+	p.run("audit").ok().has("doc-bloat", fmt.Sprintf("over %d", kit.DocLineLimit))
 }
 
 func TestEveryRegisteredCheckIsExercised(t *testing.T) {

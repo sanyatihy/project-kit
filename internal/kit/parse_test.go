@@ -169,30 +169,31 @@ func TestParseIDList(t *testing.T) {
 	}
 }
 
-func TestBloatFindsTheLogSectionByHeadingNotByText(t *testing.T) {
+func TestBloatCountsLinesAndIgnoresTrailingBlanks(t *testing.T) {
 	t.Parallel()
-	// A doc about the feature-doc format quotes `## Log` in prose and in task boxes. A
-	// substring search reads the first of those as the section start and measures the
-	// task list as one enormous entry, which is how the first attempt at this reported
-	// entries four times longer than any that exist.
-	doc := "---\nid: 0001\n---\n\n## Tasks\n" +
-		"- [x] narrow `missing-section` to `## Log` at Shipped\n" +
-		"- [x] a second box, so a run-together measurement would notice\n\n" +
-		"## Log\n- 2026-01-01 — one line.\n"
-
-	lines, entry := Bloat(doc)
-	if lines != 10 {
-		t.Errorf("Bloat counted %d lines, want 10", lines)
-	}
-	if entry != 1 {
-		t.Errorf("longest log entry is %d lines, want 1 — the ## Tasks boxes were counted as log", entry)
+	// Trailing blank lines are an editor artefact rather than something a reader pays
+	// for, so a doc must not cross the limit by being saved.
+	doc := "---\nid: 0001\n---\n\n## Tasks\n- [x] one box\n\n## Log\n- 2026-01-01 — one line.\n\n\n\n"
+	if lines := Bloat(doc); lines != 9 {
+		t.Errorf("Bloat counted %d lines, want 9", lines)
 	}
 }
 
-func TestBloatMeasuresTheLongestEntryAndIgnoresBlankLines(t *testing.T) {
+func TestNarrationSkipsWhatADocAboutTheRuleQuotes(t *testing.T) {
 	t.Parallel()
-	doc := "## Log\n- one line.\n\n- two\n  lines.\n\n- three\n  lines\n  here.\n"
-	if _, entry := Bloat(doc); entry != 3 {
-		t.Errorf("longest entry is %d lines, want 3", entry)
+	// The whole risk in this check: a doc about the rule quotes the markers, and the
+	// template states them inside comments. Reporting either makes the rule report itself.
+	quoted := "## Design\n<!-- never \"this session\" -->\n\n```\n- this session went badly\n```\n"
+	if m, _ := Narration(quoted); m != "" {
+		t.Errorf("fired on %q quoted in a comment and a fence", m)
+	}
+	// And a comment span running over several lines, which is how the template writes them.
+	span := "## Log\n<!-- guidance\n     about this session\n     ends here -->\n- 2026-01-01 — a decision.\n"
+	if m, _ := Narration(span); m != "" {
+		t.Errorf("fired on %q inside a multi-line comment span", m)
+	}
+	// The loud half, with the line a reader would open.
+	if m, line := Narration("## Log\n- 2026-01-01 — this session found it.\n"); m != "this session" || line != 2 {
+		t.Errorf("got %q at line %d, want \"this session\" at 2", m, line)
 	}
 }

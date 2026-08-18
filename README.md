@@ -364,7 +364,8 @@ even when something goes wrong.
   `needs-unknown`, `shipped-early`, `protocol-stale`, `no-tasks`,
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`
-- **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`, `fyi-stale`, `doc-bloat`
+- **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`, `fyi-stale`, `doc-bloat`,
+  `session-narration`
 
 `kit help checks` prints this list from the same registry `audit` reports from, so
 it cannot drift.
@@ -387,10 +388,13 @@ shared composition root, a shared router, or numbered files in one sequence such
 migrations all make a feature dependent however separate its boundary looks.
 `related:` is unaffected by any of this — it stays reading material.
 
-Two things that keep it honest: `## Log` holds dated conclusions, never debate — the
-argument lives in the PR. And blockers belong in `INBOX.md`, not in prose; a box that
-says "blocked on X" is invisible to `kit next` and will be handed to an agent that
-cannot do it.
+Two things that keep it honest. `## Log` holds what the doing taught that the plan did
+not know — a measurement, a falsified premise, what a dependency changed downstream — and
+takes the room that needs; what it must not hold is the session. A sentence about the work
+rather than the system stops being true the moment it is fixed, and `session-narration`
+reports the shapes of it a grep can see. And blockers belong in `INBOX.md`, not in prose;
+a box that says "blocked on X" is invisible to `kit next` and will be handed to an agent
+that cannot do it.
 
 `check:` is optional. Set it, with a date, only when a feature is a bet worth
 revisiting — a pricing change, a growth experiment. After that date `audit` reports
