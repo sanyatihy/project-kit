@@ -72,8 +72,7 @@ at all. Silence is the one output that cannot be told from good news.
 - [x] README and `kit help next` say what an unanswered remote does to the board
 
 ## Log
-- 2026-08-17 — found on the first real run of 0028's board: `kit next` said "nothing is
-  planned yet" while 0029 sat pushed and unmerged, because `ls-remote` took 5.58s against
-  a 5s bound.
+- 2026-08-17 — `ls-remote` took 5.58s against a 5s bound, so `kit next` said "nothing is
+  planned yet" while 0029 sat pushed and unmerged.
 - 2026-08-17 — the bound was the smaller half: reporting expiry as an empty page is worse,
   because absence and ignorance render identically.

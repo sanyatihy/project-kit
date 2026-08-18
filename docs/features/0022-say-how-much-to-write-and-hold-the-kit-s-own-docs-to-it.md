@@ -11,8 +11,8 @@ related: 0003-ship-standing-engineering-guidance-in-the-binary.md
 ---
 
 ## Problem
-Nothing states how long a doc should be, so both failures are live. Two drafts written
-this session ran to 145 lines each where the template asks `## Problem` for 1–3 sentences;
+Nothing states how long a doc should be, so both failures are live. Two drafts ran to
+145 lines each where the template asks `## Problem` for 1–3 sentences;
 `templates/AGENTS-section.md` is 142 lines, written into every project and re-read at the
 start of every session, so its length is a tax paid per session per project. From the
 other side, `unfilled-template` catches an empty section and nothing catches a thin one —
@@ -63,5 +63,5 @@ anyway.
 - [x] `kit help` and README state the rule where an agent will meet it
 
 ## Log
-- 2026-08-15 — scoped after two drafts in one session ran 145 lines each against a
-  template asking for three sentences.
+- 2026-08-15 — scoped from two drafts that ran 145 lines each against a template asking
+  for three sentences.

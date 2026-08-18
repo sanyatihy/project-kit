@@ -60,6 +60,5 @@ fires at three days:
 - [x] README and `kit help next` say the counter follows the claim
 
 ## Log
-- 2026-08-17 — found while demonstrating the operator's flow: two agents mid-feature, and
-  the board reported 0/3 for both.
+- 2026-08-17 — the board reported 0/3 for two agents that were both mid-feature.
 

@@ -17,8 +17,8 @@ it back when releasing a claim. No command sets it. So the protocol forbids the 
 available means for two transitions it requires, and an agent must break one rule to
 follow another.
 
-Measured this session: I hand-edited `status: In progress` on 0027, 0028, 0029 and 0030 —
-in breach of rule 1 every time, and the reason each time was that `claim` told me to. The
+Measured: `status: In progress` was hand-edited on 0027, 0028, 0029 and 0030 — in breach
+of rule 1 every time, and each time because `claim` said to. The
 backlog entry naming this said *"promote when someone hits the contradiction for real"*.
 
 The field is also a second copy of a fact git already holds. A claim is a branch on the
@@ -68,8 +68,8 @@ The status line in the docs becomes `Draft -> Accepted -> Shipped`, with `Droppe
       nothing else breaks
 
 ## Log
-- 2026-08-17 — promoted from BACKLOG.md after the contradiction was hit four times in one
-  session. The third of its three options: drop the status rather than add a command.
+- 2026-08-17 — promoted from BACKLOG.md after the contradiction was hit four times. The
+  third of its three options: drop the status rather than add a command.
 - 2026-08-17 — the design said `next` would sort a claimed feature ahead of an unclaimed
   one. Built, it changed nothing observable and was removed: the board already renders this
   checkout's claim as **yours** above everything and somebody else's under **taken** below

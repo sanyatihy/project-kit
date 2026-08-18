@@ -66,8 +66,6 @@ regression will be invisible without it.
       asked once
 
 ## Log
-- 2026-08-17 — measured during a code audit, with a `git` wrapper on `$PATH` counting
-  invocations.
 - 2026-08-17 — 116 → 58 from memoising the two, then → **28** from one `git show-ref`. What
   remains differs per claim: each branch's copy of its doc, and its tip date.
 - 2026-08-17 — the gate halved with it, 18.2s → 9.2s, because every conformance test drives

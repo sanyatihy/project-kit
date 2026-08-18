@@ -52,5 +52,5 @@ case; this is the same gap, found one step later.
 - [x] README's check list, and the `vision` help topic saying the stub is reported
 
 ## Log
-- 2026-08-16 — found while adopting the kit into two existing projects: `kit init`
-  cleared `no-vision` in both without either gaining a sentence.
+- 2026-08-16 — `kit init` cleared `no-vision` in both projects the kit was adopted into,
+  without either gaining a sentence.

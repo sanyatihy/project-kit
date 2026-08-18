@@ -50,5 +50,5 @@ for an in-flight one, which is the case that matters.
       branch name produces nothing.
 
 ## Log
-- 2026-08-14 — found by auditing this repo with 0016–0018 open as pull requests: the kit
-  reported its own correct workflow as two defects, one advising a fix that deletes work.
+- 2026-08-14 — the checks reported this repo's own correct workflow as two defects, one
+  advising a fix that deletes work.

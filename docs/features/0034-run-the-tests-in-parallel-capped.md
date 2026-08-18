@@ -15,9 +15,9 @@ related: 0002-restore-the-conformance-suite.md
 summing to 28.6s of work, run one at a time on a 12-core machine — no test calls
 `t.Parallel()`.
 
-The cost is paid on every box ticked. This session ran the gate 20-odd times; at half a
-minute each that is ten minutes of an agent watching a progress bar, and it is the one
-delay in the loop that nothing else hides.
+The cost is paid on every box ticked: 20-odd gate runs, at half a minute each, is ten
+minutes of an agent watching a progress bar — the one delay in the loop that nothing
+else hides.
 
 ## Non-goals
 - **Using the whole machine.** Other work runs here. The point is a faster gate, not a
