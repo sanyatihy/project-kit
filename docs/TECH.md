@@ -121,8 +121,10 @@ next command refuses.
   HEAD that is not claim-shaped. Hard-coding the two names left a project whose default is
   neither with nothing to diff against, and every check built on it went quiet.
 - **Drafting is a plan round, and drafts live on the trunk.** One `plan/<something>` branch
-  per session, merged once, at whatever statuses its docs reached — never named after a
-  feature, since a leading four-digit ID *is* a claim and such a draft claimed itself. A
+  per session, merged once, at whatever statuses its docs reached — and its name must not
+  mention a feature id *anywhere*, since any branch citing one is a claim and such a draft
+  claims itself. Not only the first segment: `plan/fold-the-fix-into-0039` was read as a
+  claim on 0039, written by an agent that had just read the rule. A
   branch carrying only its doc is a proposal, which is what `draft-claimed` diffs for.
   `kit drop` exists because a doc on the trunk cannot be retired by deleting a branch.
 - **Accepting is a command, and only a human runs it.** It refuses a non-Draft, an unemptied
