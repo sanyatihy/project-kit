@@ -15,81 +15,81 @@ related: docs/features/0028-see-what-is-waiting-for-review.md, docs/features/003
 
 The builder sets `Shipped` and then asks for review, so the status means *the builder
 believes this is done*. Nothing in the docs or the branches records that anybody else
-agreed, which is the fact a loop running unattended most needs to carry.
+agreed, which is the one fact a loop running unattended most needs to carry.
 
-Review is also the only instruction on the board with no command behind it: `next` tells an
-idle agent to review one somebody else built, then leaves it to invent which branch, what to
-diff against, and what to check. What keeps the two agents apart is prose, at the tier
-`docs/TECH.md` says prose fails — measured there: the rule against merging your own work was
-broken twice by an agent that had read it, while `ship`'s coded refusal was obeyed the first
-time it fired.
+What is supposed to keep the two apart is prose, at the tier `docs/TECH.md` says prose
+fails — measured there: the rule against merging your own work was broken twice by an agent
+that had read it, while `ship`'s coded refusal was obeyed the first time it fired. And the
+signal the kit would naturally use to tell builder from reviewer does not exist: agents here
+share one credential, so every commit carries the operator's name.
 
 ## Non-goals
 
-- **Running anything.** Not tests, not builds. The kit is not a test runner, and a verdict it
-  produced would be one nobody could audit. It says what to establish; the reviewer does it.
-- **Merging.** The forge owns that and branch protection is the floor. `review` names the
-  merge command for the forge `init` detected, the way `claim` names the worktree command.
-- **A status for waiting.** 0032 removed the last one. Finished-and-waiting is derivable —
-  every box ticked, on a pushed branch, not yet Shipped — and a second copy could only
-  disagree with the branches.
+- **Telling agents apart.** The kit cannot and will not try. Everything below is a fact
+  about a commit, not about a person.
+- **Running anything.** Not tests, not builds. A verdict the kit produced would be one
+  nobody could audit. It says what to establish; the reviewer establishes it.
+- **Merging.** The forge owns that. Required approvals on the trunk is the only real
+  enforcement there has ever been, and the protocol says to turn it on.
+- **A status for waiting.** 0032 removed the last one. Finished-and-waiting is derivable:
+  every box ticked, on a pushed branch, not yet on the trunk.
 
 ## Design
 
-**`Shipped` is the reviewer's to set, in a commit of its own.** That commit is the record:
-its author is somebody other than the builder, and it lives in git as long as the branch
-does. No new field and no new state. The `shipped:` date becomes the date the work was
-accepted rather than the date its author stopped typing.
+**`Shipped` is set by a checkout that does not hold the claim.** A claim is a branch name,
+so a checkout on `0042-…` *is* the claim and is refused. The reviewer works detached —
+`git worktree add --detach <path> origin/<branch>` — which is what makes "not the builder"
+a structural fact rather than an etiquette. `kit ship` inverts its current refusal, and that
+refusal carries the builder's next instruction: push and stop, a reviewer ships this. Its
+other verifications, boxes ticked and `needs:` met, stay where they are.
 
-**A claim is a branch name, so the reviewer must not be on the branch.** A checkout on
-`0042-…` *is* a claim on 0042, and from one the kit cannot tell reviewer from builder.
-`kit review` prints a detached worktree — `git worktree add --detach <path> origin/<branch>`
-— which keeps the claim single-holder while a second party writes the status commit. The
-refusal rests on that mechanism rather than on etiquette.
+**The act is recorded as a ref, because a commit cannot record it.** `kit ship` creates
+`refs/kit/reviewed/<id>` at the commit it reviewed, then writes the status. Ref creation is
+a server-side compare-and-swap — the same primitive `claim` trusts — so one approval wins
+and a second is told the work is already shipped. Verified against the forge: a `refs/kit/*`
+ref is created, advertised to `ls-remote` and deleted like any other.
 
-**`kit ship` inverts its refusal.** It refuses the checkout holding the claim, where it used
-to require it, and that refusal carries the builder's next instruction: push and stop, a
-reviewer ships this. The builder still runs the command they would have run and is told what
-happens next, so the ending closes rather than opening a vacuum. Its other verifications —
-boxes ticked, needs met — stay exactly as they are, now serving the reviewer.
+**The ref names the commit, so the check is exact.** The reviewed ref must be the *parent*
+of the commit that set `Shipped`: the reviewer approves the work, and the status commit sits
+directly on top of it. `unreviewed-ship` at HIGH reports a Shipped doc whose ref is missing
+or names anything else — which is what a hand-edited status looks like, and what shipping
+work that grew after it was read looks like.
 
-**`kit review [<id>]`** takes the feature that has waited longest and that this checkout may
-review, or the one named. It fetches the branch, prints `<trunk>...<branch>` so the diff is
-the branch's own work rather than the trunk moving underneath it, states what a review must
-establish, and names the merge command. `review: human` refuses to print one and says a
-person takes this: any non-empty value counts, 0029's fail-safe direction.
+**It costs no extra network call.** `remoteHeads` asks `ls-remote --heads`; dropping the
+flag returns the kit refs in the same process, filtered apart locally. The git-process
+ceiling in `cmd/kit/gitbudget_test.go` fails the build if that stops being true.
 
-**The board reads the new shape.** `AwaitingReview` stops meaning *Shipped on the branch* and
-starts meaning *every box ticked on a pushed branch, not Shipped, not on the trunk*.
-`done-not-shipped` must stay quiet for exactly that state, or it reports MEDIUM on every
-feature correctly waiting its turn.
+**What the board reads changes with it.** `AwaitingReview` stops meaning *Shipped on the
+branch* and starts meaning *every box ticked, on a pushed branch, not on the trunk* — true
+of docs shipped either way, so the board stays correct across the change. `done-not-shipped`
+must stay quiet for exactly that state or it reports MEDIUM on every feature waiting its
+turn. Both callers read one memoised set, or the per-feature `git show` is the fan-out 0039
+removed.
 
-**What this guarantees, and what it does not.** It enforces *not from the claim*, which is
-unambiguous. It cannot enforce *a different agent*: agents here share one credential and four
-agents' commits all carried the operator's name. A lone operator is not locked out, since a
-detached checkout is one command. The honest claim is that the loop becomes legible and the
-friction points the right way, while branch protection stays the only real enforcement.
+**What this guarantees.** That the status was set by the tool rather than typed; that it was
+set from a checkout not holding the claim; that the work shipped is the work reviewed, to
+the commit. **What it does not.** That two different agents were involved — an agent that
+releases its claim can review its own work, which is the tier the kit has always been:
+escapable by not using the kit. The wall is required approvals on the remote.
 
 ## Tasks
-- [ ] `kit ship` refuses the claim holder, the refusal naming what happens next; its other
-      verifications unchanged; conformance both ways
-- [ ] `kit review [<id>]`: the detached review worktree, the diff range, what a review must
-      establish, the merge command, and refusal when this checkout built it
-- [ ] `AwaitingReview` reads ticked-and-pushed rather than Shipped, and `done-not-shipped`
-      stays quiet while a feature waits for review
-- [ ] `next`'s review guidance names `kit review`; protocol, `docs/TECH.md`, README and
-      `kit help` say `Shipped` is the reviewer's act and why the commit is the record
-- [ ] One conformance run of the whole loop: build, push, review from a detached checkout,
-      ship, merge, and the refusal at each end
-
-## Open questions
-- Should a rejected review be visible on the board? Rejecting is cheap here — nothing to
-  undo, since `Shipped` was never set — but a branch that was read and turned down looks
-  exactly like one nobody has opened, so agents will keep picking it up. Leaning: leave it to
-  the forge, and watch for a feature being reviewed twice before building anything.
+- [ ] `AwaitingReview` reads ticked-and-pushed rather than Shipped, from one memoised set,
+      and `done-not-shipped` stays quiet for that state; the git-process ceiling holds
+- [ ] `kit ship` refuses the checkout holding the claim, refuses a HEAD that is not the
+      branch's tip on the remote, and its refusal names what happens next
+- [ ] `kit ship` creates `refs/kit/reviewed/<id>` at the reviewed commit, one winner by ref
+      creation, and says so when the race is lost
+- [ ] `unreviewed-ship` at HIGH: Shipped, and the reviewed ref is missing or is not the
+      parent of the commit that set it; conformance for hand-edited and for grown work
+- [ ] Protocol, `docs/TECH.md`, README and `kit help` carry it, including that required
+      approvals on the trunk is the enforcement and the kit is the legibility
+- [ ] One conformance run of the loop: build, push, ship refused for the builder, ship from
+      a detached checkout, and the ref and the check agreeing at the end
 
 ## Log
-- 2026-08-18 — the kit is not a test runner, so `review` sets a review up and refuses the
-  wrong reviewer rather than producing a verdict.
-- 2026-08-18 — ordering decided before any code: `Shipped` set by the builder records only
-  that the builder stopped, which is the one thing the branches already show.
+- 2026-08-18 — the kit is not a test runner, so shipping records that a review happened and
+  never judges the work.
+- 2026-08-18 — ordering settled before any code: `Shipped` set by the builder records only
+  that the builder stopped, which the branches already show.
+- 2026-08-18 — identity is out as a signal, so the guarantee is about commits: a ref naming
+  the reviewed commit, and a check that the shipped commit sits directly on it.
