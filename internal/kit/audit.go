@@ -158,26 +158,34 @@ var (
 		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
 	// LOW, and it never rises: length is hygiene rather than something untrue, and a doc
 	// that earns its length says so in its Log instead of being cut to fit.
+	// LOW and a backstop: the marker set is precise and shallow, so a quiet doc is not a
+	// doc that obeyed the rule. See NarrationMarkers for what it does and does not catch.
+	checkSessionNarration = Check{"session-narration", Low,
+		"a feature doc narrates the work rather than describing the system"}
 	checkDocBloat = Check{"doc-bloat", Low,
-		fmt.Sprintf("a feature doc is over %d lines, or a ## Log entry over %d — agent context, paid per session",
-			DocLineLimit, LogEntryLimit)}
+		fmt.Sprintf("a feature doc is over %d lines — agent context, paid per session",
+			DocLineLimit)}
 )
 
-// DocLineLimit and LogEntryLimit are alarms, not targets. Measured over this repo's 38
-// docs after the 0037 trim: median 63 lines, p90 88, longest 101; and 71 log entries with
-// a median of 2 lines and a longest of 5. So both numbers sit above everything a
-// deliberately-written doc produced, and only growth trips them.
-const (
-	DocLineLimit  = 100
-	LogEntryLimit = 5
-)
+// DocLineLimit is an alarm, not a target.
+//
+// 0038 took it from this repo immediately after 0037 cut it — median 63 lines, p90 88 — so
+// it measured a corpus that had just been trimmed, and only confirmed the trim. 0041 retakes
+// it from a corpus written to the standard the kit wants rather than the one it had:
+// localcode's 14 feature docs on 2026-08-18, median 104, p90 146, longest 211. The number is
+// that p90 rounded up, the statistic 0038 named.
+//
+// One doc in that sample is over it, and that is the behaviour wanted rather than a
+// miscalibration: it is a measurement-heavy feature whose length is earned, and the check's
+// own escape hatch — say in the ## Log why it earns the length — is what such a doc uses.
+const DocLineLimit = 150
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
 	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
 	checkShippedNotPushed,
-	checkUnchecked,
+	checkUnchecked, checkSessionNarration,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkMissingSection, checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
@@ -302,6 +310,7 @@ func finding(c Check, where, problem, fix string) Finding {
 // featureChecks run in this order, and the order is the report's order.
 var featureChecks = []featureCheck{
 	{[]Check{checkDocBloat}, docBloat},
+	{[]Check{checkSessionNarration}, sessionNarration},
 	{[]Check{checkUntickedShipped}, untickedShipped},
 	{[]Check{checkShippedNoDate}, shippedNoDate},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
@@ -378,6 +387,28 @@ func duplicateID(s *repoState) []Finding {
 	return out
 }
 
+// sessionNarration reports the first marker only. A doc that narrates usually does it
+// several times, and one finding per doc says the same thing at a fraction of the board.
+func sessionNarration(s *docState) []Finding {
+	// Shipped is frozen by rule 11, so a finding on one is a fix nobody is allowed to
+	// make. The check belongs to the window where the doc is still being written, which
+	// is also the only window where the rule can change what gets written.
+	if s.f.Status == StatusShipped {
+		return nil
+	}
+	raw, err := os.ReadFile(s.f.Path)
+	if err != nil {
+		return nil
+	}
+	marker, line := Narration(string(raw))
+	if marker == "" {
+		return nil
+	}
+	return []Finding{finding(checkSessionNarration, s.at,
+		fmt.Sprintf("%s:%d: %q — that is the work, not the system", s.f.Name(), line, marker),
+		"say what holds instead; the incident belongs in the pull request")}
+}
+
 // Length is measured from the file rather than the parsed sections, because what costs a
 // later agent is the whole document it has to read.
 func docBloat(s *docState) []Finding {
@@ -385,15 +416,10 @@ func docBloat(s *docState) []Finding {
 	if err != nil {
 		return nil
 	}
-	switch lines, entry := Bloat(string(raw)); {
-	case lines > DocLineLimit:
+	if lines := Bloat(string(raw)); lines > DocLineLimit {
 		return []Finding{finding(checkDocBloat, s.at,
 			fmt.Sprintf("%s: %d lines, over %d", s.f.Name(), lines, DocLineLimit),
 			"cut the narration — or say in ## Log why it earns the length")}
-	case entry > LogEntryLimit:
-		return []Finding{finding(checkDocBloat, s.at,
-			fmt.Sprintf("%s: a ## Log entry runs %d lines, over %d", s.f.Name(), entry, LogEntryLimit),
-			"one entry records one decision; move the detail into ## Design or docs/TECH.md")}
 	}
 	return nil
 }

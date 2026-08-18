@@ -218,11 +218,20 @@ next command refuses.
 - **Guidance must never use `- [ ]`**, which in a kit project means "a PR-sized unit of
   work"; source material using it for "a property to verify" is converted to prose. A test
   pins it.
-- **Feature docs are agent context, and `doc-bloat` watches them at LOW.** 100 lines a doc
-  and 5 a `## Log` entry, measured from this repo's 38 docs after the 0037 trim rather than
-  guessed: median 63 and 2. Both are alarms — the fix line offers "say in the Log why it
-  earns the length" — and `kit ship` asks for the compaction at the moment a working
-  document becomes context, worded to lead with what to keep.
+- **Feature docs are agent context, and `doc-bloat` watches them at LOW.** 150 lines, an
+  alarm rather than a target: the fix line offers "say in the Log why it earns the length",
+  and `kit ship` asks for the compaction at the moment a working document becomes context.
+- **Calibrate a doc threshold against a corpus written to the standard you want.** 0038 took
+  its numbers from this repo just after 0037 trimmed it, so they only confirmed the trim;
+  against `localcode` the same two fire on 7 of 14 docs and 13 of 56 `## Log` entries. 0041
+  retook the line limit from there and dropped the entry cap outright — entry length was
+  never the signal, and what it caught was what the doing taught.
+- **The words go in the wrong sections, which is what "too verbose" meant.** Over 40 docs
+  here against those 14: `## Problem` 12.9 lines to 7.2, `## Design` 17.9 to 35.6, `## Log`
+  5.0 to 17.1 — shorter docs overall, spent arguing the work rather than recording the
+  decision. `session-narration` catches the shapes of that a grep can see and misses the
+  rest; the `## Problem` ≥ `## Design` ratio separates the two corpora exactly and is in
+  BACKLOG awaiting a corpus written under the new rule.
 - **Shipped text has line ceilings** (`cmd/kit/budget_test.go`), because nothing else stops
   a doc growing and no reviewer counts lines. Tiered by how often it is read: the protocol
   tightest, then command help, then topics. Ceilings only — a floor rewards padding — and

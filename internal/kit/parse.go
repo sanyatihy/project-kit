@@ -123,54 +123,19 @@ func AddField(text, key, value string) (string, bool) {
 	return text[:start] + strings.Join(lines, "\n") + text[end:], true
 }
 
-// Bloat measures a document against the two shapes of padding worth counting: its total
-// length, and its longest `## Log` entry. Returns 0 for either when it is within its limit.
+// Bloat measures a document's total length. What costs a later agent is the whole file it
+// has to read, so nothing here looks inside the sections.
 //
-// The section is found by a heading *line*, never by searching for the text: docs about the
-// feature-doc format quote `## Log` inside prose and task boxes constantly, and a substring
-// search reads those as the section — which is how a first attempt at this measurement
-// reported entries four times longer than any that exist.
-func Bloat(text string) (lines, longestEntry int) {
+// 0038 also capped a single `## Log` entry. 0041 removed that arm: the cap was taken from a
+// corpus whose Logs had just been cut, and against one written to the standard the kit wants
+// it fires on 13 entries of 56 — the ones carrying what the doing taught. Entry length was
+// never the signal; the diary is, and the template's guidance is what excludes it.
+func Bloat(text string) (lines int) {
 	all := strings.Split(Normalise(text), "\n")
 	for len(all) > 0 && strings.TrimSpace(all[len(all)-1]) == "" {
 		all = all[:len(all)-1]
 	}
-	lines = len(all)
-
-	start := -1
-	for i, l := range all {
-		if strings.TrimSpace(l) == "## Log" {
-			start = i
-			break
-		}
-	}
-	if start == -1 {
-		return lines, 0
-	}
-	end := len(all)
-	for i := start + 1; i < len(all); i++ {
-		if strings.HasPrefix(all[i], "## ") {
-			end = i
-			break
-		}
-	}
-	entry := 0
-	for _, l := range all[start+1 : end] {
-		switch {
-		case strings.HasPrefix(l, "- "):
-			if entry > longestEntry {
-				longestEntry = entry
-			}
-			entry = 1
-		case strings.TrimSpace(l) == "":
-		case entry > 0:
-			entry++
-		}
-	}
-	if entry > longestEntry {
-		longestEntry = entry
-	}
-	return lines, longestEntry
+	return len(all)
 }
 
 // SetStatus rewrites the frontmatter's `status:`.
@@ -337,4 +302,76 @@ func AppendToSection(text, heading, line string) (string, bool) {
 	out := append([]string{}, lines[:at]...)
 	out = append(out, line)
 	return strings.Join(append(out, lines[at:]...), "\n"), true
+}
+
+// NarrationMarkers are phrases that appear when a doc narrates the work rather than
+// describing the system. Precision over recall by a wide margin: measured over 54 real
+// feature docs, this set fires on 4 and never on a doc that was not narrating.
+//
+// Most narration carries no stock phrase at all — one doc here argues for thirty lines
+// without tripping a marker — so the recall is poor and meant to be. This is a backstop
+// and the rule in the protocol is the rule, exactly as `secret-in-doc` backstops "never
+// put a secret in a doc" while matching nothing in a password written as prose.
+var NarrationMarkers = []string{
+	"this session",
+	"last session",
+	"the previous attempt",
+	"an earlier attempt",
+	"at the time of writing",
+	"we discovered",
+	"it turned out",
+	"nobody noticed",
+	"never noticed",
+}
+
+// Narration reports the first narration marker in text and the 1-based line holding it.
+//
+// Fenced blocks and HTML comments are blanked before the scan, for Bloat's reason: a doc
+// about the doc format quotes the things being ruled on, and the template's own guidance
+// lives entirely in comments — scanning either reports the rule as a violation of itself.
+// Blanking rather than dropping keeps the line numbers the ones a reader sees.
+func Narration(text string) (marker string, line int) {
+	for i, l := range strings.Split(blankQuoted(Normalise(text)), "\n") {
+		lower := strings.ToLower(l)
+		for _, m := range NarrationMarkers {
+			if strings.Contains(lower, m) {
+				return m, i + 1
+			}
+		}
+	}
+	return "", 0
+}
+
+// blankQuoted empties every fenced block and HTML comment, line count preserved. Comments
+// are spans rather than lines: the template writes them one per section and the docs write
+// them inline, and a line-shaped test misses whichever form it was not written for.
+func blankQuoted(text string) string {
+	out := strings.Split(text, "\n")
+	inFence := false
+	for i, raw := range out {
+		if strings.HasPrefix(strings.TrimSpace(raw), "```") {
+			inFence = !inFence
+			out[i] = ""
+			continue
+		}
+		if inFence {
+			out[i] = ""
+		}
+	}
+	joined := strings.Join(out, "\n")
+	for {
+		open := strings.Index(joined, "<!--")
+		if open < 0 {
+			break
+		}
+		end := strings.Index(joined[open:], "-->")
+		if end < 0 {
+			end = len(joined) - open
+		} else {
+			end += len("-->")
+		}
+		span := joined[open : open+end]
+		joined = joined[:open] + strings.Repeat("\n", strings.Count(span, "\n")) + joined[open+end:]
+	}
+	return joined
 }
