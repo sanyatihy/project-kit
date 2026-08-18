@@ -53,7 +53,10 @@ next command refuses.
   a branch the remote already holds at that commit prints "Everything up-to-date" and exits
   0, which hands one feature to two agents. Ref creation is a server-side compare-and-swap,
   so exactly one claimant wins. A leftover branch is indistinguishable from a fresh claim,
-  so `claim` names both possibilities and `stalled` never ages a claim carrying no work.
+  so `claim` names both possibilities and `stalled` never ages a claim carrying no work. A
+  name is read **whole**, namespace included: keeping only the last path segment entered one
+  worktree's branch twice and reported the checkout as two agents fighting over its own
+  feature, with a fix line that deletes the work.
 - **A claim carries the plan, and branches from the trunk.** The doc must be in `HEAD`'s
   tree — the push is `HEAD:refs/heads/<branch>` — and in `trunkRef()`'s, or the claim is a
   child of the plan branch and only its own author can integrate it. Exit 2, not `NotYours`:

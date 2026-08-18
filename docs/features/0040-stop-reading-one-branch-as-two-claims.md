@@ -1,9 +1,9 @@
 ---
 id: 0040
 title: Stop reading one branch as two claims
-status: Draft
+status: Shipped
 created: 2026-08-18
-shipped:
+shipped: 2026-08-18
 check:
 checked:
 review:
@@ -55,3 +55,5 @@ One word, at the tier where prose is all there is.
 ## Log
 - 2026-08-18 — found by accident, not by review: the plan branch drafting 0039 was named after
   it, and `kit audit` reported the checkout as fighting itself.
+- 2026-08-18 — the protocol text changed, so every project carrying the old wording reports
+  `protocol-stale` until `kit init` refreshes it. This repo's own AGENTS.md included.
