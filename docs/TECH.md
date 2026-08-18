@@ -53,7 +53,10 @@ next command refuses.
   a branch the remote already holds at that commit prints "Everything up-to-date" and exits
   0, which hands one feature to two agents. Ref creation is a server-side compare-and-swap,
   so exactly one claimant wins. A leftover branch is indistinguishable from a fresh claim,
-  so `claim` names both possibilities and `stalled` never ages a claim carrying no work.
+  so `claim` names both possibilities and `stalled` never ages a claim carrying no work. A
+  name is read **whole**, namespace included: keeping only the last path segment entered one
+  worktree's branch twice and reported the checkout as two agents fighting over its own
+  feature, with a fix line that deletes the work.
 - **A claim carries the plan, and branches from the trunk.** The doc must be in `HEAD`'s
   tree — the push is `HEAD:refs/heads/<branch>` — and in `trunkRef()`'s, or the claim is a
   child of the plan branch and only its own author can integrate it. Exit 2, not `NotYours`:
@@ -121,8 +124,10 @@ next command refuses.
   HEAD that is not claim-shaped. Hard-coding the two names left a project whose default is
   neither with nothing to diff against, and every check built on it went quiet.
 - **Drafting is a plan round, and drafts live on the trunk.** One `plan/<something>` branch
-  per session, merged once, at whatever statuses its docs reached — never named after a
-  feature, since a leading four-digit ID *is* a claim and such a draft claimed itself. A
+  per session, merged once, at whatever statuses its docs reached — and its name must not
+  mention a feature id *anywhere*, since any branch citing one is a claim and such a draft
+  claims itself. Not only the first segment: `plan/fold-the-fix-into-0039` was read as a
+  claim on 0039, written by an agent that had just read the rule. A
   branch carrying only its doc is a proposal, which is what `draft-claimed` diffs for.
   `kit drop` exists because a doc on the trunk cannot be retired by deleting a branch.
 - **Accepting is a command, and only a human runs it.** It refuses a non-Draft, an unemptied

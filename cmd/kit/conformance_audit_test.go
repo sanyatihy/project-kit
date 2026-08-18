@@ -850,6 +850,33 @@ func TestClaimChecksDoNotFireOnOrdinaryWork(t *testing.T) {
 		}
 	})
 
+	t.Run("a namespaced branch in a worktree is one claim", func(t *testing.T) {
+		// One branch, one checkout. The worktree list gives `branch refs/heads/<name>`
+		// and the branch list gives the name, so keeping only the last path segment
+		// entered both `agents/0001-work` and `0001-work` — and the checkout reported
+		// itself as two agents holding the feature, with a fix line that deletes the work.
+		p := cleanProject(t)
+		p.commitAll("the doc")
+		p.git("checkout", "-q", "-b", "agents/0001-work")
+
+		for _, code := range p.auditCodes() {
+			if code == "split-claim" {
+				t.Error("one namespaced branch was reported as two claims")
+			}
+		}
+	})
+
+	t.Run("two branches on one feature are still a split claim", func(t *testing.T) {
+		// The other half: the case above must not be bought by making split-claim blind.
+		p := cleanProject(t)
+		p.commitAll("the doc")
+		p.git("branch", "agents/0001-work")
+		p.git("branch", "0001-thing")
+
+		if codes := p.auditCodes(); !slices.Contains(codes, "split-claim") {
+			t.Errorf("two branches claiming one feature went unreported: %v", codes)
+		}
+	})
 }
 
 func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
