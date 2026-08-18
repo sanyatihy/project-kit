@@ -388,11 +388,13 @@ shared composition root, a shared router, or numbered files in one sequence such
 migrations all make a feature dependent however separate its boundary looks.
 `related:` is unaffected by any of this — it stays reading material.
 
-Two things that keep it honest. `## Log` holds what the doing taught that the plan did
-not know — a measurement, a falsified premise, what a dependency changed downstream — and
-takes the room that needs; what it must not hold is the session. A sentence about the work
-rather than the system stops being true the moment it is fixed, and `session-narration`
-reports the shapes of it a grep can see. And blockers belong in `INBOX.md`, not in prose;
+Two things that keep it honest. Every fact has one home, chosen as the sentence is
+written: still true after the feature ships and it belongs in `docs/TECH.md`, one line;
+a change to this doc's plan and it belongs in `## Log`, one entry that names the change —
+a box rewritten, a premise falsified, a number something downstream reads; neither and it
+belongs in the pull request. An entry naming no change is not an entry, and
+`session-narration` reports the shapes of one a grep can see. And blockers belong in
+`INBOX.md`, not in prose;
 a box that says "blocked on X" is invisible to `kit next` and will be handed to an agent
 that cannot do it.
 
