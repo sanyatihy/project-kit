@@ -152,3 +152,19 @@ any machine. Enforcement belongs in a command rather than another protocol sente
 has to degrade the way 0030 does for `--offline` and for projects with no remote.
 
 Promote when: a second machine joins, or a claim's work is lost with the machine holding it.
+
+## A doc that argues more than it decides
+
+`doc-bloat` measures a whole file against one number, so it cannot see composition: it would
+flag a doc that is all durable design and stay quiet on one that is thirty lines of argument
+and eight of decision. The second is what this repo actually writes.
+
+Composition is measurable, and one comparison carries most of it — `## Problem` at least as
+long as `## Design` means the doc argued more than it decided. Across 54 real docs it
+separates the two corpora exactly: 10 of 40 here, 0 of 14 in `localcode`. Per-section
+ceilings are the fuller version of the same idea.
+
+0041 fixes what gets written; this checks the shape of what came out. It wants its own
+calibration, and it wants it taken after 0041 has changed the corpus rather than before.
+
+Promote when: 0041 has shipped and a round of docs has been written under it.
