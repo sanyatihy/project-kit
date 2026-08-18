@@ -131,3 +131,24 @@ never reads as data. It cannot tell a comment from content, so
 two spaces, or only strip from keys known to carry comments — is small.
 
 Promote when: a title or any other field loses text to it.
+
+## The work is only on the remote once, at the end
+
+`kit claim` pushes, and it is the only push the kit makes: it pushes `HEAD`, so the branch
+that claims a feature carries the doc and no work. Everything after that is local until a
+person or an agent pushes for review, which `kit ship` asks for in prose — the tier TECH.md
+ranks last. Liveness is read from `git log --all`, which is this machine's refs.
+
+So the mutual visibility the multi-agent model rests on is the shared local object store,
+not the remote. On one machine with worktrees that holds. Across two it does not, and it
+fails silently: `stalled` never ages a claim carrying no commits beyond the doc, which is
+exactly what a live agent looks like from anywhere else, so a dead agent and a working one
+stay indistinguishable for the whole life of the feature. Progress reads 0/N the same way.
+`shipped-not-pushed` is this failure caught at the end; nothing watches the middle.
+
+The fix is that the push becomes the heartbeat — the claim branch gets one when a box is
+ticked — after which `stalled` can age from the remote branch's commit date and be true from
+any machine. Enforcement belongs in a command rather than another protocol sentence, and it
+has to degrade the way 0030 does for `--offline` and for projects with no remote.
+
+Promote when: a second machine joins, or a claim's work is lost with the machine holding it.
