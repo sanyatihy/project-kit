@@ -1,9 +1,9 @@
 ---
 id: 0036
 title: Break up the audit monolith
-status: Draft
+status: Shipped
 created: 2026-08-17
-shipped:
+shipped: 2026-08-18
 check:
 checked:
 needs:
@@ -65,19 +65,26 @@ Whether the per-feature checks and the whole-repo ones (`duplicate-id`, `no-plan
 `protocol-stale`) want one shape or two is the open question the builder settles first;
 the honest answer may be two small slices rather than one clever interface.
 
-## Open questions
-- Do whole-repo checks and per-feature checks share a signature, or is a second slice
-  simpler than the abstraction that unifies them?
-
 ## Tasks
-- [ ] The per-feature checks move to functions beside their registry entries, with the
+- [x] The per-feature checks move to functions beside their registry entries, with the
       shared per-feature work computed once and passed in
-- [ ] The whole-repo checks follow, in whatever shape the first box settled
-- [ ] `TestEveryRegisteredCheckIsExercised` also asserts every registry entry has an
+- [x] The whole-repo checks follow, in whatever shape the first box settled
+- [x] `TestEveryRegisteredCheckIsExercised` also asserts every registry entry has an
       implementation, so a registered check can never be inert
-- [ ] `kit audit` output is byte-identical on this repo before and after, recorded in
+- [x] `kit audit` output is byte-identical on this repo before and after, recorded in
       `## Log`
 
 ## Log
 - 2026-08-17 — found in a code audit. `golangci-lint` is clean and there is no dead API;
   this is the one structural finding worth a feature.
+- 2026-08-18 — open question settled: two slices, not one signature. They take different
+  arguments and share nothing but the registry entry, so unifying them would be an
+  abstraction with two implementations and no caller that wants either.
+- 2026-08-18 — an entry names every code it can report, rather than one code per function.
+  Some checks are one decision with two outcomes — a status missing or unknown, a task list
+  empty or finished — and splitting those would evaluate the same condition twice.
+- 2026-08-18 — output is byte-identical on a fixture firing 10 checks across both formats,
+  not on this repo, whose audit is clean and would have proved nothing.
+- 2026-08-18 — the split removed a `continue` in `stalled` that skipped every later check
+  for that feature, not just the ageing. Unreachable in practice — it needed both liveness
+  signals zero, and `LastTouched` falls back to mtime — which is why nothing caught it.

@@ -258,382 +258,542 @@ type Finding struct {
 // passed in because internal/kit cannot embed a parent directory, and a project
 // running superseded rules is invisible from inside that project — which is how two
 // agents followed a protocol that had already been fixed.
-func Audit(r *Repo, today time.Time, protocol string) []Finding {
-	var found []Finding
-	report := func(c Check, where, problem, fix string) {
-		found = append(found, Finding{c.Severity, c.Code, where, problem, fix})
-	}
-	statuses := strings.Join(AllStatuses, ", ")
+// docState is what every per-feature check is handed: the feature, where to report it,
+// and the work the loop does once so no check repeats it.
+type docState struct {
+	r        *Repo
+	f        *Feature
+	at       string
+	today    time.Time
+	statuses string
+	claims   []string
+}
 
-	// The ID is the primary key: branches claim by it, inbox lines block by it, and
-	// commits cite it. Two docs sharing one makes all three ambiguous — a single
-	// branch claims both features and a single question blocks both.
-	//
-	// This is the one disagreement git cannot surface on its own. Two agents off the
-	// same base both take the next free ID, and because the filenames differ there is
-	// nothing to conflict on: the merge is clean and every other check here still
-	// passes. It is reported first because they all assume an ID names one feature.
-	for _, id := range duplicateIDs(r.Features) {
+// repoState is the same for the checks that are about the project rather than one doc.
+type repoState struct {
+	r        *Repo
+	today    time.Time
+	protocol string
+}
+
+// featureCheck is one decision made per feature, repoCheck one made per project.
+//
+// Two slices rather than one interface: they take different arguments and share nothing
+// but the registry entry, so unifying them would be an abstraction with two
+// implementations and no caller that wants either.
+//
+// Codes names every registry entry a function can report, because some are one decision
+// with two outcomes — a status is missing, or it is present and unknown — and splitting
+// those in two would evaluate the same condition twice and let the halves drift.
+type featureCheck struct {
+	Codes []Check
+	Run   func(*docState) []Finding
+}
+
+type repoCheck struct {
+	Codes []Check
+	Run   func(*repoState) []Finding
+}
+
+func finding(c Check, where, problem, fix string) Finding {
+	return Finding{c.Severity, c.Code, where, problem, fix}
+}
+
+// featureChecks run in this order, and the order is the report's order.
+var featureChecks = []featureCheck{
+	{[]Check{checkDocBloat}, docBloat},
+	{[]Check{checkUntickedShipped}, untickedShipped},
+	{[]Check{checkShippedNoDate}, shippedNoDate},
+	{[]Check{checkShippedNotPushed}, shippedNotPushed},
+	{[]Check{checkStalled}, stalled},
+	{[]Check{checkNoTasks, checkDoneNotShipped}, taskState},
+	{[]Check{checkUnchecked}, unchecked},
+	{[]Check{checkNoStatus, checkBadStatus}, statusState},
+	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
+	{[]Check{checkMissingSection}, missingLog},
+	{[]Check{checkSplitClaim, checkDraftClaimed}, claimState},
+	{[]Check{checkIDMismatch}, idMismatch},
+	{[]Check{checkDeadLink}, deadLinks},
+}
+
+// repoChecks run after every feature has been through the list above.
+var repoChecks = []repoCheck{
+	{[]Check{checkOrphanClaim}, orphanClaims},
+	{[]Check{checkInboxUnparsed, checkInboxUnknown, checkFYIStale, checkInboxStale}, inboxState},
+	{[]Check{checkTechDrift, checkNoTech}, techState},
+	{[]Check{checkNoPlan}, noPlan},
+	{[]Check{checkNoProtocol}, noProtocol},
+	{[]Check{checkProtocolStale}, protocolStale},
+	{[]Check{checkNoInbox}, noInbox},
+	{[]Check{checkNeedsUnknown, checkShippedEarly}, needsState},
+	{[]Check{checkNeedsCycle}, needsCycles},
+	{[]Check{checkSecretInDoc}, secretsInDocs},
+	{[]Check{checkNoVision}, noVision},
+	{[]Check{checkUnfilledVision}, unfilledVision},
+	// Reported first by Audit, before any feature check, so it is skipped here.
+	{[]Check{checkDuplicateID}, duplicateID},
+}
+
+// Audit walks the features through featureChecks and the project through repoChecks.
+//
+// duplicateID is reported first even though it is a repo check, because every check after
+// it assumes an ID names one feature.
+func Audit(r *Repo, today time.Time, protocol string) []Finding {
+	rs := &repoState{r: r, today: today, protocol: protocol}
+	found := duplicateID(rs)
+
+	statuses := strings.Join(AllStatuses, ", ")
+	for _, f := range r.Features {
+		ds := &docState{r: r, f: f, at: f.Rel, today: today, statuses: statuses, claims: r.Claims(f.ID)}
+		for _, c := range featureChecks {
+			found = append(found, c.Run(ds)...)
+		}
+	}
+	for _, c := range repoChecks {
+		if c.Codes[0] == checkDuplicateID {
+			continue // already reported, first
+		}
+		found = append(found, c.Run(rs)...)
+	}
+	return found
+}
+
+// The ID is the primary key: branches claim by it, inbox lines block by it, and commits
+// cite it. Two docs sharing one makes all three ambiguous, and it is the one disagreement
+// git cannot surface — the filenames differ, so the merge is clean.
+func duplicateID(s *repoState) []Finding {
+	var out []Finding
+	for _, id := range duplicateIDs(s.r.Features) {
 		var docs []string
-		for _, f := range r.Features {
+		for _, f := range s.r.Features {
 			if f.ID == id {
 				docs = append(docs, f.Rel)
 			}
 		}
-		report(checkDuplicateID, docs[0],
+		out = append(out, finding(checkDuplicateID, docs[0],
 			fmt.Sprintf("id %s is used by %s", id, strings.Join(docs, " and ")),
 			"give all but one a free id, rename their files to match, and rename any "+
-				"branch that claims them")
+				"branch that claims them"))
 	}
+	return out
+}
 
-	for _, f := range r.Features {
-		at := f.Rel
+// Length is measured from the file rather than the parsed sections, because what costs a
+// later agent is the whole document it has to read.
+func docBloat(s *docState) []Finding {
+	raw, err := os.ReadFile(s.f.Path)
+	if err != nil {
+		return nil
+	}
+	switch lines, entry := Bloat(string(raw)); {
+	case lines > DocLineLimit:
+		return []Finding{finding(checkDocBloat, s.at,
+			fmt.Sprintf("%s: %d lines, over %d", s.f.Name(), lines, DocLineLimit),
+			"cut the narration — or say in ## Log why it earns the length")}
+	case entry > LogEntryLimit:
+		return []Finding{finding(checkDocBloat, s.at,
+			fmt.Sprintf("%s: a ## Log entry runs %d lines, over %d", s.f.Name(), entry, LogEntryLimit),
+			"one entry records one decision; move the detail into ## Design or docs/TECH.md")}
+	}
+	return nil
+}
 
-		// Length is measured from the file rather than the parsed sections, because what
-		// costs a later agent is the whole document it has to read.
-		if raw, err := os.ReadFile(f.Path); err == nil {
-			switch lines, entry := Bloat(string(raw)); {
-			case lines > DocLineLimit:
-				report(checkDocBloat, at,
-					fmt.Sprintf("%s: %d lines, over %d", f.Name(), lines, DocLineLimit),
-					"cut the narration — or say in ## Log why it earns the length")
-			case entry > LogEntryLimit:
-				report(checkDocBloat, at,
-					fmt.Sprintf("%s: a ## Log entry runs %d lines, over %d", f.Name(), entry, LogEntryLimit),
-					"one entry records one decision; move the detail into ## Design or docs/TECH.md")
-			}
-		}
+func untickedShipped(s *docState) []Finding {
+	if s.f.Status != StatusShipped {
+		return nil
+	}
+	if open := len(s.f.OpenTasks()); open > 0 {
+		return []Finding{finding(checkUntickedShipped, s.at,
+			fmt.Sprintf("%s: marked Shipped with %d unticked task(s)", s.f.Name(), open),
+			"tick them, or move them to BACKLOG.md / a new feature")}
+	}
+	return nil
+}
 
-		if f.Status == StatusShipped {
-			if open := len(f.OpenTasks()); open > 0 {
-				report(checkUntickedShipped, at,
-					fmt.Sprintf("%s: marked Shipped with %d unticked task(s)", f.Name(), open),
-					"tick them, or move them to BACKLOG.md / a new feature")
-			}
-			if f.Shipped.IsZero() {
-				report(checkShippedNoDate, at,
-					f.Name()+": Shipped with no shipped: date",
-					"add the date it actually shipped")
-			}
-			// Shipping is a handoff, and this is the far side of it: the doc says the
-			// builder is finished and the work reached nobody. Silent by construction —
-			// the feature has left the board, so nothing else would ever mention it again.
-			if r.OnlyHere(f) {
-				report(checkShippedNotPushed, at,
-					f.Name()+": Shipped, but no remote carries the work",
-					"push it: git push -u origin "+f.Branch())
-			}
-		}
+func shippedNoDate(s *docState) []Finding {
+	if s.f.Status != StatusShipped || !s.f.Shipped.IsZero() {
+		return nil
+	}
+	return []Finding{finding(checkShippedNoDate, s.at,
+		s.f.Name()+": Shipped with no shipped: date",
+		"add the date it actually shipped")}
+}
 
-		// Liveness comes from the claim, not only from a status. In a pull-request flow
-		// `In progress` is set on the feature branch and never reaches the trunk, so from
-		// the checkout a human or a supervising agent audits, the doc still reads
-		// `Accepted` — and stalled, the one check for an agent that died holding a
-		// feature, could not fire anywhere anybody was looking.
-		//
-		// A claim carrying no commits beyond the doc is deliberately not aged: a branch
-		// cut from the trunk's tip is identical to one whose pull request already merged,
-		// and neither carries a date to read. `next` reports those as taken.
-		if !terminal(f.Status) {
-			claim := r.ClaimFor(f.ID)
-			if claim != "" && r.BranchBuildsOn(claim, f.Rel) {
-				// Not the doc's mtime. For a tracked file that records when git last
-				// wrote it out, which a merge or a checkout resets to now — so on the
-				// trunk checkout a freshly merged draft looked like activity and masked
-				// a claim that had been dead for a week. LastTouched already falls back
-				// to mtime for a doc that is untracked, which is the only case where the
-				// filesystem knows something git does not.
-				newest := time.Time{}
-				for _, signal := range []time.Time{r.LastMentioned(f.ID), r.LastTouched(f.Path)} {
-					if signal.After(newest) {
-						newest = signal
-					}
-				}
-				if newest.IsZero() {
-					continue // nothing to measure from; inventing an age is worse
-				}
-				if idle := Days(newest, today); idle >= StalledDays {
-					held := f.Status + ", claimed by " + claim
-					report(checkStalled, at,
-						fmt.Sprintf("%s: %s, nothing has happened in %s",
-							f.Name(), held, countDays(idle)),
-						"finish it, drop it, or move the blocker to docs/INBOX.md")
-				}
-			}
-		}
+// Shipping is a handoff, and this is the far side of it: the doc says the builder is
+// finished and the work reached nobody. Silent by construction — the feature has left the
+// board, so nothing else would ever mention it again.
+func shippedNotPushed(s *docState) []Finding {
+	if s.f.Status != StatusShipped || !s.r.OnlyHere(s.f) {
+		return nil
+	}
+	return []Finding{finding(checkShippedNotPushed, s.at,
+		s.f.Name()+": Shipped, but no remote carries the work",
+		"push it: git push -u origin "+s.f.Branch())}
+}
 
-		if f.Status == StatusAccepted {
-			open, total := f.TaskCount()
-			switch {
-			// Claimable with nothing in it: an agent takes this and finds no work.
-			// A section that is empty outright is unfilled-template's, so one defect
-			// never produces two findings; this is the section with prose and no boxes.
-			case total == 0 && f.Section("Tasks") != "":
-				report(checkNoTasks, at,
-					fmt.Sprintf("%s: %s with no ## Tasks boxes", f.Name(), f.Status),
-					`write the plan as PR-sized boxes, or set status: Draft until you can`)
-			// Work is finished but the doc still says otherwise.
-			case open == 0:
-				report(checkDoneNotShipped, at,
-					fmt.Sprintf("%s: every task is ticked but status is %s", f.Name(), f.Status),
-					// Naming the command, not the edit: hand-stamping the status and date
-					// is what `unticked-shipped` and `shipped-no-date` are the wreckage of,
-					// and telling an agent to do it here undoes the reason ship exists.
-					"run: kit ship "+f.ID+" — or add the next task")
-			}
-		}
-
-		// Opt-in: only features that set check: are claiming to be measurable.
-		if !f.Check.IsZero() && f.Checked.IsZero() && !f.Check.After(today) {
-			report(checkUnchecked, at,
-				fmt.Sprintf("%s: check was due %s ago and never happened",
-					f.Name(), countDays(Days(f.Check, today))),
-				"look at the result, write it in ## Log, then set checked:")
-		}
-
-		switch {
-		case f.Status == "":
-			report(checkNoStatus, at, f.Name()+": no status:", "add one of: "+statuses)
-		case !slices.Contains(AllStatuses, f.Status):
-			report(checkBadStatus, at,
-				fmt.Sprintf("%s: unknown status %q", f.Name(), f.Status),
-				"use one of: "+statuses)
-		}
-
-		// Draft is exempt because a doc still being written is not a defect. `claim`
-		// refuses an unwritten doc whatever its status, which is what stops the exemption
-		// reaching an agent now that a Draft can be claimed.
-		if f.Status != StatusDraft {
-			for _, heading := range f.Unwritten() {
-				report(checkUnfilledTemplate, at,
-					fmt.Sprintf("%s: ## %s was never written", f.Name(), heading),
-					"write it, or set status: Draft until you can")
-			}
-		}
-		if f.Status == StatusShipped && f.Section("Log") == "" {
-			report(checkMissingSection, at,
-				f.Name()+": ## Log is empty",
-				"record what was decided and why — a Shipped doc is frozen history")
-		}
-
-		// The claim is a branch name and nothing else, so branches are the only
-		// place a claim can disagree with a doc.
-		//
-		// Only a feature still being worked can have a claim problem. Once it is
-		// Shipped its branches are merged leftovers, and reporting those would fire
-		// on every project where nobody deletes branches — which is most of them.
-		if f.ID != "" && (f.Status == StatusAccepted || f.Status == StatusDraft) {
-			claims := r.Claims(f.ID)
-			switch {
-			case len(claims) > 1:
-				report(checkSplitClaim, at,
-					fmt.Sprintf("%s: claimed by %s", f.Name(), strings.Join(claims, " and ")),
-					"one agent per feature — delete the branch that is not doing the work")
-			}
-			// Building on a Draft is the normal flow — `status:` orders the board and
-			// does not gate it, so an agent taking an unblessed doc is the model
-			// working. What is still a defect is building on questions nobody
-			// answered: the design says it is unsettled and the branch says it is
-			// being built anyway.
-			if f.Section("Open questions") != "" && len(claims) > 0 &&
-				r.BranchBuildsOn(claims[0], f.Rel) {
-				report(checkDraftClaimed, at,
-					fmt.Sprintf("%s: %s is building on open questions", f.Name(), claims[0]),
-					"settle them in the doc, or move what only a human can answer to the "+
-						"inbox: kit block "+f.ID+" \"<question>\"")
-			}
-		}
-
-		if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
-			report(checkIDMismatch, at,
-				fmt.Sprintf("id %q does not match filename %q", f.ID, prefix),
-				"make them match; the ID is how commits and branches cite this doc")
-		}
-
-		for _, target := range linksIn(f.Path) {
-			if _, err := os.Stat(filepath.Join(filepath.Dir(f.Path), target)); err != nil {
-				report(checkDeadLink, at,
-					fmt.Sprintf("%s: links to missing %q", f.Name(), target),
-					"fix or remove the link")
-			}
+// Liveness comes from the claim rather than a status, which is set on the feature branch
+// and never reaches the trunk — so from the only checkout anyone audits, a dead agent and
+// a busy one looked identical.
+//
+// A claim carrying no commits beyond the doc is deliberately not aged: a branch cut from
+// the trunk's tip is identical to one whose pull request already merged, and neither
+// carries a date to read.
+func stalled(s *docState) []Finding {
+	if terminal(s.f.Status) || len(s.claims) == 0 {
+		return nil
+	}
+	claim := s.claims[0]
+	if !s.r.BranchBuildsOn(claim, s.f.Rel) {
+		return nil
+	}
+	// Not the doc's mtime alone. For a tracked file that records when git last wrote it
+	// out, which a merge or a checkout resets to now — so on the trunk checkout a freshly
+	// merged draft masked a claim that had been dead for a week. LastTouched falls back to
+	// mtime only for an untracked doc, the one case where the filesystem knows more.
+	newest := time.Time{}
+	for _, signal := range []time.Time{s.r.LastMentioned(s.f.ID), s.r.LastTouched(s.f.Path)} {
+		if signal.After(newest) {
+			newest = signal
 		}
 	}
+	if newest.IsZero() {
+		return nil // nothing to measure from; inventing an age is worse
+	}
+	if idle := Days(newest, s.today); idle >= StalledDays {
+		return []Finding{finding(checkStalled, s.at,
+			fmt.Sprintf("%s: %s, nothing has happened in %s",
+				s.f.Name(), s.f.Status+", claimed by "+claim, countDays(idle)),
+			"finish it, drop it, or move the blocker to docs/INBOX.md")}
+	}
+	return nil
+}
 
-	for _, branch := range r.OrphanClaims() {
-		report(checkOrphanClaim, r.Name,
+// One decision with two outcomes: claimable with nothing in it, or finished and still
+// open. A section empty outright is unfilled-template's, so one defect never produces two
+// findings; no-tasks is the section with prose and no boxes.
+func taskState(s *docState) []Finding {
+	if s.f.Status != StatusAccepted {
+		return nil
+	}
+	open, total := s.f.TaskCount()
+	switch {
+	case total == 0 && s.f.Section("Tasks") != "":
+		return []Finding{finding(checkNoTasks, s.at,
+			fmt.Sprintf("%s: %s with no ## Tasks boxes", s.f.Name(), s.f.Status),
+			`write the plan as PR-sized boxes, or set status: Draft until you can`)}
+	case open == 0:
+		return []Finding{finding(checkDoneNotShipped, s.at,
+			fmt.Sprintf("%s: every task is ticked but status is %s", s.f.Name(), s.f.Status),
+			// Naming the command, not the edit: hand-stamping the status and date is what
+			// unticked-shipped and shipped-no-date are the wreckage of.
+			"run: kit ship "+s.f.ID+" — or add the next task")}
+	}
+	return nil
+}
+
+// Opt-in: only features that set check: are claiming to be measurable.
+func unchecked(s *docState) []Finding {
+	if s.f.Check.IsZero() || !s.f.Checked.IsZero() || s.f.Check.After(s.today) {
+		return nil
+	}
+	return []Finding{finding(checkUnchecked, s.at,
+		fmt.Sprintf("%s: check was due %s ago and never happened",
+			s.f.Name(), countDays(Days(s.f.Check, s.today))),
+		"look at the result, write it in ## Log, then set checked:")}
+}
+
+func statusState(s *docState) []Finding {
+	switch {
+	case s.f.Status == "":
+		return []Finding{finding(checkNoStatus, s.at, s.f.Name()+": no status:", "add one of: "+s.statuses)}
+	case !slices.Contains(AllStatuses, s.f.Status):
+		return []Finding{finding(checkBadStatus, s.at,
+			fmt.Sprintf("%s: unknown status %q", s.f.Name(), s.f.Status),
+			"use one of: "+s.statuses)}
+	}
+	return nil
+}
+
+// Draft is exempt because a doc still being written is not a defect. `claim` refuses an
+// unwritten doc whatever its status, which is what stops the exemption reaching an agent
+// now that a Draft can be claimed.
+func unfilledTemplate(s *docState) []Finding {
+	if s.f.Status == StatusDraft {
+		return nil
+	}
+	var out []Finding
+	for _, heading := range s.f.Unwritten() {
+		out = append(out, finding(checkUnfilledTemplate, s.at,
+			fmt.Sprintf("%s: ## %s was never written", s.f.Name(), heading),
+			"write it, or set status: Draft until you can"))
+	}
+	return out
+}
+
+func missingLog(s *docState) []Finding {
+	if s.f.Status != StatusShipped || s.f.Section("Log") != "" {
+		return nil
+	}
+	return []Finding{finding(checkMissingSection, s.at,
+		s.f.Name()+": ## Log is empty",
+		"record what was decided and why — a Shipped doc is frozen history")}
+}
+
+// The claim is a branch name and nothing else, so branches are the only place a claim can
+// disagree with a doc — and only for a feature still being worked: once it is Shipped its
+// branches are merged leftovers, which every project has.
+//
+// Building on a Draft is the normal flow. What is still a defect is building on questions
+// nobody answered: the design says unsettled and the branch says it is being built anyway.
+func claimState(s *docState) []Finding {
+	if s.f.ID == "" || (s.f.Status != StatusAccepted && s.f.Status != StatusDraft) {
+		return nil
+	}
+	var out []Finding
+	if len(s.claims) > 1 {
+		out = append(out, finding(checkSplitClaim, s.at,
+			fmt.Sprintf("%s: claimed by %s", s.f.Name(), strings.Join(s.claims, " and ")),
+			"one agent per feature — delete the branch that is not doing the work"))
+	}
+	if s.f.Section("Open questions") != "" && len(s.claims) > 0 &&
+		s.r.BranchBuildsOn(s.claims[0], s.f.Rel) {
+		out = append(out, finding(checkDraftClaimed, s.at,
+			fmt.Sprintf("%s: %s is building on open questions", s.f.Name(), s.claims[0]),
+			"settle them in the doc, or move what only a human can answer to the "+
+				"inbox: kit block "+s.f.ID+" \"<question>\""))
+	}
+	return out
+}
+
+func idMismatch(s *docState) []Finding {
+	prefix := s.f.FilenamePrefix()
+	if prefix == "" || s.f.ID == "" || prefix == s.f.ID {
+		return nil
+	}
+	return []Finding{finding(checkIDMismatch, s.at,
+		fmt.Sprintf("id %q does not match filename %q", s.f.ID, prefix),
+		"make them match; the ID is how commits and branches cite this doc")}
+}
+
+func deadLinks(s *docState) []Finding {
+	var out []Finding
+	for _, target := range linksIn(s.f.Path) {
+		if _, err := os.Stat(filepath.Join(filepath.Dir(s.f.Path), target)); err != nil {
+			out = append(out, finding(checkDeadLink, s.at,
+				fmt.Sprintf("%s: links to missing %q", s.f.Name(), target),
+				"fix or remove the link"))
+		}
+	}
+	return out
+}
+
+func orphanClaims(s *repoState) []Finding {
+	var out []Finding
+	for _, branch := range s.r.OrphanClaims() {
+		out = append(out, finding(checkOrphanClaim, s.r.Name,
 			fmt.Sprintf("branch %q cites a feature that does not exist", branch),
-			"delete the branch, or create the doc it claims with kit new")
+			"delete the branch, or create the doc it claims with kit new"))
 	}
+	return out
+}
 
+// The marker decides both the fuse and the severity. `kit block --fyi` promises work
+// continues without an answer, and an FYI reported at HIGH broke that promise anyway by
+// failing the --strict gate rule 12 puts in front of `kit ship`.
+func inboxState(s *repoState) []Finding {
 	knownID := map[string]bool{}
-	for _, f := range r.Features {
+	for _, f := range s.r.Features {
 		if f.ID != "" {
 			knownID[f.ID] = true
 		}
 	}
-	for _, q := range r.OpenQuestions() {
+	var out []Finding
+	for _, q := range s.r.OpenQuestions() {
 		switch {
 		case q.Feature == "":
-			report(checkInboxUnparsed, r.Rel(r.Inbox),
+			out = append(out, finding(checkInboxUnparsed, s.r.Rel(s.r.Inbox),
 				"not in the documented format: "+clip(q.Text, 60),
 				`use: kit block <id> "<question>", or match `+
-					`"YYYY-MM-DD `+inboxSep+` <id> `+inboxSep+` BLOCKING|FYI `+inboxSep+` <question>"`)
+					`"YYYY-MM-DD `+inboxSep+` <id> `+inboxSep+` BLOCKING|FYI `+inboxSep+` <question>"`))
 		// A question against a feature that does not exist blocks nothing and waits
 		// forever. `kit block` refuses these, so one here was hand-written.
 		case !knownID[q.Feature]:
-			report(checkInboxUnknown, r.Rel(r.Inbox),
+			out = append(out, finding(checkInboxUnknown, s.r.Rel(s.r.Inbox),
 				fmt.Sprintf("names feature %s, which has no doc: %s", q.Feature, clip(q.Text, 50)),
-				"correct the id, or delete the line if the feature is gone")
+				"correct the id, or delete the line if the feature is gone"))
 		}
 		if q.When.IsZero() {
 			continue
 		}
-		// The marker decides both the fuse and the severity. `kit block --fyi` promises
-		// work continues without an answer, and BlockersFor keeps that promise — an FYI
-		// reported at HIGH broke it anyway by failing the --strict gate rule 12 puts in
-		// front of `kit ship`.
-		age := Days(q.When, today)
+		age := Days(q.When, s.today)
 		switch {
 		case q.FYI && age >= FYIStaleDays:
-			report(checkFYIStale, r.Rel(r.Inbox),
+			out = append(out, finding(checkFYIStale, s.r.Rel(s.r.Inbox),
 				fmt.Sprintf("undrained for %s: %s", countDays(age), clip(q.Text, 70)),
-				"answer it, or delete it if it stopped mattering")
+				"answer it, or delete it if it stopped mattering"))
 		case !q.FYI && age >= InboxStaleDays:
-			report(checkInboxStale, r.Rel(r.Inbox),
+			out = append(out, finding(checkInboxStale, s.r.Rel(s.r.Inbox),
 				fmt.Sprintf("unanswered for %s: %s", countDays(age), clip(q.Text, 70)),
-				"answer it, or delete it if it stopped mattering")
+				"answer it, or delete it if it stopped mattering"))
 		}
 	}
+	return out
+}
 
+func techState(s *repoState) []Finding {
 	newestShip := time.Time{}
-	for _, f := range r.Features {
+	for _, f := range s.r.Features {
 		if f.Shipped.After(newestShip) {
 			newestShip = f.Shipped
 		}
 	}
 	switch {
-	case r.Tech != "" && !newestShip.IsZero():
-		if touched := r.LastTouched(r.Tech); !touched.IsZero() && touched.Before(newestShip) {
-			report(checkTechDrift, r.Rel(r.Tech),
+	case s.r.Tech != "" && !newestShip.IsZero():
+		if touched := s.r.LastTouched(s.r.Tech); !touched.IsZero() && touched.Before(newestShip) {
+			return []Finding{finding(checkTechDrift, s.r.Rel(s.r.Tech),
 				fmt.Sprintf("last updated %s, but a feature shipped %s",
 					touched.Format(DateLayout), newestShip.Format(DateLayout)),
-				"update it to describe what the system is now")
+				"update it to describe what the system is now")}
 		}
-	case r.Tech == "" && !newestShip.IsZero():
-		report(checkNoTech, r.Name,
+	case s.r.Tech == "" && !newestShip.IsZero():
+		return []Finding{finding(checkNoTech, s.r.Name,
 			"features have shipped but nothing describes the as-built system",
-			"kit ship writes one; for an existing project see: kit help as-built")
+			"kit ship writes one; for an existing project see: kit help as-built")}
 	}
+	return nil
+}
 
-	// Set up, work happening, nothing written down. This is what adoption
-	// failing looks like, and "docs and repo agree" would otherwise be true
-	// only because there are no docs to disagree.
-	// A claim-shaped branch stands this down: the protocol puts a draft on a branch of
-	// its own, so a trunk with no docs and a branch named after a feature is the protocol
-	// working, not adoption failing.
-	if len(r.Features) == 0 && r.HasHistory() && !r.HasClaimShapedBranch() {
-		report(checkNoPlan, r.Name,
-			"the project has commits but not one feature doc — nothing records the plan",
-			`run: kit new "<what the feature does>"`)
+// Set up, work happening, nothing written down — what adoption failing looks like. A
+// claim-shaped branch stands it down: the protocol puts a draft on a branch of its own, so
+// a trunk with no docs and a branch named after a feature is the protocol working.
+func noPlan(s *repoState) []Finding {
+	if len(s.r.Features) > 0 || !s.r.HasHistory() || s.r.HasClaimShapedBranch() {
+		return nil
 	}
+	return []Finding{finding(checkNoPlan, s.r.Name,
+		"the project has commits but not one feature doc — nothing records the plan",
+		`run: kit new "<what the feature does>"`)}
+}
 
-	if r.Protocol == "" {
-		report(checkNoProtocol, r.Name,
-			"no AGENTS.md, so agents have no protocol and will invent one",
-			"run: kit init .")
+func noProtocol(s *repoState) []Finding {
+	if s.r.Protocol != "" {
+		return nil
 	}
-	if ProtocolIsStale(r, protocol) {
-		report(checkProtocolStale, r.Rel(r.Protocol),
-			"the work protocol here is older than the installed kit's, so agents are following superseded rules",
-			"run: kit init .")
+	return []Finding{finding(checkNoProtocol, s.r.Name,
+		"no AGENTS.md, so agents have no protocol and will invent one",
+		"run: kit init .")}
+}
+
+func protocolStale(s *repoState) []Finding {
+	if !ProtocolIsStale(s.r, s.protocol) {
+		return nil
 	}
-	if r.Inbox == "" {
-		report(checkNoInbox, r.Name,
-			"no INBOX.md, so a blocked agent has nowhere to put a question",
-			"run: kit init .")
+	return []Finding{finding(checkProtocolStale, s.r.Rel(s.r.Protocol),
+		"the work protocol here is older than the installed kit's, so agents are following superseded rules",
+		"run: kit init .")}
+}
+
+func noInbox(s *repoState) []Finding {
+	if s.r.Inbox != "" {
+		return nil
 	}
-	// The graph is only checked for the ways it can be *impossible*, never for
-	// whether the declared needs are the right ones. A missing dependency is a
-	// judgement call and no heuristic has it.
-	for _, f := range r.Features {
+	return []Finding{finding(checkNoInbox, s.r.Name,
+		"no INBOX.md, so a blocked agent has nowhere to put a question",
+		"run: kit init .")}
+}
+
+// The graph is only checked for the ways it can be *impossible*, never for whether the
+// declared needs are the right ones — that is a judgement call and no heuristic has it.
+func needsState(s *repoState) []Finding {
+	var out []Finding
+	for _, f := range s.r.Features {
 		if f.ID == "" {
 			continue
 		}
 		for _, id := range f.Needs {
-			dep := r.FeatureByID(id)
+			dep := s.r.FeatureByID(id)
 			switch {
 			case id == f.ID:
-				// A loop of one. Left to needs-cycle so a single defect produces a
-				// single finding with a single fix.
+				// A loop of one. Left to needs-cycle so a single defect produces a single
+				// finding with a single fix.
 			case dep == nil:
-				report(checkNeedsUnknown, f.Rel,
+				out = append(out, finding(checkNeedsUnknown, f.Rel,
 					fmt.Sprintf("%s: needs %s, which does not exist", f.Name(), id),
-					"fix the id, or remove it from needs:")
+					"fix the id, or remove it from needs:"))
 			case dep.Status == "Dropped" || dep.Status == "Superseded":
-				report(checkNeedsUnknown, f.Rel,
+				out = append(out, finding(checkNeedsUnknown, f.Rel,
 					fmt.Sprintf("%s: needs %s, which is %s and will never ship", f.Name(), id, dep.Status),
-					"point at what replaced it, or remove it from needs:")
+					"point at what replaced it, or remove it from needs:"))
 			}
 		}
 		// Shipped while a dependency has not is the docs disagreeing with themselves:
-		// either the dependency was wrong, or this was built on a foundation that is
-		// not there. Both are worth knowing and neither is guessable from the text.
+		// either the dependency was wrong, or this was built on a foundation that is not
+		// there. Both are worth knowing and neither is guessable from the text.
 		if f.Status == StatusShipped {
-			if unmet := r.UnmetNeeds(f); len(unmet) > 0 {
-				report(checkShippedEarly, f.Rel,
+			if unmet := s.r.UnmetNeeds(f); len(unmet) > 0 {
+				out = append(out, finding(checkShippedEarly, f.Rel,
 					fmt.Sprintf("%s: Shipped, but needs %s which has not", f.Name(), strings.Join(unmet, ", ")),
-					"ship what it needs, or correct needs: to what was actually required")
+					"ship what it needs, or correct needs: to what was actually required"))
 			}
 		}
 	}
-	for _, cycle := range r.NeedsCycles() {
-		report(checkNeedsCycle, r.Name,
-			"features need each other in a loop: "+strings.Join(cycle, " → "),
-			"break the loop — one of those needs is the wrong way round, or is not a need at all")
-	}
+	return out
+}
 
-	// Rule 10 has real blast radius: a doc is committed, and a pushed commit cannot
-	// be unpublished. Only the documents the repo model already opens — `audit` is
-	// not a repo-wide secret scanner and must not be mistaken for one.
-	// BACKLOG.md is here because rule 6 sends discovered work to it, so agents write to
-	// it as freely as to a feature doc. It was the only agent-writable document the scan
-	// did not open.
-	docs := []string{r.Inbox, r.Vision, r.Tech, r.Protocol, r.Backlog}
-	for _, f := range r.Features {
+func needsCycles(s *repoState) []Finding {
+	var out []Finding
+	for _, cycle := range s.r.NeedsCycles() {
+		out = append(out, finding(checkNeedsCycle, s.r.Name,
+			"features need each other in a loop: "+strings.Join(cycle, " → "),
+			"break the loop — one of those needs is the wrong way round, or is not a need at all"))
+	}
+	return out
+}
+
+// Only the documents the repo model already opens — `audit` is not a repo-wide secret
+// scanner and must not be mistaken for one. BACKLOG.md is here because rule 6 sends
+// discovered work to it, so agents write to it as freely as to a feature doc.
+func secretsInDocs(s *repoState) []Finding {
+	docs := []string{s.r.Inbox, s.r.Vision, s.r.Tech, s.r.Protocol, s.r.Backlog}
+	for _, f := range s.r.Features {
 		docs = append(docs, f.Path)
 	}
+	var out []Finding
 	for _, path := range docs {
 		if path == "" {
 			continue
 		}
 		for _, what := range secretsIn(path) {
-			report(checkSecretInDoc, r.Rel(path),
+			out = append(out, finding(checkSecretInDoc, s.r.Rel(path),
 				fmt.Sprintf("%s — docs are committed, and a pushed commit cannot be unpublished", what),
-				"remove it, rotate the credential, and name the variable instead of the value")
+				"remove it, rotate the credential, and name the variable instead of the value"))
 		}
 	}
+	return out
+}
 
-	// Only once features exist. A project that has been set up and not yet planned
-	// has nothing to decompose, and a finding on a fresh `kit init` would be noise
-	// at the one moment the tool is being judged.
-	if r.Vision == "" && len(r.Features) > 0 {
-		report(checkNoVision, r.Name,
-			"features are being planned but nothing says what the project is for",
-			"run: kit init . — or see: kit help vision")
+// Only once features exist: a project set up and not yet planned has nothing to decompose,
+// and a finding on a fresh `kit init` would be noise at the moment the tool is judged.
+func noVision(s *repoState) []Finding {
+	if s.r.Vision != "" || len(s.r.Features) == 0 {
+		return nil
 	}
-	// The same gap, one step later. `kit init` writes the stub, so the run that adds it
-	// clears no-vision without anybody answering the question — and rule 1 sends every
-	// agent to this file before drafting, where against a stub anything traces to
-	// nothing. Not gated on features existing: the stub is worth reporting from the
-	// moment it is there, which is before the first draft it would have shaped.
-	if r.Vision != "" && visionIsStub(r.Vision) {
-		report(checkUnfilledVision, r.Rel(r.Vision),
-			"every section is empty — the stub was written by kit init and never filled in",
-			"say what the project is for, who for, and what it is not; "+
-				"see: kit help vision")
-	}
+	return []Finding{finding(checkNoVision, s.r.Name,
+		"features are being planned but nothing says what the project is for",
+		"run: kit init . — or see: kit help vision")}
+}
 
-	return found
+// The same gap one step later: `kit init` writes the stub, so the run that adds it clears
+// no-vision without anybody answering the question. Not gated on features existing — the
+// stub is worth reporting from the moment it is there, before the first draft it shapes.
+func unfilledVision(s *repoState) []Finding {
+	if s.r.Vision == "" || !visionIsStub(s.r.Vision) {
+		return nil
+	}
+	return []Finding{finding(checkUnfilledVision, s.r.Rel(s.r.Vision),
+		"every section is empty — the stub was written by kit init and never filled in",
+		"say what the project is for, who for, and what it is not; "+
+			"see: kit help vision")}
 }
 
 // duplicateIDs lists the IDs that more than one feature doc declares, in the
