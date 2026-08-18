@@ -555,7 +555,18 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 		t.Errorf("fired on work that is on the trunk: %v", codes)
 	}
 
-	// Three: offline. The one fact this needs comes from the remote, so without it the
+	// Three: merged, and then the doc edited here — the compaction `kit ship` asks for,
+	// or any later correction. The work landed weeks ago and the only thing this checkout
+	// holds that the remote does not is a line of prose. Reading the age of the commit
+	// that last wrote the doc reported this at HIGH, with a fix line that would recreate
+	// the merged claim branch.
+	a.write("docs/features/0007-widget.md", a.read("docs/features/0007-widget.md")+"\n")
+	a.commitAll("compact 0007 after the fact")
+	if codes := a.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
+		t.Errorf("fired on a local edit to a doc whose work is on the trunk: %v", codes)
+	}
+
+	// Four: offline. The one fact this needs comes from the remote, so without it the
 	// honest answer is nothing — the same bargain every other claim check makes.
 	b := cleanProject(t)
 	origin := t.TempDir()
