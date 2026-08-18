@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	assets "github.com/sanyatihy/project-kit"
@@ -459,9 +460,10 @@ func runNext(args []string) int {
 
 	// planFor keeps the staleness check next to the plan it belongs to, so both output
 	// formats carry the same fact and cannot drift.
+	protocol := currentProtocol()
 	planFor := func(r *kit.Repo) kit.Plan {
 		plan := kit.Survey(r)
-		plan.ProtocolStale = kit.ProtocolIsStale(r, currentProtocol())
+		plan.ProtocolStale = kit.ProtocolIsStale(r, protocol)
 		return plan
 	}
 
@@ -470,20 +472,31 @@ func runNext(args []string) int {
 		// be opened, so a fleet payload lists everything the caller asked about. The
 		// failure rides in the plan itself: an agent parsing this reads one entry per
 		// path either way, and cannot be handed four projects with a fifth missing.
-		payload := map[string]kit.Plan{}
-		for _, s := range all {
+		plans := inParallel(all, func(s surveyed) kit.Plan {
 			if s.Err != "" {
-				payload[s.Name] = kit.Plan{Error: s.Err}
-				continue
+				return kit.Plan{Error: s.Err}
 			}
-			payload[s.Name] = planFor(s.Repo)
+			return planFor(s.Repo)
+		})
+		payload := map[string]kit.Plan{}
+		for i, s := range all {
+			payload[s.Name] = plans[i]
 		}
 		if code := emit(payload); code != 0 {
 			return code
 		}
 	} else {
 		color := isTTY()
-		for _, s := range all {
+		// Read before anything is printed, so a fan-out cannot interleave two projects'
+		// output. One project sees no difference; a fleet gets its whole board when the
+		// slowest remote answers instead of one project at a time.
+		plans := inParallel(all, func(s surveyed) kit.Plan {
+			if s.Err != "" || s.Repo.FeaturesDir == "" {
+				return kit.Plan{}
+			}
+			return planFor(s.Repo)
+		})
+		for i, s := range all {
 			fmt.Print(paint("\n"+s.Name+"\n", "1", color))
 			switch {
 			case s.Err != "":
@@ -491,7 +504,7 @@ func runNext(args []string) int {
 			case s.Repo.FeaturesDir == "":
 				fmt.Printf("  not set up yet — run:  kit init %s\n\n", s.Repo.Root)
 			default:
-				printPlan(s.Repo, planFor(s.Repo), color)
+				printPlan(s.Repo, plans[i], color)
 			}
 		}
 	}
@@ -679,22 +692,26 @@ func runAudit(args []string) int {
 	all := survey(paths, *offline)
 
 	today := time.Now().UTC().Truncate(24 * time.Hour)
-	results := make(map[string]audited, len(all))
-	order := make([]audited, 0, len(all))
-	for _, s := range all {
+	protocol := currentProtocol()
+	order := inParallel(all, func(s surveyed) audited {
 		one := audited{Findings: []kit.Finding{}}
 		switch {
 		case s.Err != "":
 			one.Error = s.Err
 		case s.Repo.FeaturesDir != "":
-			if findings := kit.Audit(s.Repo, today, currentProtocol()); findings != nil {
+			if findings := kit.Audit(s.Repo, today, protocol); findings != nil {
 				one.Findings = findings
 			}
 			// After the audit, so it reports what actually went unanswered.
 			one.RemoteUnanswered = s.Repo.RemoteUnanswered()
 		}
-		results[s.Name] = one
-		order = append(order, one)
+		return one
+	})
+	// Keyed after the fan-out, not inside it: the map is shared, and two paths naming
+	// one project have always reported under a single key.
+	results := make(map[string]audited, len(all))
+	for i, s := range all {
+		results[s.Name] = order[i]
 	}
 
 	if *asJSON {
@@ -824,6 +841,35 @@ func parseArgs(fs *flag.FlagSet, args []string) []string {
 // surveyed is one path the board was asked about: the project it opened, or why it
 // did not. Name is what the board calls it — the project's name, or the path as
 // given when there is no project to name.
+// fleetParallel caps how many projects are read at once. What a board read spends is
+// one network round trip per project and almost nothing else — `ls-remote` to GitHub over
+// SSH is 2.3s where the whole rest of an audit is 0.09s — so this bounds how many
+// connections are opened to one forge, not CPU. 0034's `-parallel 4` caps a different
+// resource: CPU-bound tests running beside whatever else the operator is doing.
+const fleetParallel = 8
+
+// inParallel reads every surveyed project concurrently, capped, and returns the answers
+// in the order the paths were given. The projects share nothing — one Repo each, and
+// every package-level table in internal/kit is read-only — so order is the only thing
+// concurrency could take away, and 0026 made reporting positional precisely so a fleet
+// board can be compared with the last one.
+func inParallel[T any](all []surveyed, read func(surveyed) T) []T {
+	out := make([]T, len(all))
+	sem := make(chan struct{}, fleetParallel)
+	var wg sync.WaitGroup
+	for i, s := range all {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			out[i] = read(s)
+		}()
+	}
+	wg.Wait()
+	return out
+}
+
 type surveyed struct {
 	Repo *kit.Repo
 	Name string

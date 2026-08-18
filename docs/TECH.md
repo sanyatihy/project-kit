@@ -72,8 +72,13 @@ next command refuses.
   branch the remote has, carrying a doc that says Shipped, not yet on the trunk. The status
   is read *from the branch* — the only place it exists, since a coordinator stands on the
   trunk where the doc still says what it said when the round landed. `shipped-not-pushed` is
-  the other half at HIGH, and needs two negatives: no branch on the remote names it, and no
-  remote-tracking ref holds the commit that last wrote the doc. Either alone misfires.
+  the other half at HIGH, and needs two negatives: no branch on the remote names it, and the
+  remote's trunk carries no copy of the doc saying Shipped. **Status, never presence** — a doc
+  reaches the trunk when it is *drafted*, so testing presence silences the check for every
+  feature — and on **any** branch the repo counts as a trunk, since a clone whose
+  `origin/HEAD` predates a default-branch rename points at one nothing merges to, and
+  reading only that one fires HIGH on every shipped feature. Reading the commit that last wrote the doc was the earlier answer and misfired the
+  other way, once compaction made editing a shipped doc routine.
 - **You never merge your own work: legibility here, enforcement on the remote.** The board
   marks what the reader built (the claim it stands on, or the branch's authorship) and what
   `review: human` reserves for a person — written by `kit accept --review`, read from the
@@ -81,9 +86,20 @@ next command refuses.
   enforcement; none of this distinguishes anybody while agents share one credential, as four
   agents' commits here all carried the operator's name.
 - **An answer that cannot change inside one command is asked once** — the trunk, this
-  checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`).
-  Per feature instead, a 30-feature board read cost 116 git processes against 28 now.
-  `make gitcount` counts them.
+  checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`), and
+  every feature doc's status on the trunk, which `ls-tree` and one `cat-file --batch` read in
+  two processes. Per feature instead, a 30-feature board read cost 116 git processes against
+  29 now, and 10 online. **Both are ceilings the gate fails on**, and both are measured,
+  because the third regression hid behind an offline-only number that was identical either
+  way. A measurement nobody is required to read is the prose tier. `make gitcount` prints
+  them; raising one is allowed and the failure says so, but a count that grows with the
+  board is the bug.
+- **The board is read concurrently, capped at 8, in the order the paths were given.** What a
+  board read spends is one `ls-remote` per project — 2.3s against GitHub over SSH where the
+  rest is under a tenth of that — so a fleet costs one round trip rather than one each: four
+  projects went from 11.2s to 2.5s. The round trip starts before the local walk for the same
+  reason. The cap bounds connections to one forge, not CPU, and the order is what lets one
+  board be compared with the last.
 - **Claims are read from the remote, not from `refs/remotes/*`**, which git prunes on
   neither `fetch` nor `pull`, so a branch deleted on merge read as a live claim for ever.
   One `ls-remote` per remote, bounded at 15s — it was 5, which a working remote did not fit

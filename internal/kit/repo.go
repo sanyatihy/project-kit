@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -189,6 +190,16 @@ type Repo struct {
 	// failed call. Distinct from having no remote to ask, which is not a failure and has
 	// nothing to report.
 	headsFailed bool
+
+	// The answer while it is still in flight. The round trip is the whole cost of a board
+	// read, and no local answer depends on it, so it is started first and collected after.
+	// Buffered, so the goroutine never outlives the command still holding a send.
+	headsPending chan headsResult
+
+	// Every feature doc's status on the remote's trunk, read in one pass. Asked once: it
+	// cannot change while one command runs, and shipped-not-pushed needs it per doc.
+	trunkDocs      map[string]string
+	trunkDocsAsked bool
 
 	// The branch this checkout is on and the remotes it has, asked once each. Neither can
 	// change while one command runs, and both were being asked per feature: 62 of the 116
@@ -419,6 +430,25 @@ func (r *Repo) git(args ...string) string {
 // project with no commits and a project whose log could not be read look the same
 // to a report. Anything that changes state needs the opposite: a push that did not
 // happen must never be mistaken for one that found nothing to do.
+// gitFed is gitRun with something on stdin, for the one caller that batches: `cat-file
+// --batch` reads a list of objects and writes them all back in one process.
+func (r *Repo) gitFed(stdin string, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
+	cmd.Stdin = strings.NewReader(stdin)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	if err := cmd.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			detail = err.Error()
+		}
+		return stdout.String(), fmt.Errorf("git %s: %s", args[0], detail)
+	}
+	return stdout.String(), nil
+}
+
 func (r *Repo) gitRun(args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()
@@ -456,6 +486,11 @@ func (r *Repo) loadGit() {
 		}
 		r.commits = append(r.commits, commit{When: parsed, Message: message})
 	}
+
+	// Ask the remote before the local walk rather than after it. One `ls-remote` is 2.3s
+	// against GitHub over SSH where everything else here is under a tenth of that, and no
+	// local answer depends on it, so the wait overlaps the work instead of following it.
+	r.startRemoteHeads()
 
 	// Local branches and worktree branches are this machine's own state and cannot be
 	// stale. What the remote has is a different question, and `refs/remotes/*` is only a
@@ -504,12 +539,54 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 		return nil, false
 	}
 	if r.headsAsked {
+		r.collectRemoteHeads()
 		return r.heads, r.headsKnown
 	}
 	r.headsAsked = true
+	r.apply(r.fetchHeads(r.remotes()))
+	return r.heads, r.headsKnown
+}
+
+// headsResult is one round's answer, carried back from the goroutine that asked so that
+// nothing on the Repo is written from two places at once.
+type headsResult struct {
+	heads  []string
+	known  bool
+	failed bool
+}
+
+// startRemoteHeads sends the round trip off to run beside the local walk. The remotes are
+// resolved here, on the caller's goroutine, so the one below touches nothing but the root
+// path — the memo it would otherwise fill is shared, and this keeps it single-writer.
+func (r *Repo) startRemoteHeads() {
+	if r.Offline || r.headsAsked {
+		return
+	}
+	r.headsAsked = true
+	remotes := r.remotes()
+	r.headsPending = make(chan headsResult, 1)
+	go func() { r.headsPending <- r.fetchHeads(remotes) }()
+}
+
+// collectRemoteHeads waits for a round trip started earlier, once.
+func (r *Repo) collectRemoteHeads() {
+	if r.headsPending == nil {
+		return
+	}
+	r.apply(<-r.headsPending)
+	r.headsPending = nil
+}
+
+func (r *Repo) apply(res headsResult) {
+	r.heads, r.headsKnown, r.headsFailed = res.heads, res.known, res.failed
+}
+
+// fetchHeads does the asking and touches no memo, so it is safe on a goroutine of its
+// own: everything it decides comes back in the result.
+func (r *Repo) fetchHeads(remotes []string) headsResult {
 	var out []string
 	answered := false
-	for _, remote := range r.remotes() {
+	for _, remote := range remotes {
 		ctx, cancel := context.WithTimeout(context.Background(), remoteTimeout)
 		cmd := exec.CommandContext(ctx, "git", "-C", r.Root, "ls-remote", "--heads", remote)
 		raw, err := cmd.Output()
@@ -517,8 +594,7 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 		if err != nil {
 			// One unreachable remote does not invalidate another's answer, but it does
 			// mean this one's branches are unknown, so nothing here can be authoritative.
-			r.headsFailed = true
-			return nil, false
+			return headsResult{failed: true}
 		}
 		answered = true
 		for _, line := range strings.Split(string(raw), "\n") {
@@ -531,8 +607,7 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 			}
 		}
 	}
-	r.heads, r.headsKnown = out, answered
-	return out, answered
+	return headsResult{heads: out, known: answered}
 }
 
 // RemoteUnanswered reports whether something this command needed from the remote could
@@ -545,7 +620,10 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 //
 // Read it after the work, not before: it reports what actually went unanswered rather
 // than provoking a call nobody needed.
-func (r *Repo) RemoteUnanswered() bool { return r.headsFailed }
+func (r *Repo) RemoteUnanswered() bool {
+	r.collectRemoteHeads()
+	return r.headsFailed
+}
 
 // branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
 // recognised as one branch rather than two claims on the same feature.
@@ -796,31 +874,156 @@ func (r *Repo) AwaitingReview() []Review {
 }
 
 // OnlyHere reports whether a feature's work exists nowhere but this checkout: no branch
-// the remote has claims it, and the commit that last wrote its doc is on no
-// remote-tracking ref either.
+// the remote has claims it, and the trunk on the remote carries no copy of its doc saying
+// Shipped.
 //
-// Two independent negatives, because either alone misfires. The remote's branch list is
-// live but says nothing about a feature whose branch was deleted after merging; the
-// remote-tracking refs know that one and are only as fresh as the last fetch. Both have
-// to agree that the work is nowhere before this says so.
+// Two independent negatives, because either alone misfires. A branch the remote has is
+// the awaiting-review state and must not report; the trunk's copy is the merged one, and
+// a Shipped status on it is the proof the handoff happened.
+//
+// The status is the test and presence is not. A doc reaches the trunk when it is
+// *drafted* — plan rounds merge Drafts — so "the trunk has the file" is true for every
+// feature before a line of work exists, and testing that would silence this check
+// completely. Reading the age of the commit that last wrote the doc was the earlier
+// answer and it misfired the other way: once 0038 had `kit ship` ask for compaction,
+// editing a shipped doc became routine, and one blank line appended to a doc merged weeks
+// ago reported at HIGH with a fix line that recreated a stale claim branch.
 //
 // Unknown answers false throughout: offline, no remote, a remote that did not answer, or
-// a doc git has never seen. Nothing here is worth a finding invented from silence.
+// a trunk that exists and this checkout has never fetched. An empty answer is not one of
+// them — a remote that says it has no branches has told us where the work is not, which
+// is the state four features reached in one session and the reason this check exists.
 func (r *Repo) OnlyHere(f *Feature) bool {
 	heads, ok := r.remoteHeads()
 	if !ok {
 		return false
 	}
+	trunked := false
 	for _, name := range heads {
 		if !r.isTrunk(name) && mentionsAny(name, claimIDs(f)) {
 			return false
 		}
+		trunked = trunked || r.isTrunk(name)
 	}
-	rev := strings.TrimSpace(r.git("log", "-1", "--format=%H", "--", f.Rel))
-	if rev == "" {
-		return false
+	statuses, ok := r.trunkStatuses()
+	if !ok {
+		// Nothing of the trunk to read. A remote holding no trunk at all carries nothing
+		// and has said so; a trunk that exists and has not been fetched is ignorance.
+		return !trunked
 	}
-	return strings.TrimSpace(r.git("branch", "--remotes", "--contains", rev)) == ""
+	return statuses[f.Rel] != StatusShipped
+}
+
+// trunkStatuses is every feature doc's status on the remote's trunk, read in one pass and
+// memoised. False when there is no copy of a trunk to read, which is a fetch away and
+// never a finding.
+//
+// The remote's trunk and not the local one: the question is whether the work reached
+// anybody else, and a local trunk holding a merge nobody has seen answers a different one.
+//
+// Every branch this repo counts as a trunk, not only the one `origin/HEAD` names, and
+// Shipped anywhere wins. A stale `origin/HEAD` — the ordinary state of a clone made before
+// a default branch was renamed — points at a branch nothing merges to any more, and one
+// that fires this HIGH on every shipped feature is worse than no check at all.
+//
+// Two processes per trunk — `ls-tree` names the blobs, one `cat-file --batch` reads them —
+// where asking per feature cost a `log` each plus a `branch --contains` per revision: 63
+// processes on this repo, 25 of them three distinct questions.
+func (r *Repo) trunkStatuses() (map[string]string, bool) {
+	if r.trunkDocsAsked {
+		return r.trunkDocs, r.trunkDocs != nil
+	}
+	r.trunkDocsAsked = true
+	if r.FeaturesDir == "" {
+		return nil, false
+	}
+	var found map[string]string
+	for _, ref := range r.remoteTrunkRefs() {
+		for rel, status := range r.statusesOn(ref) {
+			if found == nil {
+				found = map[string]string{}
+			}
+			if found[rel] != StatusShipped {
+				found[rel] = status
+			}
+		}
+	}
+	r.trunkDocs = found
+	return found, found != nil
+}
+
+// statusesOn reads every feature doc's status from one revision's tree, nil when it cannot
+// be read at all.
+func (r *Repo) statusesOn(ref string) map[string]string {
+	listing, err := r.gitRun("ls-tree", "-r", ref, "--", r.FeaturesDir)
+	if err != nil {
+		return nil
+	}
+	paths := map[string]string{} // blob sha -> path
+	var wanted strings.Builder
+	for _, line := range strings.Split(listing, "\n") {
+		meta, path, found := strings.Cut(strings.TrimSpace(line), "\t")
+		if !found {
+			continue
+		}
+		fields := strings.Fields(meta)
+		if len(fields) < 3 || fields[1] != "blob" {
+			continue
+		}
+		paths[fields[2]] = path
+		wanted.WriteString(fields[2] + "\n")
+	}
+	if len(paths) == 0 {
+		return nil
+	}
+	batch, err := r.gitFed(wanted.String(), "cat-file", "--batch")
+	if err != nil {
+		return nil
+	}
+
+	// `<sha> blob <size>` and then the bytes, so the size is what says where one object
+	// ends: a feature doc can hold anything, including a line shaped like the next header.
+	out := map[string]string{}
+	rest := batch
+	for {
+		header, body, found := strings.Cut(rest, "\n")
+		if !found {
+			break
+		}
+		fields := strings.Fields(header)
+		if len(fields) != 3 || fields[1] != "blob" {
+			break
+		}
+		size, err := strconv.Atoi(fields[2])
+		if err != nil || size > len(body) {
+			break
+		}
+		if path, ok := paths[fields[0]]; ok {
+			doc, _ := ParseFrontmatter(Normalise(body[:size]))
+			out[path] = doc["status"]
+		}
+		rest = strings.TrimPrefix(body[size:], "\n")
+	}
+	return out
+}
+
+// remoteTrunkRefs is every remote-tracking copy of a trunk this checkout has. Deliberately
+// not trunkRef, which prefers a local branch of the same name: what is on this machine is
+// not what the work was handed off to.
+func (r *Repo) remoteTrunkRefs() []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, remote := range r.remotes() {
+		for _, name := range []string{r.Trunk(), "main", "master"} {
+			ref := remote + "/" + name
+			if name == "" || seen[ref] || !r.hasRef("refs/remotes/"+ref) {
+				continue
+			}
+			seen[ref] = true
+			out = append(out, ref)
+		}
+	}
+	return out
 }
 
 // BuiltHere reports whether the reader built this feature — the one thing a coordinator

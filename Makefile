@@ -34,12 +34,12 @@ check: fmt-check vet test
 # a build server: make check PARALLEL=8
 PARALLEL ?= 4
 
-# What a board read costs in subprocesses, on a generated fixture. The count is the thing
-# to watch: an answer asked once per feature instead of once per command is invisible until
-# it takes minutes, which has happened twice.
+# What a board read costs in subprocesses, on a generated fixture. The ceilings are pinned
+# in the test itself and `make check` fails on them; this target is for reading the numbers
+# and the breakdown behind them when something has to be fixed.
 .PHONY: gitcount
-gitcount: build
-	@./scripts/gitcount.sh
+gitcount:
+	@$(GO) test -count=1 -v -run TestABoardReadStaysWithinItsGitBudget ./cmd/kit
 
 .PHONY: test
 test:
