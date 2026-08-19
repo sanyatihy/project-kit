@@ -220,3 +220,29 @@ and leaves the doc consistent is the prevent-tier version.
 Promote when: it happens a third time, or the frozen-doc entry above is built and this is
 the cheap half of it.
 
+## The routing rule is the one convention with no check behind it
+
+Every other rule an agent obeys unprompted fails a command when it is broken — gofmt, a
+task over budget, a claim on a plan that has not landed. "One `## Log` entry, naming the
+change" is prose only, and it is the one being broken: three breaches in two days by one
+agent, two of them after correction.
+
+Two properties make it harder than ordinary prose. It inverted inside a day — 0041's
+template called a measurement a valid entry, 0044 says an entry naming no change is not one
+— so an agent carrying the older phrasing writes entries that look right and are not. And it
+lives in the template and `AGENTS-section.md`, neither of which is opened to append to a doc
+that already exists.
+
+Length is not the instrument and that is settled: 0038 capped an entry, 0041 removed the arm
+after it fired on 13 of 56, the ones carrying the most. What is left is `NarrationMarkers`'
+shape — markers for the verbs an entry naming a change actually uses, at LOW, certain when
+it fires and blind to prose. Cheaper still, and how every convention here that stuck was
+taught: one rejected entry beside its rewrite, in the template.
+
+Renaming the section to `## Decisions` would outweigh any amount of prose, because
+everywhere else a log is a chronological record and the name argues against the guidance. It
+costs a migration across every project the kit scaffolded, most of those docs frozen — the
+same question the frozen-doc entry above asks, and it should be weighed there.
+
+Promote when: a breach reaches the default branch, or the frozen-doc entry is built and the
+rename can ride with it.
