@@ -1,9 +1,9 @@
 ---
 id: 0046
 title: Replace the protocol's hand-edits with commands
-status: Draft
+status: Shipped
 created: 2026-08-20
-shipped:
+shipped: 2026-08-20
 check:
 checked:
 review:
