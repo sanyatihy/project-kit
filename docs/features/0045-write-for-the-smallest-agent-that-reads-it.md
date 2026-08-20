@@ -70,7 +70,7 @@ how every convention here that stuck was taught. It costs no protocol lines and 
 context, because a template is read when a doc is created rather than every session.
 
 ## Tasks
-- [ ] The rule in `templates/AGENTS-section.md`, stated once, with the per-sentence test and
+- [x] The rule in `templates/AGENTS-section.md`, stated once, with the per-sentence test and
       the one-clause limit; `protocolBudget` holds or falls, and the test's comment says
       which rules it replaced
 - [ ] `README.md`, `templates/features-README.md`, `templates/VISION.md` and

@@ -39,6 +39,12 @@ const (
 	// which "write about the system" alone did not: a run that taught something read as
 	// durable and landed in the ## Log. The evidence rule folded into the bullet above it
 	// rather than adding a third.
+	//
+	// 0045 added the sentence rule — a sentence earns its place by deciding, constraining or
+	// measuring — and the ceiling held. It is the first rule here to arrive without a raise,
+	// which is the test it was written to pass: the evidence clause moved out of "write about
+	// the system" into it, and rule 4 now cites the routing rule rather than restating it. A
+	// raise would have been the signal that the rule was written as an addition.
 	protocolBudget = 123
 
 	// A command help is a usage reference someone reads mid-task, often after a
