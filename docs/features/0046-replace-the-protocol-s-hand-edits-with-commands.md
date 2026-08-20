@@ -70,7 +70,7 @@ what `needs:` records.
       it writes the status
 - [x] The protocol names `kit next --json` as the machine-readable board, and rule 9
       distinguishes the human in the session from the absent one; `protocolBudget` holds
-- [ ] README carries `release` and `check`
+- [x] README carries `release` and `check`
 
 ## Log
 - 2026-08-20 — pausing says why in the pull request rather than in `## Log`: a pause that

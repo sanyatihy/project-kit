@@ -312,8 +312,10 @@ That marks 0001 blocked, so `kit next` stops offering it and points you elsewher
 kit new   <title...>                     next free ID, date filled in, status Draft
 kit accept <id>                          bless a Draft — the human's call, never an agent's
 kit claim <id>                           push the branch; exit 1 means you lost it
+kit release <id> [--force]               give a claim back; refuses while it carries work
 kit block <id> "<question>" [--fyi]      park a decision only a human can make
 kit ship  <id>                           verify every box, stamp the date, freeze
+kit check <id> "<outcome>"               settle a bet: stamp checked:, log what happened
 kit drop  <id> "<why>"                   retire a feature that will not be built
 kit next  [PATH ...] [--json] [--offline] warns above 2 features in progress
 kit audit [PATH ...] [--json] [--strict] [--offline]
@@ -398,7 +400,14 @@ that cannot do it.
 
 `check:` is optional. Set it, with a date, only when a feature is a bet worth
 revisiting — a pricing change, a growth experiment. After that date `audit` reports
-`unchecked` until you record the outcome in `## Log` and set `checked:`.
+`unchecked` until `kit check <id> "<outcome>"` stamps `checked:` and writes the outcome
+into `## Log`. That command owns both writes because the doc is Shipped by then, and a
+Shipped doc is frozen history nobody edits by hand.
+
+Stopping before the last box is `kit release <id>`, which deletes the claim branch on
+the remote and here. It refuses while the branch carries work: that is a pause rather
+than an abandon, and the branch should be pushed and its pull request opened unfinished
+instead.
 
 ## Several agents
 
