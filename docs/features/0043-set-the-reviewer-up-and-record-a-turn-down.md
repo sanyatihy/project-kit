@@ -1,13 +1,13 @@
 ---
 id: 0043
 title: Set the reviewer up and record a turn-down
-status: Draft
+status: Dropped
 created: 2026-08-18
 shipped:
 check:
 checked:
 review:
-needs: 0042
+needs:
 related: docs/features/0013-never-leave-an-agent-without-an-instruction.md
 ---
 
@@ -66,3 +66,4 @@ non-empty value counts, which is 0029's fail-safe direction.
 ## Log
 - 2026-08-18 — split from 0042 so the protocol lands without waiting on the ergonomics, and
   each is one pull request.
+- 2026-08-20 — dropped: Parked with 0042, which it needs: the reviewer's command is only worth building once review by a second agent is being run.
