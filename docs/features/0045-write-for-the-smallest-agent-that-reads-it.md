@@ -1,9 +1,9 @@
 ---
 id: 0045
 title: Write for the smallest agent that reads it
-status: Draft
+status: Shipped
 created: 2026-08-20
-shipped:
+shipped: 2026-08-20
 check:
 checked:
 review:
