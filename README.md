@@ -174,13 +174,11 @@ Each box is one PR you can finish and verify without asking anyone. `- [ ] Build
 backend` is not a task. If you cannot say how you would check a box is done, it is
 too big — split it.
 
-Write **as much as necessary and no more**. Cut restatement, hedging and padding;
-never cut a decision, a constraint, or the evidence behind it. Both failures cost
-real time: a doc nobody reads spends the context window every later session needs,
-and one too thin to act on costs a session to reconstruct. Every template section
-states its own budget, and the kit holds its own shipped text to line ceilings in
-`cmd/kit/budget_test.go` — the protocol most tightly, since it is re-read at the
-start of every session in every project.
+A sentence earns its place by **deciding, constraining or measuring** something. The work
+protocol states that once and nothing else restates it. The kit holds its own shipped text
+to line ceilings in `cmd/kit/budget_test.go` — the protocol most tightly, since it is
+re-read at the start of every session in every project — and never to a floor, because a
+minimum rewards padding and a thin section is `unfilled-template`'s to catch.
 
 A drafting session is one **plan round**: every doc it produces goes on a single branch
 named `plan/<something>` — never after a feature, since a branch leading with a
@@ -365,7 +363,7 @@ even when something goes wrong.
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`
 - **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`, `fyi-stale`, `doc-bloat`,
-  `session-narration`
+  `session-narration`, `long-sentence`
 
 `kit help checks` prints this list from the same registry `audit` reports from, so
 it cannot drift.

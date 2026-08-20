@@ -142,6 +142,12 @@ var auditCases = []struct {
 		p.write("docs/features/0002-long.md", doc("0002", "Long", "Accepted", "",
 			"- [ ] Something")+strings.Repeat("\nrestating what the section above said.\n", 90))
 	}},
+	{"long-sentence", func(p *project) {
+		// Three claims welded together, hard-wrapped the way every doc here is. The
+		// wrap is the point: a line-at-a-time count sees four short lines.
+		p.write("docs/features/0002-stacked.md", doc("0002", "Stacked", "Accepted", "",
+			"- [ ] Something")+"\n"+stackedSentence+"\n")
+	}},
 	{"unticked-shipped", func(p *project) {
 		p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
 			"shipped: "+daysAgo(1), "- [ ] Not actually done"))
@@ -587,6 +593,42 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	// proves nothing.
 	if codes := b.auditCodes(); !slices.Contains(codes, "shipped-not-pushed") {
 		t.Errorf("stopped firing on work that is on no remote: %v", codes)
+	}
+}
+
+// stackedSentence is 47 words carrying three claims, wrapped at the width these docs use.
+// One claim would be "the cache is per-process"; the rest is what the rule names.
+const stackedSentence = `The cache is per-process because a shared one would need
+invalidation across every worker, which this deployment does not have, and it also
+drops the dependency we have been trying to get rid of since the migration that the
+previous quarter's work left half finished behind it.`
+
+func TestLongSentenceMeasuresProseAndNothingElse(t *testing.T) {
+	t.Parallel()
+	// The quiet half is the one that decides whether the check is usable. A doc about
+	// writing quotes long examples in fences and comments, a table row is not a sentence
+	// however wide it is, and a task box is an outcome that 0037 froze as written.
+	p := cleanProject(t)
+	oneLine := strings.ReplaceAll(stackedSentence, "\n", " ")
+	p.write("docs/features/0002-quoting.md", doc("0002", "Quoting", "Accepted", "",
+		"- [ ] "+oneLine)+
+		"\n<!-- "+stackedSentence+" -->\n"+
+		"\n```\n"+stackedSentence+"\n```\n"+
+		"\n| what | why |\n| --- | --- |\n| a row | "+oneLine+" |\n")
+	if codes := p.auditCodes(); slices.Contains(codes, "long-sentence") {
+		t.Errorf("fired on a fence, a comment, a table row or a task box: %v", codes)
+	}
+
+	// And the firing half, on the same sentence as prose. One finding per doc, for
+	// session-narration's reason: the fix is the same edit every time.
+	p = cleanProject(t)
+	p.write("docs/features/0002-stacked.md", doc("0002", "Stacked", "Accepted", "",
+		"- [ ] Something")+"\n"+stackedSentence+"\n\n"+stackedSentence+"\n")
+	r := p.run("audit").ok()
+	r.has("long-sentence", "47 words")
+	if n := strings.Count(r.Stdout, "long-sentence"); n != 1 {
+		t.Errorf("reported long-sentence %d times, want one finding for the doc:\n%s",
+			n, r.Stdout)
 	}
 }
 

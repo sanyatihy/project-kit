@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // DateLayout is the only date format these docs use.
@@ -403,4 +404,134 @@ func blankQuoted(text string) string {
 		joined = joined[:open] + strings.Repeat("\n", strings.Count(span, "\n")) + joined[open+end:]
 	}
 	return joined
+}
+
+// listItemRe is a bullet or numbered list marker. An item is its own block: two adjacent
+// items are two thoughts however they wrap, and joining them would invent a sentence
+// neither one wrote.
+var listItemRe = regexp.MustCompile(`^\s*(?:[-*+]|\d+\.)\s+`)
+
+// sentenceAbbrevs end in a period without ending a sentence.
+var sentenceAbbrevs = map[string]bool{
+	"e.g.": true, "i.e.": true, "vs.": true, "etc.": true, "cf.": true, "no.": true,
+}
+
+// word is one whitespace-separated token and the line it was read from, so a sentence
+// spanning four wrapped lines can still name the line it starts on.
+type word struct {
+	text string
+	line int
+}
+
+// LongSentence reports the first sentence over limit words and the 1-based line it starts
+// on. n is 0 when every sentence is under.
+//
+// Fenced blocks, tables and HTML comments are blanked for Narration's reason: a doc about
+// the doc format quotes the things being ruled on, and the template's guidance lives
+// entirely in comments. Frontmatter goes because a `related:` list of filenames is not
+// prose. `## Tasks` goes because a box is an outcome rather than a sentence, and 0037
+// froze the boxes as the record of what was done.
+//
+// A sentence is measured unwrapped. These docs are hard-wrapped around 95 characters, so
+// anything worth reporting spans several lines and a line-at-a-time count would find none
+// of them — the same defect that made Narration scan a two-line window.
+func LongSentence(text string, limit int) (n, line int) {
+	var block []word
+	flush := func() (int, int) {
+		defer func() { block = block[:0] }()
+		for _, s := range splitSentences(block) {
+			if len(s) > limit {
+				return len(s), s[0].line
+			}
+		}
+		return 0, 0
+	}
+
+	lines := strings.Split(blankQuoted(Normalise(text)), "\n")
+	section, inFront := "", false
+	for i, raw := range lines {
+		trimmed := strings.TrimSpace(raw)
+		switch {
+		case i == 0 && trimmed == "---":
+			inFront = true
+			continue
+		case inFront:
+			if trimmed == "---" {
+				inFront = false
+			}
+			continue
+		}
+		if m := headingRe.FindStringSubmatch(raw); m != nil {
+			if got, at := flush(); got > 0 {
+				return got, at
+			}
+			section = m[1]
+			continue
+		}
+		// A blank line, a table row and a heading all end whatever came before them.
+		if section == "Tasks" || trimmed == "" || strings.HasPrefix(trimmed, "|") ||
+			strings.HasPrefix(trimmed, "#") {
+			if got, at := flush(); got > 0 {
+				return got, at
+			}
+			continue
+		}
+		if loc := listItemRe.FindStringIndex(raw); loc != nil {
+			if got, at := flush(); got > 0 {
+				return got, at
+			}
+			trimmed = strings.TrimSpace(raw[loc[1]:])
+		}
+		for _, w := range strings.Fields(trimmed) {
+			block = append(block, word{w, i + 1})
+		}
+	}
+	return flush()
+}
+
+// splitSentences cuts where one token ends a sentence and the next starts one. Both
+// conditions are required: `docs/TECH.md` mid-sentence ends in a period, and a lone
+// capital after a comma does not begin one.
+func splitSentences(block []word) [][]word {
+	var out [][]word
+	start := 0
+	for i := 0; i < len(block)-1; i++ {
+		if endsSentence(block[i].text) && startsSentence(block[i+1].text) {
+			out = append(out, block[start:i+1])
+			start = i + 1
+		}
+	}
+	if start < len(block) {
+		out = append(out, block[start:])
+	}
+	return out
+}
+
+// trailing markdown a word can wear without changing where the sentence ends.
+const (
+	closers = "*`\"')]_"
+	openers = "*`\"'([_"
+)
+
+func endsSentence(w string) bool {
+	if sentenceAbbrevs[strings.ToLower(w)] {
+		return false
+	}
+	w = strings.TrimRight(w, closers)
+	return strings.HasSuffix(w, ".") || strings.HasSuffix(w, "!") || strings.HasSuffix(w, "?")
+}
+
+func startsSentence(w string) bool {
+	// A sentence can open on an identifier — "`long-sentence` at LOW" — which is lowercase
+	// and still a new claim. The backtick is what says so; a bare lowercase word after a
+	// period is the wrap of a filename, not a new sentence.
+	if strings.HasPrefix(strings.TrimLeft(w, "*_(["), "`") {
+		return true
+	}
+	w = strings.TrimLeft(w, openers)
+	if w == "" {
+		return false
+	}
+	r := []rune(w)[0]
+	return unicode.IsUpper(r) || unicode.IsDigit(r)
 }

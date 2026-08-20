@@ -9,9 +9,9 @@ before drafting one.
      believed. Edit it when what you are aiming at changes, and say so in the feature
      doc whose work changed it.
 
-     Write as much as necessary and no more. Everything here is read before every
-     draft, so length is a tax paid repeatedly — and a vision too vague to reject a
-     feature is not doing its job either. A screen is about right.
+     Everything here is read before every draft, so length is a tax paid repeatedly — and
+     a vision too vague to reject a feature is not doing its job either. A screen is about
+     right; the protocol says what earns a sentence.
 
      Left as written here, `kit audit` reports `unfilled-vision`: a stub silences the
      question rather than answering it, and every draft is meant to trace back to

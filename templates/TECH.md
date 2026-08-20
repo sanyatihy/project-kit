@@ -10,14 +10,11 @@ exists now, and must always be true.
      when a feature ships and this file has not been touched since.
 
      It is read before every change, so length is a tax paid per change. Record only
-     what the code cannot say: why this shape beat the alternative, and what breaks if
-     it changes. A retelling of what the code already says, or a note that we thought
-     about something, is cost with no return — and a fact left out is one rediscovered
-     the hard way. Both failures are real; aim between them.
+     what the code cannot say: why this shape beat the alternative, and what breaks if it
+     changes. A fact left out is one rediscovered the hard way.
 
-     One fact, one line: state the rule, and give it a trailing clause only where the
-     evidence stops the rule being reversed — the constraint, or the measurement. How it
-     was found, and what it cost to find, stay in the feature doc that found them. -->
+     One fact, one line. How it was found, and what it cost to find, stay in the feature
+     doc that found them. -->
 
 ## What it is
 

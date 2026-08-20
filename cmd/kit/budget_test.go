@@ -1,9 +1,9 @@
 package main
 
 // Every text the binary ships has a ceiling, because nothing else stops one growing.
-// The rule the kit states is "write as much as necessary and no more", and the half
-// that rots silently is the second: a paragraph is always easier to add than to
-// justify, and no reviewer counts lines.
+// The rule the kit states is that a sentence earns its place by deciding, constraining
+// or measuring something, and it rots silently: a paragraph is always easier to add than
+// to justify, and no reviewer counts lines.
 //
 // These are ceilings on the kit's own text, not targets for anyone's docs. A doc too
 // thin to act on costs the next session more than a long one, so nothing here has a
@@ -39,6 +39,12 @@ const (
 	// which "write about the system" alone did not: a run that taught something read as
 	// durable and landed in the ## Log. The evidence rule folded into the bullet above it
 	// rather than adding a third.
+	//
+	// 0045 added the sentence rule — a sentence earns its place by deciding, constraining or
+	// measuring — and the ceiling held. It is the first rule here to arrive without a raise,
+	// which is the test it was written to pass: the evidence clause moved out of "write about
+	// the system" into it, and rule 4 now cites the routing rule rather than restating it. A
+	// raise would have been the signal that the rule was written as an addition.
 	protocolBudget = 123
 
 	// A command help is a usage reference someone reads mid-task, often after a
@@ -72,9 +78,10 @@ func overBudget(t *testing.T, what, text string, budget int) {
 	t.Helper()
 	if n := lines(text); n > budget {
 		t.Errorf("%s is %d lines, over its %d-line ceiling.\n"+
-			"Write as much as necessary and no more: cut restatement, hedging and "+
-			"padding — not a decision, a constraint, or the evidence behind it. If "+
-			"every line earns its place, raise the ceiling in this test and say why.",
+			"A sentence earns its place by deciding, constraining or measuring "+
+			"something: cut what does none of the three, and cut the second clause "+
+			"before the first. If every line earns its place, raise the ceiling in "+
+			"this test and say why.",
 			what, n, budget)
 	}
 }
