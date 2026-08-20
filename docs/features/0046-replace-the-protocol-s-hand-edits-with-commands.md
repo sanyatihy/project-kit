@@ -68,7 +68,7 @@ what `needs:` records.
       `Shipped` doc; `unchecked`'s fix line names the command instead of the two edits
 - [x] `kit ship` refuses a worktree with uncommitted or untracked files, naming them, before
       it writes the status
-- [ ] The protocol names `kit next --json` as the machine-readable board, and rule 9
+- [x] The protocol names `kit next --json` as the machine-readable board, and rule 9
       distinguishes the human in the session from the absent one; `protocolBudget` holds
 - [ ] README carries `release` and `check`
 

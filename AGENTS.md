@@ -84,9 +84,10 @@ Two layout constraints that are easy to trip over:
 
 ## Work protocol
 
-Run `kit next` at the start of every session: it names the feature and the task. `kit audit`
-says what has drifted. `kit help` explains the model; `kit help template` prints the doc
-format. Every rule below is a rule some agent got wrong; none is style.
+Run `kit next` at the start of every session: it names the feature and the task. `--json` is
+that board machine-readable, and anything automating this reads it rather than parsing docs.
+`kit audit` says what has drifted. `kit help` explains the model; `kit help template` prints
+the doc format. Every rule below is a rule some agent got wrong; none is style.
 
 ### Picking and finishing work
 
@@ -142,12 +143,11 @@ format. Every rule below is a rule some agent got wrong; none is style.
    `## Log`. What you may not do is silently drop one you could not finish. A whole feature
    that should not be built is `kit drop <id> "<why>"`: a doc on the default branch stays on
    the board until it is retired.
-8. **Stopping mid-feature? `kit release <id>`.** It deletes the claim on both sides, and
-   refuses while the branch carries work. That case is a pause: push it, open the pull
-   request unfinished, and say why there. Neither path writes `## Log`.
-9. **Blocked on a decision only a human can make?** `kit block <id> "<question, with your
-   leaning>"`, then move to another feature — `--fyi` for what work continues without. Do not
-   guess, and do not treat this as licence to take work that is not yours.
+8. **Stopping mid-feature? `kit release <id>`.** It refuses while the branch carries work:
+   that case is a pause, so push it and open the pull request unfinished, saying why there.
+9. **Blocked on a decision only a human can make?** Ask the one in the session and record
+   the answer. Nobody there: `kit block <id> "<question, with your leaning>"`, then move to
+   another feature — `--fyi` for what work continues without. Never guess.
 10. **Never put a real secret in a doc.** Docs are committed and a pushed commit cannot be
     unpublished. Name the variable and where the value lives, never the value.
     `secret-in-doc` is a backstop, not the rule: a password in prose matches nothing.
