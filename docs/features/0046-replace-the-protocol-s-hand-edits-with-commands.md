@@ -41,13 +41,10 @@ proposal, one carrying anything else is work — so the test is one the board al
 `--force` is the way past it, because an agent that cannot release through the kit reaches
 for `git` and the kit stops being the record.
 
-**Pausing is push, open the pull request, and say why in the `## Log` entry it carries.**
-The doc is on the branch, so the record travels with the work and lands when it merges.
-Nothing is built for it: it is rule 13's handoff without the status change.
-
-**Abandoning records nothing.** Rule 8 asks for a `## Log` line about stopping, and under
-the routing rule an entry naming no change to the plan is not an entry. A plan that did
-change has its command already: rule 7 for a box, `kit drop` for the whole feature.
+**Pausing is rule 13's handoff without the status change**: push, open the pull request
+unfinished, and say why there. Neither path writes `## Log` — under the routing rule an
+entry naming no change to the plan is not an entry, and a plan that did change has its
+command already: rule 7 for a box, `kit drop` for the whole feature.
 
 **`kit check <id> "<outcome>"` stamps `checked:` and appends one `## Log` line**, the way
 `ship` stamps `shipped:`. That is the only write into a frozen doc the protocol asks for, so
@@ -73,6 +70,12 @@ what `needs:` records.
       it writes the status
 - [ ] The protocol names `kit next --json` as the machine-readable board, and rule 9
       distinguishes the human in the session from the absent one; `protocolBudget` holds
-- [ ] README and `kit help` carry `release` and `check`
+- [ ] README carries `release` and `check`
 
 ## Log
+- 2026-08-20 — pausing says why in the pull request rather than in `## Log`: a pause that
+  moved no box changed no plan, so the routing rule sends it to the pull request, and rule
+  7 already owns the case where a box does move.
+- 2026-08-20 — the last box drops `kit help`, keeping README: `TestEveryCommandHasHelp` and
+  `TestOverviewListsEveryCommand` make help text part of adding a command, so it lands with
+  the command rather than after it.
