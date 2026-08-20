@@ -22,6 +22,7 @@ Commands:
   kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
+  kit check <id> "<outcome>"          settle a bet: stamp checked:, log what happened
   kit drop  <id> "<why>"              retire a feature that will not be built
   kit next  [PATH ...] [--json] [--offline]
                                       what should I work on?
@@ -272,6 +273,26 @@ past what anyone reads.
 
   kit ship 0007
   kit ship 7`,
+
+	"check": `kit check <id> "<outcome>"
+
+Settle a bet. Stamps checked: with today's date and writes the outcome into "## Log",
+which is the pair of edits the "unchecked" finding asks for.
+
+Both land in a doc that is almost always Shipped, and rule 11 says a Shipped doc is
+frozen history nobody edits. The rule stays absolute because this command owns the
+writes — the same bargain as "kit ship" owning status:.
+
+Refuses a doc that names no check: date. That field says a feature is a bet worth
+revisiting and it is set while the doc is written; a revisit you want after the fact is
+a line in BACKLOG.md, which costs nothing and edits no history. It also refuses a doc
+already checked: the outcome that was measured is the one that stands.
+
+Say what happened rather than that you looked. "slug collisions stayed under 0.1%" is
+an outcome; a stamped date with nothing behind it is not.
+
+  kit check 0007 "collisions stayed under 0.1%, so base62 stays"
+  kit check 7 "nobody used it — 0021 takes it out again"`,
 
 	"drop": `kit drop <id> "<why>"
 

@@ -87,6 +87,8 @@ func run() int {
 		return runBlock(os.Args[2:])
 	case "ship":
 		return runShip(os.Args[2:])
+	case "check":
+		return runCheck(os.Args[2:])
 	case "next":
 		return runNext(os.Args[2:])
 	case "audit":
@@ -493,6 +495,39 @@ func runShip(args []string) int {
 		fmt.Printf("  say so rather than merging it yourself — merging is not yours\n")
 	}
 	fmt.Printf("  kit next\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- check
+
+func runCheck(args []string) int {
+	fs := newFlagSet("check")
+	rest := parseArgs(fs, args)
+	if len(rest) < 2 {
+		fmt.Fprintf(os.Stderr, "kit check: need a feature id and what happened\n\n%s\n",
+			commandHelp["check"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
+		return 2
+	}
+
+	outcome := strings.TrimSpace(strings.Join(rest[1:], " "))
+	res, err := kit.RecordCheck(repo, id, outcome, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  checked  %s  (due %s)\n", res.Doc, res.Due.UTC().Format(kit.DateLayout))
+	fmt.Printf("  the outcome is in ## Log — nothing else in the doc changed\n\n")
 	return 0
 }
 

@@ -64,7 +64,7 @@ what `needs:` records.
 - [x] `kit release <id>` deletes the claim branch locally and on the remote, refuses while
       `BranchBuildsOn` says it carries work, and takes `--force`; rule 8 splits into it and
       the pause path, and stops asking for a `## Log` line
-- [ ] `kit check <id> "<outcome>"` stamps `checked:` and appends one `## Log` line on a
+- [x] `kit check <id> "<outcome>"` stamps `checked:` and appends one `## Log` line on a
       `Shipped` doc; `unchecked`'s fix line names the command instead of the two edits
 - [ ] `kit ship` refuses a worktree with uncommitted or untracked files, naming them, before
       it writes the status
