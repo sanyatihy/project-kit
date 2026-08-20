@@ -108,14 +108,11 @@ Promote when: a worktree is found holding an older doc than the one that was cla
 
 ## Steps the operator still runs by hand
 
-Three, each one a command the kit prints or a rule the protocol states, and each a place
+Two, each one a command the kit prints or a rule the protocol states, and each a place
 work stops while a person types:
 
 - `kit claim` prints a `git worktree add` line to copy. `--worktree` could create it and
   print where to work.
-- Rule 8 — releasing a claim — is "delete the branch locally and on the remote, and say
-  why in the Log", done by hand under an agent that is already stopping. `kit release
-  <id>` is the command that does not exist.
 - `make install` after every merge. Nothing checks it, and the kit already records what
   it cost once: a project built against a binary two features behind, with nothing
   reporting anything wrong.
@@ -246,3 +243,20 @@ same question the frozen-doc entry above asks, and it should be weighed there.
 
 Promote when: a breach reaches the default branch, or the frozen-doc entry is built and the
 rename can ride with it.
+
+## A merged claim holds its slot until the trunk ref catches up
+
+`AwaitingReview` already skips a branch the trunk contains, with the `merge-base
+--is-ancestor` test a `merged-claim` check would use. It compares against `trunkRef`, which
+prefers local `refs/heads/<trunk>`, so a checkout that has not pulled since the merge keeps
+listing the feature as awaiting review — and rule 2 tells every other agent not to touch it.
+Deleting the remote branch clears it, which is why the symptom reads as a missing check
+rather than a stale ref.
+
+The two fixes differ in what they buy: prefer the remote-tracking trunk when one exists is a
+line, and is silently wrong when that ref is stale too; a finding says the claim is over and
+the branch should be deleted, which is a thing nothing in the protocol currently says to do
+and most forges do not do on merge.
+
+Promote when: a merged feature is seen holding a slot on a board, or `kit release` is built
+and the delete-the-branch half is already there.
