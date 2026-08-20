@@ -1,7 +1,7 @@
 ---
 id: 0042
 title: Make review the thing that ships a feature
-status: Draft
+status: Dropped
 created: 2026-08-18
 shipped:
 check:
@@ -93,3 +93,4 @@ escapable by not using the kit. The wall is required approvals on the remote.
   that the builder stopped, which the branches already show.
 - 2026-08-18 — identity is out as a signal, so the guarantee is about commits: a ref naming
   the reviewed commit, and a check that the shipped commit sits directly on it.
+- 2026-08-20 — dropped: Parked before implementation. The design stands — Shipped set by a checkout that does not hold the claim, recorded as refs/kit/reviewed/<id> at the reviewed commit — but review by a second agent is not being run yet. Revive it when it is.
