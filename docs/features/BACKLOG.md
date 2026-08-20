@@ -71,7 +71,7 @@ the identical bytes to one that considered it and decided nothing was required, 
 cost of being wrong is an agent building on a foundation that is not there.
 
 The honest fix is an explicit token: `needs: none`, with an unanswered field reported.
-That puts all fifteen shipped docs in breach the day it lands, so it needs a migration
+That puts all forty-four shipped docs in breach the day it lands, so it needs a migration
 pass or a rule that only applies to docs created after it. Both are more than the
 problem currently justifies, and 0016 deliberately left it here rather than shipping a
 cosmetic version.
@@ -85,10 +85,11 @@ says the design is not settled. It does not refuse a doc where `## Problem`, `##
 and `## Tasks` are all empty, which is the strongest such signal there is. Replaying the
 lifecycle found it: `kit accept` succeeded on a doc straight out of `kit new`.
 
-The consequences are mostly already covered — `unfilled-template` reports it at HIGH,
-`--strict` fails on it, and `kit next` refuses to hand it out — so what is left is an
-agent that claims by ID without consulting `next`. Reusing the same emptiness test in
-`Accept` would close it in about three lines.
+The consequences are covered everywhere else: `unfilled-template` reports it at HIGH,
+`--strict` fails on it, and `next` and `claim` both refuse it through `Feature.Unwritten()`
+— including a claim made by ID without consulting the board. So what is left is `accept`
+blessing a doc nobody wrote, which misleads a reader rather than sending an agent to build
+nothing. Reusing the same emptiness test in `Accept` would close it in about three lines.
 
 Promote when: touching `accept` for any other reason, or if an agent is seen claiming an
 unwritten feature.
@@ -131,10 +132,10 @@ Promote when: a title or any other field loses text to it.
 
 ## The work is only on the remote once, at the end
 
-`kit claim` pushes, and it is the only push the kit makes: it pushes `HEAD`, so the branch
-that claims a feature carries the doc and no work. Everything after that is local until a
-person or an agent pushes for review, which `kit ship` asks for in prose — the tier TECH.md
-ranks last. Liveness is read from `git log --all`, which is this machine's refs.
+`kit claim` pushes `HEAD`, so the branch that claims a feature carries the doc and no work,
+and the kit's only other push is `release` deleting that same ref. Everything after that is
+local until a person or an agent pushes for review, which `kit ship` asks for in prose — the
+tier TECH.md ranks last. Liveness is read from `git log --all`, which is this machine's refs.
 
 So the mutual visibility the multi-agent model rests on is the shared local object store,
 not the remote. On one machine with worktrees that holds. Across two it does not, and it
@@ -162,7 +163,8 @@ separates the two corpora exactly: 10 of 40 here, 0 of 14 in `localcode`. Per-se
 ceilings are the fuller version of the same idea.
 
 0041 fixes what gets written; this checks the shape of what came out. It wants its own
-calibration, and it wants it taken after 0041 has changed the corpus rather than before.
+calibration, taken after 0041 changed the corpus: five docs have been written since, which
+is a sample rather than a corpus.
 
 Promote when: 0041 has shipped and a round of docs has been written under it.
 
@@ -183,12 +185,18 @@ protocol:
 - `unticked-shipped` tells you to tick the boxes or move them to BACKLOG, both of which
   edit a frozen doc.
 
+A fourth disagreement was settled the other way and narrows this one. `unchecked` asked for
+two writes into a Shipped doc, and 0046 gave them to `kit check` rather than loosening rule
+11. That is the answer wherever the fix is a *write* a command can own, which covers
+`unticked-shipped` too — the entry below. It is no answer for `doc-bloat` and
+`session-narration`, whose fix is rewritten prose, so those two are what is actually being
+asked about here.
+
 One change, because it is one question: rule 11 says what it already means — frozen to an
 agent working a feature, editable in a pass a human asks for — the two LOW checks then fire
-on every status and become the worklist for that pass, `missing-section` goes, and
-`unticked-shipped`'s fix line names the exception. The cost to weigh first: a doc that
-earns its length reports LOW for ever, since nothing detects the "say in ## Log why" the
-fix line offers.
+on every status and become the worklist for that pass, and `missing-section` goes. The cost
+to weigh first: a doc that earns its length reports LOW for ever, since nothing detects the
+"say in ## Log why" the fix line offers.
 
 Promote when: the next compaction pass is wanted, or a board carries a finding nobody is
 allowed to fix.
@@ -204,8 +212,10 @@ promoted to TECH at ship is the rule working, not breaking. It needs a threshold
 against a corpus written under the routing rule, and probably a rule about which section
 the duplicate sits in.
 
-Promote when: a round of docs has been written under the routing rule, or a duplicated
-fact goes stale in one of its two homes.
+Two docs exist under the routing rule so far, which is thin for a threshold.
+
+Promote when: a duplicated fact goes stale in one of its two homes, or enough docs are
+written under the rule to measure against.
 
 ## `kit defer <id>` moves an unticked box to the backlog
 
@@ -213,6 +223,9 @@ fact goes stale in one of its two homes.
 frozen doc plus a hand-written BACKLOG entry — two chances to get it wrong, and the second
 one silently skipped. A command that takes the box out, appends it here with its feature id,
 and leaves the doc consistent is the prevent-tier version.
+
+0046 built this shape for `unchecked` — a command owning the two writes instead of an
+exception in prose — so it is a pattern to copy rather than a proposal to weigh.
 
 Promote when: it happens a third time, or the frozen-doc entry above is built and this is
 the cheap half of it.
@@ -253,10 +266,15 @@ listing the feature as awaiting review — and rule 2 tells every other agent no
 Deleting the remote branch clears it, which is why the symptom reads as a missing check
 rather than a stale ref.
 
-The two fixes differ in what they buy: prefer the remote-tracking trunk when one exists is a
-line, and is silently wrong when that ref is stale too; a finding says the claim is over and
-the branch should be deleted, which is a thing nothing in the protocol currently says to do
-and most forges do not do on merge.
+`kit release` is the delete half and it is built: on a merged branch its work guard passes
+without `--force`, because the branch carries nothing the trunk lacks. What is left is that
+nothing says to run it. After a merge the board either lists the feature as awaiting review,
+where the trunk ref is stale, or drops it silently while the branch stays on the remote —
+and most forges do not delete a source branch on merge.
 
-Promote when: a merged feature is seen holding a slot on a board, or `kit release` is built
-and the delete-the-branch half is already there.
+The two fixes differ in what they buy: preferring the remote-tracking trunk is a line, and
+is silently wrong when that ref is stale too; a finding says the claim is over and names the
+command that ends it.
+
+Promote when: a merged feature is seen holding a slot on a board, or a second machine reads
+a board this one has already cleaned.
