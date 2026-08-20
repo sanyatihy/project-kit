@@ -79,12 +79,16 @@ func run() int {
 		return runAccept(os.Args[2:])
 	case "claim":
 		return runClaim(os.Args[2:])
+	case "release":
+		return runRelease(os.Args[2:])
 	case "drop":
 		return runDrop(os.Args[2:])
 	case "block":
 		return runBlock(os.Args[2:])
 	case "ship":
 		return runShip(os.Args[2:])
+	case "check":
+		return runCheck(os.Args[2:])
 	case "next":
 		return runNext(os.Args[2:])
 	case "audit":
@@ -356,6 +360,50 @@ func runClaim(args []string) int {
 	return 0
 }
 
+// ---------------------------------------------------------------- release
+
+func runRelease(args []string) int {
+	fs := newFlagSet("release")
+	force := fs.Bool("force", false, "delete the branch even though it carries work")
+	rest := parseArgs(fs, args)
+	if len(rest) != 1 {
+		fmt.Fprintf(os.Stderr, "kit release: need one feature id\n\n%s\n", commandHelp["release"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit release: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit release: %v\n", err)
+		return 2
+	}
+
+	res, err := kit.Release(repo, id, *force)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit release: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  released  %s\n", res.Branch)
+	if res.Remote == "" {
+		fmt.Printf("  the claim was local only, so there was nothing on a remote to delete\n")
+	} else {
+		fmt.Printf("  deleted   %s/%s — the feature is free for anyone to claim\n",
+			res.Remote, res.Branch)
+	}
+	// A local branch left behind still reads as a claim in this checkout, so saying it is
+	// gone when it is not would hand the next agent a feature the board here calls taken.
+	if res.Kept != "" {
+		fmt.Printf("\n  the local branch is still here: %s\n", res.Kept)
+		fmt.Printf("  leave that checkout, then: git branch -D %s\n", res.Branch)
+	}
+	fmt.Println()
+	return 0
+}
+
 // ---------------------------------------------------------------- block
 
 func runBlock(args []string) int {
@@ -447,6 +495,39 @@ func runShip(args []string) int {
 		fmt.Printf("  say so rather than merging it yourself — merging is not yours\n")
 	}
 	fmt.Printf("  kit next\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- check
+
+func runCheck(args []string) int {
+	fs := newFlagSet("check")
+	rest := parseArgs(fs, args)
+	if len(rest) < 2 {
+		fmt.Fprintf(os.Stderr, "kit check: need a feature id and what happened\n\n%s\n",
+			commandHelp["check"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
+		return 2
+	}
+
+	outcome := strings.TrimSpace(strings.Join(rest[1:], " "))
+	res, err := kit.RecordCheck(repo, id, outcome, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  checked  %s  (due %s)\n", res.Doc, res.Due.UTC().Format(kit.DateLayout))
+	fmt.Printf("  the outcome is in ## Log — nothing else in the doc changed\n\n")
 	return 0
 }
 

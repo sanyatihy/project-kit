@@ -19,8 +19,10 @@ Commands:
   kit new   <title...>                start a feature doc, ID and date filled in
   kit accept <id>                     settle a Draft — the human's call, not an agent's
   kit claim <id>                      take a feature: push the branch, win or lose
+  kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
+  kit check <id> "<outcome>"          settle a bet: stamp checked:, log what happened
   kit drop  <id> "<why>"              retire a feature that will not be built
   kit next  [PATH ...] [--json] [--offline]
                                       what should I work on?
@@ -201,6 +203,31 @@ branch is what says the work started.
   kit claim 0007
   kit claim 7`,
 
+	"release": `kit release <id> [--force]
+
+Stopping for good? Give the claim back. Deletes the branch that claims the feature on
+the remote first, because that ref is the claim, and then locally.
+
+Refuses while the branch carries anything beyond the feature doc. Stopping covers two
+situations and only one of them is this: work worth nothing, and work worth keeping.
+For the second, push the branch and open the pull request unfinished, saying why there
+— the doc travels with the branch, so the record lands when it merges.
+
+  0  the claim is gone and the feature is free for anyone to claim
+  2  it could not run: no such feature, nothing claims it, two branches claim it, a
+     branch this checkout cannot resolve, the remote did not answer, or the branch
+     carries work and --force was not given
+
+--force deletes it anyway. Reach for it when the commits are genuinely worth nothing;
+git keeps them reachable only through the reflog afterwards.
+
+The local branch cannot be deleted from the worktree standing on it, which is where an
+agent stopping usually is. The claim is released either way and the command says what
+is left to remove — until it goes, this checkout still reads the feature as taken.
+
+  kit release 0007
+  kit release 7 --force`,
+
 	"block": `kit block <id> "<question>" [--fyi]
 
 Blocked on something only a human can decide? Write it here and move on. Appends
@@ -226,11 +253,13 @@ State a leaning. It turns most questions into a yes/no.
 Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
 status: Shipped, and stamps shipped: with today's date.
 
-Two more refusals, both exit 2. Something in its needs: has not shipped — the plan
+Three more refusals, all exit 2. Something in its needs: has not shipped — the plan
 says this was built on a foundation that is not there, so the plan is wrong and you
 have to look. Or the feature is claimed by a branch that is not this checkout's:
 ship it from that worktree, because "Shipped" is history nobody may edit and doing
-it from elsewhere freezes another agent's work mid-flight.
+it from elsewhere freezes another agent's work mid-flight. Or this checkout has
+uncommitted or untracked files: the scratch a feature generated is yours to clean
+up, and what git ignores does not count.
 
 Doing this by hand is where two audit findings come from — unticked-shipped and
 shipped-no-date — so the command removes the mistake rather than reporting it
@@ -247,6 +276,26 @@ past what anyone reads.
   kit ship 0007
   kit ship 7`,
 
+	"check": `kit check <id> "<outcome>"
+
+Settle a bet. Stamps checked: with today's date and writes the outcome into "## Log",
+which is the pair of edits the "unchecked" finding asks for.
+
+Both land in a doc that is almost always Shipped, and rule 11 says a Shipped doc is
+frozen history nobody edits. The rule stays absolute because this command owns the
+writes — the same bargain as "kit ship" owning status:.
+
+Refuses a doc that names no check: date. That field says a feature is a bet worth
+revisiting and it is set while the doc is written; a revisit you want after the fact is
+a line in BACKLOG.md, which costs nothing and edits no history. It also refuses a doc
+already checked: the outcome that was measured is the one that stands.
+
+Say what happened rather than that you looked. "slug collisions stayed under 0.1%" is
+an outcome; a stamped date with nothing behind it is not.
+
+  kit check 0007 "collisions stayed under 0.1%, so base62 stays"
+  kit check 7 "nobody used it — 0021 takes it out again"`,
+
 	"drop": `kit drop <id> "<why>"
 
 Retire a feature that will not be built. Sets status: Dropped and records the
@@ -259,8 +308,9 @@ every agent reads it as work nobody has started.
 Refuses a Shipped doc: that is frozen history and the work is in the repo, so
 retiring it would make the record say the feature was never built.
 
-The branch is not this command's to delete. A leftover branch named after the doc
-still reads as a claim, and dropping the doc says so rather than acting.
+The branch is not this command's to delete: that is "kit release". A leftover branch
+named after the doc still reads as a claim, and dropping the doc says so rather than
+acting.
 
 It also names any feature whose needs: cites the dropped one. A Dropped feature can
 never ship, so those docs wait for ever until their needs: is edited — and the board

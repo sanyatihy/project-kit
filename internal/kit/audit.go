@@ -545,7 +545,7 @@ func unchecked(s *docState) []Finding {
 	return []Finding{finding(checkUnchecked, s.at,
 		fmt.Sprintf("%s: check was due %s ago and never happened",
 			s.f.Name(), countDays(Days(s.f.Check, s.today))),
-		"look at the result, write it in ## Log, then set checked:")}
+		`run: kit check `+s.f.ID+` "<what happened>" — it stamps checked: and logs the outcome`)}
 }
 
 func statusState(s *docState) []Finding {

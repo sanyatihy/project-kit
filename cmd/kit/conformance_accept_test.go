@@ -104,6 +104,8 @@ func TestTheStatusRewriteStaysInsideTheFrontmatter(t *testing.T) {
 	p.write("docs/features/0002-talks-about-frontmatter.md", body)
 
 	for _, step := range []string{"accept", "ship"} {
+		// ship refuses a tree with uncommitted work in it, and accept has just made some.
+		p.commitAll("before " + step)
 		p.run(step, "0002").ok()
 		got := p.read("docs/features/0002-talks-about-frontmatter.md")
 		if !strings.Contains(got, example) {

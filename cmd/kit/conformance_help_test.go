@@ -23,8 +23,10 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 		"inbox", "vision", "as-built", "go-checklist", "deployment"} {
 		all += p.run("help", topic).ok().Stdout
 	}
+	// Both streams: the flag package prints a command's help on stderr, so reading
+	// stdout alone left every "kit <cmd> --help" out of what this checks.
 	for _, cmd := range subcommands {
-		all += p.run(cmd, "--help").Stdout
+		all += p.run(cmd, "--help").out()
 	}
 
 	for _, tc := range []struct {
@@ -54,8 +56,10 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 		concluded: "sequential IDs are handed out safely, so they cannot collide",
 		needs:     []string{"Where two agents can still collide", "duplicate-id"},
 	}, {
+		// The recipe this used to look for is now a command, so the fact it carried
+		// has to be in what the command says about itself.
 		concluded: "deleting the local branch releases a claim",
-		needs:     []string{"git push origin --delete"},
+		needs:     []string{"kit release", "because that ref is the claim"},
 	}} {
 		t.Run(tc.concluded, func(t *testing.T) {
 			for _, need := range tc.needs {

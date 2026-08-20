@@ -68,6 +68,20 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 			"the claim first — rule 8", target.Name(), strings.Join(claims, " and "))
 	}
 
+	// Whatever is still lying around here was made on the way to shipping: the last box
+	// is ticked in the commit that implements it, so a clean tree is the state rule 12
+	// describes. Shipping over debris either commits it under a status change or leaves
+	// it for whoever works in this checkout next.
+	if dirty := r.DirtyFiles(); len(dirty) > 0 {
+		shown := dirty
+		if len(shown) > 3 {
+			shown = append(shown[:3:3], fmt.Sprintf("and %d more", len(dirty)-3))
+		}
+		return nil, fmt.Errorf("this checkout has uncommitted or untracked files:\n  %s\n"+
+			"commit what belongs to the feature and remove the rest, then ship",
+			strings.Join(shown, "\n  "))
+	}
+
 	raw, err := os.ReadFile(target.Path)
 	if err != nil {
 		return nil, err

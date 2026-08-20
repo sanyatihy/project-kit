@@ -5,7 +5,7 @@ status: Draft        # Draft | Accepted | Shipped | Dropped | Superseded
 created: YYYY-MM-DD
 shipped:             # fill the date when status flips to Shipped
 check:               # optional — date to check whether this worked. Only for bets.
-checked:             # date you checked; write the outcome in ## Log
+checked:             # written by kit check <id> "<outcome>", never by hand
 review:              # optional — `human` means a person merges this one. kit accept --review
 needs:               # feature ids that must ship first, e.g. 0002, 0003. Empty = can start now
 related:             # other docs worth reading first

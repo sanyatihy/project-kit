@@ -3,7 +3,6 @@ package kit
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -62,15 +61,10 @@ func Drop(r *Repo, id, why string, today time.Time) (*DropResult, error) {
 	// the next person reads a dead doc and cannot tell whether it was wrong or forgotten.
 	if why != "" {
 		entry := "- " + today.UTC().Format(DateLayout) + " — dropped: " + why
-		logged, ok := AppendToSection(updated, "Log", entry)
-		if !ok {
-			// No ## Log to append to, and the reason is what the command is for. This
-			// used to ignore the answer and drop the line on the floor, while the only
-			// warning printed fires when *no* reason was given — so the operator who
-			// supplied one was never told it had been thrown away.
-			logged = strings.TrimRight(updated, "\n") + "\n\n## Log\n" + entry + "\n"
-		}
-		updated = logged
+		// A doc with no ## Log gets one. This used to drop the line on the floor, while
+		// the only warning printed fires when *no* reason was given — so the operator
+		// who supplied one was never told it had been thrown away.
+		updated = appendLog(updated, entry)
 	}
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err

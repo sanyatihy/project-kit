@@ -145,21 +145,9 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"protected — then claim", target.Rel, r.Trunk())
 	}
 
-	remotes := r.remotes()
-	remote := ""
-	switch {
-	case len(remotes) == 0:
-		// A project with no remote is a real and normal thing, and refusing would
-		// make the kit unusable before the first push. The claim still happens; the
-		// caller says plainly that nobody else can see it.
-	case contains(remotes, "origin"):
-		remote = "origin"
-	case len(remotes) == 1:
-		remote = remotes[0]
-	default:
-		return nil, fmt.Errorf("this project has several remotes and no origin (%s), "+
-			"and a claim must not guess which one other agents read",
-			strings.Join(remotes, ", "))
+	remote, err := pickRemote(r)
+	if err != nil {
+		return nil, err
 	}
 
 	// Cheap and fallible, and worth doing anyway: a claim already visible locally
@@ -216,6 +204,26 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 		_, _ = r.gitRun("branch", "--set-upstream-to="+remote+"/"+branch, branch)
 	}
 	return &Claimed{Branch: branch, Remote: remote}, nil
+}
+
+// pickRemote names the remote a claim is made on and released from.
+//
+// A project with no remote is a real and normal thing and answers "", because refusing
+// there would make the kit unusable before the first push; the caller says plainly that
+// nobody else can see the claim. Several remotes and no origin refuses outright: a claim
+// must not guess which one the other agents read.
+func pickRemote(r *Repo) (string, error) {
+	remotes := r.remotes()
+	switch {
+	case len(remotes) == 0:
+		return "", nil
+	case contains(remotes, "origin"):
+		return "origin", nil
+	case len(remotes) == 1:
+		return remotes[0], nil
+	}
+	return "", fmt.Errorf("this project has several remotes and no origin (%s), and a "+
+		"claim must not guess which one other agents read", strings.Join(remotes, ", "))
 }
 
 // orTrunk names the default branch, or says "the current branch" when there is no trunk
