@@ -1097,6 +1097,27 @@ func (r *Repo) statusOn(rev, rel string) string {
 	return fields["status"]
 }
 
+// DirtyFiles lists what this checkout has not committed: changed, staged and untracked
+// paths, as `git status --porcelain` reports them. Files git ignores are not among them,
+// which is what keeps build output and local settings out of the answer.
+//
+// Unknown answers empty, the way every other git question here does. This one feeds a
+// refusal, so inventing files from a failed call would block a ship for no reason.
+func (r *Repo) DirtyFiles() []string {
+	out, err := r.gitRun("status", "--porcelain")
+	if err != nil {
+		return nil
+	}
+	var paths []string
+	for _, line := range strings.Split(Normalise(out), "\n") {
+		// Two status columns, a space, then the path: "?? scratch/out.json".
+		if len(line) > 3 {
+			paths = append(paths, strings.TrimSpace(line[3:]))
+		}
+	}
+	return paths
+}
+
 // reaches reports whether a revision has landed on another — whether the branch's work
 // is already contained in the trunk.
 func (r *Repo) reaches(rev, trunk string) bool {

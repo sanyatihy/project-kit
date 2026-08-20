@@ -253,11 +253,13 @@ State a leaning. It turns most questions into a yes/no.
 Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
 status: Shipped, and stamps shipped: with today's date.
 
-Two more refusals, both exit 2. Something in its needs: has not shipped — the plan
+Three more refusals, all exit 2. Something in its needs: has not shipped — the plan
 says this was built on a foundation that is not there, so the plan is wrong and you
 have to look. Or the feature is claimed by a branch that is not this checkout's:
 ship it from that worktree, because "Shipped" is history nobody may edit and doing
-it from elsewhere freezes another agent's work mid-flight.
+it from elsewhere freezes another agent's work mid-flight. Or this checkout has
+uncommitted or untracked files: the scratch a feature generated is yours to clean
+up, and what git ignores does not count.
 
 Doing this by hand is where two audit findings come from — unticked-shipped and
 shipped-no-date — so the command removes the mistake rather than reporting it

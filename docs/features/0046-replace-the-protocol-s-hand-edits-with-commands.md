@@ -66,7 +66,7 @@ what `needs:` records.
       the pause path, and stops asking for a `## Log` line
 - [x] `kit check <id> "<outcome>"` stamps `checked:` and appends one `## Log` line on a
       `Shipped` doc; `unchecked`'s fix line names the command instead of the two edits
-- [ ] `kit ship` refuses a worktree with uncommitted or untracked files, naming them, before
+- [x] `kit ship` refuses a worktree with uncommitted or untracked files, naming them, before
       it writes the status
 - [ ] The protocol names `kit next --json` as the machine-readable board, and rule 9
       distinguishes the human in the session from the absent one; `protocolBudget` holds
