@@ -142,9 +142,9 @@ format. Every rule below is a rule some agent got wrong; none is style.
    `## Log`. What you may not do is silently drop one you could not finish. A whole feature
    that should not be built is `kit drop <id> "<why>"`: a doc on the default branch stays on
    the board until it is retired.
-8. **Stopping mid-feature? Release the claim.** Delete the branch locally *and* on the remote
-   (`git push origin --delete <branch>`), and say why in `## Log`. The pushed branch is the
-   claim, so deleting only your copy leaves the feature taken for good.
+8. **Stopping mid-feature? `kit release <id>`.** It deletes the claim on both sides, and
+   refuses while the branch carries work. That case is a pause: push it, open the pull
+   request unfinished, and say why there. Neither path writes `## Log`.
 9. **Blocked on a decision only a human can make?** `kit block <id> "<question, with your
    leaning>"`, then move to another feature — `--fyi` for what work continues without. Do not
    guess, and do not treat this as licence to take work that is not yours.

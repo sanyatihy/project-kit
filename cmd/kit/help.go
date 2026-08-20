@@ -19,6 +19,7 @@ Commands:
   kit new   <title...>                start a feature doc, ID and date filled in
   kit accept <id>                     settle a Draft — the human's call, not an agent's
   kit claim <id>                      take a feature: push the branch, win or lose
+  kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
   kit drop  <id> "<why>"              retire a feature that will not be built
@@ -201,6 +202,31 @@ branch is what says the work started.
   kit claim 0007
   kit claim 7`,
 
+	"release": `kit release <id> [--force]
+
+Stopping for good? Give the claim back. Deletes the branch that claims the feature on
+the remote first, because that ref is the claim, and then locally.
+
+Refuses while the branch carries anything beyond the feature doc. Stopping covers two
+situations and only one of them is this: work worth nothing, and work worth keeping.
+For the second, push the branch and open the pull request unfinished, saying why there
+— the doc travels with the branch, so the record lands when it merges.
+
+  0  the claim is gone and the feature is free for anyone to claim
+  2  it could not run: no such feature, nothing claims it, two branches claim it, a
+     branch this checkout cannot resolve, the remote did not answer, or the branch
+     carries work and --force was not given
+
+--force deletes it anyway. Reach for it when the commits are genuinely worth nothing;
+git keeps them reachable only through the reflog afterwards.
+
+The local branch cannot be deleted from the worktree standing on it, which is where an
+agent stopping usually is. The claim is released either way and the command says what
+is left to remove — until it goes, this checkout still reads the feature as taken.
+
+  kit release 0007
+  kit release 7 --force`,
+
 	"block": `kit block <id> "<question>" [--fyi]
 
 Blocked on something only a human can decide? Write it here and move on. Appends
@@ -259,8 +285,9 @@ every agent reads it as work nobody has started.
 Refuses a Shipped doc: that is frozen history and the work is in the repo, so
 retiring it would make the record say the feature was never built.
 
-The branch is not this command's to delete. A leftover branch named after the doc
-still reads as a claim, and dropping the doc says so rather than acting.
+The branch is not this command's to delete: that is "kit release". A leftover branch
+named after the doc still reads as a claim, and dropping the doc says so rather than
+acting.
 
 It also names any feature whose needs: cites the dropped one. A Dropped feature can
 never ship, so those docs wait for ever until their needs: is edited — and the board

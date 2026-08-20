@@ -61,7 +61,7 @@ covers the human who is present rather than filing a question at somebody sittin
 what `needs:` records.
 
 ## Tasks
-- [ ] `kit release <id>` deletes the claim branch locally and on the remote, refuses while
+- [x] `kit release <id>` deletes the claim branch locally and on the remote, refuses while
       `BranchBuildsOn` says it carries work, and takes `--force`; rule 8 splits into it and
       the pause path, and stops asking for a `## Log` line
 - [ ] `kit check <id> "<outcome>"` stamps `checked:` and appends one `## Log` line on a

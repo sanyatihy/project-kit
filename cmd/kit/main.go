@@ -79,6 +79,8 @@ func run() int {
 		return runAccept(os.Args[2:])
 	case "claim":
 		return runClaim(os.Args[2:])
+	case "release":
+		return runRelease(os.Args[2:])
 	case "drop":
 		return runDrop(os.Args[2:])
 	case "block":
@@ -353,6 +355,50 @@ func runClaim(args []string) int {
 	// No status edit to instruct: the branch just pushed is what says this is started,
 	// and asking for a second copy of that in the doc is what rule 1 forbade all along.
 	fmt.Printf("  work there, not here — the branch is the claim, so nothing else to set\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- release
+
+func runRelease(args []string) int {
+	fs := newFlagSet("release")
+	force := fs.Bool("force", false, "delete the branch even though it carries work")
+	rest := parseArgs(fs, args)
+	if len(rest) != 1 {
+		fmt.Fprintf(os.Stderr, "kit release: need one feature id\n\n%s\n", commandHelp["release"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit release: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit release: %v\n", err)
+		return 2
+	}
+
+	res, err := kit.Release(repo, id, *force)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit release: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  released  %s\n", res.Branch)
+	if res.Remote == "" {
+		fmt.Printf("  the claim was local only, so there was nothing on a remote to delete\n")
+	} else {
+		fmt.Printf("  deleted   %s/%s — the feature is free for anyone to claim\n",
+			res.Remote, res.Branch)
+	}
+	// A local branch left behind still reads as a claim in this checkout, so saying it is
+	// gone when it is not would hand the next agent a feature the board here calls taken.
+	if res.Kept != "" {
+		fmt.Printf("\n  the local branch is still here: %s\n", res.Kept)
+		fmt.Printf("  leave that checkout, then: git branch -D %s\n", res.Branch)
+	}
+	fmt.Println()
 	return 0
 }
 
