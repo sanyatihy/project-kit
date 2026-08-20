@@ -78,7 +78,7 @@ next command refuses.
   the other half at HIGH, and needs two negatives: no branch on the remote names it, and the
   remote's trunk carries no copy of the doc saying Shipped. **Status, never presence** — a
   doc reaches the trunk when it is *drafted*, so testing presence silences the check for
-  every feature — and on **any** branch the repo counts as a trunk, since a clone whose
+  every feature. And on **any** branch the repo counts as a trunk, since a clone whose
   `origin/HEAD` predates a default-branch rename points at one nothing merges to.
 - **You never merge your own work: legibility here, enforcement on the remote.** The board
   marks what the reader built (the claim it stands on, or the branch's authorship) and what
@@ -218,6 +218,12 @@ next command refuses.
 - **Feature docs are agent context, and `doc-bloat` watches them at LOW.** 150 lines, an
   alarm rather than a target: the fix line offers "say in the Log why it earns the length",
   and `kit ship` asks for the compaction at the moment a working document becomes context.
+- **The writing rule is per sentence, and the protocol owns it.** A sentence earns its place
+  by deciding, constraining or measuring something, and evidence gets one clause. README,
+  `kit help conventions` and the VISION and TECH templates cite it rather than restating it.
+- **Enforce length per sentence, not per document.** A document ceiling is cleared most
+  cheaply by cutting a paragraph; a sentence ceiling, by splitting, which deletes nothing.
+  `long-sentence` at LOW, 45 words, over the docs rule 11 leaves editable.
 - **Calibrate a doc threshold against a corpus written to the standard you want** — this
   repo just after a trim only confirms the trim. The corpus has to be checked for the
   standard it was actually written to: `localcode`'s were R&D working notes, so its `## Log`
@@ -276,11 +282,11 @@ so it needs no credential.
 **The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
 it against throwaway projects, asserting on stdout, stderr, exit codes and the files left
 behind. In-tree, because an external script is deleted without anything noticing. Three
-properties are load-bearing: `TestEveryRegisteredCheckIsExercised` compares the cases
-against `kit.Checks` both ways, so a check with no test fails the build; every audit case
-starts from the same clean project, which must report nothing; and every test is
-independent — own `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind
-`sync.Once` — which is what lets them declare `t.Parallel()`. `PARALLEL` caps how many run
+properties are load-bearing. `TestEveryRegisteredCheckIsExercised` compares the cases
+against `kit.Checks` both ways, so a check with no test fails the build. Every audit case
+starts from the same clean project, which must report nothing. Every test is independent —
+own `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind `sync.Once` —
+which is what lets them declare `t.Parallel()`. `PARALLEL` caps how many run
 at once, 4 of 12 cores by default since the gate runs beside other work: 32.8s serial, 17.4s
 capped, 8.8s uncapped. Coverage reads 4% — subprocess tests instrument nothing.
 
