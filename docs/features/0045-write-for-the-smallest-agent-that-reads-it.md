@@ -73,9 +73,10 @@ context, because a template is read when a doc is created rather than every sess
 - [x] The rule in `templates/AGENTS-section.md`, stated once, with the per-sentence test and
       the one-clause limit; `protocolBudget` holds or falls, and the test's comment says
       which rules it replaced
-- [ ] `README.md`, `templates/features-README.md`, `templates/VISION.md` and
-      `templates/TECH.md` cite the rule in one line each instead of stating a variant, and
-      `features-README.md` stops claiming every section states its own budget
+- [x] `README.md`, `templates/features-README.md`, `templates/VISION.md`,
+      `templates/TECH.md` and the budget test's failure message cite the rule instead of
+      stating a variant, and `features-README.md` stops claiming every section states its
+      own budget
 - [ ] A rejected sentence beside its rewrite in `templates/features-TEMPLATE.md`, under
       `## Design`, showing a three-clause sentence cut to two claims
 - [ ] `long-sentence` at LOW over feature docs, `docs/VISION.md` and `docs/TECH.md`, with
@@ -92,3 +93,6 @@ context, because a template is read when a doc is created rather than every sess
   written. Leaning: take it anyway, and let the rule carry the work.
 
 ## Log
+- 2026-08-20 — the box grew the budget test's failure message. It taught "write as much as
+  necessary and no more", which box 1 replaced, so shipping without it would have put the
+  rule and its superseded wording in the same binary.
