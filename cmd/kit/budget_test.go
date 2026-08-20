@@ -66,7 +66,11 @@ const (
 	// the evidence a trailing clause. The headroom is deliberate and small: under the
 	// routing rule a shipped feature adds one line, so a jump means facts arrived with
 	// their history attached again.
-	techBudget   = 295
+	//
+	// 0046 retook it at 299. Three commands land here — `release`, `check`, and `ship`
+	// refusing an unclean tree — at the rate of a line each; the fourth is the pair of
+	// fields `check` now owns, which is a decision the doc already carried in prose.
+	techBudget   = 299
 	agentsBudget = 210
 )
 

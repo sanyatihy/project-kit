@@ -182,7 +182,8 @@ next command refuses.
   `go run ./cmd/kit` authenticates to nothing. Going public removes both costs.
 - **PDCA was rejected** as the frame — it comes from repeated processes and software changes
   are mostly one-offs, so mandatory predictions became ceremony. An optional
-  `check:`/`checked:` pair survives, for genuine bets. Never backfill one onto shipped work.
+  `check:`/`checked:` pair survives, for genuine bets: `kit check` writes both and refuses a
+  doc that named no date, since backfilling one onto shipped work measures nothing.
 - **Deployment scaffolding is not generated.** `--stack go` produces what you need to write
   and verify code; the rest is the fastest-rotting part and not needed on day one.
 - **The forge is detected at `init`, written as a file, and never consulted again.** First
@@ -190,8 +191,11 @@ next command refuses.
   module path's host segment when it names a known forge. Unknown writes **no CI file** and
   says so — a missing pipeline is visible, one for the wrong forge is not. Not
   configuration: the answer becomes a file at init, so nothing can drift.
-- **Prevent before detecting.** `kit block` and `kit ship` exist because hand-writing an
-  INBOX line and shipping by hand produced findings a command makes impossible.
+- **Prevent before detecting.** `block`, `ship`, `release` and `check` exist because writing
+  an INBOX line, a status, a branch deletion or a frozen doc's `checked:` by hand each cost
+  something a command makes impossible. `release` refuses while the branch carries work
+  (`BranchBuildsOn`), pausing being the other half of stopping and the one rule 8 destroyed;
+  `ship` refuses a tree with anything uncommitted in it, the debris being the feature's own.
 - **The commands refuse exactly what the board refuses** — `Survey`, `ClaimFeature` and
   `Ship` share `UnmetNeeds`, and `Ship` reuses `Repo.Mine`. Separately, `next` withholds a
   feature whose needs have not shipped and `claim` hands it over.
