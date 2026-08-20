@@ -77,7 +77,7 @@ context, because a template is read when a doc is created rather than every sess
       `templates/TECH.md` and the budget test's failure message cite the rule instead of
       stating a variant, and `features-README.md` stops claiming every section states its
       own budget
-- [ ] A rejected sentence beside its rewrite in `templates/features-TEMPLATE.md`, under
+- [x] A rejected sentence beside its rewrite in `templates/features-TEMPLATE.md`, under
       `## Design`, showing a three-clause sentence cut to two claims
 - [ ] `long-sentence` at LOW over feature docs, `docs/VISION.md` and `docs/TECH.md`, with
       the threshold, its sample and its date in the constant's comment; conformance that it
