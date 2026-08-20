@@ -165,7 +165,25 @@ var (
 	checkDocBloat = Check{"doc-bloat", Low,
 		fmt.Sprintf("a feature doc is over %d lines — agent context, paid per session",
 			DocLineLimit)}
+	// LOW and one finding per doc, for session-narration's reasons. A doc that stacks
+	// clauses does it more than once, and the fix is the same edit every time.
+	checkLongSentence = Check{"long-sentence", Low,
+		fmt.Sprintf("a sentence runs past %d words, so it carries more than one claim",
+			SentenceWordLimit)}
 )
+
+// SentenceWordLimit is where a sentence stops being one claim.
+//
+// Not a percentile, unlike DocLineLimit. Measured on 2026-08-20 over both corpora and
+// scoped the way the check is — feature docs in a live status plus the as-built and vision
+// docs, since rule 11 forbids the fix anywhere else. At 45 words that is 5 sentences across
+// 2 docs here and 11 across 3 in localcode, a worklist somebody clears in a sitting.
+// localcode's p99 of 57 was the draft's leaning and fires once in this whole repo, which
+// cannot change what gets written.
+//
+// This repo's sentences run to a median of 19 words and a p90 of 34, so the number sits
+// clear of ordinary prose and catches the third clause rather than the second.
+const SentenceWordLimit = 45
 
 // DocLineLimit is an alarm, not a target.
 //
@@ -191,6 +209,7 @@ var Checks = []Check{
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
 	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale, checkDocBloat,
+	checkLongSentence,
 }
 
 var (
@@ -337,6 +356,7 @@ var repoChecks = []repoCheck{
 	{[]Check{checkNeedsUnknown, checkShippedEarly}, needsState},
 	{[]Check{checkNeedsCycle}, needsCycles},
 	{[]Check{checkSecretInDoc}, secretsInDocs},
+	{[]Check{checkLongSentence}, longSentences},
 	{[]Check{checkNoVision}, noVision},
 	{[]Check{checkUnfilledVision}, unfilledVision},
 	// Reported first by Audit, before any feature check, so it is skipped here.
@@ -794,6 +814,38 @@ func secretsInDocs(s *repoState) []Finding {
 				fmt.Sprintf("%s — docs are committed, and a pushed commit cannot be unpublished", what),
 				"remove it, rotate the credential, and name the variable instead of the value"))
 		}
+	}
+	return out
+}
+
+// longSentences scans what a person is still allowed to edit: the feature docs in a live
+// status, plus the as-built and vision docs, which have no status and are rewritten as the
+// system changes. Rule 11 freezes Shipped, and Dropped and Superseded are as unfixable in
+// practice, so the test is terminal rather than session-narration's narrower Shipped —
+// localcode's one Dropped doc was the finding that made the difference visible.
+func longSentences(s *repoState) []Finding {
+	docs := []string{s.r.Tech, s.r.Vision}
+	for _, f := range s.r.Features {
+		if !terminal(f.Status) {
+			docs = append(docs, f.Path)
+		}
+	}
+	var out []Finding
+	for _, path := range docs {
+		if path == "" {
+			continue
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		n, line := LongSentence(string(raw), SentenceWordLimit)
+		if n == 0 {
+			continue
+		}
+		out = append(out, finding(checkLongSentence, s.r.Rel(path),
+			fmt.Sprintf("%s:%d: %d words in one sentence", filepath.Base(path), line, n),
+			"split it — one claim per sentence, and evidence gets one clause"))
 	}
 	return out
 }

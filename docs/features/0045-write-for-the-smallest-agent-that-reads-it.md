@@ -61,8 +61,8 @@ at 123 or falling is the check on this feature rather than a matter of taste.
 A document ceiling is cleared most cheaply by cutting a paragraph, so it teaches deletion.
 A sentence ceiling is cleared most cheaply by splitting the sentence, which deletes nothing
 and leaves every decision, constraint and measurement in place. `long-sentence` at LOW,
-with the threshold taken from `localcode`'s p99 rather than from this corpus, on 0041's
-reasoning: this repo has been trimmed by hand three times and cannot calibrate itself.
+over the docs rule 11 still leaves editable, at a threshold chosen for the volume it
+produces rather than taken from either corpus's tail.
 
 **The template carries one rejected sentence beside its rewrite.** A small model imitates
 the corpus it just read more reliably than it follows an instruction about it, and this is
@@ -79,20 +79,23 @@ context, because a template is read when a doc is created rather than every sess
       own budget
 - [x] A rejected sentence beside its rewrite in `templates/features-TEMPLATE.md`, under
       `## Design`, showing a three-clause sentence cut to two claims
-- [ ] `long-sentence` at LOW over feature docs, `docs/VISION.md` and `docs/TECH.md`, with
+- [x] `long-sentence` at LOW over feature docs, `docs/VISION.md` and `docs/TECH.md`, with
       the threshold, its sample and its date in the constant's comment; conformance that it
       fires and that a doc of short sentences stays quiet
-- [ ] Fenced blocks, tables, HTML comments and `## Tasks` boxes are excluded from the scan,
+- [x] Fenced blocks, tables, HTML comments and `## Tasks` boxes are excluded from the scan,
       for `Narration`'s reason, and a wrapped sentence is measured unwrapped
-- [ ] README and `kit help checks` carry the new code, and this doc is measured against the
+- [x] README and `kit help checks` carry the new code, and this doc is measured against the
       rule it adds
-
-## Open questions
-- Which corpus sets the threshold. `localcode`'s p99 of 57 fires on 5 of its 16 docs and 2
-  of the 44 here, which is `secret-in-doc`'s shape and may be too quiet to change what gets
-  written. Leaning: take it anyway, and let the rule carry the work.
 
 ## Log
 - 2026-08-20 — the box grew the budget test's failure message. It taught "write as much as
   necessary and no more", which box 1 replaced, so shipping without it would have put the
   rule and its superseded wording in the same binary.
+- 2026-08-20 — the threshold is 45 words, and the open question is closed against its own
+  leaning. Scoped to what rule 11 leaves editable, `localcode`'s p99 of 57 fires once in
+  this repo and cannot change what gets written; 45 leaves 5 sentences across 2 docs here
+  and 11 across 3 there.
+- 2026-08-20 — the scan skips every terminal status, not only Shipped. A Dropped doc in
+  `localcode` produced a finding nobody would ever fix, which is `session-narration`'s
+  argument reaching the two statuses it does not cover.
+

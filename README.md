@@ -363,7 +363,7 @@ even when something goes wrong.
   `no-claim`, `split-claim`, `orphan-claim`, `draft-claimed`, `no-status`,
   `bad-status`, `no-protocol`
 - **LOW** — `dead-link`, `no-inbox`, `no-tech`, `no-vision`, `fyi-stale`, `doc-bloat`,
-  `session-narration`
+  `session-narration`, `long-sentence`
 
 `kit help checks` prints this list from the same registry `audit` reports from, so
 it cannot drift.

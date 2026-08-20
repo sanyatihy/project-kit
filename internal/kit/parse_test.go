@@ -214,3 +214,68 @@ func TestNarrationCatchesAMarkerSplitByTheWrap(t *testing.T) {
 		t.Errorf("got %q at line %d, want \"was wrong\" at 3", m, line)
 	}
 }
+
+func TestLongSentenceCountsAcrossTheWrapAndNamesTheLine(t *testing.T) {
+	t.Parallel()
+	// Docs here are hard-wrapped around 95 characters, so anything worth reporting spans
+	// several lines. A line-at-a-time count would see four short lines and report nothing.
+	wrapped := "## Design\nA claim, stated plainly and at rather more length than it needs here.\n" +
+		"The cache is per-process because a shared one\n" +
+		"would need invalidation across every worker, which this deployment does not\n" +
+		"have, and it also drops the dependency nobody has had time to remove.\n"
+	if n, line := LongSentence(wrapped, 30); n != 32 || line != 3 {
+		t.Errorf("got %d words at line %d, want 32 at 3", n, line)
+	}
+	// The line named is where the sentence starts, and the first one over is the one
+	// reported — not the longest, and not the one that happens to sit last.
+	if n, line := LongSentence(wrapped, 10); n != 13 || line != 2 {
+		t.Errorf("got %d words at line %d, want 13 at 2", n, line)
+	}
+}
+
+func TestLongSentenceSplitsWhereAClaimEnds(t *testing.T) {
+	t.Parallel()
+	// Two claims of twelve words are not one of twenty-four. The abbreviation and the
+	// filename are the two ways a period lies about where a sentence ended.
+	for _, text := range []string{
+		"## Design\nThe cache is per-process and holds one entry per worker thread here.\n" +
+			"A shared one would need cross-worker invalidation, which does not exist yet.\n",
+		"## Design\nRoute the durable fact to docs/TECH.md. one line, chosen as you write it.\n",
+		"## Design\nEvery backend, e.g. the local one, reports the same four counters here.\n",
+	} {
+		if n, line := LongSentence(text, 16); n != 0 {
+			t.Errorf("joined two claims into %d words at line %d:\n%s", n, line, text)
+		}
+	}
+	// A sentence can open on an identifier and still be a new claim.
+	code := "## Design\nThe check reports one finding per doc, and never more than that.\n" +
+		"`long-sentence` at LOW, with its threshold measured rather than picked.\n"
+	if n, _ := LongSentence(code, 16); n != 0 {
+		t.Errorf("joined a sentence opening on an identifier: %d words", n)
+	}
+}
+
+func TestLongSentenceIgnoresWhatIsNotProse(t *testing.T) {
+	t.Parallel()
+	// A doc about writing quotes long examples, and the template's guidance is nothing
+	// but comments — Narration's bargain. A task box is an outcome 0037 froze as written,
+	// and a table row is a cell however wide it is.
+	long := "The cache is per-process because a shared one would need invalidation across " +
+		"every worker, which this deployment does not have, and it drops a dependency."
+	for _, text := range []string{
+		"## Design\n<!-- " + long + " -->\n",
+		"## Design\n\n```\n" + long + "\n```\n",
+		"## Design\n\n| what | why |\n| --- | --- |\n| a row | " + long + " |\n",
+		"## Tasks\n- [ ] " + long + "\n",
+	} {
+		if n, line := LongSentence(text, 20); n != 0 {
+			t.Errorf("counted %d words at line %d in:\n%s", n, line, text)
+		}
+	}
+	// Two list items are two thoughts, however they wrap; joining them invents a sentence.
+	items := "## Non-goals\n- A short reason, given once and no more than that\n" +
+		"- Another short reason, given once and no more than that\n"
+	if n, _ := LongSentence(items, 16); n != 0 {
+		t.Errorf("joined two list items into %d words", n)
+	}
+}
