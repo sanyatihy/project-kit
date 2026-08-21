@@ -63,7 +63,7 @@ unsilenceable while an unparseable one reports "no shipped: date" when there is 
 
 ## Tasks
 
-- [ ] `no-protocol` reports an `AGENTS.md` that carries no protocol section
+- [x] `no-protocol` reports an `AGENTS.md` that carries no protocol section
 - [ ] An unreadable feature doc is a HIGH finding and still reserves its id
 - [ ] Paths are read `-z`, and a non-ASCII filename no longer disables the plan checks
 - [ ] `--offline` names what it skipped; a project with no `docs/features` exits 2
@@ -71,3 +71,7 @@ unsilenceable while an unparseable one reports "no shipped: date" when there is 
 - [ ] `protocol-stale` says which side is behind, and never offers a fix that overwrites the newer one
 
 ## Log
+- 2026-08-21 — the Problem's claim that this repo's own `AGENTS.md` is structurally
+  broken does not hold: the `## Work protocol` heading is intact here, so `no-protocol`
+  is correctly quiet about it. The check still closes the state for every project that
+  is in it.

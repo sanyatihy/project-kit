@@ -484,6 +484,32 @@ func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 	}
 }
 
+func TestNoProtocolFiresOnAFileWithNoProtocolSection(t *testing.T) {
+	t.Parallel()
+	// AGENTS.md present, its kit-owned section gone. Nothing looked for the heading, so
+	// audit reported that the docs and the repo agree while every agent in the project
+	// read a file with no protocol in it.
+	p := cleanProject(t)
+	p.write("AGENTS.md", "# House rules\n\nNever deploy on Friday.\n")
+
+	codes := p.auditCodes()
+	if !slices.Contains(codes, "no-protocol") {
+		t.Errorf("an AGENTS.md with no protocol section went unreported: %v", codes)
+	}
+	// One defect, one finding: protocol-stale compares a section that is not there, and
+	// both fixes are the same command anyway.
+	if slices.Contains(codes, "protocol-stale") {
+		t.Errorf("a missing section was reported as a stale one as well: %v", codes)
+	}
+
+	// The quiet half. `kit init` appends the section to the rules already there, and the
+	// check has to accept what the kit itself writes.
+	p.run("init").ok()
+	if codes := p.auditCodes(); slices.Contains(codes, "no-protocol") {
+		t.Errorf("no-protocol fired on the section kit init just wrote: %v", codes)
+	}
+}
+
 func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	t.Parallel()
 	// Three ways for the work to be somewhere, and the check has to be silent in all of

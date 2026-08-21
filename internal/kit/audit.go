@@ -138,7 +138,7 @@ var (
 	checkProtocolStale = Check{"protocol-stale", Medium,
 		"AGENTS.md carries an older work protocol than the installed kit, so agents follow superseded rules"}
 	checkNoProtocol = Check{"no-protocol", Medium,
-		"no AGENTS.md, so agents have no protocol and will invent one"}
+		"no AGENTS.md, or one carrying no work protocol — agents have none and will invent one"}
 
 	// LOW — hygiene that becomes the above.
 	checkDeadLink = Check{"dead-link", Low, "a feature doc links to a missing file"}
@@ -611,13 +611,23 @@ func noPlan(s *repoState) []Finding {
 		`run: kit new "<what the feature does>"`)}
 }
 
+// Two ways to have no protocol, and only the first was reported. A file whose
+// `## Work protocol` heading has been deleted is worse than a missing one: `protocol-stale`
+// compares a section it cannot find and so stays quiet, and nothing else looks — so the
+// project audits clean while every agent in it is working from whatever it invents.
 func noProtocol(s *repoState) []Finding {
-	if s.r.Protocol != "" {
+	if s.r.Protocol == "" {
+		return []Finding{finding(checkNoProtocol, s.r.Name,
+			"no AGENTS.md, so agents have no protocol and will invent one",
+			"run: kit init .")}
+	}
+	raw, err := os.ReadFile(s.r.Protocol)
+	if err != nil || strings.Contains(Normalise(string(raw)), ProtocolMarker) {
 		return nil
 	}
-	return []Finding{finding(checkNoProtocol, s.r.Name,
-		"no AGENTS.md, so agents have no protocol and will invent one",
-		"run: kit init .")}
+	return []Finding{finding(checkNoProtocol, s.r.Rel(s.r.Protocol),
+		"no "+ProtocolMarker+" section, so agents have no protocol and will invent one",
+		"run: kit init . — with no section to replace it appends one, keeping the rest")}
 }
 
 func protocolStale(s *repoState) []Finding {
