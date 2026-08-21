@@ -149,6 +149,19 @@ The fix is the shape 0059 gave the trunk question: one condition read by `Survey
 **Promote when:** an agent is seen running it there, or a third claim refusal the board
 cannot see is added.
 
+## Two protocol rules restate a refusal `kit claim` now makes
+
+0062 shipped while 0061 was being built: `ClaimFeature` refuses a checkout that already
+claims something, and `kit new` refuses to draft on a branch citing an id that is not this
+checkout's claim. 0061 kept rules 11 and 12 because the refusal did not exist yet and cut
+seven others on exactly that test; 0062's own `## Design` says the two collapse into it.
+Four lines read at the start of every session in every project, saying what the command now
+says at the moment it matters.
+
+**Value:** the protocol keeps only what no refusal can make.
+**Promote when:** the next round touches the protocol, or a third rule is found restating a
+refusal.
+
 ## Cut from this backlog
 
 Five entries were deleted rather than carried. `needs: none` would have put every shipped
