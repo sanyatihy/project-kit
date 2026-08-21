@@ -65,10 +65,13 @@ namespace cannot make the board wrong.
 - [x] Two agents drafting at once get different ids, and a test drives both clones
 - [x] With no remote, `kit new` names the guarantee it cannot give
 
-## Open questions
-
-- **Should `audit` report a doc whose id was never reserved?** Every doc written before
-  this ships is in that state, so the check would fire on every existing project until
-  the refs are backfilled. The leaning is no check, and a one-time backfill in `kit init`.
-
 ## Log
+- 2026-08-21 — the open question is settled on its leaning: no `audit` check for a doc
+  whose id was never reserved, and `kit init` reserves the ids a project already holds
+  instead. The backfill is not a box of its own because it is what makes the second box
+  true of a board that predates this — without it, only the docs written from here on
+  keep their number when they are deleted.
+- 2026-08-21 — a remote that exists and cannot be reached now fails the draft. The
+  non-goal covers a project with *no* remote, which still drafts and is told what it
+  lost; there was no reading of it that covered an unreachable one, and `kit new` has no
+  `--offline`. In `BACKLOG.md`, where the trigger is an agent that could not draft.
