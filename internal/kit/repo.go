@@ -29,6 +29,16 @@ const (
 	// it against that number, and against RemoteUnanswered — a bound that expires is now
 	// reported rather than printed as an empty board.
 	remoteTimeout = 15 * time.Second
+
+	// waitDelay is how long a git that has been killed, or has exited, gets before its
+	// pipes are closed under it.
+	//
+	// Without it the deadlines above are not deadlines. `exec.CommandContext` kills
+	// `git` and nothing else, so `git-remote-https` — a grandchild — goes on holding the
+	// stdout pipe, and `cmd.Output()` blocks on a read that never ends: `kit next`
+	// against a black-holed remote came back in 75s against a bound of 15. It is part of
+	// the bound rather than added to it, because the bound is what the help promises.
+	waitDelay = time.Second
 )
 
 // The layout `kit init` writes, and the only layout the kit reads. Alternatives used to

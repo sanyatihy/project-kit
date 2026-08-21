@@ -24,6 +24,7 @@ func (r *Repo) git(args ...string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
+	cmd.WaitDelay = waitDelay
 	out, err := cmd.Output()
 	if err != nil {
 		return ""
@@ -37,6 +38,7 @@ func (r *Repo) gitFed(stdin string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
+	cmd.WaitDelay = waitDelay
 	cmd.Stdin = strings.NewReader(stdin)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -60,6 +62,7 @@ func (r *Repo) gitRun(args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
+	cmd.WaitDelay = waitDelay
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
@@ -209,8 +212,11 @@ func (r *Repo) fetchHeads(remotes []string) headsResult {
 	tips := map[string]string{}
 	answered := false
 	for _, remote := range remotes {
-		ctx, cancel := context.WithTimeout(context.Background(), remoteTimeout)
+		// The deadline is remoteTimeout less what WaitDelay may spend closing the pipes
+		// after it fires, so the whole question stays inside the bound the help states.
+		ctx, cancel := context.WithTimeout(context.Background(), remoteTimeout-waitDelay)
 		cmd := exec.CommandContext(ctx, "git", "-C", r.Root, "ls-remote", "--heads", remote)
+		cmd.WaitDelay = waitDelay
 		raw, err := cmd.Output()
 		cancel()
 		if err != nil {
@@ -458,6 +464,7 @@ func ProjectRoot(start string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", "-C", start, "rev-parse", "--show-toplevel")
+	cmd.WaitDelay = waitDelay
 	if out, err := cmd.Output(); err == nil {
 		if root := strings.TrimSpace(string(out)); root != "" {
 			return root

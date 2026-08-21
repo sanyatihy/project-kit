@@ -7,8 +7,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -563,6 +566,91 @@ func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
 	fresh.lacks("older than this kit")
 	if current.plan("next", "--json").ProtocolStale {
 		t.Error("a freshly scaffolded project was reported as stale")
+	}
+}
+
+// hangingGit puts a `git` ahead of the real one on PATH that answers `ls-remote` the way
+// a black-holed remote does: it leaves a process holding the stdout pipe it inherited.
+// Everything else passes straight through. The sleeper is killed when the test ends, so
+// nothing outlives the run.
+func hangingGit(t *testing.T) string {
+	t.Helper()
+	realGit, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("finding git: %v", err)
+	}
+	dir := t.TempDir()
+	pids := filepath.Join(dir, "pids")
+	// It exits 0 rather than hanging itself, which is the harder half of the same bug:
+	// the deadline has nothing left to kill, so without WaitDelay the read never ends.
+	script := fmt.Sprintf(`#!/bin/sh
+for a in "$@"; do
+	if [ "$a" = "ls-remote" ]; then
+		sleep 45 &
+		echo $! >> %q
+		exit 0
+	fi
+done
+exec %q "$@"
+`, pids, realGit)
+	if err := os.WriteFile(filepath.Join(dir, "git"), []byte(script), 0o755); err != nil {
+		t.Fatalf("writing the shim: %v", err)
+	}
+	t.Cleanup(func() {
+		raw, err := os.ReadFile(pids)
+		if err != nil {
+			return
+		}
+		for _, field := range strings.Fields(string(raw)) {
+			if pid, err := strconv.Atoi(field); err == nil {
+				if proc, err := os.FindProcess(pid); err == nil {
+					_ = proc.Kill()
+				}
+			}
+		}
+	})
+	return dir
+}
+
+func TestTheRemoteQuestionComesBackWhileAGrandchildHoldsThePipe(t *testing.T) {
+	t.Parallel()
+	// `exec.CommandContext` kills `git` and nothing git started, so `git-remote-https`
+	// goes on holding the stdout pipe and `cmd.Output()` blocks on a read that never
+	// ends. Measured against a black-holed remote: 75s against the 15s the help states,
+	// and 15s once cmd.WaitDelay closed the pipes.
+	//
+	// The shim is that shape with the network taken out, so this is a second either way
+	// rather than a minute — and it is the case where the deadline cannot help at all,
+	// because the process it would kill has already exited.
+	p := setUp(t)
+	feature(p, "0001", "thing", "A thing", "Draft", "- [ ] Build it")
+	p.commitAll("the plan")
+	p.git("remote", "add", "origin", filepath.Join(t.TempDir(), "origin.git"))
+
+	cmd := exec.Command(kitBinary(t), "next")
+	cmd.Dir = p.Root
+	cmd.Env = append(gitEnv("TERM=dumb"),
+		"PATH="+hangingGit(t)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	started := time.Now()
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("starting kit next: %v", err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+
+	// Well above the bound and well under the 45s the sleeper holds the pipe, so a
+	// failure here is the read never ending rather than a slow machine.
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("kit next exited %v while the remote went unanswered", err)
+		}
+		t.Logf("the board came back in %s", time.Since(started).Round(time.Millisecond))
+	case <-time.After(25 * time.Second):
+		_ = cmd.Process.Kill()
+		<-done
+		t.Fatal("kit next never came back: the remote question is bounded by a deadline " +
+			"that kills git and not what git left holding the pipe")
 	}
 }
 
