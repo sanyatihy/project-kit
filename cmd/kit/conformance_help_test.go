@@ -20,7 +20,7 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 	// Everything the binary can tell someone, in one place.
 	all := p.run("help").ok().Stdout
 	for _, topic := range []string{"protocol", "template", "checks",
-		"inbox", "vision", "as-built"} {
+		"inbox", "vision", "as-built", "go-checklist"} {
 		all += p.run("help", topic).ok().Stdout
 	}
 	// Both streams: the flag package prints a command's help on stderr, so reading

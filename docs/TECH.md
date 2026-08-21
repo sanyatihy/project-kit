@@ -178,17 +178,16 @@ Draft -> Shipped     (exit: Dropped)
   `## Tasks` as unwritten** — so a doc out of `kit new` stays quiet, `claim` refuses what
   the board declines, and a stub `drop` retired stops refusing every ship in the project.
 - **Three docs, three tenses:** VISION what the project is becoming, `features/` what is
-  being done now, TECH what exists. **`kit init` writes a file only if the project will fill
-  it in**: `AGENTS.md`, under the marker note saying house rules survive above it, and a
-  `.gitkeep` because git drops the empty board directory. Nothing else — a vision stub
-  answered none of it, and `kit block` and `kit ship` make the inbox and the as-built doc.
+  being done now, TECH what exists. **`kit init` writes a file only if the project will
+  fill it in**, and refreshes nothing but the protocol section; `docs/INBOX.md` and
+  `docs/TECH.md` are made by the command that first needs them.
+- **`kit init` writes an `AGENTS.md` with a title and the marker note.** It used to write
+  the bare protocol section, opening on an `##` heading with no project name and nothing
+  saying the section is regenerated — so the promise that house rules survive above the
+  marker reached nobody.
 - **Every fact has one home, and the routing is decided at ship.** Still true afterwards and
   it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,
   naming the change; neither and it belongs in the pull request.
-- **There is one kind of work.** Work worth coordinating is a feature and gets an id; work
-  not worth three lines of doc rides on a pull request under a branch name carrying no id —
-  a second entity was designed twice and dropped twice. The protocol names no `make` target
-  and restates no refusal; a test holds each.
 - **A feature is one shipped increase in what the project can do, or can be trusted to do.**
   Named in one sentence an operator would recognise, or it is a task box or a chore commit.
   **A separate doc earns its place when it holds a decision someone must read before
@@ -279,10 +278,10 @@ Draft -> Shipped     (exit: Dropped)
   no (`claim` lost the race, `audit --strict` found HIGH), `2` it could not run or refused.
 - **Dates are passed in, never read inside** — a clock inside leaves tests unable to catch a
   UTC-midnight off-by-one.
-- **The kit ships a loop, not advice.** Every help topic is a document the kit reads or
-  writes. `go-checklist` was neither: 193 lines of single-language practice, the longest
-  text the binary carried and longer than the protocol, that `audit` could not check a
-  word of. A project wanting one puts it above the marker in its own `AGENTS.md`.
+- **Standing guidance is embedded, never copied into projects.** `go-checklist` is practice,
+  not documentation of the kit, and `audit` cannot check a word of it — a copy per repo
+  would be drift with nothing to notice it. It must never use `- [ ]`, which in a kit
+  project means a PR-sized unit of work; a test pins that.
 - **Shipped text has line ceilings** (`cmd/kit/budget_test.go`), because nothing else stops
   a doc growing and no reviewer counts lines. Tiered by how long the reader is expected to
   sit with it: command help tightest, then the protocol, then topics, then the two whole

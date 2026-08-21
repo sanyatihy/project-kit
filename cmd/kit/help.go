@@ -78,21 +78,19 @@ Topics:
   kit help inbox         the docs/INBOX.md format, and what BLOCKING means
   kit help vision        the docs/VISION.md shape, and what it is not for
   kit help as-built      the docs/TECH.md shape, section by section
+  kit help go-checklist  engineering practices for Go projects, tiered
 
 Run "kit <command> --help" for a command's options.`
 
 // topics map a help topic to embedded content, so the binary carries its own
 // documentation and an agent never needs the kit's repository.
-//
-// Every one of them is a document the kit reads or writes. Standing engineering advice
-// is not: the kit ships a loop, `audit` cannot check a word of practice, and a project
-// that wants a style guide puts it in its own house rules where it can be edited.
 var topics = map[string]string{
-	"protocol": "templates/AGENTS-section.md",
-	"template": "templates/features-TEMPLATE.md",
-	"vision":   "templates/VISION.md",
-	"as-built": "templates/TECH.md",
-	"inbox":    "templates/INBOX.md",
+	"protocol":     "templates/AGENTS-section.md",
+	"template":     "templates/features-TEMPLATE.md",
+	"go-checklist": "templates/go-checklist.md",
+	"vision":       "templates/VISION.md",
+	"as-built":     "templates/TECH.md",
+	"inbox":        "templates/INBOX.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,

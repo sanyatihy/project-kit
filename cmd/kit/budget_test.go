@@ -32,24 +32,24 @@ const (
 	// 0048 rewrote it as 26 numbered rules under four headings and it came out at 106,
 	// so the ceiling comes down with it. A ceiling left above what the text needs is not
 	// a ceiling: it is headroom nobody has to justify spending.
-	// 99 since 0061, the first round to take rules out: 27 became 20. Seven went — one
-	// false where it was read, five restating what a command prints at the moment it
-	// matters, and one stating a fact about a Go module rather than about every project.
-	protocolBudget = 99
+	// 111 since the feature rule was reframed: naming the value a feature ships, and the
+	// three ways to tell it is not one, costs a line over asserting that it records a
+	// decision. Decomposition is what the protocol is for.
+	// 113 since 0054: nothing named the step after a merge, and an install resolves to the
+	// newest tag, so every round after the last one reached no project that installed it.
+	protocolBudget = 113
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
 	commandHelpBudget = 45
 
-	// Topics are read on demand and once, so this catches unbounded growth rather than
-	// enforcing brevity.
-	// 72 since 0061 took `go-checklist` out of the binary: 193 lines of single-language
-	// practice, the longest text the kit shipped and longer than the protocol every agent
-	// must obey. The number is retaken against the longest topic left that has no ceiling
-	// of its own — the feature-doc template. The protocol is the longest topic and has
-	// protocolBudget above, so the test measuring these skips it; held to one number, the
-	// protocol would set the ceiling for every other topic.
-	topicBudget = 72
+	// Topics are read on demand and once. `go-checklist` is standing engineering
+	// guidance whose substance is the point, so this only catches unbounded growth
+	// rather than enforcing brevity.
+	// 193 since 0060: the inbox and feature-doc topics lost the lines describing checks
+	// that no longer exist, and the ceiling is retaken against the longest topic left.
+	// Headroom nobody has to justify spending is not a ceiling.
+	topicBudget = 193
 
 	// The two documents this repo itself reads every session: the protocol above, and the
 	// as-built doc before any change to the kit. 0031 cut TECH from 546 lines to 247 and
@@ -101,18 +101,15 @@ const (
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
-	// 156 since 0061. The generated section below the marker lost fourteen lines with the
-	// seven rules it dropped, and gained four above it: an install resolving to the newest
-	// tag is true of this repo and of no project the kit scaffolds, so the rule that said
-	// so is a house rule here rather than a rule written into everyone.
-	agentsBudget = 156
+	// 169 on 0054: the protocol's tagging rule arrives here with it, and the line above it
+	// names the command that cuts one — the generated section cannot, because the Go stack
+	// it scaffolds already ships a `make release` that builds a binary.
+	agentsBudget = 169
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary
 	// already documents itself, which is the growth this catches.
-	// 281 since 0061: `kit init` writes three fewer documents and the binary ships one
-	// fewer topic, so the paragraphs describing them are gone with them.
-	readmeBudget = 281
+	readmeBudget = 285
 )
 
 func lines(text string) int { return len(strings.Split(strings.TrimRight(text, "\n"), "\n")) }
@@ -171,12 +168,6 @@ func TestEveryCommandHelpStaysUnderItsCeiling(t *testing.T) {
 func TestEveryTopicStaysUnderItsCeiling(t *testing.T) {
 	t.Parallel()
 	for name, path := range topics {
-		// The protocol is the longest topic and has a tighter ceiling of its own, checked
-		// by TestTheProtocolStaysUnderItsCeiling. Measured here as well it would set this
-		// number, and topicBudget would stop measuring any other topic.
-		if name == "protocol" {
-			continue
-		}
 		raw, err := fs.ReadFile(assets.FS, path)
 		if err != nil {
 			t.Errorf("reading topic %q (%s): %v", name, path, err)

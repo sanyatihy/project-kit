@@ -195,7 +195,7 @@ kit next  [--json] [--offline]           warns above 2 features in progress
 kit audit [--json] [--strict] [--offline]  --strict exits 1 on HIGH, for CI
                                          both exit 2 where there is no docs/features
 kit init  [PATH] [--stack S] [--forge F]
-kit help  [protocol|template|checks|inbox|vision|as-built]
+kit help  [protocol|template|checks|inbox|vision|as-built|go-checklist]
 kit version
 ```
 
@@ -203,6 +203,10 @@ The binary documents itself: `kit help` explains the model and the four rules, a
 `kit help checks` lists every finding from the same registry `audit` reports from. An
 agent never needs this repository to use the tool. `kit <command> --help` describes the
 command, not just its flags.
+
+`kit help go-checklist` is standing engineering guidance rather than documentation of the
+kit — embedded rather than written into projects, because `audit` cannot check a word of
+it and a copy per repo would be drift nothing could detect.
 
 `next` and `audit` read only and never write, and each reads the repo you are in, from any
 subdirectory. For several projects, loop:
