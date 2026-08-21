@@ -3,7 +3,6 @@ package kit
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -31,11 +30,6 @@ const (
 	// at 23:00 was HIGH an hour later. A check that can fire before a human could
 	// plausibly have answered is a check nobody believes.
 	InboxStaleDays = 2
-
-	// FYIStaleDays is an FYI note nobody has drained. Long, and LOW, because FYI means
-	// work was explicitly cleared to continue without an answer — enough to say the
-	// notes are piling up, never enough to fail a build.
-	FYIStaleDays = 14
 
 	// TagStaleCommits is how far the newest tag may fall behind the trunk before an
 	// install stops being the project the docs describe. Commits rather than days,
@@ -102,8 +96,6 @@ var (
 	// were shipped and never pushed with `audit --strict` green throughout.
 	checkShippedNotPushed = Check{"shipped-not-pushed", High,
 		"Shipped, but the work is on no remote — it exists on one machine"}
-	checkNeedsCycle = Check{"needs-cycle", High,
-		"features need each other in a loop, so none of them can ever start"}
 	// HIGH because `kit claim` does not consult `audit`: this has to fail --strict to
 	// stop an agent being handed a design nobody wrote. It cannot misfire — the
 	// template's guidance lives in comments, which every parser here strips, so an
@@ -117,8 +109,6 @@ var (
 		"a feature doc could not be read, so nothing it says is being checked"}
 
 	// MEDIUM — incomplete or drifting.
-	checkNoPlan = Check{"no-plan", Medium,
-		"the project has commits but not one feature doc"}
 	// MEDIUM, not HIGH: nothing here is untrue and no agent is misled about state —
 	// the cost is drafting without a target. It cannot misfire for unfilled-template's
 	// reason: the template's guidance lives in comments, which every parser here
@@ -171,15 +161,12 @@ var (
 		"no AGENTS.md, or one carrying no work protocol — agents have none and will invent one"}
 
 	// LOW — hygiene that becomes the above.
-	checkDeadLink = Check{"dead-link", Low, "a feature doc links to a missing file"}
-	checkNoTech   = Check{"no-tech", Low,
+	checkNoTech = Check{"no-tech", Low,
 		"features have shipped but nothing describes the as-built system"}
 	checkNoInbox = Check{"no-inbox", Low,
 		"no INBOX.md, so a blocked agent has nowhere to put a question"}
 	checkNoVision = Check{"no-vision", Low,
 		"features are being planned but nothing says what the project is for"}
-	checkFYIStale = Check{"fyi-stale", Low,
-		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
 )
 
 // OfflineChecks are the checks that cannot run without an answer from the remote: under
@@ -199,21 +186,16 @@ func CheckCodes(checks []Check) []string {
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
-	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate, checkUnreadableDoc,
+	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
 	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkStalled, checkInboxStale,
 	checkShippedNotPushed,
-	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
+	checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkShippedBadDate,
 	checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkNoTasks, checkSplitClaim, checkOrphanClaim,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
-	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
+	checkNoTech, checkNoInbox, checkNoVision,
 }
-
-var (
-	linkRe   = regexp.MustCompile(`\[[^\]]*\]\(([^)]+)\)`)
-	schemeRe = regexp.MustCompile(`^[a-z][a-z0-9+.-]*:`)
-)
 
 // secretShapes are credential formats whose issuer publishes a fixed prefix or
 // envelope, so a match is a secret rather than a guess. Nothing generic belongs
@@ -337,21 +319,18 @@ var featureChecks = []featureCheck{
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
 	{[]Check{checkSplitClaim}, claimState},
 	{[]Check{checkIDMismatch}, idMismatch},
-	{[]Check{checkDeadLink}, deadLinks},
 }
 
 // repoChecks run after every feature has been through the list above.
 var repoChecks = []repoCheck{
 	{[]Check{checkOrphanClaim}, orphanClaims},
-	{[]Check{checkInboxUnparsed, checkInboxUnknown, checkFYIStale, checkInboxStale}, inboxState},
+	{[]Check{checkInboxUnparsed, checkInboxUnknown, checkInboxStale}, inboxState},
 	{[]Check{checkTechDrift, checkNoTech}, techState},
 	{[]Check{checkTagStale}, tagStale},
-	{[]Check{checkNoPlan}, noPlan},
 	{[]Check{checkNoProtocol}, noProtocol},
 	{[]Check{checkProtocolStale}, protocolStale},
 	{[]Check{checkNoInbox}, noInbox},
 	{[]Check{checkNeedsUnknown}, needsState},
-	{[]Check{checkNeedsCycle}, needsCycles},
 	{[]Check{checkSecretInDoc}, secretsInDocs},
 	{[]Check{checkNoVision}, noVision},
 	{[]Check{checkUnfilledVision}, unfilledVision},
@@ -611,18 +590,6 @@ func idMismatch(s *docState) []Finding {
 		"make them match; the ID is how commits and branches cite this doc")}
 }
 
-func deadLinks(s *docState) []Finding {
-	var out []Finding
-	for _, target := range linksIn(s.f.Path) {
-		if _, err := os.Stat(filepath.Join(filepath.Dir(s.f.Path), target)); err != nil {
-			out = append(out, finding(checkDeadLink, s.at,
-				fmt.Sprintf("%s: links to missing %q", s.f.Name(), target),
-				"fix or remove the link"))
-		}
-	}
-	return out
-}
-
 func orphanClaims(s *repoState) []Finding {
 	var out []Finding
 	for _, branch := range s.r.OrphanClaims() {
@@ -633,9 +600,9 @@ func orphanClaims(s *repoState) []Finding {
 	return out
 }
 
-// The marker decides both the fuse and the severity. `kit block --fyi` promises work
-// continues without an answer, and an FYI reported at HIGH broke that promise anyway by
-// failing the --strict gate in front of `kit ship`.
+// An FYI line is asked nothing about its age. `kit block --fyi` promises work continues
+// without an answer, so a note nobody is required to act on had a fuse on it and a finding
+// waiting at the end — reported for ever, because answering it was never required.
 func inboxState(s *repoState) []Finding {
 	knownID := map[string]bool{}
 	for _, f := range s.r.Features {
@@ -658,16 +625,10 @@ func inboxState(s *repoState) []Finding {
 				fmt.Sprintf("names feature %s, which has no doc: %s", q.Feature, clip(q.Text, 50)),
 				"correct the id, or delete the line if the feature is gone"))
 		}
-		if q.When.IsZero() {
+		if q.FYI || q.When.IsZero() {
 			continue
 		}
-		age := Days(q.When, s.today)
-		switch {
-		case q.FYI && age >= FYIStaleDays:
-			out = append(out, finding(checkFYIStale, s.r.Rel(s.r.Inbox),
-				fmt.Sprintf("undrained for %s: %s", countDays(age), clip(q.Text, 70)),
-				"answer it, or delete it if it stopped mattering"))
-		case !q.FYI && age >= InboxStaleDays:
+		if age := Days(q.When, s.today); age >= InboxStaleDays {
 			out = append(out, finding(checkInboxStale, s.r.Rel(s.r.Inbox),
 				fmt.Sprintf("unanswered for %s: %s", countDays(age), clip(q.Text, 70)),
 				"answer it, or delete it if it stopped mattering"))
@@ -719,18 +680,6 @@ func tagStale(s *repoState) []Finding {
 		fmt.Sprintf("%s is the newest tag and the trunk is %d commits past it, so an "+
 			"install gets a project that predates them", tag, behind),
 		"cut a tag on the trunk and push it — until it is pushed nothing installs it")}
-}
-
-// Set up, work happening, nothing written down — what adoption failing looks like. A
-// claim-shaped branch stands it down: the protocol puts a draft on a branch of its own, so
-// a trunk with no docs and a branch named after a feature is the protocol working.
-func noPlan(s *repoState) []Finding {
-	if len(s.r.Features) > 0 || !s.r.HasHistory() || s.r.HasClaimShapedBranch() {
-		return nil
-	}
-	return []Finding{finding(checkNoPlan, s.r.Name,
-		"the project has commits but not one feature doc — nothing records the plan",
-		`run: kit new "<what the feature does>"`)}
 }
 
 // Two ways to have no protocol, and only the first was reported. A file whose
@@ -797,8 +746,12 @@ func needsState(s *repoState) []Finding {
 			dep := s.r.FeatureByID(id)
 			switch {
 			case id == f.ID:
-				// A loop of one. Left to needs-cycle so a single defect produces a single
-				// finding with a single fix.
+				// A loop of one, which is the whole of what a cycle check ever caught
+				// here: the wait can never end, so it is the same finding as a need
+				// nothing can satisfy.
+				out = append(out, finding(checkNeedsUnknown, f.Rel,
+					fmt.Sprintf("%s: needs itself, so it can never start", f.Name()),
+					"remove it from needs: — a feature cannot be its own prerequisite"))
 			case dep == nil:
 				out = append(out, finding(checkNeedsUnknown, f.Rel,
 					fmt.Sprintf("%s: needs %s, which does not exist", f.Name(), id),
@@ -809,16 +762,6 @@ func needsState(s *repoState) []Finding {
 					"point at what replaced it, or remove it from needs:"))
 			}
 		}
-	}
-	return out
-}
-
-func needsCycles(s *repoState) []Finding {
-	var out []Finding
-	for _, cycle := range s.r.NeedsCycles() {
-		out = append(out, finding(checkNeedsCycle, s.r.Name,
-			"features need each other in a loop: "+strings.Join(cycle, " → "),
-			"break the loop — one of those needs is the wrong way round, or is not a need at all"))
 	}
 	return out
 }
@@ -912,32 +855,6 @@ func visionIsStub(path string) bool {
 		}
 	}
 	return true
-}
-
-// linksIn lists relative markdown link targets, skipping URLs and pure anchors.
-func linksIn(path string) []string {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	var targets []string
-	for _, m := range linkRe.FindAllStringSubmatch(Normalise(string(raw)), -1) {
-		// `linkRe` accepts any run of non-`)` characters, so a link written `[x](   )`
-		// yields no fields at all. Indexing that slice was a panic in the command that
-		// gates every ship and every CI run.
-		fields := strings.Fields(m[1])
-		if len(fields) == 0 {
-			continue
-		}
-		target := fields[0]
-		if schemeRe.MatchString(target) || strings.HasPrefix(target, "#") {
-			continue
-		}
-		if target, _, _ = strings.Cut(target, "#"); target != "" {
-			targets = append(targets, target)
-		}
-	}
-	return targets
 }
 
 func clip(text string, width int) string {

@@ -72,7 +72,7 @@ unrelated doc to refuse every agent's ship.
 
 - [x] No check asks for an edit to a terminal doc, and a dropped stub audits clean
 - [x] `unticked-shipped` and `shipped-early` are deleted, with their tests
-- [ ] `needs-cycle`, `no-plan`, `dead-link` and `fyi-stale` are deleted, and `--fyi` with them
+- [x] `needs-cycle`, `no-plan`, `dead-link` and `fyi-stale` are deleted; `--fyi` stays
 - [ ] The seven duplicate findings are merged into one name each
 - [ ] `kit help checks` and `docs/TECH.md` describe the vocabulary that remains
 
@@ -84,3 +84,11 @@ unrelated doc to refuse every agent's ship.
   leaning is HIGH.
 
 ## Log
+- 2026-08-21 — `--fyi` stays, against the design. 0048's non-goals name the flag as
+  thin but real, and this feature's own non-goals forbid cutting what a shipped doc
+  protects. The check was a fuse on a note nobody owes an answer; the marker is what
+  keeps that note from blocking `next` and `claim`, which is a separate promise.
+- 2026-08-21 — deleting `needs-cycle` would have silenced a doc whose `needs:` cites its
+  own id: that case was deliberately left to the cycle walk so one defect made one
+  finding. It is a need nothing can satisfy, so `needs-unknown` reports it, and a loop
+  between two docs stays visible as two blocked features on the board.

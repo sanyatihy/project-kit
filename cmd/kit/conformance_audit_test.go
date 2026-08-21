@@ -153,11 +153,6 @@ var auditCases = []struct {
 		p.write("docs/INBOX.md", fmt.Sprintf(
 			"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(10)))
 	}},
-	{"fyi-stale", func(p *project) {
-		p.write("docs/INBOX.md", fmt.Sprintf(
-			"# Inbox\n\n- [ ] %s · 0001 · FYI · Something you may want to know?\n",
-			daysAgo(kit.FYIStaleDays+1)))
-	}},
 	{"inbox-unparsed", func(p *project) {
 		p.write("docs/INBOX.md",
 			"# Inbox\n\n- [ ] we should decide about 0001 at some point\n")
@@ -166,13 +161,6 @@ var auditCases = []struct {
 		p.write("docs/INBOX.md", fmt.Sprintf(
 			"# Inbox\n\n- [ ] %s · 0099 · BLOCKING · About a feature that never existed?\n",
 			daysAgo(1)))
-	}},
-	{"no-plan", func(p *project) {
-		// Commits but no feature doc: what adoption failing looks like.
-		if err := os.Remove(p.path("docs/features/0001-thing.md")); err != nil {
-			p.t.Fatalf("removing the feature: %v", err)
-		}
-		p.commitAll("work with nothing written down")
 	}},
 	{"done-not-shipped", func(p *project) {
 		// Committed, because the gate is now whether HEAD carries the doc: a plan still
@@ -253,10 +241,6 @@ var auditCases = []struct {
 			p.t.Fatalf("removing AGENTS.md: %v", err)
 		}
 	}},
-	{"dead-link", func(p *project) {
-		p.write("docs/features/0002-linky.md", doc("0002", "Linky", "Draft", "",
-			"- [ ] Read [the design](./nowhere.md)"))
-	}},
 	{"no-tech", func(p *project) {
 		feature(p, "0002", "shipped", "Shipped thing", "Shipped", "- [x] Done")
 		p.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
@@ -265,12 +249,6 @@ var auditCases = []struct {
 	{"needs-unknown", func(p *project) {
 		p.write("docs/features/0002-hopeful.md",
 			doc("0002", "Hopeful", "Draft", "needs: 0099", "- [ ] Do it"))
-	}},
-	{"needs-cycle", func(p *project) {
-		p.write("docs/features/0002-chicken.md",
-			doc("0002", "Chicken", "Draft", "needs: 0003", "- [ ] Do it"))
-		p.write("docs/features/0003-egg.md",
-			doc("0003", "Egg", "Draft", "needs: 0002", "- [ ] Do it"))
 	}},
 	{"secret-in-doc", func(p *project) {
 		// The realistic path: an agent writes up a failed deploy and pastes what it
@@ -366,9 +344,35 @@ func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
 	p.write("docs/features/0005-alone.md",
 		doc("0005", "Alone", "Draft", "", "- [ ] Do it"))
 
-	for _, code := range []string{"needs-unknown", "needs-cycle"} {
+	for _, code := range []string{"needs-unknown"} {
 		if codes := p.auditCodes(); slices.Contains(codes, code) {
 			t.Errorf("%s fired on a valid graph: %v", code, codes)
+		}
+	}
+}
+
+func TestAFeatureThatNeedsItselfIsReported(t *testing.T) {
+	t.Parallel()
+	// The cheapest loop to write and the only one ever seen: a doc citing its own id
+	// waits for itself for ever. It is the same finding as a need nothing can satisfy,
+	// so it is reported as one rather than by a graph walk of its own.
+	p := cleanProject(t)
+	p.write("docs/features/0002-ouroboros.md",
+		doc("0002", "Ouroboros", "Draft", "needs: 0002", "- [ ] Do it"))
+	p.run("audit").ok().has("needs-unknown", "needs itself")
+
+	// A loop between two docs is no longer named, and it does not go quiet either: the
+	// board reports both as blocked and says what each is waiting on, which is the state
+	// a finding would have described.
+	pair := cleanProject(t)
+	pair.write("docs/features/0002-chicken.md",
+		doc("0002", "Chicken", "Draft", "needs: 0003", "- [ ] Do it"))
+	pair.write("docs/features/0003-egg.md",
+		doc("0003", "Egg", "Draft", "needs: 0002", "- [ ] Do it"))
+	plan := pair.plan("next", "--json")
+	for _, id := range []string{"0002", "0003"} {
+		if got := boardGroup(plan, id); got != "blocked" {
+			t.Errorf("%s is %s on the board; a feature waiting on a loop is blocked", id, got)
 		}
 	}
 }
@@ -1055,23 +1059,23 @@ func TestARemoteNeedNotBeCalledOriginForTheTrunkToResolve(t *testing.T) {
 	}
 }
 
-func TestAnFYINeverFailsTheShipGate(t *testing.T) {
+func TestAnFYIIsNeverAgedAtAll(t *testing.T) {
 	t.Parallel()
-	// `kit block --fyi` promises the feature is not blocked and work continues.
-	// BlockersFor kept that promise and inbox-stale broke it anyway: FYI was reported at
-	// HIGH, so the `kit audit --strict` gate refused to let anything ship over a note
-	// whose whole point was that it needed no answer.
+	// `kit block --fyi` promises the feature is not blocked and work continues, so
+	// nothing about the note is anybody's outstanding task. It carried a fuse anyway —
+	// LOW after a fortnight, and then a finding on every page for ever, whose fix was to
+	// answer a question that was cleared not to need one.
 	p := cleanProject(t)
 	p.write("docs/INBOX.md", fmt.Sprintf(
 		"# Inbox\n\n- [ ] %s · 0001 · FYI · Which host runs this? Leaning: decide later.\n",
 		daysAgo(365)))
 
-	r := p.run("audit", "--strict").ok()
-	if !strings.Contains(r.Stdout, "fyi-stale") {
-		t.Error("a year-old FYI was not reported at all; LOW still means visible")
+	if codes := p.auditCodes(); len(codes) > 0 {
+		t.Errorf("a year-old FYI was reported as %v; it blocks nothing and is owed nothing", codes)
 	}
+	p.run("audit", "--strict").ok()
 
-	// And the blocking case still does fail it, or the split bought nothing.
+	// And the blocking case still fails the gate, or the marker means nothing.
 	blocking := cleanProject(t)
 	blocking.write("docs/INBOX.md", fmt.Sprintf(
 		"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Which host runs this?\n",
@@ -1182,22 +1186,6 @@ func TestTheThresholdsFireAtTheirBoundaryAndNotBefore(t *testing.T) {
 		}
 	})
 
-	t.Run("fyi-stale", func(t *testing.T) {
-		for _, tc := range []struct {
-			age  int
-			want bool
-		}{{kit.FYIStaleDays - 1, false}, {kit.FYIStaleDays, true}} {
-			p := cleanProject(t)
-			p.write("docs/INBOX.md", fmt.Sprintf(
-				"# Inbox\n\n- [ ] %s · 0001 · FYI · Just so you know?\n", daysAgo(tc.age)))
-
-			if got := slices.Contains(p.auditCodes(), "fyi-stale"); got != tc.want {
-				t.Errorf("an FYI %d day(s) undrained: reported=%v, want %v",
-					tc.age, got, tc.want)
-			}
-		}
-	})
-
 	t.Run("stalled", func(t *testing.T) {
 		for _, tc := range []struct {
 			idle int
@@ -1301,11 +1289,8 @@ func TestADraftOnItsOwnBranchIsNotAnOrphan(t *testing.T) {
 	p.commitAll("Plan 0001")
 	p.git("checkout", "-q", trunk)
 
-	codes := p.auditCodes()
-	for _, unwanted := range []string{"orphan-claim", "no-plan"} {
-		if slices.Contains(codes, unwanted) {
-			t.Errorf("following the protocol was reported as %q; audit said %v", unwanted, codes)
-		}
+	if codes := p.auditCodes(); slices.Contains(codes, "orphan-claim") {
+		t.Errorf("following the protocol was reported as an orphan claim; audit said %v", codes)
 	}
 }
 
