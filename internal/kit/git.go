@@ -346,7 +346,7 @@ func (r *Repo) TagDistance() (tag string, behind int, ok bool) {
 // Every git read here that yields a path asks for `-z`. Without it git C-quotes anything
 // outside printable ASCII — `"docs/features/0001-bl\303\240nk.md"` — and every one of
 // these answers is then compared against a name `os.ReadDir` produced, so the lookup
-// silently misses. One accented character disabled `unfilled-template`, `no-tasks` and
+// silently misses. One accented character disabled `unfilled-template` and
 // `done-not-shipped` on that doc, and made `shipped-not-pushed` fire at HIGH on work
 // that was pushed. `-z` also settles a newline inside a filename, which no line-oriented
 // parse can.
@@ -377,6 +377,26 @@ func (r *Repo) trackedOnTrunk(rel string) bool {
 		}
 	}
 	return r.trunkPaths[rel]
+}
+
+// emptyTree names the object a reservation ref points at, so that ref carries nothing
+// but its own name.
+//
+// Asked of git rather than written down: the well-known value is a SHA-1, and a
+// repository whose objects are SHA-256 has a different one. Nothing is written and
+// nothing needs to be — every repository knows the empty tree without being told, so it
+// resolves in a project that has no commits at all. `--stdin` with no stdin is git
+// reading the null device, which is what makes the tree empty.
+func (r *Repo) emptyTree() (string, error) {
+	out, err := r.gitRun("hash-object", "-t", "tree", "--stdin")
+	if err != nil {
+		return "", err
+	}
+	sha := strings.TrimSpace(out)
+	if sha == "" {
+		return "", fmt.Errorf("git hash-object named no object for the empty tree")
+	}
+	return sha, nil
 }
 
 // commitDate is when a revision was last committed, or the zero time. How long a branch

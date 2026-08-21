@@ -1,9 +1,9 @@
 ---
 id: 0060
 title: Every finding is a problem someone can fix
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -70,11 +70,11 @@ unrelated doc to refuse every agent's ship.
 
 ## Tasks
 
-- [ ] No check asks for an edit to a terminal doc, and a dropped stub audits clean
-- [ ] `unticked-shipped` and `shipped-early` are deleted, with their tests
-- [ ] `needs-cycle`, `no-plan`, `dead-link` and `fyi-stale` are deleted, and `--fyi` with them
-- [ ] The seven duplicate findings are merged into one name each
-- [ ] `kit help checks` and `docs/TECH.md` describe the vocabulary that remains
+- [x] No check asks for an edit to a terminal doc, and a dropped stub audits clean
+- [x] `unticked-shipped` and `shipped-early` are deleted, with their tests
+- [x] `needs-cycle`, `no-plan`, `dead-link` and `fyi-stale` are deleted; `--fyi` stays
+- [x] The seven duplicate findings are merged into one name each
+- [x] `split-claim` is HIGH, and `kit help checks` and `docs/TECH.md` describe what remains
 
 ## Open questions
 
@@ -84,3 +84,17 @@ unrelated doc to refuse every agent's ship.
   leaning is HIGH.
 
 ## Log
+- 2026-08-21 — `--fyi` stays, against the design: 0048's non-goals name the flag as thin
+  but real, and cutting what a shipped doc protects is this feature's own non-goal. The
+  check was a fuse on a note nobody owes an answer; the marker keeps that note from
+  blocking `next` and `claim`, which is a separate promise.
+- 2026-08-21 — deleting `needs-cycle` would have silenced a doc whose `needs:` cites its
+  own id, a case deliberately left to the cycle walk. `needs-unknown` reports it as the
+  need nothing can satisfy that it is; a loop between two docs stays visible as two
+  blocked features on the board.
+- 2026-08-21 — all seven pairings held, and merging `no-tasks` widened `Unwritten()`,
+  which `claim` refuses over: a `## Tasks` of prose with no boxes is now refused as well
+  as reported. Three LOW checks were merged into MEDIUM ones, which empties that level.
+- 2026-08-21 — `split-claim` is HIGH, taking the open question's leaning, so a project
+  holding a stray claim cannot ship until `kit release` takes it back. HIGH is 10 rather
+  than the design's 9 because of it, and the last box was rewritten to carry the decision.

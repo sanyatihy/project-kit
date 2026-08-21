@@ -22,9 +22,10 @@ type ShipResult struct {
 // Ship marks a feature shipped: it verifies every box is ticked, sets the status
 // and stamps the date.
 //
-// The verification is the point. `unticked-shipped` and `shipped-no-date` are two
-// of the audit's findings and both come from doing this by hand, so doing it by
-// command removes the mistake rather than reporting it afterwards.
+// The verification is the point. `shipped-no-date` is an audit finding that comes from
+// doing this by hand, so doing it by command removes the mistake rather than reporting
+// it afterwards — and the two findings that reported the other hand-edits are deleted,
+// because a Shipped doc is the one thing nobody is allowed to correct.
 func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, error) {
 	target, err := r.WriteTarget(id)
 	if err != nil {
@@ -50,9 +51,10 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	}
 
 	// The same call `Survey` makes, so the board and the command cannot disagree.
-	// Shipping here mints `shipped-early` on a doc the protocol then forbids anyone to
-	// edit — prevent before detecting. An ordinary error and not `NotYours`: nobody else
-	// holds this, the work is done and the plan is wrong, so the operator has to look.
+	// Shipping here freezes a doc whose plan is wrong, and the protocol then forbids
+	// anyone to correct it — prevent before detecting. An ordinary error and not
+	// `NotYours`: nobody else holds this, the work is done and the plan is wrong, so the
+	// operator has to look.
 	if unmet := r.UnmetNeeds(target); len(unmet) > 0 {
 		return nil, fmt.Errorf("%s waits on %s: not shipped yet\n"+
 			"ship those first, or correct needs: to what was actually required",

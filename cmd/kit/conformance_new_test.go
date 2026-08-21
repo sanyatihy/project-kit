@@ -5,8 +5,10 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -22,6 +24,105 @@ func setUp(t *testing.T) *project {
 	p.run("init").ok()
 	writeVision(p)
 	return p
+}
+
+// reservedIDs lists the ids the remote has handed out. The reservation is the ref and
+// nothing else, so this is the only place a test can read one.
+func (p *project) reservedIDs() []string {
+	p.t.Helper()
+	cmd := exec.Command("git", "ls-remote", "origin", "refs/kit/ids/*")
+	cmd.Dir, cmd.Env = p.Root, gitEnv()
+	out, err := cmd.Output()
+	if err != nil {
+		p.t.Fatalf("reading the remote's reservations: %v", err)
+	}
+	var ids []string
+	for _, line := range strings.Split(string(out), "\n") {
+		if _, ref, found := strings.Cut(strings.TrimSpace(line), "\t"); found {
+			ids = append(ids, strings.TrimPrefix(ref, "refs/kit/ids/"))
+		}
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// The two agents fixture is a bare remote and two clones of it, both carrying the doc
+// for 0007 — so the next free id on disk is 0008 in each of them.
+
+func TestNewReservesTheIDOnTheRemote(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+
+	a.run("new", "Eighth").ok().has("0008-eighth.md", "reserved  0008")
+
+	// The doc says which id this agent took; only the ref says nobody else can be
+	// handed it, and the ref is what a second clone reads.
+	if got := a.reservedIDs(); !slices.Contains(got, "0008") {
+		t.Errorf("the remote holds %v, none of which reserves 0008 — the next drafter "+
+			"off this trunk is handed the same number", got)
+	}
+}
+
+func TestNewSkipsAnIDTheRemoteHasAlreadyHandedOut(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	// The state every second drafter is in: disk says 0008 is free and the remote says
+	// it is gone. What the ref points at is not the message — its existence is — so a
+	// reservation made by hand out of a commit has to count too.
+	a.git("push", "-q", "origin", "HEAD:refs/kit/ids/0008")
+
+	a.run("new", "Ninth").ok().has("0009-ninth.md")
+
+	if a.exists("docs/features/0008-ninth.md") {
+		t.Error("new took 0008, which the remote had already handed out")
+	}
+	if got := a.reservedIDs(); !slices.Contains(got, "0009") {
+		t.Errorf("the remote holds %v, none of which reserves the 0009 it just wrote", got)
+	}
+}
+
+// The test this feature is for.
+func TestTwoAgentsDraftingAtOnceGetDifferentIDs(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+
+	first := a.run("new", "Mine").ok()
+	// b cloned before a drafted, so its view is stale in exactly the way a second
+	// agent's is: on disk 0007 is the highest doc it can see, and nothing local says
+	// 0008 has been handed out. Six runs like this once produced four docs claiming
+	// the same number.
+	second := b.run("new", "Yours").ok()
+
+	first.has("0008-mine.md")
+	second.has("0009-yours.md")
+	if b.exists("docs/features/0008-yours.md") {
+		t.Fatal("both agents were handed 0008; every branch and commit citing it would " +
+			"name two features")
+	}
+
+	// Each drafter reserved the number it took, so a third one skips both.
+	if got := a.reservedIDs(); !slices.Equal(got, []string{"0008", "0009"}) {
+		t.Errorf("the remote reserves %v, want 0008 and 0009", got)
+	}
+}
+
+func TestADeletedDocsIDIsNeverHandedOutAgain(t *testing.T) {
+	t.Parallel()
+	// The bug this closes: the highest doc is deleted, disk offers its number again, and
+	// every branch and commit citing it comes to name a different feature. The ref
+	// outlives the file, so the number stays gone.
+	a, _ := twoAgents(t)
+	a.run("new", "Eighth").ok()
+	if err := os.Remove(a.path("docs/features/0008-eighth.md")); err != nil {
+		t.Fatalf("deleting the doc: %v", err)
+	}
+
+	a.run("new", "Ninth").ok().has("0009-ninth.md")
+
+	if a.exists("docs/features/0008-ninth.md") {
+		t.Error("0008 was handed out again once its doc was deleted, so every commit " +
+			"citing it now names two features")
+	}
 }
 
 func TestNewStartsAtOneAndCounts(t *testing.T) {
@@ -102,10 +203,11 @@ func TestANewDocIsEmptyToTheToolNotJustToTheReader(t *testing.T) {
 	r.lacks("…")
 	p.run("audit").ok().has("unfilled-template")
 
-	// One defect, one finding: an empty ## Tasks is unfilled-template's and not also
-	// no-tasks', which covers the narrower case of prose with no boxes in it.
-	if codes := p.auditCodes(); slices.Contains(codes, "no-tasks") {
-		t.Errorf("an unwritten doc reported both unfilled-template and no-tasks: %v", codes)
+	// One defect, one finding: an unwritten doc used to report unfilled-template for its
+	// empty sections and a second code for the missing boxes, two names for one plan
+	// nobody wrote.
+	if codes := p.auditCodes(); len(codes) != 3 {
+		t.Errorf("an unwritten doc reported %v; three empty sections, one name", codes)
 	}
 }
 
@@ -170,6 +272,19 @@ func TestNewUnderConcurrencyLosesNothing(t *testing.T) {
 			t.Errorf("%s is empty; a doc was announced but not written", filepath.Base(m))
 		}
 	}
+}
+
+func TestNewWithNoRemoteNamesTheGuaranteeItCannotGive(t *testing.T) {
+	t.Parallel()
+	// A project with no remote still drafts: refusing would make the kit unusable
+	// before the first push. What it cannot do is reserve, and the number it hands out
+	// is then the highest one on disk — which is the state every project was in before
+	// this, and it stayed invisible because nothing said so.
+	p := setUp(t)
+
+	r := p.run("new", "Alone").ok().has("0001-alone.md")
+	r.has("no remote", "nothing reserved 0001", "handed the same id")
+	r.lacks("reserved 0001 on")
 }
 
 func TestNewRefusesATitleItCannotUse(t *testing.T) {

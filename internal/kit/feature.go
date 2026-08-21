@@ -14,7 +14,7 @@ import (
 // Three, and no more. There is no "In progress" because the claim branch says work has
 // started, and no "Accepted" because in 82 docs across five projects nothing ever reached
 // it: every feature went from Draft to Shipped. A doc carrying a status this does not
-// list is reported as `bad-status`, which is the migration for both.
+// list is reported as `no-status`, which is the migration for both.
 var AllStatuses = []string{StatusDraft, StatusDropped, StatusShipped}
 
 // terminal reports whether a status is an end state, after which a branch bearing the
@@ -80,10 +80,16 @@ var PlannedSections = []string{"Problem", "Design", "Tasks"}
 // out of `kit new` and an agent sent to build it — so both have to mean the same thing
 // by "nobody wrote the plan". The template's guidance lives in comments, which every
 // parser here strips, so an empty section was genuinely never written.
+//
+// A ## Tasks section carrying prose and no boxes counts as unwritten too. It is the same
+// defect one step later — the doc says what will happen and hands an agent nothing to do
+// — and `next` already declines to offer such a feature, so this is what stops `claim`
+// handing out what the board will not.
 func (f *Feature) Unwritten() []string {
 	var out []string
 	for _, heading := range PlannedSections {
-		if f.Section(heading) == "" {
+		_, boxes := f.TaskCount()
+		if f.Section(heading) == "" || (heading == "Tasks" && boxes == 0) {
 			out = append(out, heading)
 		}
 	}

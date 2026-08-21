@@ -116,7 +116,9 @@ Nothing you wrote is overwritten or deleted, so it is safe on a populated direct
 and safe to re-run. Two kit-owned files are refreshed on every run: the
 "## Work protocol" section of AGENTS.md, and docs/features/TEMPLATE.md. Everything
 you fill in is left alone, and house rules go above the marker comment in AGENTS.md.
-Re-running is also how a project gets its CI file once it has a remote.
+Re-running is also how a project gets its CI file once it has a remote, and how the
+IDs its docs already hold are reserved — after which deleting a doc cannot free its
+number for a later "kit new" to hand out again.
 
 Deployment scaffolding is deliberately not generated. Add it when the project has
 something to deploy.
@@ -129,6 +131,15 @@ something to deploy.
 
 Start a feature doc in the current project. Takes the next free four-digit ID,
 fills in the title and today's date, and leaves status: Draft.
+
+The ID is reserved before the doc is written, by pushing refs/kit/ids/<id>: that
+either creates the ref or it does not, so of any number of agents drafting at
+once no two are handed the same number. The ref outlives the doc, so deleting a
+doc does not free its ID either.
+
+With no remote there is nothing to compare and swap against. The doc is still
+written, under the next free ID on disk, and the run says which guarantee it
+could not give.
 
 Fails rather than overwrites, so two agents drafting at once get an error instead
 of one silently losing its work.
@@ -244,9 +255,8 @@ nobody may edit and doing it from elsewhere freezes another agent's work mid-fli
 Or this checkout has uncommitted or untracked files: the scratch a feature generated
 is yours to clean up, and what git ignores does not count.
 
-Doing this by hand is where two audit findings come from — unticked-shipped and
-shipped-no-date — so the command removes the mistake rather than reporting it
-afterwards.
+Doing this by hand is where shipped-no-date comes from, so the command removes the
+mistake rather than reporting it afterwards.
 
 A Shipped doc is frozen history: durable facts belong in docs/TECH.md from then
 on, and what the doc decided must not be edited again.
@@ -332,8 +342,8 @@ Reads only. Uses the repo you are in, from any subdirectory. For several project
 Where do the docs disagree with the repo? Names the file, the problem, and the fix.
 
 Findings are ranked HIGH (a doc says something untrue, or work is stuck and nobody
-noticed), MEDIUM (incomplete or drifting), LOW (hygiene). See "kit help checks"
-for every finding and what it means.
+noticed) and MEDIUM (incomplete or drifting). See "kit help checks" for every
+finding and what it means.
 
 --offline names the checks it did not run, because a check that was skipped and one
 that passed otherwise print the same page. A directory with no docs/features exits 2:
@@ -380,13 +390,23 @@ func runHelp(templates fs.FS, args []string) int {
 func printChecks() {
 	fmt.Print("Every finding kit audit can report.\n\n")
 	for _, severity := range kit.Severities {
-		fmt.Printf("%s\n", severity)
+		// A level with nothing in it is not printed. Every check that was hygiene has
+		// been deleted or merged into one that is not, so LOW has no members — and a
+		// heading over an empty list advertises findings the tool cannot report.
+		printed := false
 		for _, c := range kit.Checks {
-			if c.Severity == severity {
-				fmt.Printf("  %-18s %s\n", c.Code, c.Means)
+			if c.Severity != severity {
+				continue
 			}
+			if !printed {
+				fmt.Printf("%s\n", severity)
+				printed = true
+			}
+			fmt.Printf("  %-18s %s\n", c.Code, c.Means)
 		}
-		fmt.Println()
+		if printed {
+			fmt.Println()
+		}
 	}
 	// The thresholds used to be restated here and drifted from the constants the
 	// moment they were retuned. Each check now carries its own in the line above.

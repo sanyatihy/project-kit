@@ -20,7 +20,8 @@ func shipping(p *project, args ...string) *result {
 
 func TestShipRefusesWhileABoxIsOpen(t *testing.T) {
 	t.Parallel()
-	// unticked-shipped, prevented rather than reported.
+	// An open box is prevented here rather than reported afterwards: the audit finding
+	// that once said so was deleted, because its only fix edited a Shipped doc.
 	p := setUp(t)
 	feature(p, "0007", "half", "Half done", "Draft", "- [x] One\n- [ ] Two")
 
@@ -89,7 +90,7 @@ func TestShipStampsTheDate(t *testing.T) {
 	if want := "shipped: " + time.Now().UTC().Format("2006-01-02"); !strings.Contains(doc, want) {
 		t.Errorf("date was not stamped, want %q:\n%s", want, doc)
 	}
-	p.run("audit").ok().lacks("shipped-no-date", "unticked-shipped")
+	p.run("audit").ok().lacks("shipped-no-date")
 }
 
 func TestShipFillsAnExistingEmptyDateKey(t *testing.T) {
@@ -187,9 +188,10 @@ func TestShipRefusesTwice(t *testing.T) {
 
 func TestShipRefusesWhileItsNeedsHaveNotShipped(t *testing.T) {
 	t.Parallel()
-	// shipped-early, prevented rather than reported: `ship` was minting a finding on a
-	// doc the protocol then forbids anyone to edit. Exit 2 and not 1 — nobody else holds
-	// this, the work is done and the plan is wrong, so the operator has to look.
+	// Prevented rather than reported: `ship` was minting a finding on a doc the protocol
+	// then forbids anyone to edit, which is why that finding is gone and this refusal is
+	// what is left. Exit 2 and not 1 — nobody else holds this, the work is done and the
+	// plan is wrong, so the operator has to look.
 	p := setUp(t)
 	feature(p, "0001", "base", "Base", "Draft", "- [ ] Do it")
 	p.write("docs/features/0002-store.md",
@@ -199,7 +201,6 @@ func TestShipRefusesWhileItsNeedsHaveNotShipped(t *testing.T) {
 	if strings.Contains(p.read("docs/features/0002-store.md"), "status: Shipped") {
 		t.Error("ship wrote the status despite refusing")
 	}
-	p.run("audit").ok().lacks("shipped-early")
 }
 
 func TestShipAllowsAFeatureWhoseNeedsHaveShipped(t *testing.T) {
@@ -336,8 +337,8 @@ func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
 	if !p.exists("docs/TECH.md") {
 		t.Fatal("shipping did not create the as-built doc")
 	}
-	// It answers no-tech, which is the finding it exists to resolve.
-	p.run("audit").ok().lacks("no-tech")
+	// It answers tech-drift, which is the finding it exists to resolve.
+	p.run("audit").ok().lacks("tech-drift")
 
 	// A second ship must leave what has been written into it alone. Note this is
 	// enforced by the caller finding the doc already present, not by the create —

@@ -4,7 +4,9 @@ package main
 // destroys anything — it is run on populated repos, and repeatedly.
 
 import (
+	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -323,4 +325,44 @@ func TestInitRejectsAnUnknownForge(t *testing.T) {
 	r := p.run("init", "--forge", "bitbucket").fails(2)
 	r.errHas("unknown forge")
 	r.errHas("gitlab")
+}
+
+func TestInitReservesTheIDsTheDocsAlreadyHold(t *testing.T) {
+	t.Parallel()
+	// A doc written before `kit new` reserved anything holds a number nothing recorded,
+	// so deleting it would hand that number out a second time. Re-running init is the
+	// one moment every project that predates the reservations passes through, which is
+	// why nothing reports an unreserved id as a finding.
+	p, _ := twoAgents(t)
+	if got := p.reservedIDs(); len(got) != 0 {
+		t.Fatalf("the fixture already reserves %v, so this proves nothing", got)
+	}
+
+	p.run("init").ok().has("reserved   1 id")
+
+	if got := p.reservedIDs(); !slices.Contains(got, "0007") {
+		t.Fatalf("the remote holds %v, none of which reserves the 0007 already in use", got)
+	}
+	// And the number is now out of circulation, however the doc leaves.
+	if err := os.Remove(p.path("docs/features/0007-widget.md")); err != nil {
+		t.Fatalf("deleting the doc: %v", err)
+	}
+	p.run("new", "Widget again").ok()
+	if p.exists("docs/features/0007-widget-again.md") {
+		t.Error("0007 was handed out again after its doc was deleted")
+	}
+}
+
+func TestInitReservesNothingTwiceAndNothingWithoutARemote(t *testing.T) {
+	t.Parallel()
+	// Idempotent, like the rest of init: the second run has nothing left to reserve and
+	// says nothing. And a project with no remote has nowhere to reserve anything, which
+	// must not turn a scaffold into a failure.
+	p, _ := twoAgents(t)
+	p.run("init").ok().has("reserved")
+	p.run("init").ok().lacks("reserved")
+
+	local := setUp(t)
+	local.run("new", "Alone").ok()
+	local.run("init").ok().lacks("reserved")
 }
