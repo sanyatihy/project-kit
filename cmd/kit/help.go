@@ -116,7 +116,9 @@ Nothing you wrote is overwritten or deleted, so it is safe on a populated direct
 and safe to re-run. Two kit-owned files are refreshed on every run: the
 "## Work protocol" section of AGENTS.md, and docs/features/TEMPLATE.md. Everything
 you fill in is left alone, and house rules go above the marker comment in AGENTS.md.
-Re-running is also how a project gets its CI file once it has a remote.
+Re-running is also how a project gets its CI file once it has a remote, and how the
+IDs its docs already hold are reserved — after which deleting a doc cannot free its
+number for a later "kit new" to hand out again.
 
 Deployment scaffolding is deliberately not generated. Add it when the project has
 something to deploy.
@@ -129,6 +131,15 @@ something to deploy.
 
 Start a feature doc in the current project. Takes the next free four-digit ID,
 fills in the title and today's date, and leaves status: Draft.
+
+The ID is reserved before the doc is written, by pushing refs/kit/ids/<id>: that
+either creates the ref or it does not, so of any number of agents drafting at
+once no two are handed the same number. The ref outlives the doc, so deleting a
+doc does not free its ID either.
+
+With no remote there is nothing to compare and swap against. The doc is still
+written, under the next free ID on disk, and the run says which guarantee it
+could not give.
 
 Fails rather than overwrites, so two agents drafting at once get an error instead
 of one silently losing its work.

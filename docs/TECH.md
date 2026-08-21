@@ -71,6 +71,14 @@ Draft -> Shipped     (exit: Dropped)
   before the push and deleted if it loses: a claim is held in both places or in neither.
   A name is read **whole**, namespace included, and from `for-each-ref` — `git branch`
   writes a page for a reader, and `(no branch, rebasing 0002-x)` read as a rival claim.
+- **An id is handed out once, by the same compare-and-swap.** `kit new` pushes
+  `refs/kit/ids/<id>` before writing the doc; only a *created* ref is the number, and the
+  disk scan says where to start rather than what is free. The ref outlives the file, so
+  deleting a doc no longer frees its id, and `kit init` reserves the ids a project already
+  holds — nothing reports an unreserved one, because until that ran every doc on every
+  board was one. The refs point at the empty tree, asked of git because that value differs
+  under SHA-256, so a project with no commits can still reserve. No remote means no
+  reservation, and `kit new` says which guarantee it could not give.
 - **A claim carries the plan, and branches from the trunk.** The doc must be in `HEAD`'s
   tree and in `trunkRef()`'s, or the claim is a child of the plan branch and only its own
   author can integrate it.
