@@ -81,6 +81,25 @@ func TestNewSkipsAnIDTheRemoteHasAlreadyHandedOut(t *testing.T) {
 	}
 }
 
+func TestADeletedDocsIDIsNeverHandedOutAgain(t *testing.T) {
+	t.Parallel()
+	// The bug this closes: the highest doc is deleted, disk offers its number again, and
+	// every branch and commit citing it comes to name a different feature. The ref
+	// outlives the file, so the number stays gone.
+	a, _ := twoAgents(t)
+	a.run("new", "Eighth").ok()
+	if err := os.Remove(a.path("docs/features/0008-eighth.md")); err != nil {
+		t.Fatalf("deleting the doc: %v", err)
+	}
+
+	a.run("new", "Ninth").ok().has("0009-ninth.md")
+
+	if a.exists("docs/features/0008-ninth.md") {
+		t.Error("0008 was handed out again once its doc was deleted, so every commit " +
+			"citing it now names two features")
+	}
+}
+
 func TestNewStartsAtOneAndCounts(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)

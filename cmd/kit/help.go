@@ -116,7 +116,9 @@ Nothing you wrote is overwritten or deleted, so it is safe on a populated direct
 and safe to re-run. Two kit-owned files are refreshed on every run: the
 "## Work protocol" section of AGENTS.md, and docs/features/TEMPLATE.md. Everything
 you fill in is left alone, and house rules go above the marker comment in AGENTS.md.
-Re-running is also how a project gets its CI file once it has a remote.
+Re-running is also how a project gets its CI file once it has a remote, and how the
+IDs its docs already hold are reserved — after which deleting a doc cannot free its
+number for a later "kit new" to hand out again.
 
 Deployment scaffolding is deliberately not generated. Add it when the project has
 something to deploy.

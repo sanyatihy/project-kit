@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -106,6 +107,79 @@ func reserveID(r *Repo, remote string) (string, error) {
 	return "", fmt.Errorf("%s already holds every id from %04d to %04d — that is %d drafts "+
 		"in flight, or a remote refusing refs under %s",
 		remote, start, start+reserveAttempts-1, reserveAttempts, idRef(""))
+}
+
+// BackfillIDs reserves the IDs a project's docs already hold, and answers how many were
+// not reserved already.
+//
+// Every doc written before reservations existed holds a number nothing recorded, so
+// deleting the highest of them would hand it out again. This is what closes that, and it
+// is why nothing reports an unreserved ID as a finding: there would be no board on which
+// that finding was not fired by every doc.
+//
+// One push for all of them, and re-running it is free — a reservation already there
+// answers "up to date". A project with no remote, or with no doc holding a four-digit
+// ID, asks the network nothing.
+func BackfillIDs(r *Repo) (int, error) {
+	remote, err := pickRemote(r)
+	if err != nil || remote == "" {
+		return 0, err
+	}
+	ids := heldIDs(r)
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	tree, err := r.emptyTree()
+	if err != nil {
+		return 0, err
+	}
+	args := []string{"push", "--porcelain", remote}
+	for _, id := range ids {
+		args = append(args, tree+":"+idRef(id))
+	}
+	out, pushErr := r.gitRun(args...)
+
+	created, answered := 0, 0
+	for _, id := range ids {
+		switch pushFlag(out, idRef(id)) {
+		case pushCreated:
+			created, answered = created+1, answered+1
+		case "":
+		default:
+			answered++
+		}
+	}
+	// A push that said nothing about any of these refs never reached the remote. One
+	// that answered for some of them ran, and a ref already holding something is a
+	// reservation rather than a failure — that is the state this leaves behind itself.
+	if answered == 0 {
+		if pushErr != nil {
+			return 0, pushErr
+		}
+		return 0, fmt.Errorf("git push reported nothing about %s*:\n%s", idRef(""), out)
+	}
+	return created, nil
+}
+
+// heldIDs are the four-digit numbers a project's docs already hold, from the frontmatter
+// and from the filename both — the two halves NextID counts, because a doc whose halves
+// disagree has taken both numbers out of circulation.
+func heldIDs(r *Repo) []string {
+	seen := map[string]bool{}
+	var ids []string
+	for _, f := range r.Features {
+		for _, candidate := range []string{f.ID, f.FilenamePrefix()} {
+			if n, err := strconv.Atoi(candidate); err != nil || n <= 0 || len(candidate) != 4 {
+				continue
+			}
+			if !seen[candidate] {
+				seen[candidate] = true
+				ids = append(ids, candidate)
+			}
+		}
+	}
+	sort.Strings(ids)
+	return ids
 }
 
 // NewFeature writes a feature doc from the template with its ID, title, and

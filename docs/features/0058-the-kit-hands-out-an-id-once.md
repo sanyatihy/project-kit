@@ -61,7 +61,7 @@ namespace cannot make the board wrong.
 ## Tasks
 
 - [x] `kit new` reserves the id with a pushed ref, and retries when it loses
-- [ ] A deleted doc's id is never handed out again, and a test drives it
+- [x] A deleted doc's id is never handed out again, and a test drives it
 - [ ] Two agents drafting at once get different ids, and a test drives both clones
 - [ ] With no remote, `kit new` names the guarantee it cannot give
 

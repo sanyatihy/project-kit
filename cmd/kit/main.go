@@ -147,6 +147,21 @@ func runInit(args []string) int {
 		fmt.Printf("  kept       %s\n", p)
 	}
 
+	// The ids the docs already hold, reserved once. A doc written before `kit new`
+	// reserved anything holds a number nothing recorded, so deleting it would hand that
+	// number out again — and re-running init is the one moment every existing project
+	// passes through. Best effort: a remote that cannot be reached is a warning and not
+	// a reason to fail a scaffold that has already written the files.
+	if repo, err := kit.Open(root); err == nil {
+		switch n, err := kit.BackfillIDs(repo); {
+		case err != nil:
+			fmt.Fprintf(os.Stderr, "kit init: warning — could not reserve the ids "+
+				"already in use: %v\n", err)
+		case n > 0:
+			fmt.Printf("  reserved   %s already in use\n", plural(n, "id"))
+		}
+	}
+
 	// Both routes out are the agent's own, because the forge is a discoverable fact and
 	// not a decision only a human can make. Saying nothing here is what would leave a
 	// project with no pipeline and no way to know it.
