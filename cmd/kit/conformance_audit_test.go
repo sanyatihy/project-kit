@@ -115,6 +115,14 @@ var auditCases = []struct {
 		p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
 			"Draft", "", "- [ ] Something"))
 	}},
+	{"duplicate-key", func(p *project) {
+		// One doc, two statuses. The parser keeps the last and every writer rewrote the
+		// first, so the finding used to survive its own fix.
+		p.write("docs/features/0002-twice.md",
+			"---\nid: 0002\ntitle: Twice\nstatus: Shipped\nstatus: Draft\n"+
+				"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n\n"+
+				"## Tasks\n- [ ] Do it\n\n## Log\n- 2026-01-01 — started.\n")
+	}},
 	{"stalled", func(p *project) {
 		abandonedClaim(p, "0002", "stuck", 40)
 	}},

@@ -26,12 +26,19 @@ type ShipResult struct {
 // of the audit's findings and both come from doing this by hand, so doing it by
 // command removes the mistake rather than reporting it afterwards.
 func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, error) {
-	target := r.FeatureByID(id)
-	if target == nil {
-		return nil, fmt.Errorf("no feature %q", id)
+	target, err := r.WriteTarget(id)
+	if err != nil {
+		return nil, err
 	}
-	if target.Status == StatusShipped {
+	// A terminal status is terminal in both directions. `drop` refuses a Shipped doc as
+	// frozen history; this refused only Shipped, so `kit ship` on a retired feature exited
+	// 0 and reported `(was Dropped)` — the kit itself reopening an end state.
+	switch {
+	case target.Status == StatusShipped:
 		return nil, fmt.Errorf("%s is already Shipped", target.Name())
+	case terminal(target.Status):
+		return nil, fmt.Errorf("%s is %s — it is a retired plan, not work to finish",
+			target.Name(), target.Status)
 	}
 	if open, total := target.TaskCount(); total == 0 {
 		return nil, fmt.Errorf("%s has no ## Tasks boxes — there is nothing to have finished",
@@ -88,13 +95,12 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 		return nil, fmt.Errorf("%s has no status: line in its frontmatter to set",
 			target.Name())
 	}
-	if stampedDoc, ok := SetField(updated, "shipped", stamped); ok {
-		updated = stampedDoc
-	} else {
-		// No shipped: key at all — put one directly after the status.
-		updated = strings.Replace(updated, "status: "+StatusShipped,
-			"status: "+StatusShipped+"\nshipped: "+stamped, 1)
-	}
+	// AddField writes inside the frontmatter, including the insert for a doc carrying no
+	// shipped: key at all. That insert was a document-wide strings.Replace on the first
+	// `status: Shipped`, which is a frontmatter *value* before it is the status line — a
+	// doc whose title quotes a status had the date spliced into its title.
+	// SetStatus above has already proved there is a frontmatter, so this cannot fail.
+	updated, _ = AddField(updated, "shipped", stamped)
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err
 	}

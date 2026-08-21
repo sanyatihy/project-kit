@@ -15,7 +15,10 @@ var (
 	commentRe  = regexp.MustCompile(`(?s)<!--.*?-->`)
 	untickedRe = regexp.MustCompile(`^\s*[-*]\s*\[ \]\s*(.*)$`)
 	tickedRe   = regexp.MustCompile(`^\s*[-*]\s*\[[xX]\]\s*(.*)$`)
-	trailingRe = regexp.MustCompile(`\s+#.*$`)
+	// A frontmatter comment is set off by more than one space, which is how the template
+	// writes one. One space is part of the value: `\s+#` truncated `title: Fix #123
+	// crash` to `Fix`, and the kit then named the feature by half its title everywhere.
+	trailingRe = regexp.MustCompile(`\s{2,}#.*$`)
 	// Four digits, the shape of every feature id the kit allocates.
 	idListRe = regexp.MustCompile(`\b\d{4}\b`)
 	dateRe   = regexp.MustCompile(`^\s*(\d{4}-\d{2}-\d{2})`)
@@ -30,28 +33,18 @@ func Normalise(text string) string {
 
 // ParseFrontmatter reads the flat `key: value` block between --- fences.
 //
-// Intentionally dumb: no nesting, no lists, no multi-line values. A trailing
-// ` # comment` is dropped so template scaffolding never reads as a real value.
+// Intentionally dumb: no nesting, no lists, no multi-line values. A comment set off by
+// two or more spaces is dropped, so template scaffolding never reads as a real value.
 func ParseFrontmatter(text string) (map[string]string, string) {
 	fields := map[string]string{}
-	if !strings.HasPrefix(text, "---\n") {
+	_, end, ok := FrontmatterBounds(text)
+	if !ok {
 		return fields, text
 	}
-	end := strings.Index(text[4:], "\n---")
-	if end == -1 {
-		return fields, text
-	}
-	end += 4
-	for _, line := range strings.Split(text[4:end], "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "#") {
-			continue
-		}
-		key, value, found := strings.Cut(line, ":")
-		if !found {
-			continue
-		}
-		fields[strings.TrimSpace(key)] = strings.TrimSpace(trailingRe.ReplaceAllString(value, ""))
-	}
+	// The last occurrence of a repeated key wins, which SetField's first-occurrence
+	// rewrite disagrees with. DuplicateKeys is how the commands that write refuse the
+	// doc rather than either of them guessing.
+	forEachField(text, func(key, value string) { fields[key] = value })
 	rest := text[end:]
 	if len(rest) >= 4 {
 		rest = rest[4:]
@@ -59,17 +52,65 @@ func ParseFrontmatter(text string) (map[string]string, string) {
 	return fields, rest
 }
 
+// DuplicateKeys lists the frontmatter keys a doc declares more than once, in document
+// order and once each however often they repeat.
+func DuplicateKeys(text string) []string {
+	count := map[string]int{}
+	var out []string
+	forEachField(text, func(key, _ string) {
+		if count[key]++; count[key] == 2 {
+			out = append(out, key)
+		}
+	})
+	return out
+}
+
+// forEachField walks the frontmatter's `key: value` lines in document order. A whole-line
+// comment and a line with no colon are not fields, so neither reaches the caller.
+func forEachField(text string, visit func(key, value string)) {
+	start, end, ok := FrontmatterBounds(text)
+	if !ok {
+		return
+	}
+	for _, line := range strings.Split(text[start:end], "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		key, value, found := strings.Cut(line, ":")
+		if !found {
+			continue
+		}
+		visit(strings.TrimSpace(key), strings.TrimSpace(trailingRe.ReplaceAllString(value, "")))
+	}
+}
+
 // FrontmatterBounds gives the byte range of the frontmatter block's body — what sits
 // between the opening `---` and the closing one — reporting false when there is none.
+//
+// The close is a whole line of three dashes, not the first "\n---" anywhere. As a
+// substring it also matched a longer run — a setext underline — which ended the block
+// early and dropped every field below it, reported as `no-status` on a doc that has one.
 func FrontmatterBounds(text string) (start, end int, ok bool) {
 	if !strings.HasPrefix(text, "---\n") {
 		return 0, 0, false
 	}
-	at := strings.Index(text[4:], "\n---")
-	if at == -1 {
-		return 0, 0, false
+	for at := 4; ; {
+		found := strings.Index(text[at:], "\n---")
+		if found == -1 {
+			return 0, 0, false
+		}
+		found += at
+		line := text[found+1:]
+		if nl := strings.Index(line, "\n"); nl != -1 {
+			line = line[:nl]
+		}
+		// Trailing blanks are tolerated: they are invisible in an editor, and a doc
+		// whose fence carries one is not a doc without frontmatter.
+		if strings.TrimRight(line, " \t") == "---" {
+			return 4, found, true
+		}
+		at = found + 1
 	}
-	return 4, at + 4, true
 }
 
 // SetField rewrites one `key: value` line inside the frontmatter. Reports false when

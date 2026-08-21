@@ -28,6 +28,54 @@ func TestParseFrontmatter(t *testing.T) {
 	}
 }
 
+func TestParseFrontmatterKeepsAHashInsideAValue(t *testing.T) {
+	t.Parallel()
+	// The comment marker is the template's run of spaces before the #. A single space is
+	// part of the value: an issue number in a title used to truncate the title to the
+	// word before it, and every message naming the feature carried the stub.
+	fields, _ := ParseFrontmatter("---\ntitle: Fix #123 crash\n" +
+		"status: Draft        # Draft | Shipped | Dropped\n---\n")
+
+	if got := fields["title"]; got != "Fix #123 crash" {
+		t.Errorf("title = %q, want the whole line", got)
+	}
+	if got := fields["status"]; got != "Draft" {
+		t.Errorf("status = %q, want Draft — the template's comment is still dropped", got)
+	}
+}
+
+func TestParseFrontmatterClosesOnAWholeLine(t *testing.T) {
+	t.Parallel()
+	// A run of more than three dashes is a setext underline, not a fence. The close was a
+	// substring search for the first "\n---", which matched it — so the block ended
+	// early, every field below it was lost, and audit reported no-status on a doc that
+	// declares one.
+	fields, body := ParseFrontmatter("---\nid: 0007\ntitle: T\n---------\n" +
+		"status: Draft\n---\n\n## Problem\np\n")
+
+	if got := fields["status"]; got != "Draft" {
+		t.Errorf("status = %q, want Draft — the block ended at the underline", got)
+	}
+	if want := "\n\n## Problem\np\n"; body != want {
+		t.Errorf("body = %q, want %q", body, want)
+	}
+}
+
+func TestDuplicateKeys(t *testing.T) {
+	t.Parallel()
+	// The state `ship` used to produce: it rewrote the first status: and the parser reads
+	// the last, so the doc carries two and the kit and its author disagree about which.
+	text := "---\nid: 0007\nstatus: Shipped\nstatus: Draft\nshipped:\n---\n\n" +
+		"## Design\nstatus: Draft is a line in the body, not a second key\n"
+
+	if got := DuplicateKeys(text); len(got) != 1 || got[0] != "status" {
+		t.Errorf("DuplicateKeys = %q, want [status]", got)
+	}
+	if got := DuplicateKeys("---\nid: 0007\nstatus: Draft\n---\n"); got != nil {
+		t.Errorf("DuplicateKeys = %q on a doc that repeats nothing, want none", got)
+	}
+}
+
 func TestParseFrontmatterAbsent(t *testing.T) {
 	t.Parallel()
 	fields, body := ParseFrontmatter("no frontmatter here\n")

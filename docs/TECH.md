@@ -51,7 +51,11 @@ Draft -> Shipped     (exit: Dropped)
   flight — the claim branch says that. `Accepted` was removed after 82 docs across five
   projects reached it zero times; every feature went `Draft` to `Shipped`. `Superseded` was
   removed because no command could write it, so reaching it required the hand edit the
-  protocol forbids.
+  protocol forbids. Both end states are terminal in both directions: `ship` refuses a
+  Dropped doc as `drop` refuses a Shipped one.
+- **A write needs one unambiguous doc.** `WriteTarget` refuses an id two docs declare and a
+  key one doc declares twice; the first match `FeatureByID` returns is for reads, where
+  refusing to render would help nobody.
 - **Six frontmatter fields.** `id`, `title`, `status`, `created`, `shipped`, `needs`.
   `check:`, `checked:` and `review:` went with the commands that wrote them. `related:`
   went because 77 docs filled it in and no line of Go ever read it.
@@ -257,6 +261,10 @@ Each of these has already caused a bug.
   `main.go.tmpl`.
 - **Templates are embedded through `assets.go` at the repo root** — `go:embed` cannot reach
   a parent directory from `cmd/kit/`.
+- **The frontmatter closes on a line of exactly three dashes, is written only inside those
+  bounds, and takes a comment only after two spaces.** Each is a bug already had: a setext
+  underline closed the block early, a document-wide replace stamped the ship date into a
+  `title:` quoting a status, and `\s+#` cut `title: Fix #123 crash` down to `Fix`.
 - **Go's `flag` stops parsing at the first positional.** `parseArgs` loops it so a flag
   after an argument still parses.
 - **The `## Work protocol` section of a project's `AGENTS.md` is regenerated** by `init`.

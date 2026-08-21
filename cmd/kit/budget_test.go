@@ -60,7 +60,10 @@ const (
 	// each of which the next reader has to know before touching a check.
 	// 309 on merging 0053, whose three lines state the CI contract this repo now holds
 	// itself to: one list of steps, a pinned linter, and no coverage number.
-	techBudget = 309
+	// 317 on merging 0051: the frontmatter format now carries three constraints an agent
+	// can reverse in one line each — where the block closes, where a write may land, and
+	// what marks a comment — and a write needs one unambiguous doc to land on.
+	techBudget = 317
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
