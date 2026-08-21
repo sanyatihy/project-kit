@@ -77,6 +77,8 @@ func run() int {
 		return runNew(os.Args[2:])
 	case "claim":
 		return runClaim(os.Args[2:])
+	case "chore":
+		return runChore(os.Args[2:])
 	case "release":
 		return runRelease(os.Args[2:])
 	case "drop":
@@ -338,6 +340,69 @@ func runClaim(args []string) int {
 	// No status edit to instruct: the branch just pushed is what says this is started,
 	// and asking for a second copy of that in the doc is what the model forbade all along.
 	fmt.Printf("  work there, not here — the branch is the claim, so nothing else to set\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- chore
+
+func runChore(args []string) int {
+	for _, a := range args {
+		if isHelpFlag(a) {
+			fmt.Println(commandHelp["chore"])
+			return 0
+		}
+		if strings.HasPrefix(a, "-") {
+			fmt.Fprintf(os.Stderr, "kit chore: unknown option %q\n\n%s\n", a, commandHelp["chore"])
+			return 2
+		}
+	}
+	title := strings.TrimSpace(strings.Join(args, " "))
+	if title == "" {
+		fmt.Fprintln(os.Stderr, "kit chore: say what the work is, e.g."+
+			` kit chore "Fix the redirect loop"`)
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit chore: %v\n", err)
+		return 2
+	}
+	chored, err := kit.ClaimChore(repo, title, time.Now().UTC())
+	if err != nil {
+		// Somebody already holds this work, which is an answer and not a breakage —
+		// exit 1, the code `claim` uses for the same sentence.
+		var taken *kit.NotYours
+		if errors.As(err, &taken) {
+			fmt.Fprintf(os.Stderr, "\n  not claimed: %s\n", taken.Why)
+			fmt.Fprintf(os.Stderr, "  %s\n\n", taken.Then)
+			return 1
+		}
+		fmt.Fprintf(os.Stderr, "kit chore: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  claimed   %s\n", chored.Branch)
+	if chored.Remote == "" {
+		fmt.Printf("\n  this project has no remote, so no other agent can see it, and\n")
+		fmt.Printf("  nothing reserved %s — add a remote before running a second agent.\n\n",
+			chored.ID)
+	} else {
+		fmt.Printf("  pushed    %s/%s — the push is the claim, and you won it\n",
+			chored.Remote, chored.Branch)
+		fmt.Printf("  reserved  %s on %s — no other agent can be handed it\n\n",
+			chored.ID, chored.Remote)
+	}
+	fmt.Printf("  %s, on the branch and nowhere else until it merges:\n", kit.ChoreLog)
+	fmt.Printf("  %s\n", chored.Line)
+	fmt.Printf("\nnext:\n")
+	fmt.Printf("  git worktree add ../%s-%s %s\n", repo.Name, chored.ID, chored.Branch)
+	fmt.Printf("  work there, not here — the branch is the claim\n")
+	// Said here because this is where the routing is decided, and the operator is the
+	// one who knows. A chore has no doc to write the design into, so work that needs one
+	// is a feature and has to be turned into one before it is built, not after.
+	fmt.Printf("  a chore has no ## Problem, no ## Design and no boxes. If this needs any\n")
+	fmt.Printf("  of them it is a feature: kit release %s, then plan it with kit new\n\n",
+		chored.ID)
 	return 0
 }
 

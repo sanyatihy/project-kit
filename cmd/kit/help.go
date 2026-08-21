@@ -18,6 +18,7 @@ Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
   kit claim <id>                      take a feature: push the branch, win or lose
+  kit chore "<what>"                  take work that is not a feature: id, branch, line
   kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
@@ -192,6 +193,38 @@ branch is what says the work started.
 
   kit claim 0007
   kit claim 7`,
+
+	"chore": `kit chore "<what>"
+
+Take work that is not a feature — a fix to something already shipped, a data update,
+a merge. Reserves an id out of the same space features take theirs from, pushes the
+branch that claims it, and commits one line to docs/CHORES.md on that branch:
+
+  - <id> · YYYY-MM-DD · <who> · <what>
+
+The push is the claim, exactly as it is for a feature: creating the branch on the
+remote either succeeds or it does not, so two agents given the same bug cannot both
+start it. This checkout is left untouched — the record travels on the branch and
+reaches the trunk when the work merges, so a finished chore leaves its line behind.
+
+A chore has no ## Problem, no ## Design and no boxes. Work that needs any of those is
+a feature: release the chore and plan it with "kit new".
+
+  0  it is yours — a worktree command to start in is printed
+  1  it is not yours: a chore under that name is already claimed
+  2  it could not run: no title, a title with no usable characters,
+     a title containing a four-digit number, the project is not set up,
+     no commits yet, this checkout already claims something, this checkout is
+     ahead of the default branch, the branch is already on the remote,
+     the push said nothing about the ref, or several remotes and no origin
+
+A title carrying a four-digit number is refused rather than mangled: the branch is
+named from the title, and any branch citing an id claims that feature.
+
+With no remote nothing is reserved and nobody else can see the claim; the run says so.
+
+  kit chore "Fix the redirect loop"
+  kit chore "Refresh the country table"`,
 
 	"release": `kit release <id> [--force]
 

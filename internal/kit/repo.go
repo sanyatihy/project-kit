@@ -132,6 +132,11 @@ type Repo struct {
 	trunkPaths      map[string]bool
 	trunkPathsAsked bool
 
+	// The chore record as each revision carries it, read once per revision. `audit` asks
+	// it of every claim-shaped branch whose id names no feature doc, and a `git show`
+	// each is the cost that grows with the board.
+	choreLogs map[string]string
+
 	// Every ref this repository has, read in one `git show-ref`. The alternative is one
 	// `rev-parse` per candidate per feature, which is where 32 of a board read's 58
 	// processes went.

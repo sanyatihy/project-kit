@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -50,6 +52,68 @@ func (r *Repo) gitFed(stdin string, args ...string) (string, error) {
 		return stdout.String(), fmt.Errorf("git %s: %s", args[0], detail)
 	}
 	return stdout.String(), nil
+}
+
+// gitIndexed is gitRun with an index file of its own, so building a commit never
+// touches the index this checkout is using. Every other call inherits the process
+// environment, which is what carries a developer's git configuration into the fixtures.
+func (r *Repo) gitIndexed(index string, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
+	cmd.WaitDelay = waitDelay
+	cmd.Env = append(os.Environ(), "GIT_INDEX_FILE="+index)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	if err := cmd.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			detail = err.Error()
+		}
+		return stdout.String(), fmt.Errorf("git %s: %s", args[0], detail)
+	}
+	return stdout.String(), nil
+}
+
+// commitRecord makes a commit on top of HEAD carrying one file, and answers it. Nothing
+// is checked out and nothing is written to disk: the caller is standing in the trunk
+// checkout, whose working tree and index are not this command's to touch.
+//
+// Plumbing rather than `git commit`, for that reason. The blob is written, HEAD's tree is
+// read into an index of its own, the one path is replaced, and the tree that comes out is
+// committed — so a commit exists on no branch until the caller names one, and a claim
+// that loses its race leaves an unreachable object rather than a change anybody sees.
+func (r *Repo) commitRecord(rel, content, message string) (string, error) {
+	blob, err := r.gitFed(content, "hash-object", "-w", "-t", "blob", "--stdin")
+	if err != nil {
+		return "", err
+	}
+	dir, err := os.MkdirTemp("", "kit-index-")
+	if err != nil {
+		return "", err
+	}
+	// Nothing useful to do if the temporary index will not go away.
+	defer func() { _ = os.RemoveAll(dir) }()
+	index := filepath.Join(dir, "index")
+	if _, err := r.gitIndexed(index, "read-tree", "HEAD"); err != nil {
+		return "", err
+	}
+	if _, err := r.gitIndexed(index, "update-index", "--add",
+		"--cacheinfo", "100644,"+strings.TrimSpace(blob)+","+rel); err != nil {
+		return "", err
+	}
+	tree, err := r.gitIndexed(index, "write-tree")
+	if err != nil {
+		return "", err
+	}
+	commit, err := r.gitRun("commit-tree", strings.TrimSpace(tree), "-p", "HEAD", "-m", message)
+	if err != nil {
+		return "", err
+	}
+	if sha := strings.TrimSpace(commit); sha != "" {
+		return sha, nil
+	}
+	return "", fmt.Errorf("git commit-tree named no commit for %s", rel)
 }
 
 // gitRun runs git and reports what went wrong, returning stdout either way.

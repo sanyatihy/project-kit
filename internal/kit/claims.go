@@ -198,6 +198,27 @@ func (r *Repo) Mine(id string) bool {
 	return f != nil && r.HeadBranch() == f.Branch()
 }
 
+// HeldClaim is the four-digit id this checkout's branch cites, empty when it cites none.
+//
+// The same broad reading of a branch name that `Claims` uses, and deliberately so: a name
+// mentioning an id is a claim on that feature, wherever in the name it sits. It is what
+// `claim` and `chore` refuse over, so that one checkout holds one unit of work.
+func (r *Repo) HeldClaim() string { return idListRe.FindString(r.HeadBranch()) }
+
+// ForeignClaim is the id this checkout's branch claims for something other than itself:
+// the number its name cites, unless the branch is that feature's own claim branch.
+//
+// This is what separates `plan/fold-in-0002-fix` from `0002-alpha`. Both cite 0002 and
+// both count as claims on it; only the second is the claim the kit made. Drafting on the
+// first writes a plan round onto somebody's feature, which `new` refuses.
+func (r *Repo) ForeignClaim() string {
+	held := r.HeldClaim()
+	if held == "" || r.Mine(held) {
+		return ""
+	}
+	return held
+}
+
 // claimRev is the revision a claim is: the commit the remote advertises for the branch,
 // because the branch on the remote is the claim. Every copy here is a cache of it — a
 // local head records the last push, `refs/remotes/*` the last fetch — and either can be
@@ -535,7 +556,12 @@ func (r *Repo) OrphanClaims() []string {
 			continue
 		}
 		seen[name] = true
-		if rev := r.resolveBranch(name); rev == "" || r.BranchCarriesItsDoc(name) {
+		rev := r.resolveBranch(name)
+		// A chore's branch cites an id no feature doc declares, by construction, so
+		// without the second question every chore in flight is reported as an orphan.
+		// Its own tree carries the record, which is the same positive evidence a
+		// feature's branch gives by carrying its doc.
+		if rev == "" || r.BranchCarriesItsDoc(name) || r.choreOn(rev, m[1]) != nil {
 			continue
 		}
 		out = append(out, name)

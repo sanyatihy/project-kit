@@ -60,7 +60,7 @@ states out loud — see `## Open questions`.
 
 ## Tasks
 
-- [ ] `kit chore "<what>"` claims a named unit of work and records one line
+- [x] `kit chore "<what>"` claims a named unit of work and records one line
 - [ ] The board lists claimed chores, and `kit release` ends a chore claim
 - [ ] `claim` refuses when this checkout already holds a claim
 - [ ] The protocol routes non-feature work to `kit chore` instead of to an unclaimed branch
@@ -79,3 +79,13 @@ states out loud — see `## Open questions`.
   nothing behind. The leaning is the file.
 
 ## Log
+
+- Both open questions go their stated way. `Claims` keeps its broad match and the
+  `plan/fold-in-0002-fix` hole is closed at `kit new`; the chore record is a file,
+  `docs/CHORES.md`, one line per chore.
+- The record is committed onto the claim branch, not written into the checkout. `kit
+  chore` runs from the trunk checkout, so a line left uncommitted there would never
+  reach the worktree the agent is sent to, and a lost push would leave it standing.
+- `kit chore` refuses a title carrying a four-digit number, and refuses a second chore
+  under a name somebody already holds. The first is this feature's own hole; the second
+  is what "two agents given the same bug" needs, since sequential ids cannot collide.
