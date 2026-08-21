@@ -73,6 +73,11 @@ var (
 	// HIGH — a doc says something untrue, or work is stuck and nobody noticed.
 	checkDuplicateID = Check{"duplicate-id", High,
 		"two feature docs share one id:, so one branch claims both and one inbox line blocks both"}
+	// HIGH, and next to duplicate-id for the same reason: the doc says two things about
+	// itself, and every command that reads one of them believes it. `ship` used to write
+	// the line nothing reads, so the finding survived its own fix.
+	checkDuplicateKey = Check{"duplicate-key", High,
+		"a doc declares one frontmatter key twice, so the value the kit reads is not the line a write would change"}
 	checkStalled = Check{"stalled", High,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
@@ -155,7 +160,7 @@ var (
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
-	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
+	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
 	checkShippedNotPushed,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
 	checkInboxUnparsed, checkInboxUnknown,
@@ -286,6 +291,9 @@ func finding(c Check, where, problem, fix string) Finding {
 
 // featureChecks run in this order, and the order is the report's order.
 var featureChecks = []featureCheck{
+	// First: every check below reads a frontmatter field, and a repeated key means the
+	// field they read is not the field the author edits.
+	{[]Check{checkDuplicateKey}, duplicateKey},
 	{[]Check{checkUntickedShipped}, untickedShipped},
 	{[]Check{checkShippedNoDate}, shippedNoDate},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
@@ -357,6 +365,16 @@ func duplicateID(s *repoState) []Finding {
 			fmt.Sprintf("id %s is used by %s", id, strings.Join(docs, " and ")),
 			"give all but one a free id, rename their files to match, and rename any "+
 				"branch that claims them"))
+	}
+	return out
+}
+
+func duplicateKey(s *docState) []Finding {
+	var out []Finding
+	for _, key := range s.f.Duplicates {
+		out = append(out, finding(checkDuplicateKey, s.at,
+			fmt.Sprintf("%s: frontmatter declares %s: twice", s.f.Name(), key),
+			"delete the one that is wrong — the kit reads the last and rewrites the first"))
 	}
 	return out
 }

@@ -39,6 +39,11 @@ type Feature struct {
 	Needs   []string // feature ids that must ship before this can start
 	Shipped time.Time
 
+	// Duplicates are the frontmatter keys this doc declares more than once. Reading
+	// tolerates them — the last one wins — and writing cannot, so it is carried rather
+	// than dropped at parse time.
+	Duplicates []string
+
 	sections map[string]string
 }
 

@@ -34,15 +34,42 @@ func Normalise(text string) string {
 // ` # comment` is dropped so template scaffolding never reads as a real value.
 func ParseFrontmatter(text string) (map[string]string, string) {
 	fields := map[string]string{}
-	if !strings.HasPrefix(text, "---\n") {
+	_, end, ok := FrontmatterBounds(text)
+	if !ok {
 		return fields, text
 	}
-	end := strings.Index(text[4:], "\n---")
-	if end == -1 {
-		return fields, text
+	// The last occurrence of a repeated key wins, which SetField's first-occurrence
+	// rewrite disagrees with. DuplicateKeys is how the commands that write refuse the
+	// doc rather than either of them guessing.
+	forEachField(text, func(key, value string) { fields[key] = value })
+	rest := text[end:]
+	if len(rest) >= 4 {
+		rest = rest[4:]
 	}
-	end += 4
-	for _, line := range strings.Split(text[4:end], "\n") {
+	return fields, rest
+}
+
+// DuplicateKeys lists the frontmatter keys a doc declares more than once, in document
+// order and once each however often they repeat.
+func DuplicateKeys(text string) []string {
+	count := map[string]int{}
+	var out []string
+	forEachField(text, func(key, _ string) {
+		if count[key]++; count[key] == 2 {
+			out = append(out, key)
+		}
+	})
+	return out
+}
+
+// forEachField walks the frontmatter's `key: value` lines in document order. A whole-line
+// comment and a line with no colon are not fields, so neither reaches the caller.
+func forEachField(text string, visit func(key, value string)) {
+	start, end, ok := FrontmatterBounds(text)
+	if !ok {
+		return
+	}
+	for _, line := range strings.Split(text[start:end], "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "#") {
 			continue
 		}
@@ -50,13 +77,8 @@ func ParseFrontmatter(text string) (map[string]string, string) {
 		if !found {
 			continue
 		}
-		fields[strings.TrimSpace(key)] = strings.TrimSpace(trailingRe.ReplaceAllString(value, ""))
+		visit(strings.TrimSpace(key), strings.TrimSpace(trailingRe.ReplaceAllString(value, "")))
 	}
-	rest := text[end:]
-	if len(rest) >= 4 {
-		rest = rest[4:]
-	}
-	return fields, rest
 }
 
 // FrontmatterBounds gives the byte range of the frontmatter block's body — what sits

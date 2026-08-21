@@ -378,6 +378,12 @@ func runBlock(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
 		return 2
 	}
+	// A question blocks by id, so a doc whose frontmatter says two things about itself
+	// blocks nothing anyone can act on. Same refusal `ship` and `drop` make.
+	if _, err := repo.WriteTarget(id); err != nil {
+		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
+		return 2
+	}
 	line, err := kit.AppendQuestion(repo, id, strings.Join(rest[1:], " "), *fyi, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)

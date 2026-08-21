@@ -26,9 +26,9 @@ type ShipResult struct {
 // of the audit's findings and both come from doing this by hand, so doing it by
 // command removes the mistake rather than reporting it afterwards.
 func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, error) {
-	target := r.FeatureByID(id)
-	if target == nil {
-		return nil, fmt.Errorf("no feature %q", id)
+	target, err := r.WriteTarget(id)
+	if err != nil {
+		return nil, err
 	}
 	// A terminal status is terminal in both directions. `drop` refuses a Shipped doc as
 	// frozen history; this refused only Shipped, so `kit ship` on a retired feature exited

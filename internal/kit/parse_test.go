@@ -28,6 +28,21 @@ func TestParseFrontmatter(t *testing.T) {
 	}
 }
 
+func TestDuplicateKeys(t *testing.T) {
+	t.Parallel()
+	// The state `ship` used to produce: it rewrote the first status: and the parser reads
+	// the last, so the doc carries two and the kit and its author disagree about which.
+	text := "---\nid: 0007\nstatus: Shipped\nstatus: Draft\nshipped:\n---\n\n" +
+		"## Design\nstatus: Draft is a line in the body, not a second key\n"
+
+	if got := DuplicateKeys(text); len(got) != 1 || got[0] != "status" {
+		t.Errorf("DuplicateKeys = %q, want [status]", got)
+	}
+	if got := DuplicateKeys("---\nid: 0007\nstatus: Draft\n---\n"); got != nil {
+		t.Errorf("DuplicateKeys = %q on a doc that repeats nothing, want none", got)
+	}
+}
+
 func TestParseFrontmatterAbsent(t *testing.T) {
 	t.Parallel()
 	fields, body := ParseFrontmatter("no frontmatter here\n")

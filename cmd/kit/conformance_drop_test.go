@@ -51,6 +51,22 @@ func TestDropRefusesAShippedDoc(t *testing.T) {
 	p.run("drop", "0001", "changed my mind").fails(2).errHas("frozen history")
 }
 
+func TestDropRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
+	t.Parallel()
+	// Same write, same ambiguity: retiring the first status: leaves the last one saying
+	// the feature is still open, and the command reports success.
+	p := setUp(t)
+	p.write("docs/features/0001-twice.md",
+		"---\nid: 0001\ntitle: Twice\nstatus: Draft\nstatus: Draft\n"+
+			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n\n"+
+			"## Tasks\n- [x] Done\n\n## Log\n- 2026-01-01 — x.\n")
+
+	p.run("drop", "0001", "changed my mind").fails(2).errHas("status", "twice")
+	if strings.Contains(p.read("docs/features/0001-twice.md"), "status: Dropped") {
+		t.Error("drop wrote the status despite refusing")
+	}
+}
+
 func TestDropReportsWhoWasWaitingOnIt(t *testing.T) {
 	t.Parallel()
 	// Dropping stranded every feature declaring the id in needs: without a word — `audit`

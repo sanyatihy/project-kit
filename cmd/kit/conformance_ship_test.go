@@ -232,6 +232,25 @@ func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
 	shipping(a, "0007").ok().has("shipped")
 }
 
+func TestShipRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
+	t.Parallel()
+	// The parser keeps the last occurrence and SetField rewrites the first, so this
+	// shipped: exit 0, a status line nothing reads, and `audit` repeating the same
+	// finding with the same fix for ever.
+	p := setUp(t)
+	p.write("docs/features/0007-twice.md",
+		"---\nid: 0007\ntitle: Twice\nstatus: Draft\nstatus: Draft\n"+
+			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n\n"+
+			"## Tasks\n- [x] Done\n\n## Log\n- 2026-01-01 — x.\n")
+
+	shipping(p, "0007").fails(2).errHas("status", "twice")
+	if strings.Contains(p.read("docs/features/0007-twice.md"), "status: Shipped") {
+		t.Error("ship wrote the status despite refusing")
+	}
+	// And it is reported as well as refused, so a doc already in this state is findable.
+	p.run("audit").has("duplicate-key")
+}
+
 func TestShipRefusesAnUnknownFeature(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)

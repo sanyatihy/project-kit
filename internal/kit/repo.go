@@ -1,6 +1,7 @@
 package kit
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -183,20 +184,22 @@ func (r *Repo) readFeature(path string) *Feature {
 	if err != nil {
 		return nil // an unreadable file is a filesystem problem, not a doc problem
 	}
-	fields, body := ParseFrontmatter(Normalise(string(raw)))
+	text := Normalise(string(raw))
+	fields, body := ParseFrontmatter(text)
 	rel, err := filepath.Rel(r.Root, path)
 	if err != nil {
 		rel = path
 	}
 	f := &Feature{
-		Path:     path,
-		Rel:      filepath.ToSlash(rel),
-		ID:       fields["id"],
-		Title:    fields["title"],
-		Status:   fields["status"],
-		Needs:    ParseIDList(fields["needs"]),
-		Shipped:  ParseDate(fields["shipped"]),
-		sections: ParseSections(body),
+		Path:       path,
+		Rel:        filepath.ToSlash(rel),
+		ID:         fields["id"],
+		Title:      fields["title"],
+		Status:     fields["status"],
+		Needs:      ParseIDList(fields["needs"]),
+		Shipped:    ParseDate(fields["shipped"]),
+		Duplicates: DuplicateKeys(text),
+		sections:   ParseSections(body),
 	}
 	if f.Title == "" {
 		f.Title = strings.TrimSuffix(filepath.Base(path), ".md")
@@ -212,6 +215,26 @@ func (r *Repo) FeatureByID(id string) *Feature {
 		}
 	}
 	return nil
+}
+
+// WriteTarget is FeatureByID for the commands that write — `ship`, `drop` and `block`.
+//
+// Reading a doc tolerates an ambiguity that writing one cannot. A key declared twice makes
+// the read and the write different lines: ParseFrontmatter keeps the last occurrence and
+// SetField rewrites the first, so `ship` reported success, left two contradictory statuses
+// behind and `audit` repeated the same finding with the same fix for ever. Which line the
+// author meant is not the kit's to guess.
+func (r *Repo) WriteTarget(id string) (*Feature, error) {
+	target := r.FeatureByID(id)
+	if target == nil {
+		return nil, fmt.Errorf("no feature %q", id)
+	}
+	if len(target.Duplicates) > 0 {
+		return nil, fmt.Errorf("%s declares %s twice in its frontmatter, so the line the "+
+			"kit reads is not the line it would rewrite\ndelete the one that is wrong, "+
+			"then run this again", target.Name(), strings.Join(target.Duplicates, " and "))
+	}
+	return target, nil
 }
 
 // UnmetNeeds lists the ids a feature is still waiting on, in declared order.

@@ -60,7 +60,7 @@ Reproduced:
 
 - [x] `Ship` refuses any terminal status, and a test drives both directions
 - [x] The `shipped:` fallback uses `AddField`; a fenced `status:` in the body survives a ship
-- [ ] A duplicate frontmatter key is a HIGH finding and a refusal in `ship`, `drop` and `block`
+- [x] A duplicate frontmatter key is a HIGH finding and a refusal in `ship`, `drop` and `block`
 - [ ] `ship`, `drop` and `block` refuse an id that names two docs, as `claim` already does
 - [ ] The frontmatter close is line-anchored
 - [ ] A value containing `#` keeps its text — `title: Fix #123 crash` is not `Fix`
