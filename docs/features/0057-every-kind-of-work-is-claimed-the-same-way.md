@@ -1,7 +1,7 @@
 ---
 id: 0057
 title: Every kind of work is claimed the same way
-status: Draft
+status: Dropped
 created: 2026-08-21
 shipped:
 needs: 0058
@@ -79,3 +79,4 @@ states out loud — see `## Open questions`.
   nothing behind. The leaning is the file.
 
 ## Log
+- 2026-08-21 — dropped: the premise was wrong: chores are 9% of branches, and the merge fixes it cited were on claim branches all along
