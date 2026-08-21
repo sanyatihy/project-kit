@@ -43,11 +43,17 @@ var docLayout = []struct{ src, dest string }{
 var stackLayout = map[string][][2]string{
 	"go": {
 		{"Makefile", "Makefile"},
-		{"gitignore", ".gitignore"},
 		{"gomod", "go.mod"},
 		{"main.go.tmpl", "cmd/{{name}}/main.go"},
 		{"README.md", "README.md"},
 	},
+}
+
+// ignoreLayout is the .gitignore a stack writes instead of the default. Instead, not as
+// well: one file to read beats two, at the price of repeating the editor and OS lines in
+// every stack — the trade worth taking while there is one stack.
+var ignoreLayout = map[string]string{
+	"go": "templates/stacks/go/gitignore",
 }
 
 // ciLayout is the one part of a stack that depends on where the project is hosted.
@@ -167,6 +173,15 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 		}
 	}
 
+	// A .gitignore is a refusal expressed as a file. Without one the first `git add -A`
+	// an agent runs commits whatever the editor and the operating system left behind —
+	// and `kit claim` pushes HEAD, so it reaches the branch the next agent works in. The
+	// default ignores what is true of every project and never guesses at the language.
+	if err := place(templates, ignoreFor(stack), filepath.Join(root, ".gitignore"), root,
+		map[string]string{"name": filepath.Base(root)}, res); err != nil {
+		return nil, err
+	}
+
 	featuresDir := FindFeaturesDir(root)
 	for _, doc := range docLayout {
 		dest := filepath.Join(root, strings.Replace(doc.dest, "docs/features", featuresDir, 1))
@@ -179,6 +194,14 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 		return nil, err
 	}
 	return res, nil
+}
+
+// ignoreFor names the .gitignore template a stack gets, and the default for no stack.
+func ignoreFor(stack string) string {
+	if src, ok := ignoreLayout[stack]; ok {
+		return src
+	}
+	return "templates/gitignore"
 }
 
 // place writes one template, and keeps an existing destination. Nothing outside the

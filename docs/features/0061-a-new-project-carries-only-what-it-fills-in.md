@@ -63,7 +63,9 @@ line, against moving four files between three commands.
 editor and OS droppings and nothing else. The alternative is a rule in prose telling agents
 what not to commit, which is the weakest tier the kit has, and the cost of not having one
 lands on whoever reviews a branch carrying somebody's `.DS_Store`. The Go stack's copy
-drops the lines that are not about Go.
+drops the lines that are not about Go, and replaces the default rather than extending it:
+one file to read, paid for by repeating the editor and OS lines in every stack the kit
+grows.
 
 **A rule earns its place by deciding something no refusal can.** The protocol keeps the
 rules that are judgement — how to decompose, what `needs:` means, that the doc is the one
@@ -100,16 +102,10 @@ numbering. They are kept; `b9c8b08`, `654116b` and `d8bdd11` are reversed.
 
 - [x] The protocol commits are kept, and the three that cut `init` and the checklist reversed
 - [x] `init` writes `VISION.md`, `INBOX.md`, `TECH.md` and `BACKLOG.md`, overwriting nothing
-- [ ] `init` writes a `.gitignore`, and the Go stack's copy drops what is not Go
+- [x] `init` writes a `.gitignore`, and the Go stack's copy drops what is not Go
 - [ ] `unfilled-vision` waits for features, so a virgin project audits clean
 - [ ] `kit help backlog` describes the file rule 14 names, and the protocol points at the checklist
 - [ ] A test holds every file the protocol names against something that writes or describes it
-
-## Open questions
-
-- **Should `--stack go` replace the default `.gitignore` or extend it?** Replacing means one
-  file to read; extending means the editor and OS lines are not repeated in every stack the
-  kit grows. The leaning is to replace while there is one stack.
 
 ## Log
 
@@ -117,3 +113,5 @@ numbering. They are kept; `b9c8b08`, `654116b` and `d8bdd11` are reversed.
   says; the cut of `init` is reversed and the checklist kept, leaving one feature about
   what a new project gets. The filename predates the retitle: `Branch()` reads it, and
   renaming it would strand the claim this feature already holds.
+- 2026-08-21 — the `.gitignore` question is settled on its leaning: a stack's copy replaces
+  the default rather than extending it, while there is one stack.

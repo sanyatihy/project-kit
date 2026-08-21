@@ -60,11 +60,13 @@ Run it from anywhere — `kit` is on your `$PATH`. Prompting an agent inside the
 repo to set up some other project gives it write access to the tool it is using.
 
 It creates the directory if missing, makes it a git repo, and writes `AGENTS.md`,
-`docs/VISION.md`, `docs/INBOX.md`, `docs/TECH.md` and `docs/features/BACKLOG.md`. It
-overwrites nothing you wrote, so it is safe on a populated directory and safe to re-run.
+`docs/VISION.md`, `docs/INBOX.md`, `docs/TECH.md`, `docs/features/BACKLOG.md` and a
+`.gitignore` covering what an editor and an operating system leave behind. It overwrites
+nothing you wrote, so it is safe on a populated directory and safe to re-run.
 
-With `--stack go` it also writes `Makefile`, `.gitignore`, `go.mod`, `cmd/<name>/`,
-`internal/`, a `README.md`, and one CI pipeline running `make check`.
+With `--stack go` it also writes `Makefile`, `go.mod`, `cmd/<name>/`, `internal/`, a
+`README.md`, and one CI pipeline running `make check` — and a `.gitignore` for Go in
+place of the default rather than alongside it.
 
 Which CI file depends on where the project is hosted, from the first thing that says so:
 
@@ -80,13 +82,10 @@ carries outranks it. `--forge github|gitlab` settles it outright.
 
 Re-running is how a project catches up after the kit is upgraded. One kit-owned thing is
 refreshed: the `## Work protocol` section of `AGENTS.md`. Every document is yours the
-moment it is placed — `VISION.md`, `INBOX.md`, `TECH.md`, `BACKLOG.md` and every stack
-file are never touched again — and house rules live above the marker comment in
-`AGENTS.md`.
-
-That one command is where every project file comes from, so there is one answer to where
-a file came from. `kit help vision`, `kit help as-built`, `kit help inbox` and
-`kit help backlog` print the shape each one is waiting for.
+moment it is placed and is never touched again; house rules live above the marker comment
+in `AGENTS.md`. Nothing but `kit init` creates a project file, so there is one answer to
+where a file came from, and `kit help vision`, `inbox` and `as-built` print the shape each
+is waiting for.
 
 Once set up you never run anything yourself. `AGENTS.md` tells the agent to run
 `kit next` at the start of a session, so "what should I work on?" is enough.

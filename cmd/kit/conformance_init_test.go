@@ -49,6 +49,58 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 	}
 }
 
+func TestInitWritesAGitignoreThatGuessesAtNoLanguage(t *testing.T) {
+	t.Parallel()
+	// A refusal expressed as a file: the first `git add -A` an agent runs commits
+	// whatever the editor and the OS left behind, and `kit claim` pushes HEAD, so it
+	// reaches the branch the next agent works in.
+	p := newProject(t)
+	p.run("init").ok()
+
+	got := p.read(".gitignore")
+	for _, want := range []string{".DS_Store", "Thumbs.db", ".idea/", ".vscode/", "*.swp"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the default .gitignore does not ignore %s:\n%s", want, got)
+		}
+	}
+	// What it ignores is what is true of every project, not what this one will be built
+	// in. A language, a framework or a cloud here is a guess at a project one command old.
+	for _, unwanted := range []string{"vendor/", "go.work", "node_modules", "__pycache__",
+		"tfstate", "terraform", "ansible", "vault"} {
+		if strings.Contains(got, unwanted) {
+			t.Errorf("the default .gitignore names %s, which is a guess at the stack:\n%s",
+				unwanted, got)
+		}
+	}
+}
+
+func TestInitStackGoReplacesTheDefaultGitignore(t *testing.T) {
+	t.Parallel()
+	// A stack's copy is the whole file, not an addition to the default: one file to
+	// read. So it carries Go's lines and repeats the editor and OS ones.
+	p := newProject(t)
+	p.run("init", "--stack", "go").ok()
+
+	got := p.read(".gitignore")
+	for _, want := range []string{"vendor/", "go.work", "*.test", ".DS_Store", ".idea/"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the go .gitignore does not ignore %s:\n%s", want, got)
+		}
+	}
+	// Infrastructure this stack scaffolds none of. Deployment is deliberately not
+	// generated, so ignoring its output was fifteen lines about files that never appear.
+	for _, unwanted := range []string{"terraform", "tfstate", "tfvars", "vault", "ansible"} {
+		if strings.Contains(got, unwanted) {
+			t.Errorf("the go .gitignore still names %s, which the stack scaffolds none of:\n%s",
+				unwanted, got)
+		}
+	}
+	// And it is written from the stack once, not written twice and reported both ways.
+	if n := strings.Count(p.run("init", "--stack", "go").ok().Stdout, ".gitignore"); n != 1 {
+		t.Errorf("a re-run reported .gitignore %d times, want 1", n)
+	}
+}
+
 func TestInitCreatesAGitRepoButLeavesAnExistingOneAlone(t *testing.T) {
 	t.Parallel()
 	// The model depends on git: branches are claims and staleness reads the log.
@@ -75,6 +127,7 @@ func TestInitNeverOverwrites(t *testing.T) {
 		"docs/INBOX.md":            "MINE — do not touch\n",
 		"docs/TECH.md":             "# As built\n\nOne process, one database.\n",
 		"docs/features/BACKLOG.md": "MINE — ideas\n",
+		".gitignore":               "build/\n",
 	}
 	p := newProject(t)
 	for path, want := range mine {
@@ -108,6 +161,7 @@ func TestInitRewritesNothingItPlacedOnceTheProjectHasFilledItIn(t *testing.T) {
 		"docs/INBOX.md":            "- [ ] 2026-01-02 · 0001 · FYI · mine\n",
 		"docs/TECH.md":             "MINE — one process, one database\n",
 		"docs/features/BACKLOG.md": "MINE — ideas\n",
+		".gitignore":               "build/\n",
 	}
 	for path, want := range mine {
 		p.write(path, want)

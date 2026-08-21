@@ -101,10 +101,11 @@ var commandHelp = map[string]string{
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes AGENTS.md, docs/VISION.md, docs/INBOX.md, docs/TECH.md and
-docs/features/BACKLOG.md. With --stack it also scaffolds the code layout and one CI
-pipeline. Nothing else creates a project file, so there is one answer to where a
-file came from.
+and writes AGENTS.md, docs/VISION.md, docs/INBOX.md, docs/TECH.md,
+docs/features/BACKLOG.md and a .gitignore for what an editor and an OS leave behind.
+Nothing else creates a project file, so there is one answer to where a file came
+from. With --stack it also scaffolds the code layout, one CI pipeline, and that
+stack's .gitignore in place of the default.
 
 Which CI file that is depends on where the project is hosted, and it is worked out
 from the first thing that actually says: a .gitlab-ci.yml or .github/workflows the
