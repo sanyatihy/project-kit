@@ -61,6 +61,18 @@ next command refuses.
   tree — the push is `HEAD:refs/heads/<branch>` — and in `trunkRef()`'s, or the claim is a
   child of the plan branch and only its own author can integrate it. Exit 2, not `NotYours`:
   nothing on an unlanded round is claimable.
+- **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks whether
+  HEAD *is* the claim branch, which is right for `ship` and wrong for `release`: `claim`
+  tells you to make a worktree, so between claiming and moving there you could not release
+  what you had just taken. A local ref means this clone created the branch.
+- **An unknown answer must not be the permissive one in a command that deletes.**
+  `BranchBuildsOn` reads an unresolvable trunk as "carries no work", so `release` deleted
+  branches full of commits at exit 0 wherever the default branch was neither `main` nor
+  `master`. The ladder gains the remote-tracking copy, and `release` refuses when none
+  resolves.
+- **The conformance harness gives the binary `gitEnv()`, not `os.Environ()`.** It inherited
+  the developer's `~/.gitconfig`, so three tests — including the one written to catch that
+  `release` bug — passed only where `init.defaultBranch` is `main`.
 - **The checkout is the unit of isolation.** A worktree holds one feature; this checkout's
   own claim reads as *yours*, and `next` names no starting point where one is held.
 - **Ordering needs no syntax.** Task order is dependency order and `next` returns the

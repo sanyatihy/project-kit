@@ -70,7 +70,10 @@ const (
 	// 0046 retook it at 299. Three commands land here — `release`, `check`, and `ship`
 	// refusing an unclean tree — at the rate of a line each; the fourth is the pair of
 	// fields `check` now owns, which is a decision the doc already carried in prose.
-	techBudget   = 299
+	// 311 since 0047: three facts about what may destroy a claim, which is the one
+	// invariant a reader must not reverse. The ceiling is a ceiling, so it is raised with
+	// a reason rather than treated as a target — 0048 brings the file back under it.
+	techBudget   = 311
 	agentsBudget = 210
 )
 

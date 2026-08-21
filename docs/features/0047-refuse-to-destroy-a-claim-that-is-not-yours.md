@@ -1,9 +1,9 @@
 ---
 id: 0047
 title: Refuse to destroy a claim that is not yours
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 check:
 checked:
 review:
