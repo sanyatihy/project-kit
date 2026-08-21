@@ -29,20 +29,22 @@ func cleanProject(t *testing.T) *project {
 	return p
 }
 
-// writeVision answers the question `kit init` no longer asks by scaffolding: a project
-// with features and no VISION.md is a real finding — no-protocol — so a fixture without
-// one is not a project with nothing wrong.
+// writeVision answers the stub `kit init` leaves behind. A project still carrying that
+// stub is a real finding — unfilled-vision — so a fixture that keeps it is not a
+// project with nothing wrong.
 func writeVision(p *project) {
 	p.t.Helper()
 	p.write("docs/VISION.md", "# VISION\n\n## What this is\nA thing that does the thing.\n")
 }
 
-// visionStub is the shape `kit help vision` prints, saved and left unanswered — the one
-// way a project gets a stub now that nothing scaffolds one. Taken from the binary rather
-// than imitated, so the cases below run against the template as it actually ships.
+// visionStub puts back the stub `kit init` writes, rather than an imitation of it, so
+// the cases below run against the template as it actually ships.
 func visionStub(p *project) {
 	p.t.Helper()
-	p.write("docs/VISION.md", p.run("help", "vision").ok().Stdout)
+	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
+		p.t.Fatalf("removing VISION.md: %v", err)
+	}
+	p.run("init").ok()
 }
 
 func (p *project) auditCodes(flags ...string) []string {
@@ -230,8 +232,8 @@ var auditCases = []struct {
 		p.write("AGENTS.md", "# House rules\n\n## Work protocol\n\nAn older protocol.\n")
 	}},
 	{"unfilled-vision", func(p *project) {
-		// `kit help vision > docs/VISION.md` and nothing else. The template's guidance
-		// is all comments, so every section under its headings reads as empty.
+		// A fresh `kit init` and nothing else. The template's guidance is all
+		// comments, so every section under its headings reads as empty.
 		visionStub(p)
 	}},
 }
@@ -422,16 +424,18 @@ func TestAuditIsQuietOnACleanProject(t *testing.T) {
 	p.run("audit").ok().has("docs and repo agree")
 }
 
-func TestAScaffoldedProjectHasNothingToReport(t *testing.T) {
+func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
 	t.Parallel()
-	// The whole of what `kit init` leaves behind, audited. A scaffold that reports a
-	// finding at once is the tool judging itself, and it was the only finding a project
-	// with nothing in it ever had: with no features there is nothing to decompose, so
-	// nothing is owed a vision yet.
+	// The baseline covers a project that has both. This pins the other half of the
+	// rule: with no features there is nothing to decompose, so a fresh `kit init`
+	// must not be greeted with a finding at the moment the tool is being judged.
 	p := newProject(t)
 	p.run("init").ok()
-	if codes := p.auditCodes(); len(codes) != 0 {
-		t.Errorf("a project one command old already has findings: %v", codes)
+	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
+		t.Fatalf("removing VISION.md: %v", err)
+	}
+	if codes := p.auditCodes(); slices.Contains(codes, "no-protocol") {
+		t.Errorf("a missing vision was reported before anything was planned: %v", codes)
 	}
 }
 
@@ -456,8 +460,9 @@ func TestUnfilledVisionStaysQuietOnAPartlyWrittenVision(t *testing.T) {
 
 func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 	t.Parallel()
-	// The missing-file case belongs to no-protocol, which carries the prompt once
-	// features exist. Reporting both would make one gap produce two findings.
+	// The missing-file case belongs to no-protocol, which reports every document
+	// `kit init` writes. Reporting both would make one gap produce two findings with two
+	// different fixes.
 	p := cleanProject(t)
 	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
 		t.Fatalf("removing VISION.md: %v", err)
@@ -617,27 +622,28 @@ func TestProtocolStaleNeverOffersToOverwriteTheNewerSide(t *testing.T) {
 	}
 }
 
-func TestTheDocumentsAnAgentReadsAreOneFinding(t *testing.T) {
+func TestTheDocumentsKitInitWritesAreOneFinding(t *testing.T) {
 	t.Parallel()
-	// A project missing both is one project to repair, not two reports to read. It was
-	// three findings at two severities telling the reader to run `kit init .` three times.
+	// One command writes all three, creates only what is missing and overwrites nothing,
+	// so a project lacking them has one defect with one fix. It was three findings at two
+	// severities telling the reader to run `kit init .` three times.
 	p := cleanProject(t)
 	feature(p, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
-	for _, rel := range []string{"AGENTS.md", "docs/VISION.md"} {
+	for _, rel := range []string{"AGENTS.md", "docs/INBOX.md", "docs/VISION.md"} {
 		if err := os.Remove(p.path(rel)); err != nil {
 			t.Fatalf("removing %s: %v", rel, err)
 		}
 	}
 
 	if n := strings.Count(strings.Join(p.auditCodes(), " "), "no-protocol"); n != 1 {
-		t.Errorf("two missing documents reported %d findings, want 1", n)
+		t.Errorf("three missing documents reported %d findings, want 1", n)
 	}
 	// One finding still has to say which files, or it is not actionable.
-	p.run("audit").ok().has("AGENTS.md", "VISION.md")
+	p.run("audit").ok().has("AGENTS.md", "INBOX.md", "VISION.md", "run: kit init .")
 
-	// And each on its own, because a merged check that only fires when both are gone
+	// And each on its own, because a merged check that only fires when all three are gone
 	// would be silent on the case that actually happens.
-	for _, rel := range []string{"AGENTS.md", "docs/VISION.md"} {
+	for _, rel := range []string{"AGENTS.md", "docs/INBOX.md", "docs/VISION.md"} {
 		t.Run(rel, func(t *testing.T) {
 			one := cleanProject(t)
 			feature(one, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
@@ -651,25 +657,16 @@ func TestTheDocumentsAnAgentReadsAreOneFinding(t *testing.T) {
 	}
 }
 
-func TestAMissingInboxIsNeverAFinding(t *testing.T) {
-	t.Parallel()
-	// `kit block` creates it with the first question, so its absence says nothing has
-	// needed a human yet. Reporting it would nag every project that has never been stuck.
-	p := cleanProject(t)
-	feature(p, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
-	if p.exists("docs/INBOX.md") {
-		t.Fatal("something scaffolded an inbox, so this proves nothing")
-	}
-	if codes := p.auditCodes(); slices.Contains(codes, "no-protocol") {
-		t.Errorf("a project with no inbox was reported: %v", codes)
-	}
-}
-
 func TestTechDriftCoversTheMissingAsBuiltDocAndTheStaleOne(t *testing.T) {
 	t.Parallel()
 	// One gap measured two ways: what shipped is not what a reader is told. It was two
 	// findings at two severities, and writing the file answers both.
+	// A project that predates `kit init` placing the as-built doc: the layout writes one
+	// now, so having none is a project the layout never ran on.
 	missing := cleanProject(t)
+	if err := os.Remove(missing.path("docs/TECH.md")); err != nil {
+		t.Fatalf("removing TECH.md: %v", err)
+	}
 	missing.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
 		"shipped: "+daysAgo(1), "- [x] Done"))
 	missing.run("audit").ok().has("tech-drift", "nothing describes the as-built system")

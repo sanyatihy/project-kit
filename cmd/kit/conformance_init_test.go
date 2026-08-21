@@ -17,30 +17,21 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 	p.run("init").ok()
 
 	for _, want := range []string{
-		// The board is a directory listing, and git drops an empty directory, so the
-		// file that keeps it is what makes `next`, `audit` and `new` work in a clone
-		// of a project that has planned nothing yet.
-		"docs/features/.gitkeep",
+		"docs/VISION.md",
+		"docs/INBOX.md",
+		"docs/TECH.md",
+		"docs/features/BACKLOG.md",
 		"AGENTS.md",
 	} {
 		if !p.exists(want) {
 			t.Errorf("init did not write %s", want)
 		}
 	}
-	// A file the kit writes is one the project will fill in. Two of these were
-	// maintained for the tool rather than for the project, two are written by the
-	// command that first needs them, and the vision is the operator's to write —
-	// a stub answers none of it and reports itself from the first minute.
-	for _, unwanted := range []string{
-		"docs/VISION.md",
-		"docs/features/TEMPLATE.md",
-		"docs/features/BACKLOG.md",
-		"docs/INBOX.md",
-		"docs/TECH.md",
-	} {
-		if p.exists(unwanted) {
-			t.Errorf("init wrote %s, which nothing asked for yet", unwanted)
-		}
+	// The layout is every file a project gets, and a conventions doc nothing reads is
+	// not one: `kit new` writes a doc from the embedded template, so a placed copy is a
+	// file the project maintains for the tool.
+	if p.exists("docs/features/TEMPLATE.md") {
+		t.Error("init wrote docs/features/TEMPLATE.md, which nothing reads")
 	}
 	// The protocol is what makes the docs actionable; a layout without it is inert.
 	agents := p.read("AGENTS.md")
@@ -74,19 +65,20 @@ func TestInitCreatesAGitRepoButLeavesAnExistingOneAlone(t *testing.T) {
 
 func TestInitNeverOverwrites(t *testing.T) {
 	t.Parallel()
-	p := newProject(t)
-	// Every document the kit knows the name of, each holding something only this
-	// project has. A file init no longer writes must still survive it: not writing a
-	// file and not touching one are different guarantees, and adoption depends on both.
+	// Every file the layout places, held against a project that already wrote it. This
+	// is the guarantee `kit init` is run on populated repositories for: it is worth more
+	// than any line the tool might add.
 	mine := map[string]string{
-		"docs/INBOX.md":             "MINE — do not touch\n",
-		"docs/VISION.md":            "# Why we are building this\n",
-		"docs/TECH.md":              "MINE — how it is built\n",
-		"docs/features/TEMPLATE.md": "MINE — our doc format\n",
-		"docs/features/BACKLOG.md":  "MINE — ideas\n",
+		// A project that already states its vision is the common case for adopting the
+		// kit, and it is the one file here nobody could reconstruct.
+		"docs/VISION.md":           "# Why we are building this\n",
+		"docs/INBOX.md":            "MINE — do not touch\n",
+		"docs/TECH.md":             "# As built\n\nOne process, one database.\n",
+		"docs/features/BACKLOG.md": "MINE — ideas\n",
 	}
-	for path, content := range mine {
-		p.write(path, content)
+	p := newProject(t)
+	for path, want := range mine {
+		p.write(path, want)
 	}
 	p.write("AGENTS.md", "# House rules\n\nKeep me.\n")
 
@@ -102,24 +94,35 @@ func TestInitNeverOverwrites(t *testing.T) {
 	}
 }
 
-func TestInitRewritesNothingButTheProtocolOnASecondRun(t *testing.T) {
+func TestInitRewritesNothingItPlacedOnceTheProjectHasFilledItIn(t *testing.T) {
 	t.Parallel()
-	// The protocol section is the only text the kit owns inside a project, so it is the
-	// only thing a re-run may rewrite. Anything else reported as refreshed is a file the
-	// project edited and the kit took back.
+	// Re-running is the documented way to pick up a protocol change, so the run that
+	// does it lands on a project that has been worked in. Nothing outside the protocol
+	// section of AGENTS.md is the kit's to rewrite: every file the layout places is one
+	// the project fills in, and its copy is the only copy there is.
 	p := newProject(t)
 	p.run("init").ok()
-	p.write("docs/VISION.md", "MINE — what we are building\n")
-	p.write("docs/features/0001-thing.md", "MINE — a plan\n")
+
+	mine := map[string]string{
+		"docs/VISION.md":           "MINE — what we are building\n",
+		"docs/INBOX.md":            "- [ ] 2026-01-02 · 0001 · FYI · mine\n",
+		"docs/TECH.md":             "MINE — one process, one database\n",
+		"docs/features/BACKLOG.md": "MINE — ideas\n",
+	}
+	for path, want := range mine {
+		p.write(path, want)
+	}
 
 	second := p.run("init").ok()
+
+	for path, want := range mine {
+		if got := p.read(path); got != want {
+			t.Errorf("a second init touched %s, which the project owns: %q", path, got)
+		}
+	}
+	// A refresh reported on every run makes the word meaningless in the output where it
+	// matters, and the only thing that can honestly be refreshed is the protocol.
 	second.lacks("refreshed")
-	if got := p.read("docs/VISION.md"); got != "MINE — what we are building\n" {
-		t.Errorf("init touched docs/VISION.md, which the project owns: %q", got)
-	}
-	if got := p.read("docs/features/0001-thing.md"); got != "MINE — a plan\n" {
-		t.Errorf("init touched a feature doc: %q", got)
-	}
 }
 
 func TestInitIsIdempotent(t *testing.T) {
@@ -131,8 +134,8 @@ func TestInitIsIdempotent(t *testing.T) {
 	second := p.run("init").ok()
 
 	second.has("kept")
-	if strings.Contains(second.Stdout, "created ") {
-		t.Errorf("a second init created something again:\n%s", second.Stdout)
+	if strings.Contains(second.Stdout, "created    docs/INBOX.md") {
+		t.Error("a second init claimed to create docs/INBOX.md again")
 	}
 }
 

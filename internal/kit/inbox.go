@@ -2,9 +2,7 @@ package kit
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -37,22 +35,18 @@ func ResolveID(r *Repo, typed string) (string, error) {
 }
 
 // AppendQuestion writes one question to the inbox in the documented format and
-// returns the line it wrote, creating the inbox when this is the first question.
+// returns the line it wrote.
 //
 // Writing the format is the point: a hand-typed line that misses it falls back to
 // matching by prose, which blocks whatever it happens to mention.
-func AppendQuestion(templates fs.FS, r *Repo, id, question string, fyi bool, today time.Time) (string, error) {
+func AppendQuestion(r *Repo, id, question string, fyi bool, today time.Time) (string, error) {
+	if r.Inbox == "" {
+		return "", fmt.Errorf("no docs/INBOX.md — run: kit init %s", r.Root)
+	}
 	// One item per line is what makes the file parseable at all.
 	question = strings.Join(strings.Fields(question), " ")
 	if question == "" {
 		return "", fmt.Errorf("a question is required")
-	}
-	if r.Inbox == "" {
-		created, err := createInbox(templates, r)
-		if err != nil {
-			return "", err
-		}
-		r.Inbox = created
 	}
 	marker := "BLOCKING"
 	if fyi {
@@ -73,38 +67,6 @@ func AppendQuestion(templates fs.FS, r *Repo, id, question string, fyi bool, tod
 		return "", err
 	}
 	return line, nil
-}
-
-// createInbox writes the inbox template the first time a question needs somewhere to go.
-//
-// The same model as the as-built doc, which `kit ship` creates: a file scaffolded before
-// the project has anything to put in it is one the project is nagged about for describing
-// nothing. O_EXCL covers two agents blocking at once — the loser writes into the file the
-// winner made rather than over it.
-func createInbox(templates fs.FS, r *Repo) (string, error) {
-	dest := filepath.Join(r.Root, "docs", "INBOX.md")
-	raw, err := fs.ReadFile(templates, "templates/INBOX.md")
-	if err != nil {
-		return "", err
-	}
-	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
-		return "", err
-	}
-	file, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-	if err != nil {
-		if os.IsExist(err) {
-			return dest, nil
-		}
-		return "", err
-	}
-	if _, err := file.Write(raw); err != nil {
-		_ = file.Close()
-		return "", err
-	}
-	if err := file.Close(); err != nil {
-		return "", err
-	}
-	return dest, nil
 }
 
 // OpenQuestion is one unticked inbox line.

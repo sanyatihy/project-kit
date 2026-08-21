@@ -4,6 +4,7 @@ package main
 // so the round-trip against `next` and `audit` is the real test.
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -73,8 +74,8 @@ func TestBlockRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
 			"## Tasks\n- [ ] Do it\n\n## Log\n- 2026-01-01 — started.\n")
 
 	p.run("block", "0008", "Which one is it?").fails(2).errHas("id", "twice")
-	if p.exists("docs/INBOX.md") {
-		t.Errorf("block created the inbox despite refusing:\n%s", p.read("docs/INBOX.md"))
+	if got := p.read("docs/INBOX.md"); strings.Contains(got, "Which one is it?") {
+		t.Errorf("block wrote the question despite refusing:\n%s", got)
 	}
 }
 
@@ -87,8 +88,8 @@ func TestBlockRefusesAnIDThatNamesTwoDocs(t *testing.T) {
 	p.write("docs/features/0007-two.md", doc("0007", "Two", "Draft", "", "- [ ] Something"))
 
 	p.run("block", "0007", "Which one is it?").fails(2).errHas("0007-one.md", "0007-two.md")
-	if p.exists("docs/INBOX.md") {
-		t.Errorf("block created the inbox despite refusing:\n%s", p.read("docs/INBOX.md"))
+	if got := p.read("docs/INBOX.md"); strings.Contains(got, "Which one is it?") {
+		t.Errorf("block wrote the question despite refusing:\n%s", got)
 	}
 }
 
@@ -118,7 +119,6 @@ func TestBlockKeepsTheQuestionOnOneLine(t *testing.T) {
 func TestBlockPreservesWhatIsAlreadyInTheInbox(t *testing.T) {
 	t.Parallel()
 	p := blockable(t)
-	p.run("block", "0007", "The first question.").ok()
 	before := p.read("docs/INBOX.md")
 	p.run("block", "0007", "A question.").ok()
 
@@ -128,40 +128,12 @@ func TestBlockPreservesWhatIsAlreadyInTheInbox(t *testing.T) {
 	}
 }
 
-func TestBlockCreatesTheInboxWithTheFirstQuestion(t *testing.T) {
+func TestBlockWithoutAnInboxSaysHowToFixIt(t *testing.T) {
 	t.Parallel()
-	// The inbox is not scaffolded: a file written before anything can go in it is one
-	// the project maintains for the tool. `kit ship` creates the as-built doc the same
-	// way, and neither is ever reported missing.
 	p := blockable(t)
-	if p.exists("docs/INBOX.md") {
-		t.Fatal("kit init scaffolded an inbox, so this proves nothing")
+	p.run("audit").ok() // sanity: the inbox exists first
+	if err := os.Remove(p.path("docs/INBOX.md")); err != nil {
+		t.Fatalf("removing the inbox: %v", err)
 	}
-	p.run("audit").ok().lacks("no-protocol")
-
-	p.run("block", "0007", "A question.").ok().has("docs/INBOX.md", "created")
-
-	// And what it wrote is the documented format, not a bare line: the file has to
-	// explain itself to whoever drains it.
-	got := p.read("docs/INBOX.md")
-	if !strings.Contains(got, "BLOCKING") || !strings.Contains(got, "A question.") {
-		t.Errorf("the inbox block created does not carry the format and the question:\n%s", got)
-	}
-	p.run("next").ok().has("blocked", "A question.")
-	p.run("audit").ok().lacks("inbox-unparsed")
-}
-
-func TestBlockWritesIntoAnInboxTheProjectAlreadyHas(t *testing.T) {
-	t.Parallel()
-	// Creating it must never mean replacing it. A project that adopted the kit with an
-	// inbox of its own keeps every line in it.
-	p := blockable(t)
-	p.write("docs/INBOX.md", "# Our inbox\n\n- [ ] 2026-01-02 · 0007 · FYI · ours\n")
-
-	p.run("block", "0007", "A question.").ok().lacks("created")
-
-	got := p.read("docs/INBOX.md")
-	if !strings.Contains(got, "# Our inbox") || !strings.Contains(got, "· FYI · ours") {
-		t.Errorf("block replaced the project's own inbox:\n%s", got)
-	}
+	p.run("block", "0007", "A question.").fails(2).errHas("kit init")
 }

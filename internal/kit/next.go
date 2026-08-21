@@ -409,8 +409,7 @@ func guidanceFor(r *Repo, plan Plan) string {
 		// No command inside the sentence: guidance is wrapped for a narrow terminal,
 		// and a wrapped command is one nobody can copy. The caller prints the command
 		// on its own line.
-		return "nothing is planned yet. Write docs/VISION.md if it is not there, " +
-			"then draft a feature against it, or stop."
+		return "nothing is planned yet. Read docs/VISION.md and draft a feature, or stop."
 	}
 }
 

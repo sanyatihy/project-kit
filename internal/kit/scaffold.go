@@ -22,6 +22,21 @@ const ProtocolMarker = "## Work protocol"
 // reads the embedded copy cannot look at two different files.
 const ProtocolTemplate = "templates/AGENTS-section.md"
 
+// docLayout maps a template to its destination, relative to the project root.
+//
+// This is the whole document layout, and no other command creates a project file: one
+// command, one answer to where a file came from. Every entry is a file the project fills
+// in, which is why none is ever refreshed — its copy is the only copy there is.
+// `docs/features/TEMPLATE.md` is not here: `kit new` writes a doc from the embedded
+// template and nothing reads the placed copy, so it was a file a project maintained for
+// the tool.
+var docLayout = []struct{ src, dest string }{
+	{"templates/VISION.md", "docs/VISION.md"},
+	{"templates/INBOX.md", "docs/INBOX.md"},
+	{"templates/TECH.md", "docs/TECH.md"},
+	{"templates/BACKLOG.md", "docs/features/BACKLOG.md"},
+}
+
 // stackLayout is per-stack scaffolding. Deployment files are deliberately absent:
 // they rot fastest and are not needed to write code. Add them when the project
 // actually has something to deploy.
@@ -77,11 +92,6 @@ func Stacks(templates fs.FS) []string {
 }
 
 // Init sets a project up, or fills in what an existing one is missing.
-//
-// A project carries only what it fills in: the documents `kit init` writes are
-// `AGENTS.md` and, with a stack, the code layout. `docs/VISION.md` is the operator's to
-// write and a stub would answer none of it; `docs/INBOX.md` and `docs/TECH.md` are made
-// by the command that first needs them.
 //
 // Your files are never overwritten. The kit-owned protocol section inside
 // AGENTS.md is refreshed, so projects pick up changes without losing their own
@@ -157,19 +167,12 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 		}
 	}
 
-	// The board is a directory listing, so `next`, `audit` and `new` all exit 2 until it
-	// exists — and git drops an empty directory, so a clone of a project that has planned
-	// nothing yet would arrive without one. Same rule as the stack's: a .gitkeep only
-	// earns its place where git would otherwise drop the directory.
 	featuresDir := FindFeaturesDir(root)
-	if dir := filepath.Join(root, featuresDir); isEmptyDir(dir) {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+	for _, doc := range docLayout {
+		dest := filepath.Join(root, strings.Replace(doc.dest, "docs/features", featuresDir, 1))
+		if err := place(templates, doc.src, dest, root, nil, res); err != nil {
 			return nil, err
 		}
-		if err := os.WriteFile(filepath.Join(dir, ".gitkeep"), nil, 0o644); err != nil {
-			return nil, err
-		}
-		res.Created = append(res.Created, featuresDir+"/.gitkeep")
 	}
 
 	if err := writeProtocol(templates, root, res); err != nil {
@@ -179,8 +182,8 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 }
 
 // place writes one template, and keeps an existing destination. Nothing outside the
-// protocol section of AGENTS.md is the kit's to rewrite: every file left here is one
-// the project fills in, so its copy is the only copy there is.
+// protocol section of AGENTS.md is the kit's to rewrite: every file it places is one the
+// project fills in, so its copy is the only copy there is.
 func place(templates fs.FS, src, dest, root string, values map[string]string, res *Result) error {
 	rel, err := filepath.Rel(root, dest)
 	if err != nil {

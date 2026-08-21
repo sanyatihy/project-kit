@@ -413,21 +413,13 @@ func runBlock(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
 		return 2
 	}
-	// Whether this question is what creates the inbox, read before the write that would
-	// make it true. A file appearing unannounced is one the next `git status` explains
-	// instead of this command.
-	fresh := repo.Inbox == ""
-	line, err := kit.AppendQuestion(templates, repo, id, strings.Join(rest[1:], " "), *fyi, time.Now().UTC())
+	line, err := kit.AppendQuestion(repo, id, strings.Join(rest[1:], " "), *fyi, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
 		return 2
 	}
 
-	where := repo.Rel(repo.Inbox)
-	if fresh {
-		where += "  (created)"
-	}
-	fmt.Printf("\n  %s\n", where)
+	fmt.Printf("\n  %s\n", repo.Rel(repo.Inbox))
 	fmt.Printf("  %s\n", line)
 	if *fyi {
 		fmt.Printf("\n  recorded. %s is not blocked — carry on.\n\n", id)

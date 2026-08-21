@@ -4,6 +4,7 @@ package main
 // findings exist only because this is normally done by hand.
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -328,9 +329,13 @@ func TestShipPointsAtTheAsBuiltDoc(t *testing.T) {
 
 func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
 	t.Parallel()
-	// The protocol says move durable facts into the as-built doc. Until now nothing said
-	// what that doc looks like, and shipping is exactly when it first has to exist.
+	// The fallback, not where the file comes from: `kit init` places the as-built doc
+	// with the rest of the layout, so this is a project set up before it did — where
+	// "move durable facts into docs/TECH.md" would otherwise name a file that is absent.
 	p := setUp(t)
+	if err := os.Remove(p.path("docs/TECH.md")); err != nil {
+		t.Fatalf("removing TECH.md: %v", err)
+	}
 	feature(p, "0007", "first", "First", "Draft", "- [x] Done")
 
 	shipping(p, "0007").ok().has("created", "docs/TECH.md")

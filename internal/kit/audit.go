@@ -114,7 +114,7 @@ var (
 	// reason: the template's guidance lives in comments, which every parser here
 	// strips, so an empty section means the section was never written.
 	checkUnfilledVision = Check{"unfilled-vision", Medium,
-		"docs/VISION.md carries the shape from kit help vision and nothing under it"}
+		"docs/VISION.md is still the stub — every section under its headings is empty"}
 	checkDoneNotShipped = Check{"done-not-shipped", Medium,
 		"every task is ticked but the status is still open"}
 	// One question with two answers, because a missing as-built doc and a stale one are
@@ -162,11 +162,11 @@ var (
 		"no status: in the frontmatter, or one the kit does not recognise"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
 		"AGENTS.md and the installed kit disagree about the work protocol, so one side is superseded"}
-	// Two documents an agent is stopped by the absence of, and one fix each. The inbox
-	// is not among them: `kit block` creates it on first use, so a project that has never
-	// had a question to park is missing nothing.
+	// One command writes all three of these files and overwrites none of them, so a
+	// project missing more than one is one defect with one fix. It was three findings
+	// telling the reader to run `kit init .` three times.
 	checkNoProtocol = Check{"no-protocol", Medium,
-		"a document agents read is missing: AGENTS.md's work protocol, or VISION.md once features exist"}
+		"a document kit init writes is missing: AGENTS.md's work protocol, INBOX.md, or VISION.md"}
 )
 
 // OfflineChecks are the checks that cannot run without an answer from the remote: under
@@ -689,18 +689,16 @@ func tagStale(s *repoState) []Finding {
 		"cut a tag on the trunk and push it — until it is pushed nothing installs it")}
 }
 
-// One finding for the documents whose absence stops an agent, because a project missing
-// both is one project to repair rather than two reports to read.
-//
-// `docs/INBOX.md` is not one of them: `kit block` creates it with the first question, so
-// its absence says nothing has needed a human yet.
+// One command writes AGENTS.md, docs/INBOX.md and docs/VISION.md, creates only what is
+// missing and overwrites nothing — so a project lacking any of them has one defect with
+// one fix, and reporting it three times told the reader to run `kit init .` three times.
 //
 // Two ways to have no protocol, and only the first was ever reported. A file whose
 // `## Work protocol` heading has been deleted is worse than a missing one: `protocol-stale`
 // compares a section it cannot find and so stays quiet, and nothing else looks — so the
 // project audits clean while every agent in it is working from whatever it invents.
 func noProtocol(s *repoState) []Finding {
-	var missing, fixes []string
+	var missing []string
 	switch raw, err := os.ReadFile(s.r.Protocol); {
 	case s.r.Protocol == "":
 		missing = append(missing, "no AGENTS.md, so agents have no protocol and will invent one")
@@ -708,23 +706,21 @@ func noProtocol(s *repoState) []Finding {
 		missing = append(missing, "no "+ProtocolMarker+" section in "+s.r.Rel(s.r.Protocol)+
 			", so agents have no protocol and will invent one")
 	}
-	if len(missing) > 0 {
-		fixes = append(fixes, "run: kit init . — it writes the protocol and overwrites nothing you wrote")
+	if s.r.Inbox == "" {
+		missing = append(missing, "no docs/INBOX.md, so a blocked agent has nowhere to put a question")
 	}
 	// Only once features exist: a project set up and not yet planned has nothing to
-	// decompose, and a finding on a fresh scaffold would be noise at the moment the
-	// tool is judged. This is the whole prompt for the one file the kit will not write —
-	// a scaffolded stub answered nothing and reported itself from the first minute.
+	// decompose, and a finding on a fresh `kit init` would be noise at the moment the
+	// tool is judged.
 	if s.r.Vision == "" && len(s.r.Features) > 0 {
 		missing = append(missing, "no docs/VISION.md, and features are being planned "+
 			"with nothing saying what the project is for")
-		fixes = append(fixes, "write docs/VISION.md — see: kit help vision")
 	}
 	if len(missing) == 0 {
 		return nil
 	}
-	return []Finding{finding(checkNoProtocol, s.r.Name,
-		strings.Join(missing, "; "), strings.Join(fixes, "; "))}
+	return []Finding{finding(checkNoProtocol, s.r.Name, strings.Join(missing, "; "),
+		"run: kit init . — it writes what is missing and overwrites nothing you wrote")}
 }
 
 // Which side is behind decides the fix, because one of the two fixes destroys work:
@@ -805,15 +801,15 @@ func secretsInDocs(s *repoState) []Finding {
 	return out
 }
 
-// The same gap one step later: the headings are there and the answers are not. Nothing
-// scaffolds this file any more, so it exists because somebody started it — which is why
-// it is worth reporting before the first draft it shapes rather than once features exist.
+// The same gap one step later: `kit init` writes the stub, so the run that answers the
+// missing file leaves the question itself unanswered. Not gated on features existing — the
+// stub is worth reporting from the moment it is there, before the first draft it shapes.
 func unfilledVision(s *repoState) []Finding {
 	if s.r.Vision == "" || !visionIsStub(s.r.Vision) {
 		return nil
 	}
 	return []Finding{finding(checkUnfilledVision, s.r.Rel(s.r.Vision),
-		"every section under its headings is empty — the shape was copied in and left",
+		"every section is empty — the stub was written by kit init and never filled in",
 		"say what the project is for, who for, and what it is not; "+
 			"see: kit help vision")}
 }

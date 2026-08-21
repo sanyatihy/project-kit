@@ -59,9 +59,9 @@ kit init /path/to/project --forge gitlab   # when nothing says which
 Run it from anywhere — `kit` is on your `$PATH`. Prompting an agent inside the kit's own
 repo to set up some other project gives it write access to the tool it is using.
 
-It creates the directory if missing, makes it a git repo, and writes `AGENTS.md` and an
-empty `docs/features/`. It overwrites nothing you wrote, so it is safe on a populated
-directory and safe to re-run.
+It creates the directory if missing, makes it a git repo, and writes `AGENTS.md`,
+`docs/VISION.md`, `docs/INBOX.md`, `docs/TECH.md` and `docs/features/BACKLOG.md`. It
+overwrites nothing you wrote, so it is safe on a populated directory and safe to re-run.
 
 With `--stack go` it also writes `Makefile`, `.gitignore`, `go.mod`, `cmd/<name>/`,
 `internal/`, a `README.md`, and one CI pipeline running `make check`.
@@ -79,15 +79,14 @@ A hostname cannot tell a self-hosted GitLab from a Gitea, so a file the project 
 carries outranks it. `--forge github|gitlab` settles it outright.
 
 Re-running is how a project catches up after the kit is upgraded. One kit-owned thing is
-refreshed: the `## Work protocol` section of `AGENTS.md`. Everything you fill in — the
-vision and every stack file — is never touched, and house rules live above the marker
-comment in `AGENTS.md`.
+refreshed: the `## Work protocol` section of `AGENTS.md`. Every document is yours the
+moment it is placed — `VISION.md`, `INBOX.md`, `TECH.md`, `BACKLOG.md` and every stack
+file are never touched again — and house rules live above the marker comment in
+`AGENTS.md`.
 
-A file the kit writes is one the project will fill in, so nothing else is scaffolded.
-`docs/VISION.md` is the one document only you can write, and a stub would answer none of
-it: `kit audit` asks for it once features exist, and `kit help vision` prints the shape.
-`kit block` creates `docs/INBOX.md` with the first question, and `kit ship` creates
-`docs/TECH.md` when something has shipped.
+That one command is where every project file comes from, so there is one answer to where
+a file came from. `kit help vision`, `kit help as-built`, `kit help inbox` and
+`kit help backlog` print the shape each one is waiting for.
 
 Once set up you never run anything yourself. `AGENTS.md` tells the agent to run
 `kit next` at the start of a session, so "what should I work on?" is enough.
