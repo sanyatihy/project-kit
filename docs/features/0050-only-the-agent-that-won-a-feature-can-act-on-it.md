@@ -56,7 +56,7 @@ Reproduced against the installed binary:
 - [x] `claim` cannot leave a ref on the remote it does not own locally
 - [x] Refs are read from `for-each-ref`, so git's pseudo-branch names are never claims
 - [x] HEAD keeps its branch through a rebase, so the winner can still ship its feature
-- [ ] A test drives each of the four states above
+- [x] A test drives each of the four states above
 
 ## Log
 - 2026-08-21 — reading `for-each-ref` clears three of the four states and only half of the
