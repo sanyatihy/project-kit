@@ -1,7 +1,6 @@
 package kit
 
 import (
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -143,14 +142,21 @@ func mentionsAny(text string, ids []string) bool {
 	return false
 }
 
-// Mine reports whether the branch this checkout is on is one of the branches claiming a
-// feature — that is, whether the claim is this agent's rather than somebody else's.
+// Mine reports whether this checkout stands on the branch that won a feature — the one
+// named after its doc, and no other name.
+//
+// Equality, not membership in `Claims`. `Claims` matches every branch mentioning the id,
+// which is what a second claimant looks like and not what ownership is: after losing the
+// race, `git checkout -b notes-0001-alpha` made the board print the feature as yours and
+// let `ship` freeze the winner's doc. `review-0001` and `fix-0001` qualified too, so it
+// needed no malice. The claim is the branch the push created, so only that name is it.
 //
 // One definition for two callers: `next` reports it as yours, and `ship` requires it.
 // Shipping from the worktree holding the claim is the documented path; shipping from
 // anywhere else is one agent freezing another's work.
 func (r *Repo) Mine(id string) bool {
-	return slices.Contains(r.Claims(id), r.HeadBranch())
+	f := r.FeatureByID(id)
+	return f != nil && r.HeadBranch() == f.Branch()
 }
 
 // BranchBuildsOn reports whether a branch has changed anything beyond the one file
