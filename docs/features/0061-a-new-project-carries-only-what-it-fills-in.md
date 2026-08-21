@@ -1,147 +1,119 @@
 ---
 id: 0061
-title: A new project carries only what it fills in
-status: Shipped
+title: Everything a new project needs comes from one command
+status: Draft
 created: 2026-08-21
-shipped: 2026-08-21
+shipped:
 needs:
 ---
 
 ## Problem
 
-`kit init` writes 269 lines across five files before the operator writes a word:
-`AGENTS.md` at 121, `docs/features/TEMPLATE.md` at 69, `docs/VISION.md` at 46,
-`docs/INBOX.md` at 21, `docs/features/BACKLOG.md` at 12. Four of the five are files the
-project is then nagged to maintain.
+A project's files arrive from several places, and its protocol is partly untrue.
 
-`TEMPLATE.md` is read by nothing. Deleted from a project, `kit new` still writes a full
-doc from the embedded template and `audit` never mentions it; `scaffold.go`'s own comment
-says the conventions doc is read by nobody. And the `VISION.md` stub is the only finding a
-virgin project has: `unfilled-vision` fires on it at once, where a project with no such
-file is silent until features exist. Scaffolding a file is what makes the report worse.
+`kit init` writes some files; `kit ship` creates `docs/TECH.md` on first use; and
+`docs/features/BACKLOG.md` is named by protocol rule 14 and by `kit ship` while nothing
+creates it and no topic describes it. To know where a file comes from you have to know
+which command makes it. VISION says a new project is set up with one command; it is set up
+by one command plus whichever others happen to run later.
 
-The protocol is 113 lines and 27 rules, read every session in every project, and three of
-them are false where they are read. Rule 10 says a branch only you can see is not a claim,
-while `kit help` says local branches count and an unpushed one does halt the board. Rule 22
-names `make check` in projects `kit init` gives no Makefile. Rule 27 names `make release`,
-which in a scaffolded Go project builds a binary rather than cutting a tag.
+There is no `.gitignore` unless `--stack` is given, so the first `git add -A` an agent runs
+commits whatever the editor and the OS left behind — and `kit claim` pushes `HEAD`, so it
+reaches the branch the next agent works in. The stack copy spends roughly fifteen lines on
+Terraform state, `vault.yml` and Ansible inventories in projects with no infrastructure.
 
-Rule 2 carries a test that does not work. "A sentence that needs an 'and' is two features"
-is a grammar check standing in for a judgement, with no cost on the other side, so it only
-splits: it produced eleven docs for this round where five were right, three of them split
-by kind of code change, which the next clause of the same rule forbids.
-
-`templates/go-checklist.md` is 193 lines, the largest text the binary ships and larger than
-the protocol every agent must obey. Nothing in the loop points at it, and a conformance
-test exists to stop its checkboxes colliding with the host's.
+The protocol is 113 lines and 27 rules, read at the start of every session, and three are
+wrong where they are read. Rule 10 says a branch only you can see is not a claim, while
+`kit help` says local branches count and an unpushed one does halt the board. Rule 22 names
+`make check` in projects `kit init` gives no Makefile. Rule 27 names `make release`, which
+in a scaffolded Go project builds a binary rather than cutting a tag. Rule 2's test — "a
+sentence that needs an 'and' is two features" — is a grammar check standing in for a
+judgement with no cost on the other side, and it produced eleven docs for one round where
+five were right. Rule 5 routes a fix or a data update to "a branch whose name contains no
+four-digit id, and needs no doc", so the only atomic operation the kit has covers one kind
+of work.
 
 ## Non-goals
 
-- **Making `kit init` write less than a project needs.** `AGENTS.md` stays, because it is
-  the only file agents read, and the Go stack's load-bearing files stay.
-- **Rewriting the protocol's substance.** What survives keeps its wording; this decides
-  what survives.
-- **A style guide somewhere else in the kit.** The checklist leaves; it does not move.
+- **Cutting guidance an agent needs.** `kit help go-checklist` stays. Nothing in the
+  protocol points at it, which is a reason to point at it rather than delete it — VISION
+  says anything an agent has to know is embedded in `kit help`, and it is.
+- **Writing over a file a project already has.** `kit init` overwrites nothing the project
+  wrote, and that guarantee is worth more than any line it might add.
+- **Guessing the language.** What plain `kit init` ignores is what is true of every
+  project, not what this one will be built in.
 
 ## Design
 
-**A file the kit writes is one the project will fill in, or the kit does not write it.**
-`TEMPLATE.md` and `BACKLOG.md` stop being written. `docs/INBOX.md` is created by
-`kit block` on first use, the way `kit ship` already creates `docs/TECH.md` — the model
-already exists in the codebase and is the one that does not nag. `docs/VISION.md` is the
-hard case: it is the one file the operator must write, and the stub is what makes a virgin
-project report a finding at all, so the stub goes and `no-protocol` carries the prompt once
-features exist.
+**`kit init` writes the whole layout, and nothing else creates a project file.** One
+command, one answer to where a file came from. `docs/VISION.md`, `docs/INBOX.md`,
+`docs/TECH.md` and `docs/features/BACKLOG.md` are written from the templates they already
+have; `ship`'s lazy path stays only as a fallback for projects that predate this, and is no
+longer where a file first appears. Splitting creation across commands is reversed here: it
+moved four files between three commands to remove one finding.
+
+**That finding is a check gate, not a scaffolding problem.** `unfilled-vision` fires on the
+stub the moment a project is created, which is what made scaffolding it look expensive.
+`no-protocol` already gates its own VISION arm on `len(Features) > 0` and says why — a
+project set up and not yet planned has nothing to decompose. `unfilled-vision` takes the
+same gate, and a virgin project audits clean while carrying every file it will need. One
+line, against moving four files between three commands.
+
+**A `.gitignore` is a refusal expressed as a file.** Plain `kit init` writes one covering
+editor and OS droppings and nothing else. The alternative is a rule in prose telling agents
+what not to commit, which is the weakest tier the kit has, and the cost of not having one
+lands on whoever reviews a branch carrying somebody's `.DS_Store`. The Go stack's copy
+drops the lines that are not about Go.
 
 **A rule earns its place by deciding something no refusal can.** The protocol keeps the
 rules that are judgement — how to decompose, what `needs:` means, that the doc is the one
 home for the design, that discovered work never becomes a `TODO` — and drops the ones that
-restate a refusal the tool already makes at the moment it matters. Rule 10 goes because it
-is false. Rules 22 and 27 go because they name commands the default project does not have.
-Rules 11 and 12 collapse into the refusal 0062 adds.
+restate a refusal made at the moment it matters. Rule 10 goes because it is false. Rule 22
+is corrected rather than cut, because nothing else says to run `kit audit --strict` before
+shipping: it names the project's own gate. Rule 27 goes as a fact about a Go module rather
+than about every project.
 
 **Rule 2 keeps its definition and loses its test.** "One shipped increase in what the
-project can do, or can be trusted to do" is the useful half. The "and" test is replaced by
-the one this round needed and did not have: **a separate doc earns its place when it holds
-a decision someone must read before building, that is not recoverable from the code or the
-commit.** That test has a cost side, which is what VISION asks of every document, and it
-would have produced this round's five docs instead of eleven.
+project can do, or can be trusted to do" is the useful half. The replacement is the test
+that round needed: **a separate doc earns its place when it holds a decision someone must
+read before building, that is not recoverable from the code or the commit.** That test has
+a cost side, which is what VISION asks of every document.
 
-**There is one kind of work.** The protocol sends a fix, a chore or a data update to "a
-branch whose name contains no four-digit id, and needs no doc", so the only atomic
-operation the kit has covers one kind of work. 0057 proposed a second command for the
-other kind and was dropped: chores are 7 of the 76 branches this project has merged, four
-of them one-line edits to `BACKLOG.md`, and a second entity costs a twin of every walk
-over features — two were already missing on the day it was built. The sentence goes
-instead. Work worth coordinating is a feature and gets an id; work not worth three lines
-of doc is not worth an id either, and rides on a pull request.
+**There is one kind of work.** Rule 5's routing sentence goes. Work worth coordinating is a
+feature and gets an id; work not worth three lines of doc is not worth an id either, and
+rides on a pull request. 0057 proposed a `kit chore` command for the other case and was
+dropped — chores are 7 of the 76 branches this project has merged.
 
-**A doc is as long as its decisions, and no longer.** The template carries the rule:
-`## Design` holds what was chosen, what it beat and what it costs, and a doc a reader
-cannot hold in one sitting is describing a feature that is too big. No check enforces it —
-`doc-bloat` was tried and deleted for reporting a state nobody could act on.
+**Guidance the protocol does not carry, it points at.** A closing line names
+`kit help go-checklist`, which is the only thing it was missing, and `kit help backlog`
+describes the file rule 14 names.
 
-**The kit ships a loop, not advice.** `templates/go-checklist.md` and its help topic go.
-VISION says the kit is not a judge of whether work is any good, `audit` cannot check a word
-of it, and the checklist is single-language in a kit whose `--stack` flag already reports
-which stacks exist. A project that wants it puts it in its own house rules, above the
-generated marker, where it can be edited.
+**`docs/features/TEMPLATE.md` stays gone.** Deleted from a project, `kit new` still writes a
+full doc from the embedded template and `audit` never mentions it; `scaffold.go`'s own
+comment says the conventions doc is read by nobody. A dead file, not a deferred one.
 
-The ceilings in `budget_test.go` fall with the files rather than being left where they are.
+Commits `2926425`, `3aace68`, `f5f26b1` and `6045e7f` on this feature's branch are the
+protocol half, already built and tested, including a test that fails on a gap in the rule
+numbering. They are kept; `b9c8b08`, `654116b` and `d8bdd11` are reversed.
 
 ## Tasks
 
-- [x] `init` stops writing `TEMPLATE.md` and `BACKLOG.md`, and `kit block` creates `INBOX.md`
-- [x] `init` stops writing the `VISION.md` stub, and `no-protocol` carries the prompt
-- [x] The protocol drops the rules a refusal already makes, and rule 10 goes as false
-- [x] Rule 2's "and" test is replaced by the doc-earns-its-place test
-- [x] The protocol stops routing work away from the kit, and says how long a doc runs
-- [x] `go-checklist` leaves the binary, and the ceilings fall with the files
+- [ ] The protocol commits are kept, and the three that cut `init` and the checklist reversed
+- [ ] `init` writes `VISION.md`, `INBOX.md`, `TECH.md` and `BACKLOG.md`, overwriting nothing
+- [ ] `init` writes a `.gitignore`, and the Go stack's copy drops what is not Go
+- [ ] `unfilled-vision` waits for features, so a virgin project audits clean
+- [ ] `kit help backlog` describes the file rule 14 names, and the protocol points at the checklist
+- [ ] A test holds every file the protocol names against something that writes or describes it
 
 ## Open questions
 
-- **Which of the remaining rules an operator wants is partly theirs.** The audit judged ten
-  cuttable; this doc names the ones that are false or unreachable and leaves the rest to
-  the review. A rule that is only redundant, not wrong, is cheap to keep.
-- **Does `kit init` still write `docs/VISION.md` as an empty heading?** Dropping the file
-  entirely means a new project has no prompt at all until `audit` runs. The leaning is to
-  drop it and let `no-protocol` say so.
+- **Should `--stack go` replace the default `.gitignore` or extend it?** Replacing means one
+  file to read; extending means the editor and OS lines are not repeated in every stack the
+  kit grows. The leaning is to replace while there is one stack.
 
 ## Log
 
-- 2026-08-21 — `init` still writes one thing into `docs/features/`: a `.gitkeep`. The board
-  is a directory listing, so `next`, `audit` and `new` all exit 2 without the directory,
-  and git drops an empty one — a clone of a project that has planned nothing would arrive
-  unable to plan. Same rule the stack already uses for `internal/`.
-- 2026-08-21 — `no-protocol` stops reporting a missing `docs/INBOX.md`, which this doc did
-  not name. The check listed the documents `kit init` writes; the inbox is no longer one of
-  them, and reporting it would nag every project that has never been stuck.
-- 2026-08-21 — the open question is settled the way it leaned: no `docs/VISION.md` at all,
-  not an empty heading. `no-protocol` gained a second fix line for it, because `kit init .`
-  no longer writes the file the finding asks for and offering that command would be false.
-- 2026-08-21 — seven rules go, not the five named here: 8, 10, 13, 23, 24, 26, 27. Each of
-  8, 13, 23, 24 and 26 is printed by a command at the moment it matters — `kit claim` says
-  "Land the round, then claim", `next` closes every run with an instruction, each `ship`
-  refusal names its own fix, `ship` prints "move durable facts into docs/TECH.md, one line
-  each", and `next` prints "your own is never yours to merge". 24 was also said twice
-  inside the protocol, by **Every fact has one home**.
-- 2026-08-21 — rule 22 is corrected rather than cut. Dropping it would leave nothing saying
-  to run `kit audit --strict` before `kit ship`, which no refusal makes; what was wrong
-  with it was naming `make check`, so it now names the project's own gate. A test holds the
-  protocol against naming any `make` target, and a second against restating a refusal.
-- 2026-08-21 — rules 11 and 12 stay. The refusal they collapse into is 0062's and has not
-  shipped, and 0062's own `## Design` says it turns them into a refusal and one line of
-  prose — so it is that feature's cut. Removing them first would leave the protocol silent
-  about the failure `split-claim` is HIGH for.
-- 2026-08-21 — rule 27's fact is true of this repo and of no project the kit scaffolds, so
-  it moved above the marker in this repo's own `AGENTS.md` rather than being deleted.
-- 2026-08-21 — the replacement position is folded into rule 2 rather than left as a
-  paragraph of its own: a chore commit rides on a pull request under a branch name carrying
-  no id. The rule that decides what is a feature is where the alternative belongs, and the
-  id constraint is the load-bearing half of the sentence that went.
-- 2026-08-21 — `templates/BACKLOG.md` leaves with the checklist. The first box orphaned it:
-  nothing read it once `init` stopped writing it, and a dead template in the binary is what
-  this feature is about.
-- 2026-08-21 — `techBudget` is the one ceiling that does not move. This round rewrote four
-  facts in `docs/TECH.md` and added one inside the lines the rewrites gave back, so the
-  file did not shorten and lowering the number would claim what the text does not support.
+- 2026-08-21 — pivoted. The doc cut both what a project receives and what its protocol
+  says; the cut of `init` is reversed and the checklist kept, leaving one feature about
+  what a new project gets. The filename predates the retitle: `Branch()` reads it, and
+  renaming it would strand the claim this feature already holds.
