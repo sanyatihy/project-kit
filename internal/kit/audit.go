@@ -36,6 +36,18 @@ const (
 	// work was explicitly cleared to continue without an answer — enough to say the
 	// notes are piling up, never enough to fail a build.
 	FYIStaleDays = 14
+
+	// TagStaleCommits is how far the newest tag may fall behind the trunk before an
+	// install stops being the project the docs describe. Commits rather than days,
+	// because a project that tagged and then stood still misleads nobody and one that
+	// merged a round in a week does.
+	//
+	// Twenty is about four merged branches: this repo has averaged 4.4 commits per merge
+	// over 235 of them, so a release goes stale after a round and not after a feature.
+	// Lower fires in the ordinary week after a release, which is how a check gets
+	// ignored; much higher repeats what already happened here, where the tag `@latest`
+	// resolved to sat 235 commits back and did not contain `kit release` at all.
+	TagStaleCommits = 20
 )
 
 // countDays renders a threshold or an age for a finding, so the text can never
@@ -119,6 +131,13 @@ var (
 		"every task is ticked but the status is still open"}
 	checkTechDrift = Check{"tech-drift", Medium,
 		"the as-built doc predates the most recent shipped: date"}
+	// MEDIUM for tech-drift's reason: the drift is between what shipped and what a reader
+	// gets, and no agent is misled about state. HIGH would be worse than the defect —
+	// `audit --strict` runs before every ship, so it would refuse every feature between
+	// one release and the next.
+	checkTagStale = Check{"tag-stale", Medium,
+		fmt.Sprintf("the newest tag is more than %d commits behind the trunk, so an "+
+			"install resolves to a project the docs no longer describe", TagStaleCommits)}
 	checkShippedNoDate = Check{"shipped-no-date", Medium,
 		"Shipped with no shipped: date"}
 	// Nothing validated the field, so `tech-drift` compared against whatever was in it:
@@ -188,7 +207,7 @@ var Checks = []Check{
 	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkStalled, checkUntickedShipped,
 	checkInboxStale,
 	checkShippedNotPushed,
-	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift,
+	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkShippedBadDate,
 	checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim,
@@ -339,6 +358,7 @@ var repoChecks = []repoCheck{
 	{[]Check{checkOrphanClaim}, orphanClaims},
 	{[]Check{checkInboxUnparsed, checkInboxUnknown, checkFYIStale, checkInboxStale}, inboxState},
 	{[]Check{checkTechDrift, checkNoTech}, techState},
+	{[]Check{checkTagStale}, tagStale},
 	{[]Check{checkNoPlan}, noPlan},
 	{[]Check{checkNoProtocol}, noProtocol},
 	{[]Check{checkProtocolStale}, protocolStale},
@@ -690,6 +710,25 @@ func techState(s *repoState) []Finding {
 			"kit ship writes one; for an existing project see: kit help as-built")}
 	}
 	return nil
+}
+
+// A tag is what an install resolves to, so the distance between the newest one and the
+// trunk is the distance between what the docs describe and what a reader gets. It is the
+// same fact as tech-drift and protocol-stale, measured in commits, and nothing was
+// reporting it: this repo's own tag reached 235 commits behind, far enough back that the
+// command the README advertises did not exist in it.
+//
+// Quiet where there is no tag at all. An install then resolves to the trunk itself, which
+// is the newest thing there is to get.
+func tagStale(s *repoState) []Finding {
+	tag, behind, ok := s.r.TagDistance()
+	if !ok || behind <= TagStaleCommits {
+		return nil
+	}
+	return []Finding{finding(checkTagStale, s.r.Name,
+		fmt.Sprintf("%s is the newest tag and the trunk is %d commits past it, so an "+
+			"install gets a project that predates them", tag, behind),
+		"cut a tag on the trunk and push it — until it is pushed nothing installs it")}
 }
 
 // Set up, work happening, nothing written down — what adoption failing looks like. A

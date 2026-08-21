@@ -44,7 +44,7 @@ README advertises.
 
 - [x] `make release` runs the gate and cuts an annotated tag
 - [x] The protocol names tagging as what follows a round landing
-- [ ] `audit` reports a tag far enough behind the trunk to mislead `@latest`
+- [x] `audit` reports a tag far enough behind the trunk to mislead `@latest`
 - [ ] A release is cut for the current trunk, and `go install @latest` is verified against it
 
 ## Log

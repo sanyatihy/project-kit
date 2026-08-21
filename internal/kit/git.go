@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -304,6 +305,34 @@ func (r *Repo) TrackedAtHEAD(rel string) bool {
 		}
 	}
 	return r.headPaths[rel]
+}
+
+// TagDistance is the newest tag reachable from the trunk and how many trunk commits are
+// not in it. False when there is no trunk to measure against, or no tag at all.
+//
+// The trunk and not HEAD: a claim branch is ahead of the trunk by its own work, and that
+// work is not a release nobody cut. One `describe --long`, which answers both halves at
+// once — `v0.2.0-235-g3a913ba` is the tag, the distance and the commit. Parsed from the
+// right, because a tag name may carry the separator and the last two fields never do.
+func (r *Repo) TagDistance() (tag string, behind int, ok bool) {
+	ref := r.trunkRef()
+	if ref == "" {
+		return "", 0, false
+	}
+	out := strings.TrimSpace(r.git("describe", "--tags", "--long", ref))
+	commit := strings.LastIndex(out, "-")
+	if commit <= 0 {
+		return "", 0, false
+	}
+	count := strings.LastIndex(out[:commit], "-")
+	if count <= 0 {
+		return "", 0, false
+	}
+	n, err := strconv.Atoi(out[count+1 : commit])
+	if err != nil {
+		return "", 0, false
+	}
+	return out[:count], n, true
 }
 
 // gitPaths splits a NUL-separated path list into the bytes the filesystem uses.
