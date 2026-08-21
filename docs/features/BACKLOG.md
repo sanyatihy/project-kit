@@ -99,6 +99,18 @@ stops costing six hours.
 **Promote when:** a scaffolded project's CI turns red with no commit behind it, or a job
 there hangs.
 
+## A comment citing a rule by number misdirects the next reader
+
+`TestNothingUserFacingCitesARuleByNumber` reads string literals only, and says why: a
+comment misdirects nobody but the next reader of the source. Two went wrong anyway —
+`release.go` cited rule 8 for the stopping rule and `audit.go` rule 10 for the secret one,
+both left behind when 0048 renumbered the protocol, and both found by reading rather than
+by the build. Widening the test to comments is one line; the cost is that a note genuinely
+about the numbered list can no longer name a number.
+
+**Value:** the reasoning in the source stops pointing at rules that have moved.
+**Promote when:** a third citation is found wrong, or one sends a reader to the wrong rule.
+
 ## `tag-stale` reads this machine's tags, and `@latest` reads the remote's
 
 `TagDistance` describes against the local refs, so a tag cut and never pushed silences the

@@ -31,12 +31,6 @@ func (r *Repo) git(args ...string) string {
 	return string(out)
 }
 
-// gitRun runs git and reports what went wrong, returning stdout either way.
-//
-// The reads above use git(), which treats a failure as "nothing found" because a
-// project with no commits and a project whose log could not be read look the same
-// to a report. Anything that changes state needs the opposite: a push that did not
-// happen must never be mistaken for one that found nothing to do.
 // gitFed is gitRun with something on stdin, for the one caller that batches: `cat-file
 // --batch` reads a list of objects and writes them all back in one process.
 func (r *Repo) gitFed(stdin string, args ...string) (string, error) {
@@ -56,6 +50,12 @@ func (r *Repo) gitFed(stdin string, args ...string) (string, error) {
 	return stdout.String(), nil
 }
 
+// gitRun runs git and reports what went wrong, returning stdout either way.
+//
+// The reads above use git(), which treats a failure as "nothing found" because a
+// project with no commits and a project whose log could not be read look the same
+// to a report. Anything that changes state needs the opposite: a push that did not
+// happen must never be mistaken for one that found nothing to do.
 func (r *Repo) gitRun(args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()

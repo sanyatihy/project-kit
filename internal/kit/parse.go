@@ -164,13 +164,6 @@ func AddField(text, key, value string) (string, bool) {
 	return text[:start] + strings.Join(lines, "\n") + text[end:], true
 }
 
-// Bloat measures a document's total length. What costs a later agent is the whole file it
-// has to read, so nothing here looks inside the sections.
-//
-// 0038 also capped a single `## Log` entry. 0041 removed that arm: the cap was taken from a
-// corpus whose Logs had just been cut, and against one written to the standard the kit wants
-// it fires on 13 entries of 56 — the ones carrying what the doing taught. Entry length was
-// never the signal; the diary is, and the template's guidance is what excludes it.
 // SetStatus rewrites the frontmatter's `status:`.
 func SetStatus(text, status string) (string, bool) { return SetField(text, "status", status) }
 
@@ -336,10 +329,3 @@ func AppendToSection(text, heading, line string) (string, bool) {
 	out = append(out, line)
 	return strings.Join(append(out, lines[at:]...), "\n"), true
 }
-
-// listItemRe is a bullet or numbered list marker. An item is its own block: two adjacent
-// items are two thoughts however they wrap, and joining them would invent a sentence
-// neither one wrote.
-// word is one whitespace-separated token and the line it was read from, so a sentence
-// spanning four wrapped lines can still name the line it starts on.
-// trailing markdown a word can wear without changing where the sentence ends.

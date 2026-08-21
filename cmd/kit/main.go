@@ -99,7 +99,7 @@ func run() int {
 
 func runInit(args []string) int {
 	stacks := kit.Stacks(templates)
-	fs := newFlagSet("init")
+	fs := newFlagSet("init", args)
 	stack := fs.String("stack", "", "also scaffold a language stack ("+
 		strings.Join(stacks, ", ")+")")
 	forge := fs.String("forge", "", "where the project is hosted ("+
@@ -159,12 +159,12 @@ func runInit(args []string) int {
 
 	// Singular here is what produced a plan with one feature covering a whole
 	// project: the tool asked for a feature and the agent wrote a feature. Bootstrap
-	// means the whole set, and accepting them is not the agent's to do.
+	// means the whole set, and which of them go ahead is not the agent's to decide.
 	fmt.Printf("\nnext:\n")
 	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
 	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
 	fmt.Printf("  each one a change a human can review in one sitting\n")
-	fmt.Printf("  leave them Draft — accepting them is the human's call\n")
+	fmt.Printf("  leave them Draft — kit ship and kit drop write a status, nothing else\n")
 	// Said here because this is where a bootstrap run reads what to do next, and the
 	// omission is what let `kit claim` win a branch carrying no plan: a claim pushes
 	// HEAD, so a plan that is only in the working tree does not travel with it.
@@ -178,7 +178,7 @@ func runInit(args []string) int {
 
 func runNew(args []string) int {
 	for _, a := range args {
-		if a == "-h" || a == "--help" || a == "-help" {
+		if isHelpFlag(a) {
 			fmt.Println(commandHelp["new"])
 			return 0
 		}
@@ -207,15 +207,17 @@ func runNew(args []string) int {
 	fmt.Printf("\n  fill in Problem, Non-goals, Design, and Tasks.\n")
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
-	fmt.Printf("  leave status: Draft — accepting it is the human's call, and\n")
-	fmt.Printf("  kit next will offer it once they have.\n\n")
+	// The gate this described is gone: `Accepted` was removed after 82 docs reached it
+	// zero times, and `next` offers a written Draft the moment its round lands.
+	fmt.Printf("  kit next offers it as soon as the plan is written, and kit ship\n")
+	fmt.Printf("  and kit drop are the only things that write a status.\n\n")
 	return 0
 }
 
 // ---------------------------------------------------------------- drop
 
 func runDrop(args []string) int {
-	fs := newFlagSet("drop")
+	fs := newFlagSet("drop", args)
 	rest := parseArgs(fs, args)
 	if len(rest) < 1 {
 		fmt.Fprintf(os.Stderr, "kit drop: need one feature id\n\n%s\n", commandHelp["drop"])
@@ -265,7 +267,7 @@ func runDrop(args []string) int {
 // ---------------------------------------------------------------- claim
 
 func runClaim(args []string) int {
-	fs := newFlagSet("claim")
+	fs := newFlagSet("claim", args)
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
 		fmt.Fprintf(os.Stderr, "kit claim: need one feature id\n\n%s\n", commandHelp["claim"])
@@ -315,7 +317,7 @@ func runClaim(args []string) int {
 // ---------------------------------------------------------------- release
 
 func runRelease(args []string) int {
-	fs := newFlagSet("release")
+	fs := newFlagSet("release", args)
 	force := fs.Bool("force", false, "delete the branch even though it carries work")
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
@@ -359,7 +361,7 @@ func runRelease(args []string) int {
 // ---------------------------------------------------------------- block
 
 func runBlock(args []string) int {
-	fs := newFlagSet("block")
+	fs := newFlagSet("block", args)
 	fyi := fs.Bool("fyi", false, "record it without blocking the feature")
 	rest := parseArgs(fs, args)
 
@@ -403,7 +405,7 @@ func runBlock(args []string) int {
 // ---------------------------------------------------------------- ship
 
 func runShip(args []string) int {
-	fs := newFlagSet("ship")
+	fs := newFlagSet("ship", args)
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
 		fmt.Fprintf(os.Stderr, "kit ship: need one feature id\n\n%s\n", commandHelp["ship"])
@@ -459,7 +461,7 @@ func runShip(args []string) int {
 // ---------------------------------------------------------------- next
 
 func runNext(args []string) int {
-	fs := newFlagSet("next")
+	fs := newFlagSet("next", args)
 	asJSON := fs.Bool("json", false, "machine-readable output")
 	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
 	if rest := parseArgs(fs, args); len(rest) > 0 {
@@ -481,7 +483,8 @@ func runNext(args []string) int {
 	if repo.FeaturesDir == "" {
 		notSetUp = "not set up yet — run: kit init " + repo.Root
 	}
-	plan := kit.Plan{Error: notSetUp}
+	plan := kit.NewPlan()
+	plan.Error = notSetUp
 	if notSetUp == "" {
 		plan = kit.Survey(repo)
 		drift := kit.ProtocolState(repo, currentProtocol())
@@ -588,8 +591,8 @@ func printPlan(plan kit.Plan, color bool) {
 			// steadily from one that stopped an hour in. `stalled` only speaks at three
 			// days, and by then the answer has cost two.
 			moved := ""
-			if !item.Moved.IsZero() {
-				moved = ", " + ago(item.Moved)
+			if item.Moved != nil {
+				moved = ", " + ago(*item.Moved)
 			}
 			fmt.Printf("    %s  %-5s %s — %s%s\n", item.ID, item.Progress(),
 				kit.Show(item.Title, 34), item.ClaimedBy, moved)
@@ -684,7 +687,7 @@ func waited(since time.Time) string {
 // ---------------------------------------------------------------- audit
 
 func runAudit(args []string) int {
-	fs := newFlagSet("audit")
+	fs := newFlagSet("audit", args)
 	asJSON := fs.Bool("json", false, "machine-readable output")
 	strict := fs.Bool("strict", false, "exit 1 if anything HIGH is found")
 	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
@@ -833,16 +836,32 @@ func count(n int, noun string) string {
 
 // newFlagSet builds a subcommand's flags with help that describes the command,
 // not just its options — an agent should not need the source to use it.
-func newFlagSet(name string) *flag.FlagSet {
+//
+// The args decide where that help goes. Asked for, it is the output: `kit next -h`
+// wrote to stderr and exited 0, so redirecting it produced an empty file while
+// `kit new --help` produced the text. Printed after a bad flag it is a diagnostic and
+// stays with the error, because flag writes both to one stream and stdout has to stay
+// clean on a failure.
+func newFlagSet(name string, args []string) *flag.FlagSet {
+	out := os.Stderr
+	if slices.ContainsFunc(args, isHelpFlag) {
+		out = os.Stdout
+	}
 	fs := flag.NewFlagSet("kit "+name, flag.ExitOnError)
+	fs.SetOutput(out)
 	fs.Usage = func() {
 		// Nothing useful to do if printing help fails; the process is on its
 		// way out either way.
-		_, _ = fmt.Fprintln(fs.Output(), commandHelp[name])
-		_, _ = fmt.Fprintln(fs.Output(), "\nOptions:")
+		_, _ = fmt.Fprintln(out, commandHelp[name])
+		_, _ = fmt.Fprintln(out, "\nOptions:")
 		fs.PrintDefaults()
 	}
 	return fs
+}
+
+// isHelpFlag names the three spellings Go's flag package answers to.
+func isHelpFlag(arg string) bool {
+	return arg == "-h" || arg == "--help" || arg == "-help"
 }
 
 // parseArgs parses flags that appear anywhere, not only before the first path.

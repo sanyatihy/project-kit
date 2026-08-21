@@ -55,9 +55,10 @@ The four rules:
      field of the line, not a mention in the question text. FYI lines never block.
      See "kit help inbox" for the format.
 
-A claim is refused by: an unmet "needs:", a BLOCKING inbox line, an unwritten
-## Problem, ## Design or ## Tasks, an id: that disagrees with the filename, a
-duplicate id, or a plan that has not reached the default branch.
+The claim refusals you will meet most: an unmet "needs:", a BLOCKING inbox line, an
+unwritten ## Problem, ## Design or ## Tasks, an id: that disagrees with the filename,
+a duplicate id, or a plan that has not reached the default branch. "kit claim --help"
+names every one.
 
 Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
 which writes docs/INBOX.md in the format the tool parses, then move to another
@@ -146,16 +147,19 @@ is what decides: creating the branch on the remote either succeeds or it does no
 so of any number of agents claiming at once exactly one wins.
 
   0  it is yours — a worktree command to start in is printed
-  1  it is not yours: another agent got there first, a branch already claims it, an
-     open INBOX question blocks it, something in its needs: has not shipped, the doc
-     is closed, or nobody wrote it — an empty ## Problem, ## Design or ## Tasks is
-     refused whatever the status
-  2  it could not run: no such feature, no commits yet, the plan not landed on the
-     default branch, several remotes and no origin
+  1  it is not yours: another agent got there first, a branch already claims it,
+     an open INBOX question blocks it, something in its needs: has not shipped,
+     the doc is closed or has no status:, the id: disagrees with the filename,
+     or nobody wrote it — an empty ## Problem, ## Design or ## Tasks is refused
+     whatever the status
+  2  it could not run: no such feature, two docs share the id, no commits yet,
+     the plan not committed here, the plan not landed on the default branch,
+     several remotes and no origin, or the push said nothing about the ref
 
-Every refusal here is one "kit next" already makes, bar the landing one. The board and
-the commands read the same facts, so claiming by id without consulting it cannot get
-you further.
+Every exit 1 refusal is one "kit next" already makes, bar the race it cannot see: the
+board and the commands read the same facts, so claiming by id without consulting it
+cannot get you further. The exit 2 ones are about the repository rather than the plan,
+and the board reports none of them.
 
 The doc has to be on the default branch. Drafting and reading the board from a plan
 branch are correct, so "next" goes on offering the feature there — taking it is what
@@ -188,9 +192,11 @@ For the second, push the branch and open the pull request unfinished, saying why
 — the doc travels with the branch, so the record lands when it merges.
 
   0  the claim is gone and the feature is free for anyone to claim
-  2  it could not run: no such feature, nothing claims it, two branches claim it, a
-     branch this checkout cannot resolve, the remote did not answer, or the branch
-     carries work and --force was not given
+  2  it could not run: no such feature, nothing claims it, two branches claim it,
+     a branch this clone never created, a branch this checkout cannot resolve, a
+     copy of it here that is not the remote's, no default branch to read work
+     against, several remotes and no origin, the remote did not answer, or the
+     branch carries work and --force was not given
 
 --force deletes it anyway. Reach for it when the commits are genuinely worth nothing;
 git keeps them reachable only through the reflog afterwards.
@@ -227,13 +233,15 @@ State a leaning. It turns most questions into a yes/no.
 Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
 status: Shipped, and stamps shipped: with today's date.
 
-Three more refusals, all exit 2. Something in its needs: has not shipped — the plan
-says this was built on a foundation that is not there, so the plan is wrong and you
-have to look. Or the feature is claimed by a branch that is not this checkout's:
-ship it from that worktree, because "Shipped" is history nobody may edit and doing
-it from elsewhere freezes another agent's work mid-flight. Or this checkout has
-uncommitted or untracked files: the scratch a feature generated is yours to clean
-up, and what git ignores does not count.
+Seven more refusals, all exit 2. The doc is already Shipped, or it was Dropped and a
+retired plan is not work to finish. Or it has no ## Tasks boxes at all, so there is
+nothing to have finished, or no status: line for this to write. Or something in its
+needs: has not shipped — the plan says this was built on a foundation that is not
+there, so the plan is wrong and you have to look. Or it is claimed by a branch that
+is not this checkout's: ship it from that worktree, because "Shipped" is history
+nobody may edit and doing it from elsewhere freezes another agent's work mid-flight.
+Or this checkout has uncommitted or untracked files: the scratch a feature generated
+is yours to clean up, and what git ignores does not count.
 
 Doing this by hand is where two audit findings come from — unticked-shipped and
 shipped-no-date — so the command removes the mistake rather than reporting it
@@ -244,8 +252,7 @@ on, and what the doc decided must not be edited again.
 
 Shipping is also when a working document becomes context every later session carries,
 so the closing line asks you to compact it: keep every decision, constraint and
-measurement, and cut only what the code now says. "doc-bloat" reports a doc that grew
-past what anyone reads.
+measurement, and cut only what the code now says.
 
   kit ship 0007
   kit ship 7`,
@@ -341,7 +348,9 @@ Reads only, and never edits a file. Uses the repo you are in. For several projec
 
 // runHelp prints the overview, or one topic.
 func runHelp(templates fs.FS, args []string) int {
-	if len(args) == 0 {
+	// `kit help -h` asked for the overview and got "no topic \"-h\"" at exit 2, which is
+	// the one command where being turned away for asking is absurd.
+	if len(args) == 0 || isHelpFlag(args[0]) {
 		fmt.Println(overview)
 		return 0
 	}
