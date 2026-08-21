@@ -544,22 +544,6 @@ func (r *Repo) OrphanClaims() []string {
 	return out
 }
 
-// HasClaimShapedBranch reports whether any branch leads with a feature ID.
-//
-// Enough to know somebody is writing a plan somewhere, which is all `no-plan` needs: its
-// job is to catch a project with commits and nothing written down, and a branch named
-// `0001-…` is not that even when the trunk holds no doc yet.
-func (r *Repo) HasClaimShapedBranch() bool {
-	r.loadGit()
-	for _, ref := range r.refs {
-		name := r.branchName(ref)
-		if !r.isTrunk(name) && idPrefixRe.FindString(name) != "" {
-			return true
-		}
-	}
-	return false
-}
-
 // BranchCarriesItsDoc reports whether a branch holds the feature doc it is named after.
 // The doc names the branch and the branch cites the doc, so the filename is derivable and
 // no mapping has to be kept.

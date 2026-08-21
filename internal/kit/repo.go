@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -291,63 +290,6 @@ func (r *Repo) UnmetNeeds(f *Feature) []string {
 	return unmet
 }
 
-// NeedsCycles lists loops in the needs: graph, each as the ids in the loop starting
-// and ending at the same one.
-//
-// Reported rather than merely avoided: a loop means every feature in it waits on
-// itself forever, so `next` would go quiet about all of them and never say why. One
-// finding per loop, not one per feature in it — the loop is the defect and it has one
-// fix.
-func (r *Repo) NeedsCycles() [][]string {
-	// Iterative depth-first search with an explicit path. `state` is the standard
-	// three-colour marking: unseen, on the current path, and finished. A node already
-	// finished cannot start a new cycle, which is what keeps a diamond-shaped graph
-	// from being walked exponentially.
-	const (
-		unseen = iota
-		onPath
-		done
-	)
-	state := map[string]int{}
-	var cycles [][]string
-	seen := map[string]bool{}
-
-	var walk func(id string, path []string)
-	walk = func(id string, path []string) {
-		state[id] = onPath
-		path = append(path, id)
-		f := r.FeatureByID(id)
-		if f != nil {
-			for _, next := range f.Needs {
-				if r.FeatureByID(next) == nil {
-					continue // a missing id is needs-unknown's business, not a loop
-				}
-				switch state[next] {
-				case onPath:
-					// Report from where the loop closes, so the output is the loop
-					// itself rather than the walk that happened to find it.
-					at := slices.Index(path, next)
-					loop := append(append([]string{}, path[at:]...), next)
-					if key := strings.Join(loop, ">"); !seen[key] {
-						seen[key] = true
-						cycles = append(cycles, loop)
-					}
-				case unseen:
-					walk(next, path)
-				}
-			}
-		}
-		state[id] = done
-	}
-
-	for _, f := range r.Features {
-		if f.ID != "" && state[f.ID] == unseen {
-			walk(f.ID, nil)
-		}
-	}
-	return cycles
-}
-
 // Rel makes a path relative to the project root, for display.
 func (r *Repo) Rel(path string) string {
 	rel, err := filepath.Rel(r.Root, path)
@@ -388,7 +330,7 @@ func (r *Repo) ActiveFeatures() []*Feature {
 		// Draft, and anything else that is neither terminal nor missing. A status this
 		// version does not know is still open work: dropping `Accepted` would otherwise
 		// have made every doc carrying it vanish from the board of every project already
-		// using the kit, silently and with no finding to explain it. `bad-status` reports
+		// using the kit, silently and with no finding to explain it. `no-status` reports
 		// it instead, and the feature stays visible while somebody fixes it.
 		if f.Status != "" && !terminal(f.Status) {
 			out = append(out, f)

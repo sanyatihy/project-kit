@@ -155,15 +155,14 @@ Draft -> Shipped     (exit: Dropped)
 - **Blocking is an INBOX line naming the feature in its id field**, never the prose, which
   stops work invisibly; an unparseable line matches whole-line, which over-blocks — the safe
   direction. `next` skips at once, `audit` escalates after two days, because a line carries
-  a date and no time. FYI lines never block, and are LOW where BLOCKING is HIGH.
+  a date and no time. An FYI line never blocks and is never aged: nothing is owed it.
 - **The feature template's guidance lives in HTML comments, and that is load-bearing.**
   Comments are stripped before parsing, so guidance reaches the author and not the tool.
   Visible placeholder prose and two `- [ ] …` boxes make an unwritten doc parse as a
   finished plan, which `next` then hands an agent to build.
-- **The plan checks gate on *committed*, not on a status.** `unfilled-template` and
-  `no-tasks` were gated on "not a Draft", which dropping `Accepted` would have made dead.
-  Committed-and-unwritten is the truer defect anyway, and a doc fresh out of `kit new` is
-  untracked and stays quiet.
+- **The plan checks gate on *committed*, never on a terminal doc, and read a boxless
+  `## Tasks` as unwritten** — so a doc out of `kit new` stays quiet, `claim` refuses what
+  the board declines, and a stub `drop` retired stops refusing every ship in the project.
 - **Three docs, three tenses:** VISION what the project is becoming, `features/` what is
   being done now, TECH what exists. **A file is the kit's to refresh when nothing reads the
   project's copy** — `TEMPLATE.md` is written from the embedded copy, so `init` replaces it
@@ -202,14 +201,17 @@ Draft -> Shipped     (exit: Dropped)
   build if a registered check has no implementation or two claim one code.
 - **`audit` has one job:** find where the docs disagree with the repo. It never writes — an
   auditor that fixes things stops being read — and it counts boxes rather than estimating.
-- **A check that reports a state nobody may fix is deleted, not tuned.** A Shipped doc is
-  frozen, so a finding whose only remedy edits one is a standing instruction to break the
-  protocol. `missing-section` demanded a `## Log` the routing rule says is optional;
-  `draft-claimed` read any `## Open questions` text as unsettled, including answered ones;
-  `doc-bloat` offered an escape hatch that existed in no line of code; `session-narration`
-  skipped Shipped, which was 13 of the 18 docs in the only corpus written under the rule;
-  `long-sentence` cost a 130-line sentence parser for one LOW finding on frozen docs. All
-  five are gone, and `needs-unknown` now skips a doc that is itself terminal.
+- **A check that reports a state nobody may fix is deleted, not tuned.** Nine went that
+  way: five demanded prose nobody owed, four reported a state `ship` refuses to create or
+  a note `--fyi` cleared to wait. What a terminal doc is still asked is the frontmatter
+  the kit writes — repairable without reopening the plan — and a leaked credential.
+- **One defect is one finding; the code names the category, not one member.** Seven pairs
+  merged, each survivor's `Means` restated. A missing `VISION.md` or `INBOX.md` is
+  `no-protocol`: `kit init` writes all three, so one fix clears them.
+- **Severity is the damage.** `split-claim` is HIGH — two agents owning one feature is the
+  worst failure here, and it gated nothing at MEDIUM. `id-mismatch` is HIGH because the
+  branch comes from the filename and the claim is looked up by the id, so the board keeps
+  offering a feature somebody holds. Nothing is LOW, so no level prints empty.
 - **`audit` is silent only about what it checked.** A doc it cannot open is
   `unreadable-doc` at HIGH, carrying its filename and its still-reserved id, and no other
   feature check runs on it — they all fire on the empty struct. `--offline` names the
@@ -221,7 +223,7 @@ Draft -> Shipped     (exit: Dropped)
   work as unpushed, and named `ship`'s debris under a name nothing on disk has.
 - **A fix line has to be one the reader can run.** `done-not-shipped` wants boxes before it
   calls a doc finished, and names the edit where there is no `id:` for `kit ship` to take.
-  `shipped:` is validated — unparseable or not yet arrived is `shipped-bad-date` — and
+  `shipped:` is validated — absent, unparseable and not yet arrived are one finding — and
   `tech-drift` ignores a day that has not happened, which nothing could be newer than.
 - **The kit owns the work, not the runtime.** Where agents run — panes, restarts, noticing
   one is blocked — belongs to a runtime like `herdr`; an agent composes the two.
@@ -250,9 +252,6 @@ Draft -> Shipped     (exit: Dropped)
   feature's own.
 - **The commands refuse exactly what the board refuses** — `Survey`, `ClaimFeature` and
   `Ship` share `UnmetNeeds`, and `Ship` reuses `Repo.Mine`.
-- **An `id:` disagreeing with its filename is HIGH, not tidiness.** The branch comes from
-  the file and the claim is looked up by the id, so the board keeps offering a feature
-  somebody holds.
 - **One path per document kind.** Three feature directories and four spellings of the
   as-built doc were accepted for projects the kit never scaffolded, and `createTechDoc`
   hard-coded one of the four anyway — so a project using a different spelling got a second
@@ -313,8 +312,6 @@ Each of these has already caused a bug.
   linux/amd64 but not darwin/arm64, so a file-level export passes locally and fails CI.
 - **Guidance the binary does not print may as well not exist.** An outside review reached
   four wrong conclusions, every one a fair reading of `kit help`. Two tests keep that shut.
-- **`linkRe` accepts any run of non-`)` characters**, so `[x](   )` yields no fields at all.
-  Indexing that slice panicked inside the command that gates every ship and every CI run.
 - **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.** Append
   to an existing company value; the `-w` write is inert when the variable is exported.
 

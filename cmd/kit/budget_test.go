@@ -46,7 +46,10 @@ const (
 	// Topics are read on demand and once. `go-checklist` is standing engineering
 	// guidance whose substance is the point, so this only catches unbounded growth
 	// rather than enforcing brevity.
-	topicBudget = 220
+	// 193 since 0060: the inbox and feature-doc topics lost the lines describing checks
+	// that no longer exist, and the ceiling is retaken against the longest topic left.
+	// Headroom nobody has to justify spending is not a ceiling.
+	topicBudget = 193
 
 	// The two documents this repo itself reads every session: the protocol above, and the
 	// as-built doc before any change to the kit. 0031 cut TECH from 546 lines to 247 and
@@ -79,7 +82,11 @@ const (
 	// network, and a reader who does not know where the ref lives, that only a created one
 	// counts, what it points at, or what is lost with no remote cannot tell a correct run
 	// from a degraded one.
-	techBudget = 352
+	// 349 on merging 0060, the first round to take lines out: thirteen checks left the
+	// vocabulary, so the catalogue of what was deleted and why compresses into the rule it
+	// was evidence for, and the `linkRe` gotcha went with the parser it was about. The
+	// number falls under 0058's rather than past it, because that round's eight lines stand.
+	techBudget = 349
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
