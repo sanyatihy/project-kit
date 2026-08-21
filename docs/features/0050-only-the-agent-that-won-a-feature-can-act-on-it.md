@@ -54,7 +54,13 @@ Reproduced against the installed binary:
 
 - [x] `Mine` is branch equality, and a scratch branch citing an id confers nothing
 - [x] `claim` cannot leave a ref on the remote it does not own locally
-- [ ] Refs are read from `for-each-ref`, so git's pseudo-branch names are never claims
+- [x] Refs are read from `for-each-ref`, so git's pseudo-branch names are never claims
+- [ ] HEAD keeps its branch through a rebase, so the winner can still ship its feature
 - [ ] A test drives each of the four states above
 
 ## Log
+- 2026-08-21 — reading `for-each-ref` clears three of the four states and only half of the
+  rebase. A rebase detaches HEAD, so `symbolic-ref` names no branch whatever the ref list
+  says, and ownership stays false: `next` reports the feature as taken by the branch this
+  checkout is standing on and `ship` still refuses it. The name is in the rebase state git
+  writes beside HEAD, which is a box of its own.

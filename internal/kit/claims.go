@@ -92,10 +92,15 @@ func (r *Repo) trunkRef() string {
 // A worktree has its own HEAD, so in a worktree this is that worktree's branch —
 // which is the whole point: it is how the kit tells the checkout you are standing
 // in apart from the ones other agents are standing in.
+//
+// The full ref, trimmed here, rather than `--short`: shortening is display text and
+// disambiguates a branch a tag shadows as `heads/0002-beta`, which is not the branch's
+// name and equals nothing the kit compares it with.
 func (r *Repo) HeadBranch() string {
 	if !r.headAsked {
 		r.headAsked = true
-		r.head = strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short", "HEAD"))
+		r.head = strings.TrimPrefix(
+			strings.TrimSpace(r.git("symbolic-ref", "--quiet", "HEAD")), "refs/heads/")
 	}
 	return r.head
 }
