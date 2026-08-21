@@ -50,7 +50,7 @@ moved since.
 
 ## Tasks
 
-- [ ] `0684b67` lands on this branch, and `make check` passes against current main
+- [x] `0684b67` lands on this branch, and `make check` passes against current main
 - [ ] `claim` refuses a checkout that already holds a claim, named in `kit claim --help`
 - [ ] `kit new` refuses to draft on a branch citing an id that is not this checkout's claim
 - [ ] 0057's claim branch is released, and the board shows no work nobody is doing
