@@ -51,7 +51,11 @@ Draft -> Shipped     (exit: Dropped)
   flight — the claim branch says that. `Accepted` was removed after 82 docs across five
   projects reached it zero times; every feature went `Draft` to `Shipped`. `Superseded` was
   removed because no command could write it, so reaching it required the hand edit the
-  protocol forbids.
+  protocol forbids. Both end states are terminal in both directions: `ship` refuses a
+  Dropped doc as `drop` refuses a Shipped one.
+- **A write needs one unambiguous doc.** `WriteTarget` refuses an id two docs declare and a
+  key one doc declares twice; the first match `FeatureByID` returns is for reads, where
+  refusing to render would help nobody.
 - **Six frontmatter fields.** `id`, `title`, `status`, `created`, `shipped`, `needs`.
   `check:`, `checked:` and `review:` went with the commands that wrote them. `related:`
   went because 77 docs filled it in and no line of Go ever read it.
@@ -63,14 +67,17 @@ Draft -> Shipped     (exit: Dropped)
 - **The claim is a branch name, and the push is what decides.** Only a *created* ref is a
   win: pushing to a branch the remote already holds at that commit prints "Everything
   up-to-date" and exits 0, which hands one feature to two agents. Ref creation is a
-  server-side compare-and-swap, so exactly one claimant wins. A name is read **whole**,
-  namespace included: on the last path segment alone, a worktree reads its own checkout as
-  a rival claim.
+  server-side compare-and-swap, so exactly one claimant wins. The local branch is made
+  before the push and deleted if it loses: a claim is held in both places or in neither.
+  A name is read **whole**, namespace included, and from `for-each-ref` — `git branch`
+  writes a page for a reader, and `(no branch, rebasing 0002-x)` read as a rival claim.
 - **A claim carries the plan, and branches from the trunk.** The doc must be in `HEAD`'s
   tree and in `trunkRef()`'s, or the claim is a child of the plan branch and only its own
   author can integrate it.
-- **The checkout is the unit of isolation.** A worktree holds one feature; this checkout's
-  own claim reads as *yours*.
+- **The checkout is the unit of isolation, and ownership is branch equality.** A worktree
+  holds one feature, and its claim reads as *yours* while HEAD *is* the branch named after
+  the doc — `notes-0001-alpha` mentions the id and confers nothing. A rebase detaches HEAD,
+  so the name is read from git's rebase state instead.
 - **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks
   whether HEAD *is* the claim branch, which is right for `ship` — shipping happens in the
   worktree doing the work — and wrong for `release`, because `claim` tells you to make that
@@ -172,6 +179,10 @@ Draft -> Shipped     (exit: Dropped)
   the right outcome when the work was to write the plan just created.
 - **`protocol-stale` compares the project's protocol section with the kit's**, because
   shipping a protocol change does not deliver one — `AGENTS.md` is rewritten only by `init`.
+  It reports which side is behind: `kit init .` writes the binary's copy over the section,
+  so offered to the newer side it reverts it, and the only project that can be the newer
+  side is the one carrying `templates/AGENTS-section.md`. `no-protocol` covers a file whose
+  `## Work protocol` heading is gone as well as a missing file; nothing else looks for it.
   **Rules are cited by name, never by number**, in every shipped string as well as in the
   protocol. A number is valid only inside the one list that carries it, and a refusal that
   cited one sent the reader to a list they were not holding.
@@ -191,6 +202,19 @@ Draft -> Shipped     (exit: Dropped)
   skipped Shipped, which was 13 of the 18 docs in the only corpus written under the rule;
   `long-sentence` cost a 130-line sentence parser for one LOW finding on frozen docs. All
   five are gone, and `needs-unknown` now skips a doc that is itself terminal.
+- **`audit` is silent only about what it checked.** A doc it cannot open is
+  `unreadable-doc` at HIGH, carrying its filename and its still-reserved id, and no other
+  feature check runs on it — they all fire on the empty struct. `--offline` names the
+  checks it dropped, from `OfflineChecks`. A directory with no `docs/features` exits 2 from
+  `next` and from `audit`: nothing was read, so there is no clean bill to give either.
+- **Every git read that yields a path asks for `-z`.** git C-quotes anything outside
+  printable ASCII, and each reader compares the result against a name `os.ReadDir`
+  produced: one accented character disabled the plan checks on that doc, reported pushed
+  work as unpushed, and named `ship`'s debris under a name nothing on disk has.
+- **A fix line has to be one the reader can run.** `done-not-shipped` wants boxes before it
+  calls a doc finished, and names the edit where there is no `id:` for `kit ship` to take.
+  `shipped:` is validated — unparseable or not yet arrived is `shipped-bad-date` — and
+  `tech-drift` ignores a day that has not happened, which nothing could be newer than.
 - **The kit owns the work, not the runtime.** Where agents run — panes, restarts, noticing
   one is blocked — belongs to a runtime like `herdr`; an agent composes the two.
 
@@ -247,6 +271,10 @@ Each of these has already caused a bug.
   `main.go.tmpl`.
 - **Templates are embedded through `assets.go` at the repo root** — `go:embed` cannot reach
   a parent directory from `cmd/kit/`.
+- **The frontmatter closes on a line of exactly three dashes, is written only inside those
+  bounds, and takes a comment only after two spaces.** Each is a bug already had: a setext
+  underline closed the block early, a document-wide replace stamped the ship date into a
+  `title:` quoting a status, and `\s+#` cut `title: Fix #123 crash` down to `Fix`.
 - **Go's `flag` stops parsing at the first positional.** `parseArgs` loops it so a flag
   after an argument still parses.
 - **The `## Work protocol` section of a project's `AGENTS.md` is regenerated** by `init`.
@@ -269,14 +297,16 @@ Each of these has already caused a bug.
 ## Verifying
 
 ```sh
-make check     # fmt-check, vet, unit tests, conformance suite — the whole gate
+make check     # fmt-check, vet, lint, unit tests, conformance suite — the whole gate
 make vuln      # govulncheck against the module
 make install   # go install ./cmd/kit
 ```
 
-Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. CI runs the same
-gate plus `golangci-lint`, `make vuln` and `go run ./cmd/kit audit --strict` — `go run` so
-it needs no credential.
+Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. **CI runs the
+Makefile's `CI_STEPS` and nothing else**, and `cmd/kit/ci_test.go` fails when the workflow
+drifts from it. **The linter is pinned and its set committed** to `.golangci.yml`, or a
+release changes what the gate means with no commit behind it; `make lint` skips when it is
+absent, which is safe only while CI installs it.
 
 **The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
 it against throwaway projects, asserting on stdout, stderr, exit codes and the files left
@@ -289,7 +319,8 @@ own `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind `sync.
 developer's `~/.gitconfig`, so three tests — including the one written to catch the
 `release` deletion bug — passed only on a machine whose `init.defaultBranch` is `main`.
 
-Coverage reads low and stays there: subprocess tests instrument nothing.
+**No coverage number is reported.** `-cover` measured the test process, not the binary the
+suite drives — 2.9% for a package covered end to end — and no threshold reads the result.
 
 ## State of play
 

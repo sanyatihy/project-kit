@@ -63,6 +63,36 @@ func TestBlockRefusesAFeatureThatDoesNotExist(t *testing.T) {
 	r.errHas("0007")
 }
 
+func TestBlockRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
+	t.Parallel()
+	// A question blocks by id, and a doc that declares its id twice does not have one the
+	// kit and its author agree on — so the line would block a feature nobody is reading.
+	p := setUp(t)
+	p.write("docs/features/0007-twice.md",
+		"---\nid: 0007\nid: 0008\ntitle: Twice\nstatus: Draft\n"+
+			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n\n"+
+			"## Tasks\n- [ ] Do it\n\n## Log\n- 2026-01-01 — started.\n")
+
+	p.run("block", "0008", "Which one is it?").fails(2).errHas("id", "twice")
+	if got := p.read("docs/INBOX.md"); strings.Contains(got, "Which one is it?") {
+		t.Errorf("block wrote the question despite refusing:\n%s", got)
+	}
+}
+
+func TestBlockRefusesAnIDThatNamesTwoDocs(t *testing.T) {
+	t.Parallel()
+	// One inbox line blocks by id, so against two docs it blocks both — and clearing it
+	// clears both. That is the same ambiguity `claim` refuses.
+	p := setUp(t)
+	p.write("docs/features/0007-one.md", doc("0007", "One", "Draft", "", "- [ ] Something"))
+	p.write("docs/features/0007-two.md", doc("0007", "Two", "Draft", "", "- [ ] Something"))
+
+	p.run("block", "0007", "Which one is it?").fails(2).errHas("0007-one.md", "0007-two.md")
+	if got := p.read("docs/INBOX.md"); strings.Contains(got, "Which one is it?") {
+		t.Errorf("block wrote the question despite refusing:\n%s", got)
+	}
+}
+
 func TestBlockNeedsAnIDAndAQuestion(t *testing.T) {
 	t.Parallel()
 	p := blockable(t)

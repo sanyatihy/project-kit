@@ -26,6 +26,10 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # The default is six hours, which is what a hung step costs when nothing caps it.
+    # The job is minutes: the gate is a 10s test run locally, and the two network
+    # steps download. 15 is room for a cold module cache, not for a hang.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -34,10 +38,17 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # Install only: `make check` runs the lint, so this job runs the Makefile's
+      # list and nothing beside it. Pinned because `latest` turns the trunk red on
+      # a linter release with no commit behind it; the enabled set is pinned too,
+      # in .golangci.yml.
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: v2.12.2
+          install-only: true
 
+      # Makefile CI_STEPS, in order. cmd/kit/ci_test.go fails when these drift
+      # apart, so a green `make check` is a green job here.
       - run: make check
 
       # A gate, not a build step: it fails the commit rather than the release.
@@ -45,4 +56,4 @@ jobs:
 
       # No install step: `go run` builds from the checkout, so this works on a
       # private repo with no token.
-      - run: go run ./cmd/kit audit --strict
+      - run: make audit

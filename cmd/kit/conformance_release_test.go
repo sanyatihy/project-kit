@@ -157,6 +157,31 @@ func TestReleaseRefusesWhenNoTrunkResolves(t *testing.T) {
 	}
 }
 
+func TestATagNamedLikeTheClaimDoesNotStrandIt(t *testing.T) {
+	t.Parallel()
+	// A tag and a branch may share a name, and git then writes the branch as
+	// `heads/0007-widget` wherever it shortens a ref for a reader. Read as the claiming
+	// branch, that name matches nothing: `release` said it was a branch this clone never
+	// created and refused for as long as the tag existed, so only `--force` got out — and
+	// `--force` is the flag for destroying an agent's live claim.
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok()
+	trunk := a.headBranch()
+	a.git("tag", "0007-widget", trunk)
+
+	// The claim is still the claim-holder's, read from the checkout standing on it.
+	a.git("checkout", "-q", "0007-widget")
+	if got := boardGroup(a.plan("next", "--json"), "0007"); got != "yours" {
+		t.Errorf("under a tag of the same name the board says 0007 is %s, want yours", got)
+	}
+
+	a.git("checkout", "-q", trunk)
+	a.run("release", "0007").ok().has("released", "0007-widget")
+	if hasRemoteBranch(t, a, "0007-widget") {
+		t.Error("release exited 0 but the remote still has 0007-widget, so the claim stands")
+	}
+}
+
 // The deleted-commit case, reproduced: one checkout's copy of the claim was left behind
 // while another pushed real work to the same branch. `release` read the copy, called the
 // branch empty, and deleted the ref carrying the commits — exit 0, no `--force`, and the

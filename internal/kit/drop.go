@@ -31,9 +31,9 @@ type DropResult struct {
 // today is passed in rather than read here, the same way Ship takes it, so a test can
 // assert the date the log entry gets instead of guessing at the one the clock produced.
 func Drop(r *Repo, id, why string, today time.Time) (*DropResult, error) {
-	target := r.FeatureByID(id)
-	if target == nil {
-		return nil, fmt.Errorf("no feature %q", id)
+	target, err := r.WriteTarget(id)
+	if err != nil {
+		return nil, err
 	}
 	switch target.Status {
 	case StatusShipped:

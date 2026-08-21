@@ -39,6 +39,21 @@ type Feature struct {
 	Needs   []string // feature ids that must ship before this can start
 	Shipped time.Time
 
+	// Duplicates are the frontmatter keys this doc declares more than once. Reading
+	// tolerates them — the last one wins — and writing cannot, so it is carried rather
+	// than dropped at parse time.
+	Duplicates []string
+
+	// shippedText is the frontmatter line as written. Shipped alone cannot tell a doc
+	// with no date from one whose date nothing could parse, and `shipped-no-date`
+	// reported the second as the first — on a doc that plainly had one.
+	shippedText string
+
+	// Unreadable marks a doc the kit could not open. Everything above it then comes from
+	// the filename, and nothing below it exists — so `audit` reports the file and asks no
+	// other question of it, because the answers would all be about an empty struct.
+	Unreadable bool
+
 	sections map[string]string
 }
 

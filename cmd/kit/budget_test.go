@@ -55,11 +55,18 @@ const (
 	// 0048 retook all three against what the cut left: TECH 287, AGENTS 159, README 279.
 	// The headroom is deliberate and small — under the routing rule a shipped feature adds
 	// one line each, so a jump means facts arrived with their history attached again.
-	// 296 since 0056: the claim is the tip `ls-remote` advertises and not the branch list
-	// alone, which three commands now read; the trunk belongs to whichever remote a clone
-	// has; and a memo whose answer can be empty needs a flag. Three constraints, seven
-	// lines, none of them history.
-	techBudget = 296
+	// 306 since 0052. Under the routing rule a feature adds one line here, and this one
+	// closed seven states where `audit` went quiet rather than reporting — four rules,
+	// each of which the next reader has to know before touching a check.
+	// 309 on merging 0053, whose three lines state the CI contract this repo now holds
+	// itself to: one list of steps, a pinned linter, and no coverage number.
+	// 317 on merging 0051: the frontmatter format now carries three constraints an agent
+	// can reverse in one line each — where the block closes, where a write may land, and
+	// what marks a comment — and a write needs one unambiguous doc to land on.
+	// 327 on merging 0056, which states where a claim is read from. Ten lines rather than
+	// its own seven: 0050 landed three over the ceiling nobody raised, because a merge
+	// result is the one state neither pull request's own gate ever runs against.
+	techBudget = 327
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

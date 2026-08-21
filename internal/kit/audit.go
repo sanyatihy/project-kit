@@ -73,6 +73,11 @@ var (
 	// HIGH — a doc says something untrue, or work is stuck and nobody noticed.
 	checkDuplicateID = Check{"duplicate-id", High,
 		"two feature docs share one id:, so one branch claims both and one inbox line blocks both"}
+	// HIGH, and next to duplicate-id for the same reason: the doc says two things about
+	// itself, and every command that reads one of them believes it. `ship` used to write
+	// the line nothing reads, so the finding survived its own fix.
+	checkDuplicateKey = Check{"duplicate-key", High,
+		"a doc declares one frontmatter key twice, so the value the kit reads is not the line a write would change"}
 	checkStalled = Check{"stalled", High,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
@@ -95,6 +100,11 @@ var (
 	// empty section means the section was never written.
 	checkUnfilledTemplate = Check{"unfilled-template", High,
 		"a committed doc has an empty ## Problem, ## Design, or ## Tasks — nobody wrote the plan"}
+	// HIGH for shipped-not-pushed's reason: it was silent by construction. A doc the kit
+	// could not open was dropped on the floor, so no command ever mentioned it again —
+	// and every plan check it should have failed simply did not run.
+	checkUnreadableDoc = Check{"unreadable-doc", High,
+		"a feature doc could not be read, so nothing it says is being checked"}
 
 	// MEDIUM — incomplete or drifting.
 	checkNoPlan = Check{"no-plan", Medium,
@@ -111,6 +121,11 @@ var (
 		"the as-built doc predates the most recent shipped: date"}
 	checkShippedNoDate = Check{"shipped-no-date", Medium,
 		"Shipped with no shipped: date"}
+	// Nothing validated the field, so `tech-drift` compared against whatever was in it:
+	// one date in the future can never be older than the as-built doc, which made that
+	// finding unfixable for as long as the date says.
+	checkShippedBadDate = Check{"shipped-bad-date", Medium,
+		"a shipped: that is not a date, or is one that has not arrived yet"}
 	// Only at Shipped. An Accepted feature has nothing to log yet, and demanding one
 	// before work starts produced a fix line telling the author to set it back to Draft.
 	// HIGH, not tidiness: the branch is named from the filename and `Claims` matches
@@ -136,9 +151,9 @@ var (
 	checkNoStatus      = Check{"no-status", Medium, "no status: in the frontmatter"}
 	checkBadStatus     = Check{"bad-status", Medium, "an unrecognised status:"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
-		"AGENTS.md carries an older work protocol than the installed kit, so agents follow superseded rules"}
+		"AGENTS.md and the installed kit disagree about the work protocol, so one side is superseded"}
 	checkNoProtocol = Check{"no-protocol", Medium,
-		"no AGENTS.md, so agents have no protocol and will invent one"}
+		"no AGENTS.md, or one carrying no work protocol — agents have none and will invent one"}
 
 	// LOW — hygiene that becomes the above.
 	checkDeadLink = Check{"dead-link", Low, "a feature doc links to a missing file"}
@@ -152,12 +167,29 @@ var (
 		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
 )
 
+// OfflineChecks are the checks that cannot run without an answer from the remote: under
+// `--offline`, or when the remote is asked and does not answer, they are not evaluated at
+// all. Named here rather than written into the command, so a check that grows a network
+// question cannot fall out of the notice that says what did not run.
+var OfflineChecks = []Check{checkShippedNotPushed}
+
+// CheckCodes is a check list as codes, for a message that names what did not run.
+func CheckCodes(checks []Check) []string {
+	codes := make([]string, len(checks))
+	for i, c := range checks {
+		codes[i] = c.Code
+	}
+	return codes
+}
+
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
-	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
-	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
+	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate, checkUnreadableDoc,
+	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkStalled, checkUntickedShipped,
+	checkInboxStale,
 	checkShippedNotPushed,
-	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
+	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift,
+	checkShippedNoDate, checkShippedBadDate,
 	checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
@@ -286,8 +318,12 @@ func finding(c Check, where, problem, fix string) Finding {
 
 // featureChecks run in this order, and the order is the report's order.
 var featureChecks = []featureCheck{
+	{[]Check{checkUnreadableDoc}, unreadableDoc},
+	// Before every check that reads a frontmatter field: a repeated key means the field
+	// they read is not the field the author edits.
+	{[]Check{checkDuplicateKey}, duplicateKey},
 	{[]Check{checkUntickedShipped}, untickedShipped},
-	{[]Check{checkShippedNoDate}, shippedNoDate},
+	{[]Check{checkShippedNoDate, checkShippedBadDate}, shippedDate},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
 	{[]Check{checkStalled}, stalled},
 	{[]Check{checkNoTasks, checkDoneNotShipped}, taskState},
@@ -329,6 +365,13 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		ds := &docState{r: r, f: f, at: f.Rel, today: today, statuses: statuses,
 			claims: r.Claims(f.ID), tracked: r.TrackedAtHEAD(f.Rel)}
 		for _, c := range featureChecks {
+			// A doc nobody could read gets that one finding and no other. Every check
+			// below reads content, and on the empty struct they all fire — no-status,
+			// three unfilled-templates, done-not-shipped — none of which is a fact
+			// about the file.
+			if f.Unreadable != (c.Codes[0] == checkUnreadableDoc) {
+				continue
+			}
 			found = append(found, c.Run(ds)...)
 		}
 	}
@@ -361,6 +404,24 @@ func duplicateID(s *repoState) []Finding {
 	return out
 }
 
+// Everything reported comes from the filename, because the filename is all there is. The
+// fix is a restore or a permission — the kit guesses at neither.
+func unreadableDoc(s *docState) []Finding {
+	return []Finding{finding(checkUnreadableDoc, s.at,
+		s.f.Name()+": could not be read, so its status, plan and tasks go unchecked",
+		"restore it or fix its permissions — the id stays reserved either way")}
+}
+
+func duplicateKey(s *docState) []Finding {
+	var out []Finding
+	for _, key := range s.f.Duplicates {
+		out = append(out, finding(checkDuplicateKey, s.at,
+			fmt.Sprintf("%s: frontmatter declares %s: twice", s.f.Name(), key),
+			"delete the one that is wrong — the kit reads the last and rewrites the first"))
+	}
+	return out
+}
+
 func untickedShipped(s *docState) []Finding {
 	if s.f.Status != StatusShipped {
 		return nil
@@ -373,13 +434,29 @@ func untickedShipped(s *docState) []Finding {
 	return nil
 }
 
-func shippedNoDate(s *docState) []Finding {
-	if s.f.Status != StatusShipped || !s.f.Shipped.IsZero() {
+// One decision with three outcomes, because the field is one thing: absent, unparseable,
+// or a day that has not happened. Reading only the parsed value collapsed the middle into
+// the first and reported "no shipped: date" on a doc that had one written in it.
+func shippedDate(s *docState) []Finding {
+	if s.f.Status != StatusShipped {
 		return nil
 	}
-	return []Finding{finding(checkShippedNoDate, s.at,
-		s.f.Name()+": Shipped with no shipped: date",
-		"add the date it actually shipped")}
+	switch {
+	case s.f.shippedText == "":
+		return []Finding{finding(checkShippedNoDate, s.at,
+			s.f.Name()+": Shipped with no shipped: date",
+			"add the date it actually shipped")}
+	case s.f.Shipped.IsZero():
+		return []Finding{finding(checkShippedBadDate, s.at,
+			fmt.Sprintf("%s: shipped: %q is not a date", s.f.Name(), clip(s.f.shippedText, 40)),
+			"write it as "+DateLayout)}
+	case s.f.Shipped.After(s.today):
+		return []Finding{finding(checkShippedBadDate, s.at,
+			fmt.Sprintf("%s: shipped: %s has not arrived yet",
+				s.f.Name(), s.f.Shipped.Format(DateLayout)),
+			"correct it to the day it actually shipped")}
+	}
+	return nil
 }
 
 // Shipping is a handoff, and this is the far side of it: the doc says the builder is
@@ -448,12 +525,21 @@ func taskState(s *docState) []Finding {
 		return []Finding{finding(checkNoTasks, s.at,
 			fmt.Sprintf("%s: %s with no ## Tasks boxes", s.f.Name(), s.f.Status),
 			`write the plan as PR-sized boxes, or set status: Draft until you can`)}
-	case open == 0:
+	// Boxes, not the absence of open ones. A doc with no ## Tasks section at all has none
+	// open either, and was reported as finished — with a fix, `kit ship`, that refuses it
+	// for exactly that reason. What that doc is, unfilled-template already says.
+	case total > 0 && open == 0:
+		// Naming the command, not the edit: hand-stamping the status and date is what
+		// unticked-shipped and shipped-no-date are the wreckage of. With no id: there is
+		// no command to name — `kit ship` takes one — so the fix says what has to be
+		// true first rather than printing `run: kit ship ` and stopping.
+		fix := "run: kit ship " + s.f.ID + " — or add the next task"
+		if s.f.ID == "" {
+			fix = "give it an id: matching its filename, then run kit ship"
+		}
 		return []Finding{finding(checkDoneNotShipped, s.at,
 			fmt.Sprintf("%s: every task is ticked but status is %s", s.f.Name(), s.f.Status),
-			// Naming the command, not the edit: hand-stamping the status and date is what
-			// unticked-shipped and shipped-no-date are the wreckage of.
-			"run: kit ship "+s.f.ID+" — or add the next task")}
+			fix)}
 	}
 	return nil
 }
@@ -583,7 +669,10 @@ func inboxState(s *repoState) []Finding {
 func techState(s *repoState) []Finding {
 	newestShip := time.Time{}
 	for _, f := range s.r.Features {
-		if f.Shipped.After(newestShip) {
+		// A date that has not arrived is shipped-bad-date's finding, and letting it set
+		// the bar here makes this one unsilenceable: no edit to the as-built doc can be
+		// newer than a day that has not happened.
+		if f.Shipped.After(newestShip) && !f.Shipped.After(s.today) {
 			newestShip = f.Shipped
 		}
 	}
@@ -615,22 +704,41 @@ func noPlan(s *repoState) []Finding {
 		`run: kit new "<what the feature does>"`)}
 }
 
+// Two ways to have no protocol, and only the first was reported. A file whose
+// `## Work protocol` heading has been deleted is worse than a missing one: `protocol-stale`
+// compares a section it cannot find and so stays quiet, and nothing else looks — so the
+// project audits clean while every agent in it is working from whatever it invents.
 func noProtocol(s *repoState) []Finding {
-	if s.r.Protocol != "" {
+	if s.r.Protocol == "" {
+		return []Finding{finding(checkNoProtocol, s.r.Name,
+			"no AGENTS.md, so agents have no protocol and will invent one",
+			"run: kit init .")}
+	}
+	raw, err := os.ReadFile(s.r.Protocol)
+	if err != nil || strings.Contains(Normalise(string(raw)), ProtocolMarker) {
 		return nil
 	}
-	return []Finding{finding(checkNoProtocol, s.r.Name,
-		"no AGENTS.md, so agents have no protocol and will invent one",
-		"run: kit init .")}
+	return []Finding{finding(checkNoProtocol, s.r.Rel(s.r.Protocol),
+		"no "+ProtocolMarker+" section, so agents have no protocol and will invent one",
+		"run: kit init . — with no section to replace it appends one, keeping the rest")}
 }
 
+// Which side is behind decides the fix, because one of the two fixes destroys work:
+// `kit init .` writes the binary's copy over the section, and offering it to the project
+// holding the newer protocol reverts it. That is what happened in this repo, silently.
 func protocolStale(s *repoState) []Finding {
-	if !ProtocolIsStale(s.r, s.protocol) {
-		return nil
+	switch ProtocolState(s.r, s.protocol) {
+	case ProtocolBehind:
+		return []Finding{finding(checkProtocolStale, s.r.Rel(s.r.Protocol),
+			"the work protocol here is older than the installed kit's, so agents are following superseded rules",
+			"run: kit init .")}
+	case ProtocolAhead:
+		return []Finding{finding(checkProtocolStale, s.r.Rel(s.r.Protocol),
+			"this project writes the protocol and the kit on $PATH carries an older copy of it",
+			"run: make install — kit init . here would write that older copy over "+
+				ProtocolMarker)}
 	}
-	return []Finding{finding(checkProtocolStale, s.r.Rel(s.r.Protocol),
-		"the work protocol here is older than the installed kit's, so agents are following superseded rules",
-		"run: kit init .")}
+	return nil
 }
 
 func noInbox(s *repoState) []Finding {

@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -85,27 +86,31 @@ func TestNothingUserFacingCitesARuleByNumber(t *testing.T) {
 	// string literals are read: a comment citing a rule misdirects nobody but the
 	// next reader of the source, and `_test.go` files are not user-facing at all.
 	for _, dir := range []string{".", "../../internal/kit"} {
-		fset := token.NewFileSet()
-		pkgs, err := parser.ParseDir(fset, dir, func(info os.FileInfo) bool {
-			return !strings.HasSuffix(info.Name(), "_test.go")
-		}, 0)
+		entries, err := os.ReadDir(dir)
 		if err != nil {
-			t.Fatalf("parsing %s: %v", dir, err)
+			t.Fatalf("reading %s: %v", dir, err)
 		}
-		for _, pkg := range pkgs {
-			for _, file := range pkg.Files {
-				ast.Inspect(file, func(n ast.Node) bool {
-					lit, ok := n.(*ast.BasicLit)
-					if !ok || lit.Kind != token.STRING {
-						return true
-					}
-					if m := ruleNumberRe.FindString(lit.Value); m != "" {
-						t.Errorf("%s prints %q — cite the rule by name, or name the "+
-							"command that enforces it", fset.Position(lit.Pos()), m)
-					}
-					return true
-				})
+		fset := token.NewFileSet()
+		for _, entry := range entries {
+			name := entry.Name()
+			if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+				continue
 			}
+			file, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, 0)
+			if err != nil {
+				t.Fatalf("parsing %s: %v", name, err)
+			}
+			ast.Inspect(file, func(n ast.Node) bool {
+				lit, ok := n.(*ast.BasicLit)
+				if !ok || lit.Kind != token.STRING {
+					return true
+				}
+				if m := ruleNumberRe.FindString(lit.Value); m != "" {
+					t.Errorf("%s prints %q — cite the rule by name, or name the "+
+						"command that enforces it", fset.Position(lit.Pos()), m)
+				}
+				return true
+			})
 		}
 	}
 }

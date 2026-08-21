@@ -1,6 +1,7 @@
 package kit
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -182,31 +183,36 @@ func (r *Repo) loadFeatures() {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		if f := r.readFeature(filepath.Join(r.FeaturesDir, name)); f != nil {
-			r.Features = append(r.Features, f)
-		}
+		r.Features = append(r.Features, r.readFeature(filepath.Join(r.FeaturesDir, name)))
 	}
 }
 
+// readFeature never returns nil. Skipping a doc it could not open made the file invisible
+// to every command — absent from the board, unknown to `claim`, and, if it held the
+// highest id, a number `kit new` handed out a second time. The filename is still readable,
+// so the id stays reserved and `audit` has a file to name.
 func (r *Repo) readFeature(path string) *Feature {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil // an unreadable file is a filesystem problem, not a doc problem
-	}
-	fields, body := ParseFrontmatter(Normalise(string(raw)))
 	rel, err := filepath.Rel(r.Root, path)
 	if err != nil {
 		rel = path
 	}
-	f := &Feature{
-		Path:     path,
-		Rel:      filepath.ToSlash(rel),
-		ID:       fields["id"],
-		Title:    fields["title"],
-		Status:   fields["status"],
-		Needs:    ParseIDList(fields["needs"]),
-		Shipped:  ParseDate(fields["shipped"]),
-		sections: ParseSections(body),
+	f := &Feature{Path: path, Rel: filepath.ToSlash(rel)}
+
+	raw, readErr := os.ReadFile(path)
+	if readErr != nil {
+		f.Unreadable = true
+		f.ID = f.FilenamePrefix()
+	} else {
+		text := Normalise(string(raw))
+		fields, body := ParseFrontmatter(text)
+		f.ID = fields["id"]
+		f.Title = fields["title"]
+		f.Status = fields["status"]
+		f.Needs = ParseIDList(fields["needs"])
+		f.Shipped = ParseDate(fields["shipped"])
+		f.shippedText = strings.TrimSpace(fields["shipped"])
+		f.Duplicates = DuplicateKeys(text)
+		f.sections = ParseSections(body)
 	}
 	if f.Title == "" {
 		f.Title = strings.TrimSuffix(filepath.Base(path), ".md")
@@ -222,6 +228,45 @@ func (r *Repo) FeatureByID(id string) *Feature {
 		}
 	}
 	return nil
+}
+
+// WriteTarget is FeatureByID for the commands that write — `ship`, `drop` and `block`.
+//
+// Reading a doc tolerates an ambiguity that writing one cannot. A key declared twice makes
+// the read and the write different lines: ParseFrontmatter keeps the last occurrence and
+// SetField rewrites the first, so `ship` reported success, left two contradictory statuses
+// behind and `audit` repeated the same finding with the same fix for ever. Which line the
+// author meant is not the kit's to guess.
+func (r *Repo) WriteTarget(id string) (*Feature, error) {
+	var share []*Feature
+	for _, f := range r.Features {
+		if f.ID == id {
+			share = append(share, f)
+		}
+	}
+	if len(share) == 0 {
+		return nil, fmt.Errorf("no feature %q", id)
+	}
+	// FeatureByID answers with the first match, so an id naming two docs was invisible to
+	// the three commands that write: `drop` retired whichever sorted first, and said
+	// nothing. `claim` counts them and refuses, because one branch cannot claim two
+	// features; a write cannot land on two docs either.
+	if len(share) > 1 {
+		var where []string
+		for _, f := range share {
+			where = append(where, f.Rel)
+		}
+		return nil, fmt.Errorf("%d feature docs declare id %s (%s), so this cannot tell "+
+			"which one to act on\nrun kit audit and renumber all but one",
+			len(share), id, strings.Join(where, " and "))
+	}
+	target := share[0]
+	if len(target.Duplicates) > 0 {
+		return nil, fmt.Errorf("%s declares %s twice in its frontmatter, so the line the "+
+			"kit reads is not the line it would rewrite\ndelete the one that is wrong, "+
+			"then run this again", target.Name(), strings.Join(target.Duplicates, " and "))
+	}
+	return target, nil
 }
 
 // UnmetNeeds lists the ids a feature is still waiting on, in declared order.

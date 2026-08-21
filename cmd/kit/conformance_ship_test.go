@@ -31,6 +31,20 @@ func TestShipRefusesWhileABoxIsOpen(t *testing.T) {
 	}
 }
 
+func TestShipNamesDebrisAsItIsOnDisk(t *testing.T) {
+	t.Parallel()
+	// `git status --porcelain` C-quotes a non-ASCII path, so the refusal named a file
+	// that exists under no such name: the agent told to remove it cannot find it.
+	p := setUp(t)
+	feature(p, "0007", "done", "All done", "Draft", "- [x] One")
+	p.commitAll("the work")
+	p.write("probe-outpüt.json", "{}\n")
+
+	r := p.run("ship", "0007").fails(2)
+	r.errHas("probe-outpüt.json")
+	r.lacks(`\303`)
+}
+
 func TestShipRefusesDebrisInTheWorktree(t *testing.T) {
 	t.Parallel()
 	// The scratch a feature generates is the agent's to clean up. Shipping over it
@@ -114,12 +128,52 @@ func TestShipAddsTheDateKeyWhenTheDocHasNone(t *testing.T) {
 	}
 }
 
+func TestShipStampsInsideTheFrontmatterOnly(t *testing.T) {
+	t.Parallel()
+	// Docs for a tool whose subject is frontmatter quote frontmatter. The stamp for a doc
+	// with no shipped: key was a document-wide strings.Replace on the first
+	// `status: Shipped`, and a value carrying one comes before the status line — so the
+	// date landed inside the title, and the fenced example in the body was one edit away.
+	p := setUp(t)
+	p.write("docs/features/0007-quoting.md",
+		"---\nid: 0007\ntitle: Refuse status: Shipped twice\nstatus: Draft\n"+
+			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\n```\n"+
+			"status: Shipped\n```\n\n## Tasks\n- [x] Done\n\n## Log\n- 2026-01-01 — x.\n")
+
+	shipping(p, "0007").ok()
+
+	doc := p.read("docs/features/0007-quoting.md")
+	if !strings.Contains(doc, "title: Refuse status: Shipped twice\n") {
+		t.Errorf("the stamp was written into the title:\n%s", doc)
+	}
+	if !strings.Contains(doc, "```\nstatus: Shipped\n```") {
+		t.Errorf("the fenced example in the body was rewritten:\n%s", doc)
+	}
+	if got := strings.Count(doc, "shipped: "); got != 1 {
+		t.Errorf("%d shipped: lines, want 1:\n%s", got, doc)
+	}
+}
+
 func TestShipRefusesAFeatureWithNoBoxesAtAll(t *testing.T) {
 	t.Parallel()
 	// Nothing to have finished. Shipping it would assert work that was never planned.
 	p := setUp(t)
 	feature(p, "0007", "empty", "Empty", "Draft", "")
 	shipping(p, "0007").fails(2).errHas("no ## Tasks boxes")
+}
+
+func TestShipRefusesARetiredFeature(t *testing.T) {
+	t.Parallel()
+	// The other direction of the same rule. `drop` refuses a Shipped doc as frozen history
+	// (TestDropRefusesAShippedDoc); `ship` refused only Shipped, so a Dropped feature whose
+	// boxes were ticked shipped, exit 0, reported as `(was Dropped)`.
+	p := setUp(t)
+	feature(p, "0007", "retired", "Retired", "Dropped", "- [x] One")
+
+	shipping(p, "0007").fails(2).errHas("Dropped")
+	if strings.Contains(p.read("docs/features/0007-retired.md"), "status: Shipped") {
+		t.Error("ship wrote the status despite refusing")
+	}
 }
 
 func TestShipRefusesTwice(t *testing.T) {
@@ -190,6 +244,42 @@ func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
 		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
 
 	shipping(a, "0007").ok().has("shipped")
+}
+
+func TestShipRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
+	t.Parallel()
+	// The parser keeps the last occurrence and SetField rewrites the first, so this
+	// shipped: exit 0, a status line nothing reads, and `audit` repeating the same
+	// finding with the same fix for ever.
+	p := setUp(t)
+	p.write("docs/features/0007-twice.md",
+		"---\nid: 0007\ntitle: Twice\nstatus: Draft\nstatus: Draft\n"+
+			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n\n"+
+			"## Tasks\n- [x] Done\n\n## Log\n- 2026-01-01 — x.\n")
+
+	shipping(p, "0007").fails(2).errHas("status", "twice")
+	if strings.Contains(p.read("docs/features/0007-twice.md"), "status: Shipped") {
+		t.Error("ship wrote the status despite refusing")
+	}
+	// And it is reported as well as refused, so a doc already in this state is findable.
+	p.run("audit").has("duplicate-key")
+}
+
+func TestShipRefusesAnIDThatNamesTwoDocs(t *testing.T) {
+	t.Parallel()
+	// duplicate-id is HIGH because one id has to name one doc. `claim` counted the
+	// matches and refused; this took the first and shipped it, so the other doc kept the
+	// same id and nothing said which one had been shipped.
+	p := setUp(t)
+	p.write("docs/features/0007-one.md", doc("0007", "One", "Draft", "", "- [x] Done"))
+	p.write("docs/features/0007-two.md", doc("0007", "Two", "Draft", "", "- [x] Done"))
+
+	shipping(p, "0007").fails(2).errHas("0007-one.md", "0007-two.md")
+	for _, rel := range []string{"docs/features/0007-one.md", "docs/features/0007-two.md"} {
+		if strings.Contains(p.read(rel), "status: Shipped") {
+			t.Errorf("%s was shipped despite the refusal", rel)
+		}
+	}
 }
 
 func TestShipRefusesAnUnknownFeature(t *testing.T) {
