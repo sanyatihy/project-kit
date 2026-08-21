@@ -114,6 +114,32 @@ func TestShipAddsTheDateKeyWhenTheDocHasNone(t *testing.T) {
 	}
 }
 
+func TestShipStampsInsideTheFrontmatterOnly(t *testing.T) {
+	t.Parallel()
+	// Docs for a tool whose subject is frontmatter quote frontmatter. The stamp for a doc
+	// with no shipped: key was a document-wide strings.Replace on the first
+	// `status: Shipped`, and a value carrying one comes before the status line — so the
+	// date landed inside the title, and the fenced example in the body was one edit away.
+	p := setUp(t)
+	p.write("docs/features/0007-quoting.md",
+		"---\nid: 0007\ntitle: Refuse status: Shipped twice\nstatus: Draft\n"+
+			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\n```\n"+
+			"status: Shipped\n```\n\n## Tasks\n- [x] Done\n\n## Log\n- 2026-01-01 — x.\n")
+
+	shipping(p, "0007").ok()
+
+	doc := p.read("docs/features/0007-quoting.md")
+	if !strings.Contains(doc, "title: Refuse status: Shipped twice\n") {
+		t.Errorf("the stamp was written into the title:\n%s", doc)
+	}
+	if !strings.Contains(doc, "```\nstatus: Shipped\n```") {
+		t.Errorf("the fenced example in the body was rewritten:\n%s", doc)
+	}
+	if got := strings.Count(doc, "shipped: "); got != 1 {
+		t.Errorf("%d shipped: lines, want 1:\n%s", got, doc)
+	}
+}
+
 func TestShipRefusesAFeatureWithNoBoxesAtAll(t *testing.T) {
 	t.Parallel()
 	// Nothing to have finished. Shipping it would assert work that was never planned.

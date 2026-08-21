@@ -95,13 +95,12 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 		return nil, fmt.Errorf("%s has no status: line in its frontmatter to set",
 			target.Name())
 	}
-	if stampedDoc, ok := SetField(updated, "shipped", stamped); ok {
-		updated = stampedDoc
-	} else {
-		// No shipped: key at all — put one directly after the status.
-		updated = strings.Replace(updated, "status: "+StatusShipped,
-			"status: "+StatusShipped+"\nshipped: "+stamped, 1)
-	}
+	// AddField writes inside the frontmatter, including the insert for a doc carrying no
+	// shipped: key at all. That insert was a document-wide strings.Replace on the first
+	// `status: Shipped`, which is a frontmatter *value* before it is the status line — a
+	// doc whose title quotes a status had the date spliced into its title.
+	// SetStatus above has already proved there is a frontmatter, so this cannot fail.
+	updated, _ = AddField(updated, "shipped", stamped)
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err
 	}
