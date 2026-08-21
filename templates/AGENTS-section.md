@@ -46,28 +46,28 @@ Do this only when you are asked to plan.
 
 ### Doing the work
 
-12. **Read the feature doc for the design, and nowhere else.** It is the one home for it.
-13. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the order
+11. **Read the feature doc for the design, and nowhere else.** It is the one home for it.
+12. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the order
     of work.
-14. **Tick the box in the commit that implements it.** One box, one commit. Nobody re-reads
+13. **Tick the box in the commit that implements it.** One box, one commit. Nobody re-reads
     the branch to check, so the commit is what has to be honest.
-15. **Discovered work becomes a new box, a new doc, or a `BACKLOG.md` line — never a `TODO`
+14. **Discovered work becomes a new box, a new doc, or a `BACKLOG.md` line — never a `TODO`
     in the code.** Append it, unless it blocks the boxes below.
-16. **A box that turns out wrong may be rewritten, split or deleted.** Own commit, reason in
+15. **A box that turns out wrong may be rewritten, split or deleted.** Own commit, reason in
     `## Log`. Never silently drop one you could not finish. A whole feature that should not
     be built is `kit drop <id> "<why>"`.
-17. **Stopping mid-feature is `kit release <id>`.** It refuses while the branch carries
+16. **Stopping mid-feature is `kit release <id>`.** It refuses while the branch carries
     work: that is a pause, so push the branch and open the pull request unfinished instead.
-18. **Never put a real secret in a doc.** Name the variable and where the value lives, never
+17. **Never put a real secret in a doc.** Name the variable and where the value lives, never
     the value. A pushed commit cannot be unpublished.
-19. **Never edit a doc whose status is `Shipped`.** It is frozen history.
+18. **Never edit a doc whose status is `Shipped`.** It is frozen history.
 
 ### Finishing
 
-20. **When the last box is ticked, run this project's own gate, then `kit audit --strict`,
+19. **When the last box is ticked, run this project's own gate, then `kit audit --strict`,
     then `kit ship <id>`.** In that order: `ship` freezes the doc, so anything the other
     two would have made you change has to be found before it.
-21. **Push the branch, open the pull request, and stop. You never merge your own work.**
+20. **Push the branch, open the pull request, and stop. You never merge your own work.**
     Opening a pull request is not approving it. With no remote, say so and leave the work
     on the branch.
 
