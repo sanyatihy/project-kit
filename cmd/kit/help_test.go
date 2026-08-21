@@ -165,7 +165,8 @@ func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading the protocol: %v", err)
 	}
-	for _, want := range []string{"kit claim", "kit block", "kit ship", "make check", "kit audit --strict"} {
+	for _, want := range []string{"kit claim", "kit chore", "kit block", "kit ship",
+		"make check", "kit audit --strict"} {
 		if !strings.Contains(string(raw), want) {
 			t.Errorf("the protocol never mentions %q, so an agent following it does that step by hand", want)
 		}

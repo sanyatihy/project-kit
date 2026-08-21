@@ -53,6 +53,12 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 		concluded: "a claimed checkout is a fine place to start the next feature",
 		needs:     []string{"one feature per checkout."},
 	}, {
+		// The one class of work the kit coordinated with nothing. The protocol sent it
+		// to a branch nothing pushed and nothing recorded, so two agents given the same
+		// bug both started it and neither found out.
+		concluded: "work that is not a feature is coordinated by nothing",
+		needs:     []string{"kit chore", "records one line"},
+	}, {
 		concluded: "sequential IDs are handed out safely, so they cannot collide",
 		needs:     []string{"Where two agents can still collide", "duplicate-id"},
 	}, {

@@ -14,26 +14,22 @@ Do this only when you are asked to plan.
 2. **A feature is one shipped increase in what the project can do, or can be trusted to
    do.** Name it in one sentence an operator would recognise: "the board no longer hands one
    feature to two agents", not "refactor `Mine`". No such sentence means it is a task box in
-   another feature, or a chore commit. A sentence that needs an "and" is two features. A
+   another feature, or a chore. A sentence that needs an "and" is two features. A
    change nobody could review in one sitting is too big — split it by value, not by layer.
 3. **Draft the whole set in one session, not the first one only.** Write every doc with
    `kit new "<title>"`. Never copy the template by hand.
 4. **Fill `needs:` on every draft.** List the feature ids that must ship before this one
    can start. Leave it empty when the work could start today — empty ones are what let
    agents run at once. `kit help template` says how to judge it.
-5. **Put the whole round on one branch named `plan/<something>`, and merge it once.**
-   The branch name must contain no four-digit feature id, anywhere in it. A branch name
-   containing an id is a claim on that feature.
+5. **Put the whole round on one branch named `plan/<something>`, and merge it once.** Its
+   name must cite no four-digit id: any name citing one claims that feature, and `kit new`
+   refuses to draft there.
 6. **Leave every doc `status: Draft`.** `kit ship` and `kit drop` are the only things that
    change a status. Never edit `status:` or `shipped:` by hand.
 7. **Never invent a product decision on the human's behalf.** What you cannot settle goes in
    `## Open questions`; what only a human can answer goes to `kit block <id> "<question>"`.
 8. **The round must reach the default branch before anything on it can be claimed.**
    `kit claim` refuses otherwise.
-
-**Work that is not a feature** — a fix to something already shipped, a chore, a data
-update — goes on a branch whose name contains no four-digit id, and needs no doc. Only a
-feature gets one.
 
 ### Taking work
 
@@ -42,12 +38,15 @@ feature gets one.
    - **0** — the feature is yours. Work it.
    - **1** — it is not yours. Run `kit next` and take a different feature. Do not retry.
    - **2** — the command could not run. Read the error, fix it, claim again.
-10. **Never create a claim branch by hand.** A branch only you can see is not a claim.
-11. **A feature `kit next` lists as `taken` is not yours.** Do not work it, do not tick a
-    box in it, do not help with it. Two agents in one feature produce one branch nobody
-    can review.
-12. **Work one feature per checkout, in the worktree `kit claim` prints.** If `kit next`
-    lists features under **free, but not in this checkout**, do not start them here.
+10. **Work that is not a feature is `kit chore "<what>"`** — a fix to something already
+    shipped, a data update, a merge. It takes an id, pushes the branch that claims it, and
+    records one line. No doc and no boxes: anything needing a `## Problem`, a `## Design`
+    or boxes is a feature, so plan it with `kit new` instead.
+11. **Never create a claim branch by hand.** A branch only you can see is not a claim.
+12. **Work `kit next` lists as `taken` is not yours, and one checkout holds one claim.**
+    Do not work it, tick a box in it, or help with it: two agents in one feature produce one
+    branch nobody can review. `claim` and `chore` refuse from a checkout already holding
+    one, and what is free is listed under **free, but not in this checkout**.
 13. **If nothing is free, stop and say so.** Claimed or waiting is a real answer.
 
 ### Doing the work
@@ -62,8 +61,8 @@ feature gets one.
 18. **A box that turns out wrong may be rewritten, split or deleted.** Own commit, reason in
     `## Log`. Never silently drop one you could not finish. A whole feature that should not
     be built is `kit drop <id> "<why>"`.
-19. **Stopping mid-feature is `kit release <id>`.** It refuses while the branch carries
-    work: that is a pause, so push the branch and open the pull request unfinished instead.
+19. **Stopping for good is `kit release <id>`,** feature or chore. It refuses while the
+    branch carries work: a pause is pushing the branch and opening the request unfinished.
 20. **Never put a real secret in a doc.** Name the variable and where the value lives, never
     the value. A pushed commit cannot be unpublished.
 21. **Never edit a doc whose status is `Shipped`.** It is frozen history.

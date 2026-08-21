@@ -182,7 +182,8 @@ so `kit next` stops offering it and points you elsewhere.
 ```sh
 kit new   <title...>                     next free ID, date filled in, status Draft
 kit claim <id>                           push the branch; exit 1 means you lost it
-kit release <id> [--force]               give a claim back; refuses over work, and over
+kit chore "<what>"                       work with no doc: an id, a branch, one line
+kit release <id> [--force]               give either back; refuses over work, and over
                                          a claim this clone never created
 kit block <id> "<question>" [--fyi]      park a decision only a human can make
 kit ship  <id>                           verify every box, stamp the date, freeze
