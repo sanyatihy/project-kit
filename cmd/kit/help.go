@@ -154,7 +154,8 @@ so of any number of agents claiming at once exactly one wins.
      whatever the status
   2  it could not run: no such feature, two docs share the id, no commits yet,
      the plan not committed here, the plan not landed on the default branch,
-     several remotes and no origin, or the push said nothing about the ref
+     this checkout ahead of the default branch, several remotes and no origin,
+     or the push said nothing about the ref
 
 Every exit 1 refusal is one "kit next" already makes, bar the race it cannot see: the
 board and the commands read the same facts, so claiming by id without consulting it

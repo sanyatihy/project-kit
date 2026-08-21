@@ -144,6 +144,19 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"protected — then claim", target.Rel, r.Trunk())
 	}
 
+	// The same question asked of HEAD rather than of the doc. The claim pushes HEAD, so
+	// every commit the trunk does not have travels under the new feature's name:
+	// reproduced in the worktree that had just shipped 0001, where `kit claim 0002`
+	// exited 0 and the branch it pushed logged 0001's commits against the trunk. That
+	// pull request contains another feature, and only its author could merge it.
+	if trunk := r.trunkRef(); trunk != "" && !r.reaches("HEAD", trunk) {
+		return nil, fmt.Errorf("this checkout is ahead of %s, so the branch this would "+
+			"push carries commits that are not %s's — another feature's work, which only "+
+			"its own author could merge.\nClaim from a checkout of the trunk: git worktree "+
+			"add --detach ../%s-trunk %s, then claim there", r.Trunk(), target.ID,
+			r.Name, r.Trunk())
+	}
+
 	remote, err := pickRemote(r)
 	if err != nil {
 		return nil, err
