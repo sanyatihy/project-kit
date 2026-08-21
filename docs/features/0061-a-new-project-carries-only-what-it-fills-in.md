@@ -1,9 +1,9 @@
 ---
 id: 0061
 title: Everything a new project needs comes from one command
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 

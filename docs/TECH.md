@@ -279,6 +279,19 @@ Draft -> Shipped     (exit: Dropped)
   no (`claim` lost the race, `audit --strict` found HIGH), `2` it could not run or refused.
 - **Dates are passed in, never read inside** — a clock inside leaves tests unable to catch a
   UTC-midnight off-by-one.
+- **`kit init` writes the whole layout, and nothing else creates a project file.** One
+  command, one answer to where a file came from; `ship`'s lazy `TECH.md` path is a fallback
+  for projects that predate it. Splitting creation across `init`, `ship` and `block` was
+  tried and reversed — it moved four files between three commands to silence one finding,
+  and that finding was a gate: `unfilled-vision` now waits for features, as `no-protocol`
+  already did, so a virgin project audits clean while carrying everything it will need.
+- **A `.gitignore` is a refusal expressed as a file**, so `init` writes one — editor and OS
+  droppings only, because anything else guesses what the project is. A stack's copy replaces
+  it rather than extending it.
+- **What the protocol does not carry, it points at**, and `cmd/kit/layout_test.go` holds
+  every file it names against `docLayout` or a help topic. Rule 14 named `BACKLOG.md` while
+  nothing wrote or described it, and the first version of that test read only `docs/` paths
+  and so found nothing to check.
 - **Standing guidance is embedded, never copied into projects.** `go-checklist` is practice,
   not documentation of the kit, and `audit` cannot check a word of it — a copy per repo
   would be drift with nothing to notice it. It must never use `- [ ]`, which in a kit

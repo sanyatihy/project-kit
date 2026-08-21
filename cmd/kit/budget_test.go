@@ -97,7 +97,12 @@ const (
 	// Still 368 on merging 0061: that round rewrote four facts and added one — that there
 	// is one kind of work — inside the lines the rewrites gave back, so the file did not
 	// shorten. A deletion round does not always shorten this one.
-	techBudget = 368
+	// 381 on 0061. Thirteen lines for what a new project receives and where a file comes
+	// from: one command writes the layout, a `.gitignore` is a refusal in file form, and a
+	// test holds the protocol's own list against it. The reversal is the fact worth the
+	// room — splitting creation across three commands was tried, and what it bought was a
+	// check gate.
+	techBudget = 381
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
