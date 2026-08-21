@@ -1,9 +1,9 @@
 ---
 id: 0053
 title: A green gate here is a green gate in CI
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -48,10 +48,17 @@ numbers — introduced by the round that added it, and invisible to `make check`
 
 ## Tasks
 
-- [ ] `make check` runs the lint, and the deprecation that has `main` red is fixed
-- [ ] `.golangci.yml` is committed and the action pins a version
-- [ ] CI is `make check` plus the network steps, and a test compares the two lists
-- [ ] The workflow sets `timeout-minutes`
-- [ ] Coverage is either instrumented through the conformance binary or no longer reported
+- [x] `make check` runs the lint, and the deprecation that has `main` red is fixed
+- [x] `.golangci.yml` is committed and the action pins a version
+- [x] CI is `make check` plus the network steps, and a test compares the two lists
+- [x] The workflow sets `timeout-minutes`
+- [x] Coverage is either instrumented through the conformance binary or no longer reported
 
 ## Log
+- 2026-08-21 — an absent `golangci-lint` skips with a notice rather than failing, which is
+  what the Makefile `kit init` writes already does: a fresh clone goes green with only Go
+  present. CI installs the linter, so the skip cannot hide a finding there.
+- 2026-08-21 — the coverage number is dropped rather than instrumented. Instrumenting is
+  real — `go build -cover` on the suite's binary, `GOCOVERDIR` per subprocess, `go tool
+  covdata` to merge — but it buys a number no threshold reads, and two documents existed
+  only to explain the old one away. Both are gone with it.

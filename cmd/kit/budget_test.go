@@ -58,7 +58,9 @@ const (
 	// 306 since 0052. Under the routing rule a feature adds one line here, and this one
 	// closed seven states where `audit` went quiet rather than reporting — four rules,
 	// each of which the next reader has to know before touching a check.
-	techBudget = 306
+	// 309 on merging 0053, whose three lines state the CI contract this repo now holds
+	// itself to: one list of steps, a pinned linter, and no coverage number.
+	techBudget = 309
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
