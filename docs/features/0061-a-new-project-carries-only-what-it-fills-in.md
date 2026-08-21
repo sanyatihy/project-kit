@@ -94,7 +94,7 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
 - [x] `init` stops writing `TEMPLATE.md` and `BACKLOG.md`, and `kit block` creates `INBOX.md`
 - [x] `init` stops writing the `VISION.md` stub, and `no-protocol` carries the prompt
 - [x] The protocol drops the rules a refusal already makes, and rule 10 goes as false
-- [ ] Rule 2's "and" test is replaced by the doc-earns-its-place test
+- [x] Rule 2's "and" test is replaced by the doc-earns-its-place test
 - [ ] The protocol stops routing work away from the kit, and says how long a doc runs
 - [ ] `go-checklist` leaves the binary, and the ceilings fall with the files
 

@@ -71,8 +71,10 @@ Do this only when you are asked to plan.
 2. **A feature is one shipped increase in what the project can do, or can be trusted to
    do.** Name it in one sentence an operator would recognise: "the board no longer hands one
    feature to two agents", not "refactor `Mine`". No such sentence means it is a task box in
-   another feature, or a chore commit. A sentence that needs an "and" is two features. A
-   change nobody could review in one sitting is too big — split it by value, not by layer.
+   another feature, or a chore commit. A separate doc earns its place when it holds a
+   decision someone must read before building, that is not recoverable from the code or the
+   commit. A change nobody could review in one sitting is too big — split it by value, not
+   by layer.
 3. **Draft the whole set in one session, not the first one only.** Write every doc with
    `kit new "<title>"`. Never copy the template by hand.
 4. **Fill `needs:` on every draft.** List the feature ids that must ship before this one

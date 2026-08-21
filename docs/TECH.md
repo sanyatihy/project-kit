@@ -181,11 +181,11 @@ Draft -> Shipped     (exit: Dropped)
   it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,
   naming the change; neither and it belongs in the pull request.
 - **A feature is one shipped increase in what the project can do, or can be trusted to do.**
-  Named in one sentence an operator would recognise, or it is a task box or a chore commit;
-  a sentence needing an "and" is two features. This replaced "records one decision", which
-  measured the document rather than the value and admitted a pure refactor while excluding
-  an increment nobody had to decide anything about. Size stays the sanity check: too big is
-  one nobody reviews in a sitting, and the split is by value, never by layer.
+  Named in one sentence an operator would recognise, or it is a task box or a chore commit.
+  **A separate doc earns its place when it holds a decision someone must read before
+  building, not recoverable from the code or the commit.** It has a cost on both sides; the
+  "and" test it replaced had none and so only split, producing eleven docs where five were
+  right. Too big is one nobody reviews in a sitting, split by value never by layer.
 - **Every run of `next` ends with an instruction**, in every state. The newest was a doc
   straight out of `kit new`: it lands in `blocked`, and the closing line said stopping was
   the right outcome when the work was to write the plan just created.
