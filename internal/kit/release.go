@@ -24,21 +24,27 @@ type Released struct {
 // `BranchBuildsOn` already separates a claim nobody has built on from work in flight, and
 // `--force` is the way past it for commits that are genuinely worth nothing.
 func Release(r *Repo, id string, force bool) (*Released, error) {
-	target := r.FeatureByID(id)
-	if target == nil {
-		return nil, fmt.Errorf("no feature %s", id)
+	// Two kinds of work, one claim. What differs is only what the claim branch is
+	// allowed to carry: a feature's doc, or the chore's line in the record.
+	name, rel := "", ""
+	if target := r.FeatureByID(id); target != nil {
+		name, rel = target.Name(), target.Rel
+	} else if chore := r.ChoreByID(id); chore != nil {
+		name, rel = chore.Name(), ChoreLog
+	} else {
+		return nil, fmt.Errorf("no feature or chore %s", id)
 	}
 
 	claims := r.Claims(id)
 	switch {
 	case len(claims) == 0:
-		return nil, fmt.Errorf("nothing claims %s, so there is no claim to release", target.Name())
+		return nil, fmt.Errorf("nothing claims %s, so there is no claim to release", name)
 	// Two branches citing one id is `split-claim`, and choosing between them here would
 	// delete one agent's work to tidy up after another's.
 	case len(claims) > 1:
 		return nil, fmt.Errorf("%s is claimed by %s, and this cannot tell which is the "+
 			"claim\nsettle that first — kit audit reports it as split-claim",
-			target.Name(), strings.Join(claims, " and "))
+			name, strings.Join(claims, " and "))
 	}
 	branch := claims[0]
 
@@ -60,7 +66,7 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 		return nil, fmt.Errorf("%s is claimed by %s, a branch this clone never created\n"+
 			"releasing it frees a feature another agent may be working on — leave it "+
 			"alone,\nor if that agent is gone: kit release %s --force",
-			target.Name(), branch, id)
+			name, branch, id)
 	}
 
 	remote, err := pickRemote(r)
@@ -102,7 +108,7 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 			"cannot be read\nname it: git remote set-head origin --auto\nor if those commits "+
 			"are worth nothing: kit release %s --force", branch, id)
 	}
-	if !force && r.BranchBuildsOn(rev, target.Rel) {
+	if !force && r.BranchBuildsOn(rev, rel) {
 		return nil, fmt.Errorf("%s carries work that is not on %s, and releasing deletes "+
 			"it\nthat is a pause rather than an abandon: push the branch, open the pull "+
 			"request unfinished, and say why there\nif those commits are worth nothing: "+

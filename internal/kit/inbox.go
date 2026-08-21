@@ -7,8 +7,11 @@ import (
 	"time"
 )
 
-// ResolveID maps what someone typed to the canonical ID of an existing feature,
-// so `kit block 7` and `kit block 0007` both reach 0007.
+// ResolveID maps what someone typed to the canonical ID of existing work, so
+// `kit block 7` and `kit block 0007` both reach 0007.
+//
+// Features first and chores after, because the chores are read out of git and the
+// features are already in hand. One id space, so at most one of them answers.
 //
 // It fails on an unknown ID rather than accepting it. A question filed against a
 // feature that does not exist can never unblock anything, and nothing would ever
@@ -24,14 +27,25 @@ func ResolveID(r *Repo, typed string) (string, error) {
 			continue
 		}
 		known = append(known, f.ID)
-		if f.ID == want || strings.TrimLeft(f.ID, "0") == strings.TrimLeft(want, "0") {
+		if sameID(f.ID, want) {
 			return f.ID, nil
+		}
+	}
+	for _, c := range r.ClaimedChores() {
+		known = append(known, c.ID)
+		if sameID(c.ID, want) {
+			return c.ID, nil
 		}
 	}
 	if len(known) == 0 {
 		return "", fmt.Errorf("no feature docs yet — run: kit new \"<what it does>\"")
 	}
-	return "", fmt.Errorf("no feature %q; have %s", typed, strings.Join(known, ", "))
+	return "", fmt.Errorf("no feature or chore %q; have %s", typed, strings.Join(known, ", "))
+}
+
+// sameID reports whether what someone typed names an id, with or without its zeros.
+func sameID(id, typed string) bool {
+	return id == typed || strings.TrimLeft(id, "0") == strings.TrimLeft(typed, "0")
 }
 
 // AppendQuestion writes one question to the inbox in the documented format and

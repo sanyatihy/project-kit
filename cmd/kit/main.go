@@ -437,8 +437,8 @@ func runRelease(args []string) int {
 	if res.Remote == "" {
 		fmt.Printf("  the claim was local only, so there was nothing on a remote to delete\n")
 	} else {
-		fmt.Printf("  deleted   %s/%s — the feature is free for anyone to claim\n",
-			res.Remote, res.Branch)
+		fmt.Printf("  deleted   %s/%s — %s is free for anyone to take\n",
+			res.Remote, res.Branch, id)
 	}
 	// A local branch left behind still reads as a claim in this checkout, so saying it is
 	// gone when it is not would hand the next agent a feature the board here calls taken.
@@ -691,6 +691,19 @@ func printPlan(plan kit.Plan, color bool) {
 		}
 	}
 
+	// Beside the feature board and not in it: a chore has no boxes to count and nothing
+	// to hand out. What it says is that an id and a piece of work already have an owner.
+	if len(plan.Chores) > 0 {
+		fmt.Printf("\n  %s\n", paint("chores", "2", color))
+		for _, c := range plan.Chores {
+			held := c.Branch
+			if c.Mine {
+				held = paint("yours — this checkout claims it", "1;32", color)
+			}
+			fmt.Printf("    %s  %s — %s\n", c.ID, kit.Show(c.Title, 40), held)
+		}
+	}
+
 	if len(plan.Blocked) > 0 {
 		fmt.Printf("\n  %s\n", paint("blocked", "33", color))
 		for _, item := range plan.Blocked {
@@ -731,8 +744,10 @@ func printPlan(plan kit.Plan, color bool) {
 		// The command goes on its own line, unwrapped, so it can be copied. The
 		// guidance says what to do; this is the thing to run. Not while something is
 		// awaiting review: there the guidance says merging is the work, and a second
-		// command under it is the page giving two answers.
-		if plan.Empty() && len(plan.AwaitingReview) == 0 {
+		// command under it is the page giving two answers. Nor while this checkout
+		// holds a chore — `Claiming` reaches here only for one, since a held feature
+		// fills `Yours` and this block does not print then.
+		if plan.Empty() && len(plan.AwaitingReview) == 0 && plan.Claiming == "" {
 			fmt.Printf("    kit new \"<what the feature does>\"\n")
 		}
 	}

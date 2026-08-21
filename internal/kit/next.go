@@ -74,8 +74,13 @@ type Plan struct {
 	// nothing here is anybody's to build.
 	AwaitingReview []Waiting `json:"awaiting_review,omitempty"`
 
-	// Branch is the checkout's own branch, and Claiming is the feature that branch
-	// claims, empty when it claims none.
+	// Chores are the claims with no doc behind them. Also not part of the groups above:
+	// a chore has no task boxes to count and nothing to hand out, and what it is for is
+	// to say that an id and a piece of work are already somebody's.
+	Chores []Chore `json:"chores,omitempty"`
+
+	// Branch is the checkout's own branch, and Claiming is the feature or chore that
+	// branch claims, empty when it claims none.
 	Branch   string `json:"branch,omitempty"`
 	Claiming string `json:"claiming,omitempty"`
 
@@ -149,6 +154,17 @@ func (p Plan) unlanded() bool {
 		}
 	}
 	return false
+}
+
+// choreHere is the chore this checkout is holding, empty when it holds none. A checkout
+// stands on one branch, so it is this or a feature and never both.
+func (p Plan) choreHere() string {
+	for _, c := range p.Chores {
+		if c.Mine {
+			return c.ID
+		}
+	}
+	return ""
 }
 
 // Empty reports whether there is nothing open at all.
@@ -308,6 +324,15 @@ func Survey(r *Repo) Plan {
 			}
 		}
 	}
+	// Read after the features, because it is what the walk above passed over: a claim
+	// whose id names no doc. The record comes off the branch holding it, the way a
+	// waiting feature's status does — until the chore merges, that is the only copy.
+	plan.Chores = r.ClaimedChores()
+	for _, c := range plan.Chores {
+		if c.Mine {
+			plan.Claiming = c.ID
+		}
+	}
 	// `task` means "the box to do now". A feature that is somebody else's, or that
 	// cannot start, has no such box, and handing one over is the board contradicting
 	// itself in the format that gets parsed rather than read.
@@ -372,6 +397,12 @@ func waitingOnLanding(r *Repo, f *Feature) string {
 // documented path, found nothing, and decided for itself.
 func guidanceFor(r *Repo, plan Plan) string {
 	switch {
+	// First, because a checkout holding a chore is holding it whatever the board says
+	// is free. Without this the closing line told the agent to claim a feature here.
+	case plan.choreHere() != "":
+		return "this checkout claims chore " + plan.choreHere() + ", listed below. Do it " +
+			"here, then push the branch and open the pull request. It has no boxes and no " +
+			"doc: work that needs either is a feature, not a chore."
 	case len(plan.Yours) > 0:
 		return "work the box named under yours, in this checkout. It is already claimed by you."
 	case len(plan.Ready) > 0:

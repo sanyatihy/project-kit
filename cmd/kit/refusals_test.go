@@ -48,7 +48,7 @@ var refusals = map[string]struct {
 		{"uncommitted or untracked files", "a dirty working tree"},
 	}},
 	"release": {[]string{"Release", "pickRemote"}, []refusal{
-		{"no such feature", "an id nothing is named after"},
+		{"no feature or chore", "an id nothing is named after"},
 		{"nothing claims it", "a feature no branch claims"},
 		{"two branches claim it", "a split claim"},
 		{"this clone never created", "a claim another agent made"},

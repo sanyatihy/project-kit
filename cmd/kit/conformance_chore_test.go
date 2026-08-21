@@ -6,6 +6,7 @@ package main
 
 import (
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -157,4 +158,91 @@ func TestAChoreWithNoRemoteSaysWhatItCannotGive(t *testing.T) {
 
 	r := p.run("chore", "Tidy the scaffolding").ok()
 	r.has("0002-tidy-the-scaffolding", "no remote", "nothing reserved 0002")
+}
+
+func TestTheBoardListsAClaimedChore(t *testing.T) {
+	t.Parallel()
+	// A chore with no branch on the board is a chore nobody can see, which is the state
+	// this feature exists to end. Read from the other clone, because that is the agent
+	// who has to find out.
+	a, b := twoAgents(t)
+	a.run("chore", "Fix the redirect loop").ok()
+	b.git("fetch", "-q", "origin")
+
+	chores := b.plan("next", "--json").Chores
+	if len(chores) != 1 {
+		t.Fatalf("the other agent's board lists %d chores, want 1: %+v", len(chores), chores)
+	}
+	if chores[0].ID != "0008" || chores[0].Title != "Fix the redirect loop" {
+		t.Errorf("the board says %+v, which is not what the record says", chores[0])
+	}
+	if chores[0].Branch != "0008-fix-the-redirect-loop" || chores[0].Mine {
+		t.Errorf("the board says %+v; the branch is the claim and it is not this agent's",
+			chores[0])
+	}
+	b.run("next").ok().has("chores", "Fix the redirect loop")
+}
+
+// choreWorktree is the checkout `kit chore` sends the agent to: a worktree of the branch
+// that claims it, which is where the record and the work both live.
+func choreWorktree(t *testing.T, p *project, branch string) *project {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), "wt")
+	p.git("worktree", "add", "-q", dir, branch)
+	return projectAt(t, dir)
+}
+
+func TestTheCheckoutHoldingAChoreIsNotSentToStartAFeature(t *testing.T) {
+	t.Parallel()
+	// One unit of work per checkout, said by the board and not only by the refusal. An
+	// agent told to claim 0007 here would put a feature and a chore on one branch.
+	a, _ := twoAgents(t)
+	a.run("chore", "Fix the redirect loop").ok()
+	wt := choreWorktree(t, a, "0008-fix-the-redirect-loop")
+
+	plan := wt.plan("next", "--json")
+	if plan.Claiming != "0008" {
+		t.Errorf("the chore worktree says it claims %q, want 0008", plan.Claiming)
+	}
+	r := wt.run("next").ok()
+	r.has("yours", "free, but not in this checkout")
+	r.lacks(`kit new "`)
+}
+
+func TestReleaseEndsAChoreClaimAndKeepsTheID(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.run("chore", "Fix the redirect loop").ok()
+
+	a.run("release", "0008").ok().has("released", "0008-fix-the-redirect-loop")
+
+	if hasRemoteBranch(t, a, "0008-fix-the-redirect-loop") {
+		t.Error("release exited 0 and the remote still has the branch, so the claim stands")
+	}
+	if len(a.plan("next", "--json").Chores) != 0 {
+		t.Error("the board still lists a chore nobody is holding")
+	}
+	// The branch is gone and the number is not: an id is handed out once, so a later
+	// commit citing 0008 can only mean the chore that was abandoned.
+	if got := a.reservedIDs(); !slices.Contains(got, "0008") {
+		t.Errorf("releasing a chore freed its id: the remote reserves %v", got)
+	}
+}
+
+func TestReleaseRefusesAChoreBranchCarryingWork(t *testing.T) {
+	t.Parallel()
+	// The refusal that makes `release` safe for a feature, holding for a chore: the
+	// record is what the branch is allowed to carry, and anything else is work that
+	// releasing would delete.
+	a, _ := twoAgents(t)
+	a.run("chore", "Fix the redirect loop").ok()
+	a.git("checkout", "-q", "0008-fix-the-redirect-loop")
+	a.write("fix.go", "package fix\n")
+	a.commitAll("0008: fix the redirect loop")
+
+	a.run("release", "0008").fails(2).errHas("carries work", "pull request")
+
+	if !hasRemoteBranch(t, a, "0008-fix-the-redirect-loop") {
+		t.Error("the refusal deleted the claim anyway, which is the work it exists to keep")
+	}
 }

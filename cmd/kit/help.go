@@ -229,7 +229,9 @@ With no remote nothing is reserved and nobody else can see the claim; the run sa
 	"release": `kit release <id> [--force]
 
 Stopping for good? Give the claim back. Deletes the branch that claims the feature on
-the remote first, because that ref is the claim, and then locally.
+the remote first, because that ref is the claim, and then locally. A chore is released
+by the same command and the same id: its record goes with its branch, and the id stays
+reserved for ever.
 
 Refuses while the branch carries anything beyond the feature doc. Stopping covers two
 situations and only one of them is this: work worth nothing, and work worth keeping.
@@ -237,7 +239,7 @@ For the second, push the branch and open the pull request unfinished, saying why
 — the doc travels with the branch, so the record lands when it merges.
 
   0  the claim is gone and the feature is free for anyone to claim
-  2  it could not run: no such feature, nothing claims it, two branches claim it,
+  2  it could not run: no feature or chore, nothing claims it, two branches claim it,
      a branch this clone never created, a branch this checkout cannot resolve, a
      copy of it here that is not the remote's, no default branch to read work
      against, several remotes and no origin, the remote did not answer, or the

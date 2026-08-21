@@ -61,7 +61,7 @@ states out loud — see `## Open questions`.
 ## Tasks
 
 - [x] `kit chore "<what>"` claims a named unit of work and records one line
-- [ ] The board lists claimed chores, and `kit release` ends a chore claim
+- [x] The board lists claimed chores, and `kit release` ends a chore claim
 - [ ] `claim` refuses when this checkout already holds a claim
 - [ ] The protocol routes non-feature work to `kit chore` instead of to an unclaimed branch
 
