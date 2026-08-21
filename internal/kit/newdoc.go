@@ -207,6 +207,21 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 		return nil, fmt.Errorf("not set up yet — run: kit init %s", r.Root)
 	}
 
+	// A branch whose name cites a four-digit id is a claim on that feature, wherever in
+	// the name it sits, and a plan round drafted on one claims a feature it has nothing
+	// to do with: `plan/fold-in-0002-fix` made the board report 0002 as taken while
+	// `audit` exited 0 saying the docs and the repo agreed. Refused here rather than by
+	// narrowing what counts as a claim, which would have made the guarantee smaller.
+	//
+	// A feature's own claim branch is exempt: that is the claim the kit made, and work
+	// discovered mid-build has to be writable down where it was found.
+	if held := r.ForeignClaim(); held != "" {
+		return nil, fmt.Errorf("this checkout is on %s, whose name cites %s — a branch "+
+			"citing an id claims that feature, so a doc drafted here would claim it too\n"+
+			"put the round on a branch of its own: git switch -c plan/<round>, with no "+
+			"four-digit id anywhere in the name", r.HeadBranch(), held)
+	}
+
 	raw, err := fs.ReadFile(templates, "templates/features-TEMPLATE.md")
 	if err != nil {
 		return nil, err

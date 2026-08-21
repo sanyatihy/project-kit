@@ -1,9 +1,9 @@
 ---
 id: 0062
 title: A checkout holds one claim, and a draft never takes another
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -50,9 +50,15 @@ moved since.
 
 ## Tasks
 
-- [ ] `0684b67` lands on this branch, and `make check` passes against current main
-- [ ] `claim` refuses a checkout that already holds a claim, named in `kit claim --help`
-- [ ] `kit new` refuses to draft on a branch citing an id that is not this checkout's claim
-- [ ] 0057's claim branch is released, and the board shows no work nobody is doing
+- [x] `0684b67` lands on this branch, and `make check` passes against current main
+- [x] `claim` refuses a checkout that already holds a claim, named in `kit claim --help`
+- [x] `kit new` refuses to draft on a branch citing an id that is not this checkout's claim
+- [x] 0057's claim branch is released, and the board shows no work nobody is doing
 
 ## Log
+
+- The salvage needed two helpers `0684b67` does not carry: `HeldClaim` and `ForeignClaim`
+  come from an earlier commit on 0057's branch, which also built `kit chore`, so they were
+  written in here without it.
+- The hunk editing 0057's own doc was dropped rather than applied — that doc is `Dropped`,
+  and a terminal doc is frozen.

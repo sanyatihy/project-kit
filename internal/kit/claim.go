@@ -160,6 +160,21 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			r.Name, r.Trunk())
 	}
 
+	// One feature per checkout, which until now was a rule in prose and nothing else:
+	// the board prints "take one of those in a worktree of its own, never here" and
+	// `claim` took it anyway. Two units of work in one checkout share one branch, and
+	// that is one pull request nobody can review.
+	//
+	// The branch this checkout is on, not what it has built: the check above catches a
+	// claim carrying commits, and a worktree made a moment ago carries none. Any name
+	// citing an id counts, because that is what counts as a claim everywhere else.
+	if held := r.HeldClaim(); held != "" {
+		return nil, fmt.Errorf("this checkout is on %s, which claims %s — one feature per "+
+			"checkout.\nClaim from a checkout of the trunk: git worktree add --detach "+
+			"../%s-trunk %s, then claim there",
+			r.HeadBranch(), held, r.Name, orTrunk(r.Trunk()))
+	}
+
 	remote, err := pickRemote(r)
 	if err != nil {
 		return nil, err
