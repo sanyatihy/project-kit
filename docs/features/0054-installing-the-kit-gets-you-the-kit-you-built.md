@@ -1,9 +1,9 @@
 ---
 id: 0054
 title: Installing the kit gets you the kit you built
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs: 0053
 ---
 
