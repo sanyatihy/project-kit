@@ -282,7 +282,9 @@ own `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind `sync.
 developer's `~/.gitconfig`, so three tests — including the one written to catch the
 `release` deletion bug — passed only on a machine whose `init.defaultBranch` is `main`.
 
-Coverage reads low and stays there: subprocess tests instrument nothing.
+**No coverage number is reported.** `-cover` measured the test process rather than the
+binary the suite drives, printing 2.9% for a package covered end to end; instrumenting it
+is `go build -cover` plus `go tool covdata`, and no threshold reads the result.
 
 ## State of play
 

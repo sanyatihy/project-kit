@@ -49,9 +49,12 @@ PARALLEL ?= 4
 gitcount:
 	@$(GO) test -count=1 -v -run TestABoardReadStaysWithinItsGitBudget ./cmd/kit
 
+# No -cover. The conformance suite drives a separately built binary, so the number
+# counted the test process and not the kit: 2.9% for the package the suite exercises
+# end to end. docs/TECH.md says what measuring it for real would take.
 .PHONY: test
 test:
-	$(GO) test -race -cover -parallel $(PARALLEL) $(PKG)
+	$(GO) test -race -parallel $(PARALLEL) $(PKG)
 
 .PHONY: fmt
 fmt:

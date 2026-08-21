@@ -40,7 +40,7 @@ make install   # go install ./cmd/kit
 shared by every project, so a merged change reaches none of them until it is reinstalled.
 `docs/TECH.md` records what that cost once.
 
-Four constraints that are easy to trip over:
+Three constraints that are easy to trip over:
 
 - Files under `templates/` must not be valid Go package files or a nested module, or
   `go vet ./...` compiles them. Hence `gomod`, `gitignore`, `main.go.tmpl`.
@@ -49,8 +49,6 @@ Four constraints that are easy to trip over:
 - A new check goes in the registry in `internal/kit/audit.go`, never as a bare string.
   `kit help checks` prints from it, and `TestEveryRegisteredCheckIsExercised` fails the
   build for a check with no conformance case.
-- `cmd/kit` coverage reads low and stays there. The conformance suite drives a subprocess,
-  so nothing it exercises is instrumented.
 
 <!-- The section below is written by `kit init` from the kit's own template. Edits inside
      it are lost on the next run; durable house rules go above this comment. -->
