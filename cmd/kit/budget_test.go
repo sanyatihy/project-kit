@@ -55,7 +55,10 @@ const (
 	// 0048 retook all three against what the cut left: TECH 287, AGENTS 159, README 279.
 	// The headroom is deliberate and small — under the routing rule a shipped feature adds
 	// one line each, so a jump means facts arrived with their history attached again.
-	techBudget = 292
+	// 297 since 0051: the frontmatter format now carries three constraints an agent can
+	// reverse in one line each — where the block closes, where a write may land, and what
+	// marks a comment — and every one of them has already been a bug.
+	techBudget = 297
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

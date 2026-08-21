@@ -1,9 +1,9 @@
 ---
 id: 0051
 title: A status the kit writes always means what it says
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -66,3 +66,7 @@ Reproduced:
 - [x] A value containing `#` keeps its text — `title: Fix #123 crash` is not `Fix`
 
 ## Log
+
+- 2026-08-21 — the body was never at risk from the `shipped:` fallback: with a count of 1,
+  `strings.Replace` reaches a frontmatter value before any fenced example. The reachable
+  case is a `title:` quoting a status, and that is what the test drives.
