@@ -330,7 +330,7 @@ func (r *Repo) ActiveFeatures() []*Feature {
 		// Draft, and anything else that is neither terminal nor missing. A status this
 		// version does not know is still open work: dropping `Accepted` would otherwise
 		// have made every doc carrying it vanish from the board of every project already
-		// using the kit, silently and with no finding to explain it. `bad-status` reports
+		// using the kit, silently and with no finding to explain it. `no-status` reports
 		// it instead, and the feature stays visible while somebody fixes it.
 		if f.Status != "" && !terminal(f.Status) {
 			out = append(out, f)

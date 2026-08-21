@@ -340,7 +340,7 @@ func (r *Repo) TagDistance() (tag string, behind int, ok bool) {
 // Every git read here that yields a path asks for `-z`. Without it git C-quotes anything
 // outside printable ASCII — `"docs/features/0001-bl\303\240nk.md"` — and every one of
 // these answers is then compared against a name `os.ReadDir` produced, so the lookup
-// silently misses. One accented character disabled `unfilled-template`, `no-tasks` and
+// silently misses. One accented character disabled `unfilled-template` and
 // `done-not-shipped` on that doc, and made `shipped-not-pushed` fire at HIGH on work
 // that was pushed. `-z` also settles a newline inside a filename, which no line-oriented
 // parse can.

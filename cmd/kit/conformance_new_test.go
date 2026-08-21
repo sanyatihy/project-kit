@@ -6,7 +6,6 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -102,10 +101,11 @@ func TestANewDocIsEmptyToTheToolNotJustToTheReader(t *testing.T) {
 	r.lacks("…")
 	p.run("audit").ok().has("unfilled-template")
 
-	// One defect, one finding: an empty ## Tasks is unfilled-template's and not also
-	// no-tasks', which covers the narrower case of prose with no boxes in it.
-	if codes := p.auditCodes(); slices.Contains(codes, "no-tasks") {
-		t.Errorf("an unwritten doc reported both unfilled-template and no-tasks: %v", codes)
+	// One defect, one finding: an unwritten doc used to report unfilled-template for its
+	// empty sections and a second code for the missing boxes, two names for one plan
+	// nobody wrote.
+	if codes := p.auditCodes(); len(codes) != 3 {
+		t.Errorf("an unwritten doc reported %v; three empty sections, one name", codes)
 	}
 }
 

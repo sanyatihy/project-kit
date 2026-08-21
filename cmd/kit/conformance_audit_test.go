@@ -157,11 +157,6 @@ var auditCases = []struct {
 		p.write("docs/INBOX.md",
 			"# Inbox\n\n- [ ] we should decide about 0001 at some point\n")
 	}},
-	{"inbox-unknown", func(p *project) {
-		p.write("docs/INBOX.md", fmt.Sprintf(
-			"# Inbox\n\n- [ ] %s · 0099 · BLOCKING · About a feature that never existed?\n",
-			daysAgo(1)))
-	}},
 	{"done-not-shipped", func(p *project) {
 		// Committed, because the gate is now whether HEAD carries the doc: a plan still
 		// being written in a working tree is nobody's defect.
@@ -182,13 +177,6 @@ var auditCases = []struct {
 	{"shipped-no-date", func(p *project) {
 		feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
 	}},
-	{"shipped-bad-date", func(p *project) {
-		// Nothing validated the field, so `tech-drift` compared against it: a day that
-		// has not arrived is never older than the as-built doc, and that finding then
-		// had no fix for as long as the date said.
-		p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-			"shipped: 2099-01-01", "- [x] Done"))
-	}},
 	{"id-mismatch", func(p *project) {
 		p.write("docs/features/0002-confused.md", doc("0009", "Confused", "Draft",
 			"", "- [ ] Something"))
@@ -197,19 +185,6 @@ var auditCases = []struct {
 		p.write("docs/features/0002-statusless.md",
 			"---\nid: 0002\ntitle: Statusless\n---\n\n"+
 				"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] y\n\n## Log\n- 2026-01-01 — x.\n")
-	}},
-	{"bad-status", func(p *project) {
-		feature(p, "0002", "odd", "Odd", "Marinating", "- [ ] Something")
-	}},
-	{"no-tasks", func(p *project) {
-		// Prose where the boxes should be. A ## Tasks section that is empty outright is
-		// unfilled-template's, so this is the narrower case: somebody wrote about the
-		// work without ever writing a box an agent can do.
-		p.write("docs/features/0002-empty.md",
-			"---\nid: 0002\ntitle: Empty\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
-				"## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n"+
-				"## Tasks\nWe will figure the boxes out later.\n\n## Log\n- 2026-01-01 — started.\n")
-		p.commitAll("a plan with no boxes in it")
 	}},
 	{"unreadable-doc", func(p *project) {
 		// A doc the kit cannot open. It used to be dropped on the floor by readFeature,
@@ -241,11 +216,6 @@ var auditCases = []struct {
 			p.t.Fatalf("removing AGENTS.md: %v", err)
 		}
 	}},
-	{"no-tech", func(p *project) {
-		feature(p, "0002", "shipped", "Shipped thing", "Shipped", "- [x] Done")
-		p.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
-			"shipped: "+daysAgo(1), "- [x] Done"))
-	}},
 	{"needs-unknown", func(p *project) {
 		p.write("docs/features/0002-hopeful.md",
 			doc("0002", "Hopeful", "Draft", "needs: 0099", "- [ ] Do it"))
@@ -261,23 +231,10 @@ var auditCases = []struct {
 		// and nothing inside the project can tell.
 		p.write("AGENTS.md", "# House rules\n\n## Work protocol\n\nAn older protocol.\n")
 	}},
-	{"no-vision", func(p *project) {
-		// A feature exists, so there is something that should have been decomposed
-		// from a vision, and nothing to decompose it from.
-		feature(p, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
-		if err := os.Remove(p.path("docs/VISION.md")); err != nil {
-			p.t.Fatalf("removing VISION.md: %v", err)
-		}
-	}},
 	{"unfilled-vision", func(p *project) {
 		// A fresh `kit init` and nothing else. The template's guidance is all
 		// comments, so every section under its headings reads as empty.
 		visionStub(p)
-	}},
-	{"no-inbox", func(p *project) {
-		if err := os.Remove(p.path("docs/INBOX.md")); err != nil {
-			p.t.Fatalf("removing INBOX.md: %v", err)
-		}
 	}},
 }
 
@@ -477,8 +434,8 @@ func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
 	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
 		t.Fatalf("removing VISION.md: %v", err)
 	}
-	if codes := p.auditCodes(); slices.Contains(codes, "no-vision") {
-		t.Errorf("no-vision fired on a project with no features yet: %v", codes)
+	if codes := p.auditCodes(); slices.Contains(codes, "no-protocol") {
+		t.Errorf("a missing vision was reported before anything was planned: %v", codes)
 	}
 }
 
@@ -503,8 +460,9 @@ func TestUnfilledVisionStaysQuietOnAPartlyWrittenVision(t *testing.T) {
 
 func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 	t.Parallel()
-	// The missing-file case belongs to no-vision, which is LOW and unchanged. Reporting
-	// both would make one gap produce two findings with two different fixes.
+	// The missing-file case belongs to no-protocol, which reports every document
+	// `kit init` writes. Reporting both would make one gap produce two findings with two
+	// different fixes.
 	p := cleanProject(t)
 	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
 		t.Fatalf("removing VISION.md: %v", err)
@@ -514,8 +472,8 @@ func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 	if slices.Contains(codes, "unfilled-vision") {
 		t.Errorf("unfilled-vision fired on a project with no VISION.md: %v", codes)
 	}
-	if !slices.Contains(codes, "no-vision") {
-		t.Errorf("no-vision stopped firing on a missing VISION.md: %v", codes)
+	if !slices.Contains(codes, "no-protocol") {
+		t.Errorf("a missing VISION.md went unreported: %v", codes)
 	}
 }
 
@@ -545,7 +503,7 @@ func TestAnUnreadableDocIsReportedOnceAndKeepsItsID(t *testing.T) {
 	}
 	// Nothing else may speak for it. Every content check fires on the empty struct, and
 	// not one of those findings is a fact about the file.
-	for _, guess := range []string{"no-status", "unfilled-template", "done-not-shipped", "no-tasks"} {
+	for _, guess := range []string{"no-status", "unfilled-template", "done-not-shipped"} {
 		if slices.Contains(codes, guess) {
 			t.Errorf("%s was reported on a doc whose content nobody has: %v", guess, codes)
 		}
@@ -661,6 +619,57 @@ func TestProtocolStaleNeverOffersToOverwriteTheNewerSide(t *testing.T) {
 	behind.run("audit").ok().has("protocol-stale", "run: kit init .")
 	if plan := behind.plan("next", "--json"); plan.ProtocolAhead {
 		t.Error("a project with no protocol template of its own was called the newer side")
+	}
+}
+
+func TestTheDocumentsKitInitWritesAreOneFinding(t *testing.T) {
+	t.Parallel()
+	// One command writes all three, creates only what is missing and overwrites nothing,
+	// so a project lacking them has one defect with one fix. It was three findings at two
+	// severities telling the reader to run `kit init .` three times.
+	p := cleanProject(t)
+	feature(p, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
+	for _, rel := range []string{"AGENTS.md", "docs/INBOX.md", "docs/VISION.md"} {
+		if err := os.Remove(p.path(rel)); err != nil {
+			t.Fatalf("removing %s: %v", rel, err)
+		}
+	}
+
+	if n := strings.Count(strings.Join(p.auditCodes(), " "), "no-protocol"); n != 1 {
+		t.Errorf("three missing documents reported %d findings, want 1", n)
+	}
+	// One finding still has to say which files, or it is not actionable.
+	p.run("audit").ok().has("AGENTS.md", "INBOX.md", "VISION.md", "run: kit init .")
+
+	// And each on its own, because a merged check that only fires when all three are gone
+	// would be silent on the case that actually happens.
+	for _, rel := range []string{"AGENTS.md", "docs/INBOX.md", "docs/VISION.md"} {
+		t.Run(rel, func(t *testing.T) {
+			one := cleanProject(t)
+			feature(one, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
+			if err := os.Remove(one.path(rel)); err != nil {
+				t.Fatalf("removing %s: %v", rel, err)
+			}
+			if codes := one.auditCodes(); !slices.Contains(codes, "no-protocol") {
+				t.Errorf("a project with no %s reported %v", rel, codes)
+			}
+		})
+	}
+}
+
+func TestTechDriftCoversTheMissingAsBuiltDocAndTheStaleOne(t *testing.T) {
+	t.Parallel()
+	// One gap measured two ways: what shipped is not what a reader is told. It was two
+	// findings at two severities, and writing the file answers both.
+	missing := cleanProject(t)
+	missing.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
+		"shipped: "+daysAgo(1), "- [x] Done"))
+	missing.run("audit").ok().has("tech-drift", "nothing describes the as-built system")
+
+	// The quiet half: nothing has shipped, so there is nothing to describe yet.
+	fresh := cleanProject(t)
+	if codes := fresh.auditCodes(); slices.Contains(codes, "tech-drift") {
+		t.Errorf("tech-drift fired before anything shipped: %v", codes)
 	}
 }
 
@@ -799,19 +808,17 @@ func TestTheShippedDateIsReadAsWrittenOrReportedAsWrong(t *testing.T) {
 	for _, tc := range []struct {
 		name, line, want string
 	}{
-		{"absent", "", "shipped-no-date"},
-		// Reported as "Shipped with no shipped: date" on a doc that has one.
-		{"unparseable", "shipped: last Tuesday", "shipped-bad-date"},
-		{"in the future", "shipped: 2099-01-01", "shipped-bad-date"},
+		// One field, one code, three problems — the middle used to be reported as the
+		// first, on a doc that plainly had a date written in it.
+		{"absent", "", "Shipped with no shipped: date"},
+		{"unparseable", "shipped: last Tuesday", `shipped: "last Tuesday" is not a date`},
+		{"in the future", "shipped: 2099-01-01", "has not arrived yet"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := cleanProject(t)
 			p.write("docs/features/0002-odd.md",
 				doc("0002", "Odd", "Shipped", tc.line, "- [x] Done"))
-			codes := p.auditCodes()
-			if !slices.Contains(codes, tc.want) {
-				t.Errorf("shipped: %q reported %v, want %s", tc.line, codes, tc.want)
-			}
+			p.run("audit").ok().has("shipped-no-date", tc.want)
 		})
 	}
 
@@ -1239,10 +1246,24 @@ func TestInboxChecksStayQuietOnAWellFormedQuestion(t *testing.T) {
 	p := cleanProject(t)
 	p.run("block", "0001", "Should this expire? Leaning: no.").ok()
 
-	for _, code := range p.auditCodes() {
-		if code == "inbox-unparsed" || code == "inbox-unknown" {
-			t.Errorf("a well-formed question was reported as %q", code)
-		}
+	if codes := p.auditCodes(); slices.Contains(codes, "inbox-unparsed") {
+		t.Errorf("a well-formed question was reported as %v", codes)
+	}
+
+	// The two ways a hand-written line goes wrong, under one name: out of format it
+	// blocks by prose match, and against an id nobody wrote it blocks nothing at all.
+	// Opposite consequences, one cause, and the same line to rewrite.
+	for _, tc := range []struct{ name, line, want string }{
+		{"out of format", "- [ ] we should decide about 0001 at some point",
+			"not in the documented format"},
+		{"unknown feature", "- [ ] " + daysAgo(1) + " · 0099 · BLOCKING · About what?",
+			"names feature 0099"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/INBOX.md", "# Inbox\n\n"+tc.line+"\n")
+			p.run("audit").ok().has("inbox-unparsed", tc.want)
+		})
 	}
 }
 
@@ -1344,14 +1365,15 @@ func TestADocLeftSayingInProgressIsReported(t *testing.T) {
 	t.Parallel()
 	// The migration path. `In progress` left the vocabulary because nothing could set it
 	// without contradicting the claim branch, so a doc still carrying it is a leftover —
-	// most likely a claim released without deleting the branch — and `bad-status` says so
-	// rather than the board quietly ignoring the feature.
+	// most likely a claim released without deleting the branch — and `no-status` says so
+	// rather than the board quietly ignoring the feature: a status nothing recognises is
+	// the same defect as none at all.
 	p := cleanProject(t)
 	p.write("docs/features/0002-working.md",
 		doc("0002", "Working", "In progress", "", "- [ ] Something"))
 
-	if codes := p.auditCodes(); !slices.Contains(codes, "bad-status") {
-		t.Errorf("a doc saying In progress reported %v, want bad-status", codes)
+	if codes := p.auditCodes(); !slices.Contains(codes, "no-status") {
+		t.Errorf("a doc saying In progress reported %v, want no-status", codes)
 	}
 	// The feature stays visible and is reported as blocked, never dropped. Selecting the
 	// board on a status allow-list would make every doc carrying a status a later kit
@@ -1396,13 +1418,6 @@ func TestTheAuditSummaryCountsBySeverity(t *testing.T) {
 	r.outHas("1 MEDIUM finding to fix.")
 	r.lacks("HIGH first")
 
-	// LOW is hygiene, and a summary that counted it would ask for a fix the severity
-	// says can wait. The findings themselves are still printed.
-	low := cleanProject(t)
-	if err := os.Remove(low.path("docs/INBOX.md")); err != nil {
-		t.Fatalf("removing the inbox: %v", err)
-	}
-	quiet := low.run("audit").ok()
-	quiet.outHas("no-inbox")
-	quiet.lacks("to fix.")
+	// And nothing to fix where the docs and the repo agree.
+	cleanProject(t).run("audit").ok().lacks("to fix.")
 }

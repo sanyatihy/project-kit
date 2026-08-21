@@ -73,7 +73,7 @@ unrelated doc to refuse every agent's ship.
 - [x] No check asks for an edit to a terminal doc, and a dropped stub audits clean
 - [x] `unticked-shipped` and `shipped-early` are deleted, with their tests
 - [x] `needs-cycle`, `no-plan`, `dead-link` and `fyi-stale` are deleted; `--fyi` stays
-- [ ] The seven duplicate findings are merged into one name each
+- [x] The seven duplicate findings are merged into one name each
 - [ ] `kit help checks` and `docs/TECH.md` describe the vocabulary that remains
 
 ## Open questions
@@ -92,3 +92,10 @@ unrelated doc to refuse every agent's ship.
   own id: that case was deliberately left to the cycle walk so one defect made one
   finding. It is a need nothing can satisfy, so `needs-unknown` reports it, and a loop
   between two docs stays visible as two blocked features on the board.
+- 2026-08-21 — all seven pairings held on inspection, and merging `no-tasks` widened
+  `Unwritten()`, which `claim` refuses over: a `## Tasks` carrying prose and no boxes is
+  now refused as well as reported. The board already declined to offer such a doc, so the
+  command and the board now say it for one reason instead of disagreeing.
+- 2026-08-21 — the merges empty the LOW tier. `no-tech`, `no-inbox` and `no-vision` were
+  its last members and all three now report at MEDIUM, which refuses nothing new because
+  `--strict` reads HIGH.

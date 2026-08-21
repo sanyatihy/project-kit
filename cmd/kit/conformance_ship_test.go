@@ -337,8 +337,8 @@ func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
 	if !p.exists("docs/TECH.md") {
 		t.Fatal("shipping did not create the as-built doc")
 	}
-	// It answers no-tech, which is the finding it exists to resolve.
-	p.run("audit").ok().lacks("no-tech")
+	// It answers tech-drift, which is the finding it exists to resolve.
+	p.run("audit").ok().lacks("tech-drift")
 
 	// A second ship must leave what has been written into it alone. Note this is
 	// enforced by the caller finding the doc already present, not by the create —
