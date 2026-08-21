@@ -1,9 +1,9 @@
 ---
 id: 0048
 title: Cut the kit to what four days of use earned
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 check:
 checked:
 review:
