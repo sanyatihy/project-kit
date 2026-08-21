@@ -226,7 +226,7 @@ func (r *Repo) AwaitingReview() []Review {
 				continue
 			}
 			out = append(out, Review{Feature: f, Branch: name, Since: r.commitDate(rev),
-				Mine: r.BuiltHere(f.ID)})
+				Mine: r.BuiltHere(f.ID, rev)})
 			break
 		}
 	}
@@ -389,12 +389,20 @@ func (r *Repo) remoteTrunkRefs() []string {
 // BuiltHere reports whether the reader built this feature — the one thing a coordinator
 // that is itself an agent has to know, because its own work is the work it may not merge.
 //
-// The checkout standing on the claim is the whole answer. Comparing the branch's author
-// with this checkout's git identity used to be a second arm, and it distinguished nobody:
-// every commit from four different agents on this repo carried the operator's name. It
-// cost two subprocesses per review entry to say "no". Unknown answers false — this makes
-// the invariant legible, and legibility is all a well-behaved agent needs.
-func (r *Repo) BuiltHere(id string) bool { return r.Mine(id) }
+// Two answers, weakest last. The checkout standing on the claim is unambiguous. Otherwise
+// the branch's author is compared with this checkout's git identity, which is worth
+// exactly as much as the identities are distinct: on this repo four agents shared the
+// operator's, and it separated none of them. That is an argument for giving agents
+// identities, not for deleting the arm that pays off when they have them. Unknown answers
+// false: this makes the invariant legible, and legibility is what a well-behaved agent
+// needs. Bounded by the number of shipped-and-unmerged features, which is small.
+func (r *Repo) BuiltHere(id, rev string) bool {
+	if r.Mine(id) {
+		return true
+	}
+	who := strings.TrimSpace(r.git("config", "user.email"))
+	return who != "" && strings.TrimSpace(r.git("log", "-1", "--format=%ae", rev)) == who
+}
 
 // claimIDs are the strings a branch may cite to claim a feature: the id it declares, and
 // its filename prefix where the two disagree — the state that makes a claim invisible to

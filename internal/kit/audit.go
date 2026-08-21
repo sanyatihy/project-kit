@@ -535,7 +535,7 @@ func orphanClaims(s *repoState) []Finding {
 
 // The marker decides both the fuse and the severity. `kit block --fyi` promises work
 // continues without an answer, and an FYI reported at HIGH broke that promise anyway by
-// failing the --strict gate rule 12 puts in front of `kit ship`.
+// failing the --strict gate in front of `kit ship`.
 func inboxState(s *repoState) []Finding {
 	knownID := map[string]bool{}
 	for _, f := range s.r.Features {
@@ -695,7 +695,7 @@ func needsCycles(s *repoState) []Finding {
 }
 
 // Only the documents the repo model already opens — `audit` is not a repo-wide secret
-// scanner and must not be mistaken for one. BACKLOG.md is here because rule 6 sends
+// scanner and must not be mistaken for one. BACKLOG.md is here because the protocol sends
 // discovered work to it, so agents write to it as freely as to a feature doc.
 func secretsInDocs(s *repoState) []Finding {
 	docs := []string{s.r.Inbox, s.r.Vision, s.r.Tech, s.r.Protocol, s.r.Backlog}

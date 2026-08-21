@@ -173,7 +173,7 @@ func TestShipRefusesAFeatureAnotherCheckoutClaims(t *testing.T) {
 
 	r := shipping(a, "0007").fails(2)
 	// Naming the branch and the way out: refusing without one is how an agent gets stuck.
-	r.errHas("0007-widget", "rule 8")
+	r.errHas("0007-widget", "kit release 0007")
 	if strings.Contains(a.read("docs/features/0007-widget.md"), "status: Shipped") {
 		t.Error("ship wrote the status despite refusing")
 	}

@@ -100,8 +100,8 @@ var commandHelp = map[string]string{
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes docs/VISION.md, docs/features/{README,TEMPLATE,BACKLOG}.md, docs/INBOX.md
-and AGENTS.md.
+and writes docs/VISION.md, docs/features/{TEMPLATE,BACKLOG}.md, docs/INBOX.md and
+AGENTS.md.
 With --stack it also scaffolds the code layout and one CI pipeline.
 
 Which CI file that is depends on where the project is hosted, and it is worked out
@@ -111,10 +111,11 @@ names a forge (~/code/gitlab.example.com/team/thing). When nothing says, no CI
 file is written and the run tells you so — a missing pipeline is visible, and one
 for the wrong forge is not. --forge settles it outright.
 
-Your files are never overwritten or deleted, so it is safe to run on a populated
-directory and safe to re-run. Re-running is how a project picks up protocol
-changes: only the "## Work protocol" section of AGENTS.md is refreshed, and it is
-also how a project gets its CI file once it has a remote.
+Nothing you wrote is overwritten or deleted, so it is safe on a populated directory
+and safe to re-run. Two kit-owned files are refreshed on every run: the
+"## Work protocol" section of AGENTS.md, and docs/features/TEMPLATE.md. Everything
+you fill in is left alone, and house rules go above the marker comment in AGENTS.md.
+Re-running is also how a project gets its CI file once it has a remote.
 
 Deployment scaffolding is deliberately not generated. Add it when the project has
 something to deploy.

@@ -30,6 +30,10 @@ Do this only when you are asked to plan.
 8. **The round must reach the default branch before anything on it can be claimed.**
    `kit claim` refuses otherwise.
 
+**Work that is not a feature** — a fix to something already shipped, a chore, a data
+update — goes on a branch whose name contains no four-digit id, and needs no doc. Only a
+feature gets one.
+
 ### Taking work
 
 9. **Take a feature with `kit claim <id>`.** It pushes the branch that claims it. Read the

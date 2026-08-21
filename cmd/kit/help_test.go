@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io/fs"
+	"os"
 	"regexp"
 	"slices"
 	"strings"
@@ -62,7 +66,7 @@ func TestOverviewDocumentsTheExitCodes(t *testing.T) {
 // inserting a rule above one renumbers it and no prose moves with it.
 var ruleNumberRe = regexp.MustCompile(`(?i)\brule \d+`)
 
-func TestTheProtocolCitesRulesByNameNotNumber(t *testing.T) {
+func TestNothingUserFacingCitesARuleByNumber(t *testing.T) {
 	t.Parallel()
 	// Two cross-references pointed at the wrong rules for months, because 0007 and
 	// 0009 inserted rules above them and numbers in prose do not move. Naming the
@@ -76,6 +80,34 @@ func TestTheProtocolCitesRulesByNameNotNumber(t *testing.T) {
 			"misdirect the reader; cite the rule by its bolded name instead", m)
 	}
 
+	// The same rot reaches the user through what the commands print, and `kit ship`
+	// refused a foreign claim with "rule 8" long after the numbering had moved. Only
+	// string literals are read: a comment citing a rule misdirects nobody but the
+	// next reader of the source, and `_test.go` files are not user-facing at all.
+	for _, dir := range []string{".", "../../internal/kit"} {
+		fset := token.NewFileSet()
+		pkgs, err := parser.ParseDir(fset, dir, func(info os.FileInfo) bool {
+			return !strings.HasSuffix(info.Name(), "_test.go")
+		}, 0)
+		if err != nil {
+			t.Fatalf("parsing %s: %v", dir, err)
+		}
+		for _, pkg := range pkgs {
+			for _, file := range pkg.Files {
+				ast.Inspect(file, func(n ast.Node) bool {
+					lit, ok := n.(*ast.BasicLit)
+					if !ok || lit.Kind != token.STRING {
+						return true
+					}
+					if m := ruleNumberRe.FindString(lit.Value); m != "" {
+						t.Errorf("%s prints %q — cite the rule by name, or name the "+
+							"command that enforces it", fset.Position(lit.Pos()), m)
+					}
+					return true
+				})
+			}
+		}
+	}
 }
 
 func TestProtocolNamesTheCommandsThatExist(t *testing.T) {

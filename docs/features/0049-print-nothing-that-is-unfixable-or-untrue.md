@@ -65,12 +65,12 @@ the case.
 
 ## Tasks
 
-- [ ] The five checks and their machinery are gone; `needs-unknown` skips terminal docs
-- [ ] The exit-code contract matches `claim`, and the README cites `kit help checks`
-- [ ] No user-facing string cites a rule by number, and a test covers the binary
-- [ ] `kit init` writes `AGENTS.md` with a title and the regenerated-section note
-- [ ] `next` names writing the plan when the only open feature is an unwritten draft
-- [ ] The audit summary line counts what it found and drops `thing(s)`
-- [ ] A freshly scaffolded project, filled in as documented, reports nothing at all
+- [x] The five checks and their machinery are gone; `needs-unknown` skips terminal docs
+- [x] The exit-code contract matches `claim`, and the README cites `kit help checks`
+- [x] No user-facing string cites a rule by number, and a test covers the binary
+- [x] `kit init` writes `AGENTS.md` with a title and the regenerated-section note
+- [x] `next` names writing the plan when the only open feature is an unwritten draft
+- [x] The audit summary line counts what it found and drops `thing(s)`
+- [x] A freshly scaffolded project, filled in as documented, reports nothing at all
 
 ## Log

@@ -328,20 +328,30 @@ const inboxSep = "·"
 // status left lowest-first as the whole rule: the claim this checkout already holds comes
 // first, and `next` handles that separately.
 func (r *Repo) ActiveFeatures() []*Feature {
-	rank := map[string]int{StatusDraft: 0}
 	var out []*Feature
 	for _, f := range r.Features {
-		if _, ok := rank[f.Status]; ok {
+		// Draft, and anything else that is neither terminal nor missing. A status this
+		// version does not know is still open work: dropping `Accepted` would otherwise
+		// have made every doc carrying it vanish from the board of every project already
+		// using the kit, silently and with no finding to explain it. `bad-status` reports
+		// it instead, and the feature stays visible while somebody fixes it.
+		if f.Status != "" && !terminal(f.Status) {
 			out = append(out, f)
 		}
+	}
+	rank := func(status string) int {
+		if status == StatusDraft {
+			return 0
+		}
+		return 1
 	}
 	// No claim-first rank here: "finishing beats starting" is structural now. `next`
 	// renders this checkout's own claim as **yours** above everything, and somebody
 	// else's under **taken** below what is free, so ordering inside the list cannot move
 	// a claimed feature anywhere the groups do not already put it.
 	sort.SliceStable(out, func(i, j int) bool {
-		if rank[out[i].Status] != rank[out[j].Status] {
-			return rank[out[i].Status] < rank[out[j].Status]
+		if rank(out[i].Status) != rank(out[j].Status) {
+			return rank(out[i].Status) < rank(out[j].Status)
 		}
 		return out[i].ID < out[j].ID
 	})

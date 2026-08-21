@@ -59,11 +59,11 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	if claims := r.Claims(id); len(claims) > 0 && !r.Mine(id) {
 		return nil, fmt.Errorf("%s is claimed by %s, which is not this checkout\n"+
 			"ship it from that worktree. If the branch is a leftover of yours, release "+
-			"the claim first — rule 8", target.Name(), strings.Join(claims, " and "))
+			"the claim first: kit release "+target.ID, target.Name(), strings.Join(claims, " and "))
 	}
 
 	// Whatever is still lying around here was made on the way to shipping: the last box
-	// is ticked in the commit that implements it, so a clean tree is the state rule 12
+	// is ticked in the commit that implements it, so a clean tree is the state the ship gate
 	// describes. Shipping over debris either commits it under a status change or leaves
 	// it for whoever works in this checkout next.
 	if dirty := r.DirtyFiles(); len(dirty) > 0 {

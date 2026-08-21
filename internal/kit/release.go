@@ -16,7 +16,7 @@ type Released struct {
 // Release hands a claimed feature back to the board by deleting the branch that claims it.
 //
 // The remote ref goes first, because that ref is the claim. Deleting only the local copy
-// leaves the feature taken for good, which is the failure rule 8 could only warn about.
+// leaves the feature taken for good, which prose could only warn about.
 //
 // It refuses while the branch carries work, and that refusal is the reason this exists.
 // Rule 8 named `git push --delete` for every kind of stopping, so an agent pausing with

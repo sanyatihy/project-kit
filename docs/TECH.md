@@ -96,10 +96,10 @@ Draft -> Shipped     (exit: Dropped)
   presence** — a doc reaches the trunk when it is *drafted*, so testing presence silences
   the check for every feature.
 - **You never merge your own work: legibility here, enforcement on the remote.** The board
-  marks what the reader built, which is the claim it stands on. Comparing the branch's
-  author with this checkout's git identity was a second arm and distinguished nobody: every
-  commit from four agents on this repo carried the operator's name. Branch protection is
-  the only real enforcement while agents share one credential.
+  marks what the reader built — the claim it stands on, or the branch's authorship. The
+  second half is worth exactly as much as the identities are distinct, and on this repo
+  four agents shared the operator's, so it separated none of them. Branch protection is
+  the only real enforcement while that is true.
 - **An answer that cannot change inside one command is asked once** — the trunk, this
   checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`), and
   every feature doc's status on the trunk. Per feature instead, a 30-feature board read
@@ -164,8 +164,8 @@ Draft -> Shipped     (exit: Dropped)
 - **`protocol-stale` compares the project's protocol section with the kit's**, because
   shipping a protocol change does not deliver one — `AGENTS.md` is rewritten only by `init`.
   **Rules are cited by name, never by number**, in every shipped string as well as in the
-  protocol: `ship` printed "rule 8" and `kit check --help` said "rule 11", numbers valid in
-  neither list a reader holds.
+  protocol. A number is valid only inside the one list that carries it, and a refusal that
+  cited one sent the reader to a list they were not holding.
 - **`secret-in-doc` matches shapes, not entropy** — seven formats whose issuer publishes a
   fixed prefix. HIGH, because a published credential is the one finding late discovery
   cannot fix. The patterns live in `audit.go` only; in a template they would trip the check.

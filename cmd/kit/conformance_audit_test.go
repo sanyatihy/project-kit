@@ -1037,10 +1037,12 @@ func TestADocLeftSayingInProgressIsReported(t *testing.T) {
 	if codes := p.auditCodes(); !slices.Contains(codes, "bad-status") {
 		t.Errorf("a doc saying In progress reported %v, want bad-status", codes)
 	}
-	// Nothing else breaks: it is not offered as work, and claiming it is refused with the
-	// message for a status nobody can work, not a crash or a raw git error.
-	if got := boardGroup(p.plan("next", "--json"), "0002"); got != "absent" {
-		t.Errorf("0002 is %s on the board; a doc with an unrecognised status is not work", got)
+	// The feature stays visible and is reported as blocked, never dropped. Selecting the
+	// board on a status allow-list would make every doc carrying a status a later kit
+	// removed vanish silently — which is what dropping `Accepted` would have done to every
+	// project already using the kit. Blocked, so `claim` cannot disagree with the board.
+	if got := boardGroup(p.plan("next", "--json"), "0002"); got != "blocked" {
+		t.Errorf("0002 is %s on the board; an unrecognised status is blocked, not hidden", got)
 	}
 	p.run("claim", "0002").fails(1).errHas("not open work")
 }
