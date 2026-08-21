@@ -103,7 +103,7 @@ numbering. They are kept; `b9c8b08`, `654116b` and `d8bdd11` are reversed.
 - [x] The protocol commits are kept, and the three that cut `init` and the checklist reversed
 - [x] `init` writes `VISION.md`, `INBOX.md`, `TECH.md` and `BACKLOG.md`, overwriting nothing
 - [x] `init` writes a `.gitignore`, and the Go stack's copy drops what is not Go
-- [ ] `unfilled-vision` waits for features, so a virgin project audits clean
+- [x] `unfilled-vision` waits for features, so a virgin project audits clean
 - [ ] `kit help backlog` describes the file rule 14 names, and the protocol points at the checklist
 - [ ] A test holds every file the protocol names against something that writes or describes it
 

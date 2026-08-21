@@ -13,9 +13,9 @@ before drafting one.
      a vision too vague to reject a feature is not doing its job either. A screen is about
      right; the protocol says what earns a sentence.
 
-     Left as written here, `kit audit` reports `unfilled-vision`: a stub silences the
-     question rather than answering it, and every draft is meant to trace back to
-     this file. Answering one section is enough to stop the finding. -->
+     Left as written here, `kit audit` reports `unfilled-vision` once features are being
+     drafted: a stub silences the question rather than answering it, and every draft is
+     meant to trace back to this file. Answering one section stops the finding. -->
 
 ## What this is
 
