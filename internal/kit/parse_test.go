@@ -28,6 +28,22 @@ func TestParseFrontmatter(t *testing.T) {
 	}
 }
 
+func TestParseFrontmatterKeepsAHashInsideAValue(t *testing.T) {
+	t.Parallel()
+	// The comment marker is the template's run of spaces before the #. A single space is
+	// part of the value: an issue number in a title used to truncate the title to the
+	// word before it, and every message naming the feature carried the stub.
+	fields, _ := ParseFrontmatter("---\ntitle: Fix #123 crash\n" +
+		"status: Draft        # Draft | Shipped | Dropped\n---\n")
+
+	if got := fields["title"]; got != "Fix #123 crash" {
+		t.Errorf("title = %q, want the whole line", got)
+	}
+	if got := fields["status"]; got != "Draft" {
+		t.Errorf("status = %q, want Draft — the template's comment is still dropped", got)
+	}
+}
+
 func TestParseFrontmatterClosesOnAWholeLine(t *testing.T) {
 	t.Parallel()
 	// A run of more than three dashes is a setext underline, not a fence. The close was a

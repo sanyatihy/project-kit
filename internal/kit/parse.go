@@ -15,7 +15,10 @@ var (
 	commentRe  = regexp.MustCompile(`(?s)<!--.*?-->`)
 	untickedRe = regexp.MustCompile(`^\s*[-*]\s*\[ \]\s*(.*)$`)
 	tickedRe   = regexp.MustCompile(`^\s*[-*]\s*\[[xX]\]\s*(.*)$`)
-	trailingRe = regexp.MustCompile(`\s+#.*$`)
+	// A frontmatter comment is set off by more than one space, which is how the template
+	// writes one. One space is part of the value: `\s+#` truncated `title: Fix #123
+	// crash` to `Fix`, and the kit then named the feature by half its title everywhere.
+	trailingRe = regexp.MustCompile(`\s{2,}#.*$`)
 	// Four digits, the shape of every feature id the kit allocates.
 	idListRe = regexp.MustCompile(`\b\d{4}\b`)
 	dateRe   = regexp.MustCompile(`^\s*(\d{4}-\d{2}-\d{2})`)
@@ -30,8 +33,8 @@ func Normalise(text string) string {
 
 // ParseFrontmatter reads the flat `key: value` block between --- fences.
 //
-// Intentionally dumb: no nesting, no lists, no multi-line values. A trailing
-// ` # comment` is dropped so template scaffolding never reads as a real value.
+// Intentionally dumb: no nesting, no lists, no multi-line values. A comment set off by
+// two or more spaces is dropped, so template scaffolding never reads as a real value.
 func ParseFrontmatter(text string) (map[string]string, string) {
 	fields := map[string]string{}
 	_, end, ok := FrontmatterBounds(text)
