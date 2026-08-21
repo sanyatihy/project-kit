@@ -32,7 +32,10 @@ const (
 	// 0048 rewrote it as 26 numbered rules under four headings and it came out at 106,
 	// so the ceiling comes down with it. A ceiling left above what the text needs is not
 	// a ceiling: it is headroom nobody has to justify spending.
-	protocolBudget = 110
+	// 111 since the feature rule was reframed: naming the value a feature ships, and the
+	// three ways to tell it is not one, costs a line over asserting that it records a
+	// decision. Decomposition is what the protocol is for.
+	protocolBudget = 111
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -52,8 +55,11 @@ const (
 	// 0048 retook all three against what the cut left: TECH 287, AGENTS 159, README 279.
 	// The headroom is deliberate and small — under the routing rule a shipped feature adds
 	// one line each, so a jump means facts arrived with their history attached again.
-	techBudget   = 292
-	agentsBudget = 165
+	techBudget = 292
+	// 168 since the round that repaired this file: it was spliced at the wrong marker and
+	// lost 50 lines, including the only guard against an agent emptying a target directory,
+	// so the old number was calibrated against a truncated file.
+	agentsBudget = 168
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary
