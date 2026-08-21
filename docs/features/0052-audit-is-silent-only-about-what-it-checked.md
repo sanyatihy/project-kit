@@ -68,7 +68,7 @@ unsilenceable while an unparseable one reports "no shipped: date" when there is 
 - [x] Paths are read `-z`, and a non-ASCII filename no longer disables the plan checks
 - [x] `--offline` names what it skipped; a project with no `docs/features` exits 2
 - [x] `done-not-shipped` needs a `## Tasks` section; `shipped:` is validated as a real date
-- [ ] `protocol-stale` says which side is behind, and never offers a fix that overwrites the newer one
+- [x] `protocol-stale` says which side is behind, and never offers a fix that overwrites the newer one
 
 ## Log
 - 2026-08-21 — the Problem's claim that this repo's own `AGENTS.md` is structurally

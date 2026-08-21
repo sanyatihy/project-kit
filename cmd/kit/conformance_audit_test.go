@@ -557,6 +557,41 @@ func TestANonASCIIFilenameDoesNotDisableThePlanChecks(t *testing.T) {
 	}
 }
 
+func TestProtocolStaleNeverOffersToOverwriteTheNewerSide(t *testing.T) {
+	t.Parallel()
+	// The finding read "older than the installed kit" whichever way the difference ran,
+	// and offered `kit init .` — which replaces the section with the binary's copy. In
+	// the one project that writes the protocol, that reverts it, and it did so here
+	// silently, mid-edit, every time the protocol changed before make install.
+	p := cleanProject(t)
+	newer := "## Work protocol\n\nThe protocol as this checkout writes it.\n"
+	p.write(kit.ProtocolTemplate, newer)
+	p.write("AGENTS.md", "# The kit\n\n"+newer)
+
+	r := p.run("audit").ok()
+	r.has("protocol-stale", "make install")
+	r.lacks("run: kit init .")
+
+	// `next` is the command every session starts with, so it carries the same direction —
+	// in both formats, since agents read the second.
+	board := p.run("next").ok()
+	board.has("make install")
+	board.lacks("run kit init .")
+	if plan := p.plan("next", "--json"); !plan.ProtocolAhead || !plan.ProtocolStale {
+		t.Errorf("--json said stale=%v ahead=%v; agents read that format, not the prose",
+			plan.ProtocolStale, plan.ProtocolAhead)
+	}
+
+	// The other direction is unchanged: an ordinary project's section is kit-owned, so
+	// the older side is the project's and `kit init .` is the repair.
+	behind := cleanProject(t)
+	behind.write("AGENTS.md", "# House rules\n\n## Work protocol\n\nAn older protocol.\n")
+	behind.run("audit").ok().has("protocol-stale", "run: kit init .")
+	if plan := behind.plan("next", "--json"); plan.ProtocolAhead {
+		t.Error("a project with no protocol template of its own was called the newer side")
+	}
+}
+
 func TestNoProtocolFiresOnAFileWithNoProtocolSection(t *testing.T) {
 	t.Parallel()
 	// AGENTS.md present, its kit-owned section gone. Nothing looked for the heading, so

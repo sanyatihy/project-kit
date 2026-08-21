@@ -146,7 +146,7 @@ var (
 	checkNoStatus      = Check{"no-status", Medium, "no status: in the frontmatter"}
 	checkBadStatus     = Check{"bad-status", Medium, "an unrecognised status:"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
-		"AGENTS.md carries an older work protocol than the installed kit, so agents follow superseded rules"}
+		"AGENTS.md and the installed kit disagree about the work protocol, so one side is superseded"}
 	checkNoProtocol = Check{"no-protocol", Medium,
 		"no AGENTS.md, or one carrying no work protocol — agents have none and will invent one"}
 
@@ -700,13 +700,22 @@ func noProtocol(s *repoState) []Finding {
 		"run: kit init . — with no section to replace it appends one, keeping the rest")}
 }
 
+// Which side is behind decides the fix, because one of the two fixes destroys work:
+// `kit init .` writes the binary's copy over the section, and offering it to the project
+// holding the newer protocol reverts it. That is what happened in this repo, silently.
 func protocolStale(s *repoState) []Finding {
-	if !ProtocolIsStale(s.r, s.protocol) {
-		return nil
+	switch ProtocolState(s.r, s.protocol) {
+	case ProtocolBehind:
+		return []Finding{finding(checkProtocolStale, s.r.Rel(s.r.Protocol),
+			"the work protocol here is older than the installed kit's, so agents are following superseded rules",
+			"run: kit init .")}
+	case ProtocolAhead:
+		return []Finding{finding(checkProtocolStale, s.r.Rel(s.r.Protocol),
+			"this project writes the protocol and the kit on $PATH carries an older copy of it",
+			"run: make install — kit init . here would write that older copy over "+
+				ProtocolMarker)}
 	}
-	return []Finding{finding(checkProtocolStale, s.r.Rel(s.r.Protocol),
-		"the work protocol here is older than the installed kit's, so agents are following superseded rules",
-		"run: kit init .")}
+	return nil
 }
 
 func noInbox(s *repoState) []Finding {

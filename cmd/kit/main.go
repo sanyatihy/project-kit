@@ -478,7 +478,9 @@ func runNext(args []string) int {
 	plan := kit.Plan{Error: notSetUp}
 	if notSetUp == "" {
 		plan = kit.Survey(repo)
-		plan.ProtocolStale = kit.ProtocolIsStale(repo, currentProtocol())
+		drift := kit.ProtocolState(repo, currentProtocol())
+		plan.ProtocolStale = drift != kit.ProtocolCurrent
+		plan.ProtocolAhead = drift == kit.ProtocolAhead
 	}
 
 	// Surveyed nothing, so the empty board is not a claim that there is nothing to do.
@@ -516,7 +518,15 @@ func printPlan(plan kit.Plan, color bool) {
 	// Above the board, because an agent that has read the plan and started working has
 	// already walked past anything printed after it. Never changes the exit code: the plan
 	// is still right, it is the rules around it that drifted.
-	if plan.ProtocolStale {
+	// Never changes the exit code: the plan is still right, it is the rules around it
+	// that drifted. Which way they drifted decides what to say — `kit init .` writes the
+	// binary's protocol over the project's, so on the ahead side it destroys the newer one.
+	switch {
+	case plan.ProtocolAhead:
+		fmt.Println(paint("  ! this project writes the protocol and the kit on $PATH is "+
+			"older — run make install; kit init . here would write the older one back",
+			"33", color))
+	case plan.ProtocolStale:
 		fmt.Println(paint("  ! AGENTS.md is older than this kit, so the protocol below it "+
 			"is superseded — run kit init . before following it", "33", color))
 	}
@@ -883,7 +893,7 @@ func isTTY() bool {
 // can tell a project it is running an older one. Empty on a read failure, which
 // simply skips the check rather than reporting a difference it could not verify.
 func currentProtocol() string {
-	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
+	raw, err := fs.ReadFile(templates, kit.ProtocolTemplate)
 	if err != nil {
 		return ""
 	}
