@@ -137,11 +137,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	//
 	// An ordinary error rather than NotYours: nothing on an unlanded round is claimable,
 	// so an agent told to take something else meets the same wall at the next id.
-	//
-	// A project with one branch and no remote resolves no trunk, and there this is
-	// skipped — there is nothing for the doc to be absent from, and refusing would break
-	// the first claim of every new project.
-	if trunk := r.trunkRef(); trunk != "" && !r.trackedAt(trunk, target.Rel) {
+	if !r.PlanLanded(target) {
 		return nil, fmt.Errorf("%s is not on %s, so this claim would branch off the plan "+
 			"round instead of the trunk, and only its own author could merge it.\n"+
 			"Land the round first — a pull or merge request, if the default branch is "+

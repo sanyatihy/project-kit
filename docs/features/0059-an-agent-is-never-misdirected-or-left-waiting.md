@@ -60,7 +60,7 @@ finished and the claim is only waiting for a merge.
 
 ## Tasks
 
-- [ ] `next` reports a feature whose plan has not landed as blocked, naming the round
+- [x] `next` reports a feature whose plan has not landed as blocked, naming the round
 - [ ] `claim` refuses when HEAD carries commits the trunk does not have
 - [ ] The remote question comes back inside its stated bound, and a test drives a hang
 - [ ] A shipped-but-unmerged feature appears once on the board

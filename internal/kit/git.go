@@ -354,10 +354,23 @@ func gitPaths(out string) []string {
 	return paths
 }
 
-// trackedAt reports whether a repo-relative path exists in a revision's tree.
-func (r *Repo) trackedAt(rev, rel string) bool {
-	_, err := r.gitRun("cat-file", "-e", rev+":"+rel)
-	return err == nil
+// trackedOnTrunk reports whether a repo-relative path exists in the trunk's tree, and
+// false whenever no trunk resolves — there is then nothing for the path to be absent
+// from, which is the state every project starts in.
+//
+// One `ls-tree` for the whole tree, memoised, for the reason TrackedAtHEAD is one: the
+// board asks this per feature, and a `cat-file` each is a cost that grows with the board.
+func (r *Repo) trackedOnTrunk(rel string) bool {
+	if !r.trunkPathsAsked {
+		r.trunkPathsAsked = true
+		r.trunkPaths = map[string]bool{}
+		if ref := r.trunkRef(); ref != "" {
+			for _, path := range gitPaths(r.git("ls-tree", "-r", "-z", "--name-only", ref)) {
+				r.trunkPaths[path] = true
+			}
+		}
+	}
+	return r.trunkPaths[rel]
 }
 
 // commitDate is when a revision was last committed, or the zero time. How long a branch

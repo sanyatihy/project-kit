@@ -117,6 +117,12 @@ type Repo struct {
 	headPaths      map[string]bool
 	headPathsAsked bool
 
+	// Every path in the trunk's tree, read the same way and for the same reason. `next`
+	// asks whether each feature's plan has landed, and a `cat-file` per doc is the cost
+	// that grows with the board.
+	trunkPaths      map[string]bool
+	trunkPathsAsked bool
+
 	// Every ref this repository has, read in one `git show-ref`. The alternative is one
 	// `rev-parse` per candidate per feature, which is where 32 of a board read's 58
 	// processes went.
@@ -289,6 +295,21 @@ func (r *Repo) UnmetNeeds(f *Feature) []string {
 		}
 	}
 	return unmet
+}
+
+// PlanLanded reports whether a feature's plan has reached the trunk, which is the bar
+// `kit claim` sets before a claim may branch from here.
+//
+// One question read by two callers, the way `UnmetNeeds` is: `claim` refuses on it, and
+// `next` reports the feature as blocked rather than printing a command that exits 2. The
+// two answers came from different places once, and the board sent every new project to a
+// claim that turned it away.
+//
+// True where no trunk resolves. There is then nothing for the doc to be absent from, and
+// answering otherwise would block the first claim of every project that has one branch
+// and no remote.
+func (r *Repo) PlanLanded(f *Feature) bool {
+	return r.trunkRef() == "" || r.trackedOnTrunk(f.Rel)
 }
 
 // NeedsCycles lists loops in the needs: graph, each as the ids in the loop starting

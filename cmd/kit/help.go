@@ -162,8 +162,8 @@ cannot get you further. The exit 2 ones are about the repository rather than the
 and the board reports none of them.
 
 The doc has to be on the default branch. Drafting and reading the board from a plan
-branch are correct, so "next" goes on offering the feature there — taking it is what
-waits. A claim made from an unmerged round pushes a branch whose parent is that plan
+branch are correct, and "next" reports the feature as blocked there rather than offering
+it. A claim made from an unmerged round pushes a branch whose parent is that plan
 branch, so the only way to integrate the work is a merge into the branch its own author
 coordinated. Land the round, then claim. A project with no trunk to land on — one
 branch, no remote — is unaffected.
@@ -287,8 +287,8 @@ What should I work on? Reads the feature docs and git, and names one task.
 Ranks by lowest ID, and within a feature returns the topmost unticked "## Tasks"
 box. What this checkout already claims comes first of all.
 
-A doc with an empty ## Problem, ## Design or ## Tasks is reported as blocked rather
-than offered, because "kit claim" would refuse it.
+Blocked rather than offered: a doc with an empty ## Problem, ## Design or ## Tasks, and
+a feature whose plan round is not on the trunk yet. "kit claim" refuses both.
 
 Each feature shows ticked-over-total, "2/4", carried in --json as "done" and "total".
 For a feature somebody else holds the count comes from the branch the remote has,

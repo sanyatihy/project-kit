@@ -411,6 +411,43 @@ func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
 	}
 }
 
+func TestNextNeverOffersAClaimThatWouldBeRefused(t *testing.T) {
+	t.Parallel()
+	// The state every new project reaches at step 9 of the protocol, as it was measured:
+	// `next` printed `kit claim 0008` and exited 0, and `kit claim 0008` exited 2 saying
+	// to land the round first. The board and the command were asking different questions
+	// about the same feature; they ask one now.
+	a, b := twoAgents(t)
+	b.run("claim", "0007").ok() // so the round is the only thing left to offer
+	trunk := a.headBranch()
+	a.git("checkout", "-q", "-b", "plan/round-two")
+	feature(a, "0008", "later", "A later thing", "Draft", "- [ ] Build it")
+	a.commitAll("the second round")
+
+	r := a.run("next").ok()
+	r.has("blocked", "0008", "plan/round-two")
+	r.lacks("kit claim 0008")
+	// The pairing is the point: what the board withholds is exactly what the command
+	// refuses, so neither can send an agent to the other and be wrong.
+	a.run("claim", "0008").fails(2).errHas("Land the round first")
+
+	plan := a.plan("next", "--json")
+	if len(plan.Blocked) != 1 || !plan.Blocked[0].Unlanded {
+		t.Fatalf("blocked = %+v, want 0008 flagged unlanded", plan.Blocked)
+	}
+	// And the closing line is the reader's own next action. "Stopping here is the right
+	// outcome" would leave the round sitting where nobody can build on it.
+	if !strings.Contains(plan.Guidance, "land the plan round on main") {
+		t.Errorf("guidance says %q, which never says to land the round", plan.Guidance)
+	}
+
+	// The quiet half: the same feature, once the round has landed.
+	a.git("checkout", "-q", trunk)
+	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
+
+	a.run("next").ok().has("start here", "0008", "kit claim 0008")
+}
+
 func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
 	t.Parallel()
 	// Measured before this existed: standing in 0001's checkout, `next` offered 0002
