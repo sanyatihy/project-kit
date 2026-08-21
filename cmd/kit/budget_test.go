@@ -90,7 +90,11 @@ const (
 	// place, what a claim carries out of the checkout it is made from, and the Go gotcha
 	// under a bound that could not be enforced. Eleven lines for four states an agent was
 	// sent into, each of which a later change can restore without any output looking wrong.
-	techBudget = 360
+	// 377 on 0057, which adds a second kind of work. Seventeen rather than the routing
+	// rule's one: a chore is a claim with no doc, and a reader who does not know where
+	// its record lives, which tree answers "chore or orphan", or why `Claims` was left
+	// broad can undo any of it without a single command's output looking wrong.
+	techBudget = 377
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

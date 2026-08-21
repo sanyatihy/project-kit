@@ -1,9 +1,9 @@
 ---
 id: 0057
 title: Every kind of work is claimed the same way
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs: 0058
 ---
 
@@ -80,15 +80,15 @@ states out loud — see `## Open questions`.
 
 ## Log
 
-- Both open questions go their stated way. `Claims` keeps its broad match and the
-  `plan/fold-in-0002-fix` hole is closed at `kit new`; the chore record is a file,
+- Both open questions went their stated way. `Claims` keeps its broad match and the
+  `plan/fold-in-0002-fix` hole is closed at `kit new`; the record is a file,
   `docs/CHORES.md`, one line per chore.
-- The record is committed onto the claim branch, not written into the checkout. `kit
-  chore` runs from the trunk checkout, so a line left uncommitted there would never
+- The record is committed onto the claim branch rather than written into the checkout.
+  `kit chore` runs from the trunk checkout, so a line left uncommitted there would never
   reach the worktree the agent is sent to, and a lost push would leave it standing.
-- `kit chore` refuses a title carrying a four-digit number, and refuses a second chore
-  under a name somebody already holds. The first is this feature's own hole; the second
-  is what "two agents given the same bug" needs, since sequential ids cannot collide.
-- The third box grew `new`, because closing the `plan/` hole there is the same rule the
-  box already states: one checkout, one claim. `new` exempts a feature's own claim
-  branch, so work discovered mid-build can still be written down where it was found.
+- Two refusals the design did not name: a chore title carrying a four-digit number, and a
+  chore under a name somebody already holds. Sequential ids cannot collide, so without the
+  second nothing would have stopped two agents doing one job.
+- The third box grew `new`, because closing the `plan/` hole there is the same rule the box
+  already states: one checkout, one claim. `new` exempts a feature's own claim branch, so
+  work discovered mid-build is still written down where it was found.

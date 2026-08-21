@@ -122,11 +122,11 @@ was down.
 
 ## `kit new`'s refusals are named nowhere
 
-`refusals` in `cmd/kit/refusals_test.go` holds `ship`, `release` and `claim`, so the list
-0055 made whole does not cover `new`. It turns work away for six reasons — an empty title, a
-title that slugs to nothing, a project not set up, several remotes and no origin, a push
-that answered nothing, and an id range the remote has exhausted — and `kit new --help` names
-none of them. The last two arrived with 0058.
+`refusals` in `cmd/kit/refusals_test.go` holds `ship`, `release`, `claim` and `chore`, so
+the list 0055 made whole does not cover `new`. It turns work away for seven reasons — an
+empty title, a title that slugs to nothing, a project not set up, several remotes and no
+origin, a push that answered nothing, an id range the remote has exhausted, and a branch
+whose name claims another feature — and `kit new --help` names only the last.
 
 **Value:** an agent that meets a `kit new` refusal is not told the command could not have
 made it.
@@ -148,6 +148,28 @@ The fix is the shape 0059 gave the trunk question: one condition read by `Survey
 **Value:** every command the board prints runs where it is printed.
 **Promote when:** an agent is seen running it there, or a third claim refusal the board
 cannot see is added.
+
+## A merged chore's id can be handed out again on a project with no remote
+
+`NextID` counts feature docs, and a chore has none — its record is a `docs/CHORES.md` line.
+Once the chore merges and its branch is deleted, nothing on disk holds the number. The
+reservation ref does, and outlives everything, so a project with a remote is unaffected; one
+without has no reservation to fall back on and hands the number to the next `kit new`. That
+is the degradation `kit new` already announces there, one step wider.
+
+**Value:** a number names one piece of work on every project, not only the ones with a remote.
+**Promote when:** a project with no remote takes a chore, or an id is seen naming both.
+
+## An abandoned chore holds its id and its board slot for ever
+
+`stalled` walks features, so a chore claimed and left carries no fuse: the branch sits on
+the remote, the board lists it under **chores**, and every agent reading the board is told
+somebody has that work. `release` is the way out and nothing asks for it. The claim branch
+has a commit date — the record's own — so the same measurement `stalled` makes is available.
+
+**Value:** a chore nobody is doing stops reading as one somebody is.
+**Promote when:** a chore is seen abandoned, or one is listed as claimed after its agent is
+gone.
 
 ## Cut from this backlog
 

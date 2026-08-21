@@ -79,6 +79,21 @@ Draft -> Shipped     (exit: Dropped)
   board was one. The refs point at the empty tree, asked of git because that value differs
   under SHA-256, so a project with no commits can still reserve. No remote means no
   reservation, and `kit new` says which guarantee it could not give.
+- **A chore is a claim with no doc, and it is the same claim.** `kit chore` reserves an id
+  out of the one space and pushes the branch that takes it, committing the record — one
+  `docs/CHORES.md` line of id, date, who and what — onto that branch rather than into the
+  checkout it ran in, so the worktree the agent is sent to carries it and a lost push
+  leaves nothing. The board reads a live one off its branch, as it reads a Shipped status;
+  a finished one's line lands on the trunk with the merge; `release` ends it by id. A
+  claim-shaped branch citing no doc is a chore or an `orphan-claim`, and its tree says which.
+- **A chore title may not carry a four-digit number**: the branch is named from the title,
+  and any branch citing an id claims that feature. A chore under a name somebody already
+  holds is refused too, since sequential ids cannot collide — a courtesy, not the push.
+- **One checkout holds one claim, and three commands refuse rather than ask.** `claim` and
+  `chore` turn away a checkout whose branch cites a four-digit id; `new` turns away one
+  citing an id that is not its own claim, which is where `plan/fold-in-0002-fix` is closed.
+  Narrowing what counts as a claim was the alternative and would have shrunk a guarantee
+  the kit states out loud: local branches, remote branches and worktrees all count.
 - **A claim carries the plan, branches from the trunk, and carries nothing else.** The doc
   must be in `HEAD`'s tree and in `trunkRef()`'s, or the claim is a child of the plan
   branch and only its own author can integrate it. The push is of `HEAD`, so a checkout
@@ -323,6 +338,8 @@ Each of these has already caused a bug.
   linux/amd64 but not darwin/arm64, so a file-level export passes locally and fails CI.
 - **Guidance the binary does not print may as well not exist.** An outside review reached
   four wrong conclusions, every one a fair reading of `kit help`. Two tests keep that shut.
+- **`git config user.email` misses the environment.** `git var GIT_AUTHOR_IDENT` is what git
+  will record, so a harness exporting `GIT_AUTHOR_EMAIL` signed every chore record "unknown".
 - **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.** Append
   to an existing company value; the `-w` write is inert when the variable is exported.
 
