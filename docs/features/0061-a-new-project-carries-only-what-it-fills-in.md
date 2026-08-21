@@ -96,7 +96,7 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
 - [x] The protocol drops the rules a refusal already makes, and rule 10 goes as false
 - [x] Rule 2's "and" test is replaced by the doc-earns-its-place test
 - [x] The protocol stops routing work away from the kit, and says how long a doc runs
-- [ ] `go-checklist` leaves the binary, and the ceilings fall with the files
+- [x] `go-checklist` leaves the binary, and the ceilings fall with the files
 
 ## Open questions
 
@@ -108,6 +108,14 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
   drop it and let `no-protocol` say so.
 
 ## Log
+
+- 2026-08-21 — `templates/BACKLOG.md` goes with the checklist. The first box orphaned it:
+  nothing read it once `init` stopped writing it, and a dead template in the binary is what
+  this feature is about.
+- 2026-08-21 — `techBudget` is the one ceiling that does not move. This round rewrote four
+  facts in `docs/TECH.md` and added one inside the lines the rewrites gave back, so the
+  file did not shorten and lowering the number would have been a claim the text does not
+  support. Every other ceiling falls to what its file now needs.
 
 - 2026-08-21 — the replacement position is folded into rule 2 rather than left as a
   paragraph of its own: a chore commit rides on a pull request under a branch name carrying
