@@ -18,10 +18,18 @@ BUILDENV := CGO_ENABLED=0
 build:
 	$(BUILDENV) $(GO) build $(BUILDFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/kit
 
+# The whole of CI, in order: .github/workflows/check.yml runs these and nothing
+# else, and cmd/kit/ci_test.go fails when the two lists drift. The list lives here
+# because this is the half a developer can run.
+CI_STEPS := check vuln audit
+
 # check is the gate, and it is whole: the conformance suite is a Go test in
 # cmd/kit, so `test` runs it. Keeping it in-tree is the point — the previous suite
 # was an external script outside the build, which is how it got deleted without
 # anything noticing.
+#
+# What is not in it needs the network: `vuln` downloads the vulnerability database
+# and `audit` reads the remote's claim branches.
 .PHONY: check
 check: fmt-check vet lint test
 
@@ -71,6 +79,12 @@ lint:
 vuln:
 	$(GO) run golang.org/x/vuln/cmd/govulncheck@latest $(PKG)
 
+# audit reads this repo's own board. `go run` builds it from the checkout, so it
+# needs no credential for a private module — CI never installs the kit.
+.PHONY: audit
+audit:
+	$(GO) run ./cmd/kit audit --strict
+
 .PHONY: install
 install:
 	$(BUILDENV) $(GO) install $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/kit
@@ -88,3 +102,4 @@ help:
 	@echo "  vet         - go vet ./..."
 	@echo "  lint        - golangci-lint run (skipped if not installed)"
 	@echo "  vuln        - govulncheck against the module"
+	@echo "  audit       - kit audit --strict on this repo (needs the remote)"

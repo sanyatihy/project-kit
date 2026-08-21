@@ -34,12 +34,17 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # Pinned: `latest` turns main red on a linter release with no commit behind
-      # it. The enabled set is pinned too, in .golangci.yml.
+      # Install only: `make check` runs the lint, so this job runs the Makefile's
+      # list and nothing beside it. Pinned because `latest` turns the trunk red on
+      # a linter release with no commit behind it; the enabled set is pinned too,
+      # in .golangci.yml.
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12.2
+          install-only: true
 
+      # Makefile CI_STEPS, in order. cmd/kit/ci_test.go fails when these drift
+      # apart, so a green `make check` is a green job here.
       - run: make check
 
       # A gate, not a build step: it fails the commit rather than the release.
@@ -47,4 +52,4 @@ jobs:
 
       # No install step: `go run` builds from the checkout, so this works on a
       # private repo with no token.
-      - run: go run ./cmd/kit audit --strict
+      - run: make audit
