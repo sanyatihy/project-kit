@@ -1,7 +1,8 @@
 package kit
 
 import (
-	"slices"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -87,18 +88,54 @@ func (r *Repo) trunkRef() string {
 	return ""
 }
 
-// HeadBranch is the branch this checkout is on, empty when HEAD is detached or
-// there is no git repository.
+// HeadBranch is the branch this checkout is on, empty when HEAD is detached and no
+// rebase says which branch it came off, or when there is no git repository.
 //
 // A worktree has its own HEAD, so in a worktree this is that worktree's branch —
 // which is the whole point: it is how the kit tells the checkout you are standing
 // in apart from the ones other agents are standing in.
+//
+// The full ref, trimmed here, rather than `--short`: shortening is display text and
+// disambiguates a branch a tag shadows as `heads/0002-beta`, which is not the branch's
+// name and equals nothing the kit compares it with.
 func (r *Repo) HeadBranch() string {
 	if !r.headAsked {
 		r.headAsked = true
-		r.head = strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short", "HEAD"))
+		r.head = strings.TrimPrefix(
+			strings.TrimSpace(r.git("symbolic-ref", "--quiet", "HEAD")), "refs/heads/")
+		if r.head == "" {
+			r.head = r.rebasingBranch()
+		}
 	}
 	return r.head
+}
+
+// rebasingBranch is the branch a rebase in progress is replaying, empty when there is
+// none. Asked only of a detached HEAD, so it costs a process in no ordinary command.
+//
+// A rebase detaches HEAD, so `symbolic-ref` names nothing and every ownership question
+// answers "somebody else's": tidying your own branch made the board report the feature as
+// taken by the branch you were standing on, and `ship` told you to go and ship it from
+// the worktree you were already in. Git keeps the name it is replaying onto beside HEAD;
+// `git branch` renders it as `(no branch, rebasing 0002-beta)`, which is a sentence.
+func (r *Repo) rebasingBranch() string {
+	dir := strings.TrimSpace(r.git("rev-parse", "--git-dir"))
+	if dir == "" {
+		return ""
+	}
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(r.Root, dir)
+	}
+	// Two directories because git has two rebase backends, and either may be the one
+	// running: `rebase-merge` for the default, `rebase-apply` for `--apply`.
+	for _, state := range []string{"rebase-merge", "rebase-apply"} {
+		raw, err := os.ReadFile(filepath.Join(dir, state, "head-name"))
+		if err != nil {
+			continue
+		}
+		return strings.TrimPrefix(strings.TrimSpace(string(raw)), "refs/heads/")
+	}
+	return ""
 }
 
 // Claims lists the distinct branches claiming a feature. More than one means two
@@ -143,14 +180,21 @@ func mentionsAny(text string, ids []string) bool {
 	return false
 }
 
-// Mine reports whether the branch this checkout is on is one of the branches claiming a
-// feature — that is, whether the claim is this agent's rather than somebody else's.
+// Mine reports whether this checkout stands on the branch that won a feature — the one
+// named after its doc, and no other name.
+//
+// Equality, not membership in `Claims`. `Claims` matches every branch mentioning the id,
+// which is what a second claimant looks like and not what ownership is: after losing the
+// race, `git checkout -b notes-0001-alpha` made the board print the feature as yours and
+// let `ship` freeze the winner's doc. `review-0001` and `fix-0001` qualified too, so it
+// needed no malice. The claim is the branch the push created, so only that name is it.
 //
 // One definition for two callers: `next` reports it as yours, and `ship` requires it.
 // Shipping from the worktree holding the claim is the documented path; shipping from
 // anywhere else is one agent freezing another's work.
 func (r *Repo) Mine(id string) bool {
-	return slices.Contains(r.Claims(id), r.HeadBranch())
+	f := r.FeatureByID(id)
+	return f != nil && r.HeadBranch() == f.Branch()
 }
 
 // BranchBuildsOn reports whether a branch has changed anything beyond the one file

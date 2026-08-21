@@ -621,3 +621,103 @@ func TestTheBoardDoesNotOfferWhatClaimRefuses(t *testing.T) {
 		t.Errorf("an agreeing doc landed in %q, want ready", got)
 	}
 }
+
+// rebasing stops a rebase of this checkout's branch part-way through, the state an agent
+// tidying its own history sits in: HEAD is detached, the tree is clean, and the branch
+// name is in git's rebase state rather than in HEAD.
+//
+// `--exec false` rather than an interactive todo, so the fixture needs no editor. It fails
+// by design, which is what stops the rebase.
+func rebasing(t *testing.T, p *project) {
+	t.Helper()
+	cmd := exec.Command("git", "rebase", "--exec", "false", "HEAD~1")
+	cmd.Dir, cmd.Env = p.Root, gitEnv()
+	if out, err := cmd.CombinedOutput(); err == nil {
+		t.Fatalf("the rebase ran to the end, so none is in progress:\n%s", out)
+	}
+	// The fixture has to reach the state under test: a rebase that ran to the end, or one
+	// that stopped with HEAD still on a branch, would make every assertion below vacuous.
+	cmd = exec.Command("git", "symbolic-ref", "--quiet", "HEAD")
+	cmd.Dir, cmd.Env = p.Root, gitEnv()
+	if out, _ := cmd.Output(); strings.TrimSpace(string(out)) != "" {
+		t.Fatalf("the rebase left HEAD on %s, which is not the state under test", out)
+	}
+}
+
+func TestABranchThatOnlyMentionsTheIDOwnsNothing(t *testing.T) {
+	t.Parallel()
+	// The state this feature is for, as measured: ownership was any branch mentioning the
+	// id, so the agent that lost the race put itself back in the winner's seat with
+	// `git checkout -b notes-0007-widget`. Its board said the feature was its own and
+	// `ship` from there froze the winner's doc — history the protocol forbids anyone to
+	// edit, including the agent still building it.
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	b.run("claim", "0007").fails(1)
+	b.git("checkout", "-q", "-b", "notes-0007-widget")
+
+	if got := boardGroup(b.plan("next", "--json"), "0007"); got != "taken" {
+		t.Errorf("the losing agent's board says 0007 is %s, want taken", got)
+	}
+	b.write("docs/features/0007-widget.md",
+		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
+
+	shipping(b, "0007").fails(2).errHas("0007-widget", "kit release 0007")
+	if strings.Contains(b.read("docs/features/0007-widget.md"), "status: Shipped") {
+		t.Error("the losing agent shipped the winner's feature")
+	}
+}
+
+func TestAClaimTheLocalBranchCannotHoldIsNotLeftOnTheRemote(t *testing.T) {
+	t.Parallel()
+	// A doc whose filename leads with a dash names a branch git accepts as a refspec and
+	// rejects as a branch argument. Pushing first left that claim standing on the remote
+	// and exited 2, and the feature was then nobody's: `claim` called it taken and
+	// `release` called the branch one this clone never created.
+	a, _ := twoAgents(t)
+	a.write("docs/features/-0008-dashed.md",
+		doc("0008", "Dashed", "Draft", "", "- [ ] Build it"))
+	a.commitAll("a doc whose filename leads with a dash")
+
+	a.run("claim", "0008").fails(2)
+
+	if hasRemoteBranch(t, a, "-0008-dashed") {
+		t.Error("a claim this clone could not hold locally is standing on the remote")
+	}
+	for _, name := range a.branches() {
+		if strings.Contains(name, "0008") {
+			t.Errorf("a refused claim left branch %q behind", name)
+		}
+	}
+	// The whole cost of the half-made claim: nobody holds the feature, so nothing about
+	// it may read as taken.
+	if got := boardGroup(a.plan("next", "--json"), "0008"); got == "taken" {
+		t.Error("a claim nobody won reads as taken, and only kit release --force undoes that")
+	}
+}
+
+func TestARebaseLeavesTheFeatureWithTheAgentRebasing(t *testing.T) {
+	t.Parallel()
+	// A rebase detaches HEAD, and `git branch` named that `(no branch, rebasing
+	// 0007-widget)` — a second branch claiming the feature, as the kit read it. So
+	// `split-claim` fired at a name nobody could act on, the board reported the feature as
+	// taken by the branch this checkout was standing on, and `ship` sent the agent to ship
+	// from the worktree it was already in.
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok()
+	a.git("checkout", "-q", "0007-widget")
+	a.write("docs/features/0007-widget.md",
+		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
+	a.commitAll("0007: build it")
+	rebasing(t, a)
+
+	if got := boardGroup(a.plan("next", "--json"), "0007"); got != "yours" {
+		t.Errorf("mid-rebase the board says 0007 is %s, want yours", got)
+	}
+	for _, code := range a.auditCodes() {
+		if code == "split-claim" {
+			t.Error("the rebase is reported as a second agent claiming the feature")
+		}
+	}
+	a.run("ship", "0007").ok().has("shipped")
+}

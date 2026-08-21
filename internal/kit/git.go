@@ -102,8 +102,15 @@ func (r *Repo) loadGit() {
 	// cache of the last fetch — git prunes it on neither fetch nor pull, so a branch
 	// deleted when its pull request merged stays there forever and reads as a live
 	// claim. Ask the remote instead; fall back to the cache only when it cannot answer.
+	// `for-each-ref` and not `git branch`, whose business is a page for a person to read:
+	// it prints `(no branch, rebasing 0002-beta)` and `(HEAD detached at …)` among the
+	// names, and `%(refname:short)` disambiguates a branch a tag shadows as
+	// `heads/0002-beta`. Each was read here as a second branch claiming the feature, so
+	// `split-claim` fired at a name nobody could act on and `release` refused for good.
+	// The ref list has no such entries and `lstrip=2` takes the name whole.
 	seen := map[string]bool{}
-	for _, line := range strings.Split(r.git("branch", "--format=%(refname:short)"), "\n") {
+	for _, line := range strings.Split(
+		r.git("for-each-ref", "--format=%(refname:lstrip=2)", "refs/heads/"), "\n") {
 		if line = strings.TrimSpace(line); line != "" {
 			seen[line] = true
 		}

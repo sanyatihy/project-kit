@@ -36,8 +36,11 @@ type Claimed struct {
 // compare-and-swap against the value the server advertised, so of any number of
 // simultaneous claimants exactly one creates the ref.
 //
-// Nothing local is written until the push has been won, so losing leaves no branch
-// to clean up and no cleanup step that can fail on its own.
+// The local branch is created first and deleted again if the push does not win, so a
+// claim is held here and on the remote or in neither place. The other order left the ref
+// on the remote when the local step failed — `git branch` rejects a name git accepts as
+// a refspec, `-0007-dashed` for one — and the claim was then nobody's: `claim` called the
+// feature taken and `release` called the branch one this clone never created.
 func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	var target *Feature
 	sharing := 0
@@ -178,6 +181,10 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			then}
 	}
 
+	if _, err := r.gitRun("branch", branch, "HEAD"); err != nil {
+		return nil, err
+	}
+
 	if remote != "" {
 		ref := "refs/heads/" + branch
 		out, pushErr := r.gitRun("push", "--porcelain",
@@ -185,30 +192,35 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 		switch flag := pushFlag(out, ref); {
 		case flag == pushCreated:
 		case flag != "":
-			return nil, &NotYours{
+			return nil, r.unclaim(branch, &NotYours{
 				fmt.Sprintf("%s already has %s — another agent claimed %s first",
 					remote, branch, target.Name()),
-				"run kit next and take something else"}
+				"run kit next and take something else"})
 		// The push said nothing about our ref, so nothing is known about who owns it.
 		// This must never be reported as a lost race: an agent told it lost moves on
 		// for good, and a dropped connection or a rejected credential would quietly
 		// retire a feature that nobody actually has.
 		case pushErr != nil:
-			return nil, pushErr
+			return nil, r.unclaim(branch, pushErr)
 		default:
-			return nil, fmt.Errorf("git push reported nothing about %s:\n%s", ref, out)
+			return nil, r.unclaim(branch,
+				fmt.Errorf("git push reported nothing about %s:\n%s", ref, out))
 		}
-	}
-
-	if _, err := r.gitRun("branch", branch, "HEAD"); err != nil {
-		return nil, err
-	}
-	if remote != "" {
 		// Best effort. The claim is the ref on the remote and it is already won; a
 		// missing upstream is a convenience this should not fail a claim over.
 		_, _ = r.gitRun("branch", "--set-upstream-to="+remote+"/"+branch, branch)
 	}
 	return &Claimed{Branch: branch, Remote: remote}, nil
+}
+
+// unclaim deletes the branch a claim created and hands back the reason it is stopping,
+// so a claim nobody won leaves nothing behind that reads as one.
+//
+// The delete's own failure is not reported: nothing is checked out on a branch made a
+// moment ago, and the caller's reason for stopping is the one worth printing.
+func (r *Repo) unclaim(branch string, cause error) error {
+	_, _ = r.gitRun("branch", "-D", branch)
+	return cause
 }
 
 // pickRemote names the remote a claim is made on and released from.
