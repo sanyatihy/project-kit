@@ -18,12 +18,20 @@ BUILDENV := CGO_ENABLED=0
 build:
 	$(BUILDENV) $(GO) build $(BUILDFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/kit
 
+# The whole of CI, in order: .github/workflows/check.yml runs these and nothing
+# else, and cmd/kit/ci_test.go fails when the two lists drift. The list lives here
+# because this is the half a developer can run.
+CI_STEPS := check vuln audit
+
 # check is the gate, and it is whole: the conformance suite is a Go test in
 # cmd/kit, so `test` runs it. Keeping it in-tree is the point — the previous suite
 # was an external script outside the build, which is how it got deleted without
 # anything noticing.
+#
+# What is not in it needs the network: `vuln` downloads the vulnerability database
+# and `audit` reads the remote's claim branches.
 .PHONY: check
-check: fmt-check vet test
+check: fmt-check vet lint test
 
 # How many tests run at once. The suite is 190-odd independent tests, each with its own
 # temporary directory, so this is pure wall clock: on a 12-core machine `go test -race`
@@ -41,9 +49,12 @@ PARALLEL ?= 4
 gitcount:
 	@$(GO) test -count=1 -v -run TestABoardReadStaysWithinItsGitBudget ./cmd/kit
 
+# No -cover. The conformance suite drives a separately built binary, so the number
+# counted the test process and not the kit: 2.9% for the package the suite exercises
+# end to end. docs/TECH.md says what measuring it for real would take.
 .PHONY: test
 test:
-	$(GO) test -race -cover -parallel $(PARALLEL) $(PKG)
+	$(GO) test -race -parallel $(PARALLEL) $(PKG)
 
 .PHONY: fmt
 fmt:
@@ -58,16 +69,24 @@ fmt-check:
 vet:
 	$(GO) vet $(PKG)
 
+# lint is skipped with a notice when golangci-lint is not installed, so a fresh
+# clone goes green with only Go present. CI installs it, so there it really runs.
 .PHONY: lint
 lint:
 	@which golangci-lint >/dev/null 2>&1 \
 		&& golangci-lint run \
-		|| echo "note: golangci-lint not installed, skipping"
+		|| echo "note: golangci-lint not installed, skipping (https://golangci-lint.run)"
 
 # install puts `kit` on your PATH via the Go toolchain.
 .PHONY: vuln
 vuln:
 	$(GO) run golang.org/x/vuln/cmd/govulncheck@latest $(PKG)
+
+# audit reads this repo's own board. `go run` builds it from the checkout, so it
+# needs no credential for a private module — CI never installs the kit.
+.PHONY: audit
+audit:
+	$(GO) run ./cmd/kit audit --strict
 
 .PHONY: install
 install:
@@ -79,10 +98,11 @@ help:
 	@echo "Targets:"
 	@echo "  build       - compile ./$(BIN)"
 	@echo "  install     - go install onto your PATH"
-	@echo "  check       - fmt-check + vet + test (the gate)"
+	@echo "  check       - fmt-check + vet + lint + test (the gate)"
 	@echo "  test        - unit tests + the conformance suite"
 	@echo "  fmt         - gofmt -s -w ."
 	@echo "  fmt-check   - fail if anything is unformatted"
 	@echo "  vet         - go vet ./..."
 	@echo "  lint        - golangci-lint run (skipped if not installed)"
 	@echo "  vuln        - govulncheck against the module"
+	@echo "  audit       - kit audit --strict on this repo (needs the remote)"

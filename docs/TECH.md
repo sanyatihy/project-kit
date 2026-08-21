@@ -262,14 +262,16 @@ Each of these has already caused a bug.
 ## Verifying
 
 ```sh
-make check     # fmt-check, vet, unit tests, conformance suite — the whole gate
+make check     # fmt-check, vet, lint, unit tests, conformance suite — the whole gate
 make vuln      # govulncheck against the module
 make install   # go install ./cmd/kit
 ```
 
-Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. CI runs the same
-gate plus `golangci-lint`, `make vuln` and `go run ./cmd/kit audit --strict` — `go run` so
-it needs no credential.
+Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. **CI runs the
+Makefile's `CI_STEPS` and nothing else**, and `cmd/kit/ci_test.go` fails when the workflow
+drifts from it. **The linter is pinned and its set committed** to `.golangci.yml`, or a
+release changes what the gate means with no commit behind it; `make lint` skips when it is
+absent, which is safe only while CI installs it.
 
 **The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
 it against throwaway projects, asserting on stdout, stderr, exit codes and the files left
@@ -282,7 +284,8 @@ own `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind `sync.
 developer's `~/.gitconfig`, so three tests — including the one written to catch the
 `release` deletion bug — passed only on a machine whose `init.defaultBranch` is `main`.
 
-Coverage reads low and stays there: subprocess tests instrument nothing.
+**No coverage number is reported.** `-cover` measured the test process, not the binary the
+suite drives — 2.9% for a package covered end to end — and no threshold reads the result.
 
 ## State of play
 
