@@ -54,7 +54,7 @@ as the one that enforces the registry.
 
 ## Tasks
 
-- [ ] Check codes, command names and topic names in help are tested against their registries
+- [x] Check codes, command names and topic names in help are tested against their registries
 - [ ] The refusal lists for `ship`, `release` and `claim` match the code, with a test
 - [ ] `--json` shapes are pinned, `moved` stops emitting a zero time, empty groups are `[]`
 - [ ] `-h` writes to stdout for every command

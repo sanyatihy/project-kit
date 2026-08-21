@@ -25,7 +25,7 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 	}
 	// Both streams: the flag package prints a command's help on stderr, so reading
 	// stdout alone left every "kit <cmd> --help" out of what this checks.
-	for _, cmd := range subcommands {
+	for _, cmd := range subcommands(t) {
 		all += p.run(cmd, "--help").out()
 	}
 
