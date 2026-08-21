@@ -22,9 +22,9 @@ type DropResult struct {
 // cannot be removed that way, and left alone it sits on the board for ever — `next`
 // offers it, and every agent reads it as work nobody has started.
 //
-// Same reasoning as `accept` and `ship`: the edit is one frontmatter field, and doing
-// it by hand is where `unticked-shipped` and `shipped-no-date` came from. A command
-// that cannot get it wrong beats a check that reports it afterwards.
+// Same reasoning as `ship`: the edit is one frontmatter field, and doing it by hand is
+// where `shipped-no-date` came from. A command that cannot get it wrong beats a check
+// that reports it afterwards.
 //
 // Shipped is refused rather than dropped. A shipped doc is frozen history and the work
 // is in the repo; retiring it would make the record say the feature was never built.

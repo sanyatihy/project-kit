@@ -177,8 +177,8 @@ func TestExitCodesAreDistinct(t *testing.T) {
 	p.run("init", "--stack", "nonesuch").fails(2)
 
 	// 1 is reserved for --strict finding something HIGH.
-	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
+		"Draft", "", "- [ ] Something"))
 	p.run("audit", "--strict").fails(1)
 }
 

@@ -243,9 +243,8 @@ nobody may edit and doing it from elsewhere freezes another agent's work mid-fli
 Or this checkout has uncommitted or untracked files: the scratch a feature generated
 is yours to clean up, and what git ignores does not count.
 
-Doing this by hand is where two audit findings come from — unticked-shipped and
-shipped-no-date — so the command removes the mistake rather than reporting it
-afterwards.
+Doing this by hand is where shipped-no-date comes from, so the command removes the
+mistake rather than reporting it afterwards.
 
 A Shipped doc is frozen history: durable facts belong in docs/TECH.md from then
 on, and what the doc decided must not be edited again.

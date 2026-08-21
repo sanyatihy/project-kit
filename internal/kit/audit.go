@@ -93,8 +93,6 @@ var (
 	checkStalled = Check{"stalled", High,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
-	checkUntickedShipped = Check{"unticked-shipped", High,
-		"marked Shipped while ## Tasks still has open boxes"}
 	checkInboxStale = Check{"inbox-stale", High,
 		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkSecretInDoc = Check{"secret-in-doc", High,
@@ -159,8 +157,6 @@ var (
 		"an INBOX.md question names a feature that does not exist, so it can never unblock one"}
 	checkNeedsUnknown = Check{"needs-unknown", Medium,
 		"a needs: names a feature that does not exist or can never ship, so the wait never ends"}
-	checkShippedEarly = Check{"shipped-early", Medium,
-		"Shipped while something in its needs: has not shipped"}
 	checkNoTasks = Check{"no-tasks", Medium,
 		"a committed doc with a ## Tasks section and no boxes in it"}
 	checkSplitClaim = Check{"split-claim", Medium,
@@ -204,13 +200,12 @@ func CheckCodes(checks []Check) []string {
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate, checkUnreadableDoc,
-	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkStalled, checkUntickedShipped,
-	checkInboxStale,
+	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkStalled, checkInboxStale,
 	checkShippedNotPushed,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkShippedBadDate,
 	checkInboxUnparsed, checkInboxUnknown,
-	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim,
+	checkNeedsUnknown, checkNoTasks, checkSplitClaim, checkOrphanClaim,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
 	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
 }
@@ -334,7 +329,6 @@ var featureChecks = []featureCheck{
 	// Before every check that reads a frontmatter field: a repeated key means the field
 	// they read is not the field the author edits.
 	{[]Check{checkDuplicateKey}, duplicateKey},
-	{[]Check{checkUntickedShipped}, untickedShipped},
 	{[]Check{checkShippedNoDate, checkShippedBadDate}, shippedDate},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
 	{[]Check{checkStalled}, stalled},
@@ -356,7 +350,7 @@ var repoChecks = []repoCheck{
 	{[]Check{checkNoProtocol}, noProtocol},
 	{[]Check{checkProtocolStale}, protocolStale},
 	{[]Check{checkNoInbox}, noInbox},
-	{[]Check{checkNeedsUnknown, checkShippedEarly}, needsState},
+	{[]Check{checkNeedsUnknown}, needsState},
 	{[]Check{checkNeedsCycle}, needsCycles},
 	{[]Check{checkSecretInDoc}, secretsInDocs},
 	{[]Check{checkNoVision}, noVision},
@@ -438,18 +432,6 @@ func duplicateKey(s *docState) []Finding {
 			"delete the one that is wrong — the kit reads the last and rewrites the first"))
 	}
 	return out
-}
-
-func untickedShipped(s *docState) []Finding {
-	if s.f.Status != StatusShipped {
-		return nil
-	}
-	if open := len(s.f.OpenTasks()); open > 0 {
-		return []Finding{finding(checkUntickedShipped, s.at,
-			fmt.Sprintf("%s: marked Shipped with %d unticked task(s)", s.f.Name(), open),
-			"tick them, or move them to BACKLOG.md / a new feature")}
-	}
-	return nil
 }
 
 // One decision with three outcomes, because the field is one thing: absent, unparseable,
@@ -548,7 +530,7 @@ func taskState(s *docState) []Finding {
 	// for exactly that reason. What that doc is, unfilled-template already says.
 	case total > 0 && open == 0:
 		// Naming the command, not the edit: hand-stamping the status and date is what
-		// unticked-shipped and shipped-no-date are the wreckage of. With no id: there is
+		// `shipped-no-date` is the wreckage of. With no id: there is
 		// no command to name — `kit ship` takes one — so the fix says what has to be
 		// true first rather than printing `run: kit ship ` and stopping.
 		fix := "run: kit ship " + s.f.ID + " — or add the next task"
@@ -807,13 +789,11 @@ func needsState(s *repoState) []Finding {
 		}
 		// `needs-unknown` asks what this feature is still waiting for, which a retired
 		// doc is not waiting for at all — and the only fix for a finding on one is an
-		// edit to frozen history, so it reported for ever. `shipped-early` below is the
-		// opposite question and is asked of Shipped docs only, so the guard is here
-		// rather than on the loop.
+		// edit to frozen history, so it reported for ever.
+		if terminal(f.Status) {
+			continue
+		}
 		for _, id := range f.Needs {
-			if terminal(f.Status) {
-				break
-			}
 			dep := s.r.FeatureByID(id)
 			switch {
 			case id == f.ID:
@@ -827,16 +807,6 @@ func needsState(s *repoState) []Finding {
 				out = append(out, finding(checkNeedsUnknown, f.Rel,
 					fmt.Sprintf("%s: needs %s, which is %s and will never ship", f.Name(), id, dep.Status),
 					"point at what replaced it, or remove it from needs:"))
-			}
-		}
-		// Shipped while a dependency has not is the docs disagreeing with themselves:
-		// either the dependency was wrong, or this was built on a foundation that is not
-		// there. Both are worth knowing and neither is guessable from the text.
-		if f.Status == StatusShipped {
-			if unmet := s.r.UnmetNeeds(f); len(unmet) > 0 {
-				out = append(out, finding(checkShippedEarly, f.Rel,
-					fmt.Sprintf("%s: Shipped, but needs %s which has not", f.Name(), strings.Join(unmet, ", ")),
-					"ship what it needs, or correct needs: to what was actually required"))
 			}
 		}
 	}

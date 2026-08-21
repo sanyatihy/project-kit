@@ -149,10 +149,6 @@ var auditCases = []struct {
 			"shipped: "+daysAgo(1), "- [x] Built it"))
 		p.commitAll("ship 0002 and tell nobody")
 	}},
-	{"unticked-shipped", func(p *project) {
-		p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-			"shipped: "+daysAgo(1), "- [ ] Not actually done"))
-	}},
 	{"inbox-stale", func(p *project) {
 		p.write("docs/INBOX.md", fmt.Sprintf(
 			"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(10)))
@@ -276,11 +272,6 @@ var auditCases = []struct {
 		p.write("docs/features/0003-egg.md",
 			doc("0003", "Egg", "Draft", "needs: 0002", "- [ ] Do it"))
 	}},
-	{"shipped-early", func(p *project) {
-		// 0001 from cleanProject is a Draft, so this shipped ahead of it.
-		p.write("docs/features/0002-ahead.md",
-			doc("0002", "Ahead", "Shipped", "needs: 0001\nshipped: "+daysAgo(1), "- [x] Done"))
-	}},
 	{"secret-in-doc", func(p *project) {
 		// The realistic path: an agent writes up a failed deploy and pastes what it
 		// was holding into the Log.
@@ -375,7 +366,7 @@ func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
 	p.write("docs/features/0005-alone.md",
 		doc("0005", "Alone", "Draft", "", "- [ ] Do it"))
 
-	for _, code := range []string{"needs-unknown", "needs-cycle", "shipped-early"} {
+	for _, code := range []string{"needs-unknown", "needs-cycle"} {
 		if codes := p.auditCodes(); slices.Contains(codes, code) {
 			t.Errorf("%s fired on a valid graph: %v", code, codes)
 		}
@@ -902,8 +893,8 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	t.Parallel()
 	// --strict is the CI gate, so the boundary between severities is a contract.
 	high := cleanProject(t)
-	high.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	high.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
+		"Draft", "", "- [ ] Something"))
 	high.run("audit", "--strict").fails(1)
 
 	// shipped-no-date is MEDIUM: reported, but not a build failure.
@@ -1393,13 +1384,13 @@ func TestAuditRefusesAPathArgument(t *testing.T) {
 	// broken invocation rather than a second project to report on. Exit 2, the reason
 	// on stderr, and the shell loop that does what the argument was reaching for.
 	p := cleanProject(t)
-	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
+		"Draft", "", "- [ ] Something"))
 
 	for _, arg := range []string{p.Root, filepath.Join(p.Root, "gone")} {
 		r := p.run("audit", arg).fails(2)
 		r.errHas("takes no arguments", "cd $d && kit audit")
-		r.lacks("unticked-shipped")
+		r.lacks("duplicate-id")
 	}
 }
 
@@ -1409,8 +1400,8 @@ func TestTheAuditSummaryCountsBySeverity(t *testing.T) {
 	// one with no HIGH on it at all — so the instruction it gave was wrong more often
 	// than it was right, and the count it gave was never singular.
 	high := cleanProject(t)
-	high.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	high.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
+		"Draft", "", "- [ ] Something"))
 	high.run("audit", "--strict").fails(1).outHas("1 HIGH finding, 0 MEDIUMs. Fix the HIGH first.")
 
 	// No HIGH, so nothing is told to fix the HIGH first.
