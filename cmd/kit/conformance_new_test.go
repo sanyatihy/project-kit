@@ -81,6 +81,31 @@ func TestNewSkipsAnIDTheRemoteHasAlreadyHandedOut(t *testing.T) {
 	}
 }
 
+// The test this feature is for.
+func TestTwoAgentsDraftingAtOnceGetDifferentIDs(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+
+	first := a.run("new", "Mine").ok()
+	// b cloned before a drafted, so its view is stale in exactly the way a second
+	// agent's is: on disk 0007 is the highest doc it can see, and nothing local says
+	// 0008 has been handed out. Six runs like this once produced four docs claiming
+	// the same number.
+	second := b.run("new", "Yours").ok()
+
+	first.has("0008-mine.md")
+	second.has("0009-yours.md")
+	if b.exists("docs/features/0008-yours.md") {
+		t.Fatal("both agents were handed 0008; every branch and commit citing it would " +
+			"name two features")
+	}
+
+	// Each drafter reserved the number it took, so a third one skips both.
+	if got := a.reservedIDs(); !slices.Equal(got, []string{"0008", "0009"}) {
+		t.Errorf("the remote reserves %v, want 0008 and 0009", got)
+	}
+}
+
 func TestADeletedDocsIDIsNeverHandedOutAgain(t *testing.T) {
 	t.Parallel()
 	// The bug this closes: the highest doc is deleted, disk offers its number again, and
