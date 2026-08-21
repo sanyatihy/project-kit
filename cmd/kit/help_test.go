@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"unicode"
@@ -165,9 +166,41 @@ func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading the protocol: %v", err)
 	}
-	for _, want := range []string{"kit claim", "kit block", "kit ship", "make check", "kit audit --strict"} {
+	for _, want := range []string{"kit claim", "kit block", "kit ship", "kit audit --strict"} {
 		if !strings.Contains(string(raw), want) {
 			t.Errorf("the protocol never mentions %q, so an agent following it does that step by hand", want)
+		}
+	}
+
+	// The other half, and the one that rots: this text is written into every project,
+	// and `kit init` gives the default one no Makefile at all. A rule naming a command
+	// the reader does not have is a rule they cannot follow — the gate is named by the
+	// project's own house rules, above the marker.
+	for _, absent := range []string{"make check", "make install", "make release"} {
+		if strings.Contains(string(raw), absent) {
+			t.Errorf("the protocol names %q, which a project kit init scaffolds may not have",
+				absent)
+		}
+	}
+}
+
+// ruleRe is a numbered protocol rule as the list writes one.
+var ruleRe = regexp.MustCompile(`(?m)^(\d+)\. \*\*`)
+
+func TestTheProtocolsRulesAreNumberedWithoutAGap(t *testing.T) {
+	t.Parallel()
+	// Cutting a rule means renumbering every rule below it by hand, and this round did
+	// it off by one: the list ran 10, 12, 13. Nothing cites a rule by number, so a gap
+	// misdirects nobody — it just tells every agent reading the protocol that a rule was
+	// removed and the removal was not finished.
+	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
+	if err != nil {
+		t.Fatalf("reading the protocol: %v", err)
+	}
+	for i, m := range ruleRe.FindAllStringSubmatch(string(raw), -1) {
+		if want := strconv.Itoa(i + 1); m[1] != want {
+			t.Fatalf("the protocol's rule %d is numbered %s — the list has a gap or a "+
+				"repeat, so a rule looks deleted and half-deleted", i+1, m[1])
 		}
 	}
 }

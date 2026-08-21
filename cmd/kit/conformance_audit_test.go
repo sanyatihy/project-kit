@@ -29,9 +29,9 @@ func cleanProject(t *testing.T) *project {
 	return p
 }
 
-// writeVision answers the stub `kit init` leaves behind. A project still carrying that
-// stub is a real finding — unfilled-vision — so a fixture that keeps it is not a
-// project with nothing wrong.
+// writeVision answers the stub `kit init` leaves behind. A fixture that plans a feature
+// and keeps the stub is a real finding — unfilled-vision — so it is not a project with
+// nothing wrong.
 func writeVision(p *project) {
 	p.t.Helper()
 	p.write("docs/VISION.md", "# VISION\n\n## What this is\nA thing that does the thing.\n")
@@ -349,8 +349,8 @@ func TestSecretInDocFiresOnEveryShape(t *testing.T) {
 
 func TestSecretInDocScansEveryDocAgentsWriteTo(t *testing.T) {
 	t.Parallel()
-	// Rule 6 sends discovered work to BACKLOG.md, so agents write to it as freely as to
-	// a feature doc, and it is committed like everything else. It was the one
+	// The protocol sends discovered work to BACKLOG.md, so agents write to it as freely
+	// as to a feature doc, and it is committed like everything else. It was the one
 	// agent-writable document the scan did not open.
 	for _, where := range []string{
 		"docs/features/BACKLOG.md",
@@ -436,6 +436,39 @@ func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
 	}
 	if codes := p.auditCodes(); slices.Contains(codes, "no-protocol") {
 		t.Errorf("a missing vision was reported before anything was planned: %v", codes)
+	}
+}
+
+func TestAProjectOneCommandOldAuditsClean(t *testing.T) {
+	t.Parallel()
+	// `kit init` is where a project meets the tool, and every file it places is a stub
+	// nobody has answered yet. A finding here is the tool reporting its own scaffolding
+	// at the moment it is being judged, which is what made writing the layout look
+	// expensive: the fix was one gate, not moving four files between three commands.
+	p := newProject(t)
+	p.run("init").ok()
+
+	if codes := p.auditCodes(); len(codes) > 0 {
+		t.Errorf("audit reported %v on a project one command old", codes)
+	}
+	p.run("audit").ok().has("docs and repo agree")
+}
+
+func TestUnfilledVisionWaitsForSomethingToDecompose(t *testing.T) {
+	t.Parallel()
+	// The two halves of the gate. `no-protocol` makes the same judgement one step over:
+	// a project not yet planned has nothing to trace back to a vision, so the stub is
+	// only worth reporting once there are drafts it should have shaped.
+	quiet := newProject(t)
+	quiet.run("init").ok()
+	if codes := quiet.auditCodes(); slices.Contains(codes, "unfilled-vision") {
+		t.Errorf("unfilled-vision fired before anything was planned: %v", codes)
+	}
+
+	planned := cleanProject(t)
+	visionStub(planned)
+	if codes := planned.auditCodes(); !slices.Contains(codes, "unfilled-vision") {
+		t.Errorf("a stub vision under a planned feature went unreported: %v", codes)
 	}
 }
 
@@ -661,7 +694,12 @@ func TestTechDriftCoversTheMissingAsBuiltDocAndTheStaleOne(t *testing.T) {
 	t.Parallel()
 	// One gap measured two ways: what shipped is not what a reader is told. It was two
 	// findings at two severities, and writing the file answers both.
+	// A project that predates `kit init` placing the as-built doc: the layout writes one
+	// now, so having none is a project the layout never ran on.
 	missing := cleanProject(t)
+	if err := os.Remove(missing.path("docs/TECH.md")); err != nil {
+		t.Fatalf("removing TECH.md: %v", err)
+	}
 	missing.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
 		"shipped: "+daysAgo(1), "- [x] Done"))
 	missing.run("audit").ok().has("tech-drift", "nothing describes the as-built system")

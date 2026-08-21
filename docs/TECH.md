@@ -178,10 +178,10 @@ Draft -> Shipped     (exit: Dropped)
   `## Tasks` as unwritten** — so a doc out of `kit new` stays quiet, `claim` refuses what
   the board declines, and a stub `drop` retired stops refusing every ship in the project.
 - **Three docs, three tenses:** VISION what the project is becoming, `features/` what is
-  being done now, TECH what exists. **A file is the kit's to refresh when nothing reads the
-  project's copy** — `TEMPLATE.md` is written from the embedded copy, so `init` replaces it
-  and it cannot describe a format the tool no longer produces. Anything a project fills in
-  is never touched; house rules go above the marker.
+  being done now, TECH what exists. **`kit init` writes the whole document layout and
+  nothing else creates a project file**, so there is one answer to where a file came from;
+  `kit ship`'s as-built creation is a fallback for projects that predate it. Every document
+  is the project's the moment it is placed, and only the protocol section is refreshed.
 - **`kit init` writes an `AGENTS.md` with a title and the marker note.** It used to write
   the bare protocol section, opening on an `##` heading with no project name and nothing
   saying the section is regenerated — so the promise that house rules survive above the
@@ -190,11 +190,11 @@ Draft -> Shipped     (exit: Dropped)
   it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,
   naming the change; neither and it belongs in the pull request.
 - **A feature is one shipped increase in what the project can do, or can be trusted to do.**
-  Named in one sentence an operator would recognise, or it is a task box or a chore commit;
-  a sentence needing an "and" is two features. This replaced "records one decision", which
-  measured the document rather than the value and admitted a pure refactor while excluding
-  an increment nobody had to decide anything about. Size stays the sanity check: too big is
-  one nobody reviews in a sitting, and the split is by value, never by layer.
+  Named in one sentence an operator would recognise, or it is a task box or a chore commit.
+  **A separate doc earns its place when it holds a decision someone must read before
+  building, not recoverable from the code or the commit.** It has a cost on both sides; the
+  "and" test it replaced had none and so only split, producing eleven docs where five were
+  right. Too big is one nobody reviews in a sitting, split by value never by layer.
 - **Every run of `next` ends with an instruction**, in every state. The newest was a doc
   straight out of `kit new`: it lands in `blocked`, and the closing line said stopping was
   the right outcome when the work was to write the plan just created.
@@ -221,7 +221,7 @@ Draft -> Shipped     (exit: Dropped)
   the kit writes — repairable without reopening the plan — and a leaked credential.
 - **One defect is one finding; the code names the category, not one member.** Seven pairs
   merged, each survivor's `Means` restated. A missing `VISION.md` or `INBOX.md` is
-  `no-protocol`: `kit init` writes all three, so one fix clears them.
+  `no-protocol`: one command writes all three, so one fix clears them.
 - **Severity is the damage.** `split-claim` is HIGH — two agents owning one feature is the
   worst failure here, and it gated nothing at MEDIUM. `id-mismatch` is HIGH because the
   branch comes from the filename and the claim is looked up by the id, so the board keeps
@@ -279,6 +279,19 @@ Draft -> Shipped     (exit: Dropped)
   no (`claim` lost the race, `audit --strict` found HIGH), `2` it could not run or refused.
 - **Dates are passed in, never read inside** — a clock inside leaves tests unable to catch a
   UTC-midnight off-by-one.
+- **`kit init` writes the whole layout, and nothing else creates a project file.** One
+  command, one answer to where a file came from; `ship`'s lazy `TECH.md` path is a fallback
+  for projects that predate it. Splitting creation across `init`, `ship` and `block` was
+  tried and reversed — it moved four files between three commands to silence one finding,
+  and that finding was a gate: `unfilled-vision` now waits for features, as `no-protocol`
+  already did, so a virgin project audits clean while carrying everything it will need.
+- **A `.gitignore` is a refusal expressed as a file**, so `init` writes one — editor and OS
+  droppings only, because anything else guesses what the project is. A stack's copy replaces
+  it rather than extending it.
+- **What the protocol does not carry, it points at**, and `cmd/kit/layout_test.go` holds
+  every file it names against `docLayout` or a help topic. Rule 14 named `BACKLOG.md` while
+  nothing wrote or described it, and the first version of that test read only `docs/` paths
+  and so found nothing to check.
 - **Standing guidance is embedded, never copied into projects.** `go-checklist` is practice,
   not documentation of the kit, and `audit` cannot check a word of it — a copy per repo
   would be drift with nothing to notice it. It must never use `- [ ]`, which in a kit

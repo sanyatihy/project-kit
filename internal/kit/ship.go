@@ -110,9 +110,10 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	res := &ShipResult{Doc: target.Rel, Was: target.Status, HasRemote: len(r.remotes()) > 0}
 	res.TechDoc = r.Rel(r.Tech)
 	if r.Tech == "" {
-		// The as-built doc waits until something ships, which is now. Creating it
-		// here is what makes "move durable facts across" an instruction someone can
-		// actually follow.
+		// A fallback, not where the file comes from: `kit init` writes the as-built
+		// doc with the rest of the layout, so this only catches a project set up
+		// before it did — where "move durable facts across" would otherwise name a
+		// file that is not there.
 		if created, err := createTechDoc(templates, r); err == nil {
 			res.TechDoc, res.TechCreated = created, true
 		}
@@ -121,7 +122,7 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	return res, nil
 }
 
-// createTechDoc writes the as-built template beside the feature docs.
+// createTechDoc writes the as-built template into a project that arrived without one.
 //
 // Callers reach this only when the project has no as-built doc, so the O_EXCL is
 // not a second guard on that: it covers two agents shipping different features at

@@ -24,21 +24,17 @@ const ProtocolTemplate = "templates/AGENTS-section.md"
 
 // docLayout maps a template to its destination, relative to the project root.
 //
-// `owned` marks the files the kit refreshes on every run rather than writing once.
-// The test is not who wrote it first but whether the project would notice its copy
-// being replaced: nothing reads either of these — `kit new` writes from the embedded
-// template, and the conventions doc is read by nobody — so an edit to them has no
-// effect, and replacing them costs nothing while stopping them describing a format
-// the tool no longer produces. Anything a project fills in is the opposite: its copy
-// is the only copy, and it is never touched.
-var docLayout = []struct {
-	src, dest string
-	owned     bool
-}{
-	{"templates/VISION.md", "docs/VISION.md", false},
-	{"templates/features-TEMPLATE.md", "docs/features/TEMPLATE.md", true},
-	{"templates/BACKLOG.md", "docs/features/BACKLOG.md", false},
-	{"templates/INBOX.md", "docs/INBOX.md", false},
+// This is the whole document layout, and no other command creates a project file: one
+// command, one answer to where a file came from. Every entry is a file the project fills
+// in, which is why none is ever refreshed — its copy is the only copy there is.
+// `docs/features/TEMPLATE.md` is not here: `kit new` writes a doc from the embedded
+// template and nothing reads the placed copy, so it was a file a project maintained for
+// the tool.
+var docLayout = []struct{ src, dest string }{
+	{"templates/VISION.md", "docs/VISION.md"},
+	{"templates/INBOX.md", "docs/INBOX.md"},
+	{"templates/TECH.md", "docs/TECH.md"},
+	{"templates/BACKLOG.md", "docs/features/BACKLOG.md"},
 }
 
 // stackLayout is per-stack scaffolding. Deployment files are deliberately absent:
@@ -47,11 +43,17 @@ var docLayout = []struct {
 var stackLayout = map[string][][2]string{
 	"go": {
 		{"Makefile", "Makefile"},
-		{"gitignore", ".gitignore"},
 		{"gomod", "go.mod"},
 		{"main.go.tmpl", "cmd/{{name}}/main.go"},
 		{"README.md", "README.md"},
 	},
+}
+
+// ignoreLayout is the .gitignore a stack writes instead of the default. Instead, not as
+// well: one file to read beats two, at the price of repeating the editor and OS lines in
+// every stack — the trade worth taking while there is one stack.
+var ignoreLayout = map[string]string{
+	"go": "templates/stacks/go/gitignore",
 }
 
 // ciLayout is the one part of a stack that depends on where the project is hosted.
@@ -145,14 +147,14 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 			}
 			src := path.Join("templates/stacks", stack, pair[0])
 			if err := place(templates, src, filepath.Join(root, fill(pair[1], values)),
-				root, values, false, res); err != nil {
+				root, values, res); err != nil {
 				return nil, err
 			}
 		}
 		if ci, ok := ciLayout[stack][forge]; ok {
 			src := path.Join("templates/stacks", stack, ci[0])
 			if err := place(templates, src, filepath.Join(root, ci[1]),
-				root, values, false, res); err != nil {
+				root, values, res); err != nil {
 				return nil, err
 			}
 		} else if len(ciLayout[stack]) > 0 {
@@ -171,10 +173,19 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 		}
 	}
 
+	// A .gitignore is a refusal expressed as a file. Without one the first `git add -A`
+	// an agent runs commits whatever the editor and the operating system left behind —
+	// and `kit claim` pushes HEAD, so it reaches the branch the next agent works in. The
+	// default ignores what is true of every project and never guesses at the language.
+	if err := place(templates, ignoreFor(stack), filepath.Join(root, ".gitignore"), root,
+		map[string]string{"name": filepath.Base(root)}, res); err != nil {
+		return nil, err
+	}
+
 	featuresDir := FindFeaturesDir(root)
 	for _, doc := range docLayout {
 		dest := filepath.Join(root, strings.Replace(doc.dest, "docs/features", featuresDir, 1))
-		if err := place(templates, doc.src, dest, root, nil, doc.owned, res); err != nil {
+		if err := place(templates, doc.src, dest, root, nil, res); err != nil {
 			return nil, err
 		}
 	}
@@ -185,21 +196,26 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 	return res, nil
 }
 
-// place writes one template. An existing destination is kept, unless the kit owns
-// the file outright, in which case it is refreshed so it cannot fall behind the tool.
-func place(templates fs.FS, src, dest, root string, values map[string]string, owned bool, res *Result) error {
+// ignoreFor names the .gitignore template a stack gets, and the default for no stack.
+func ignoreFor(stack string) string {
+	if src, ok := ignoreLayout[stack]; ok {
+		return src
+	}
+	return "templates/gitignore"
+}
+
+// place writes one template, and keeps an existing destination. Nothing outside the
+// protocol section of AGENTS.md is the kit's to rewrite: every file it places is one the
+// project fills in, so its copy is the only copy there is.
+func place(templates fs.FS, src, dest, root string, values map[string]string, res *Result) error {
 	rel, err := filepath.Rel(root, dest)
 	if err != nil {
 		rel = dest
 	}
 	rel = filepath.ToSlash(rel)
-	existed := false
 	if _, err := os.Stat(dest); err == nil {
-		if !owned {
-			res.Kept = append(res.Kept, rel)
-			return nil
-		}
-		existed = true
+		res.Kept = append(res.Kept, rel)
+		return nil
 	}
 	raw, err := fs.ReadFile(templates, src)
 	if err != nil {
@@ -208,23 +224,10 @@ func place(templates fs.FS, src, dest, root string, values map[string]string, ow
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
-	want := fill(string(raw), values)
-	if existed {
-		// A refresh that changes nothing is not a refresh. Reporting one on every
-		// run would make the word meaningless in the output where it matters.
-		if current, err := os.ReadFile(dest); err == nil && Normalise(string(current)) == Normalise(want) {
-			res.Kept = append(res.Kept, rel)
-			return nil
-		}
-	}
-	if err := os.WriteFile(dest, []byte(want), 0o644); err != nil {
+	if err := os.WriteFile(dest, []byte(fill(string(raw), values)), 0o644); err != nil {
 		return err
 	}
-	if existed {
-		res.Refreshed = append(res.Refreshed, rel)
-	} else {
-		res.Created = append(res.Created, rel)
-	}
+	res.Created = append(res.Created, rel)
 	return nil
 }
 

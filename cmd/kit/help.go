@@ -76,6 +76,7 @@ Topics:
   kit help template      the feature doc format, field by field
   kit help checks        every audit finding and what it means
   kit help inbox         the docs/INBOX.md format, and what BLOCKING means
+  kit help backlog       the docs/features/BACKLOG.md format, and what promotes an entry
   kit help vision        the docs/VISION.md shape, and what it is not for
   kit help as-built      the docs/TECH.md shape, section by section
   kit help go-checklist  engineering practices for Go projects, tiered
@@ -91,6 +92,7 @@ var topics = map[string]string{
 	"vision":       "templates/VISION.md",
 	"as-built":     "templates/TECH.md",
 	"inbox":        "templates/INBOX.md",
+	"backlog":      "templates/BACKLOG.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
@@ -101,9 +103,11 @@ var commandHelp = map[string]string{
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes docs/VISION.md, docs/features/{TEMPLATE,BACKLOG}.md, docs/INBOX.md and
-AGENTS.md.
-With --stack it also scaffolds the code layout and one CI pipeline.
+and writes AGENTS.md, docs/VISION.md, docs/INBOX.md, docs/TECH.md,
+docs/features/BACKLOG.md and a .gitignore for what an editor and an OS leave behind.
+Nothing else creates a project file, so there is one answer to where a file came
+from. With --stack it also scaffolds the code layout, one CI pipeline, and that
+stack's .gitignore in place of the default.
 
 Which CI file that is depends on where the project is hosted, and it is worked out
 from the first thing that actually says: a .gitlab-ci.yml or .github/workflows the
@@ -113,9 +117,9 @@ file is written and the run tells you so — a missing pipeline is visible, and 
 for the wrong forge is not. --forge settles it outright.
 
 Nothing you wrote is overwritten or deleted, so it is safe on a populated directory
-and safe to re-run. Two kit-owned files are refreshed on every run: the
-"## Work protocol" section of AGENTS.md, and docs/features/TEMPLATE.md. Everything
-you fill in is left alone, and house rules go above the marker comment in AGENTS.md.
+and safe to re-run. One kit-owned thing is refreshed on every run: the
+"## Work protocol" section of AGENTS.md. Every document is yours the moment it is
+placed, and house rules go above the marker comment in AGENTS.md.
 Re-running is also how a project gets its CI file once it has a remote, and how the
 IDs its docs already hold are reserved — after which deleting a doc cannot free its
 number for a later "kit new" to hand out again.

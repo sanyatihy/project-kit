@@ -26,22 +26,17 @@ go.work
 *.pem
 *.key
 secrets.yml
-**/vault.yml
 
-# Terraform — state holds secrets in plaintext and tfvars holds credentials.
-# Listed before any infra exists, so the first `terraform apply` cannot leak.
-**/.terraform/*
-*.tfstate
-*.tfstate.*
-*.tfvars
-!*.tfvars.example
-backend.hcl
-crash.log
-
-# Ansible — inventories are generated from infra output, never committed
-ansible/inventory/hosts.yml
-ansible/collections/
-
+# The editor and OS lines from the file this one replaces. A stack's copy is the whole
+# .gitignore, so it carries what is true of every project as well as what is true of Go.
 .DS_Store
+._*
+Thumbs.db
+Desktop.ini
 .idea/
-venv/
+.vscode/
+*.swp
+*.swo
+*~
+*.orig
+*.rej

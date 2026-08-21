@@ -114,7 +114,7 @@ var (
 	// reason: the template's guidance lives in comments, which every parser here
 	// strips, so an empty section means the section was never written.
 	checkUnfilledVision = Check{"unfilled-vision", Medium,
-		"docs/VISION.md is still the stub — every section under its headings is empty"}
+		"docs/VISION.md is still the stub, and features are being drafted against it"}
 	checkDoneNotShipped = Check{"done-not-shipped", Medium,
 		"every task is ticked but the status is still open"}
 	// One question with two answers, because a missing as-built doc and a stale one are
@@ -802,10 +802,14 @@ func secretsInDocs(s *repoState) []Finding {
 }
 
 // The same gap one step later: `kit init` writes the stub, so the run that answers the
-// missing file leaves the question itself unanswered. Not gated on features existing — the
-// stub is worth reporting from the moment it is there, before the first draft it shapes.
+// missing file leaves the question itself unanswered.
+//
+// Gated on features existing, for `no-protocol`'s reason one step over: a project set up
+// and not yet planned has nothing to decompose, and a finding on a fresh `kit init` would
+// be noise at the moment the tool is judged. The stub is what every project starts with,
+// so firing on it from the first minute read as a defect in scaffolding the file at all.
 func unfilledVision(s *repoState) []Finding {
-	if s.r.Vision == "" || !visionIsStub(s.r.Vision) {
+	if s.r.Vision == "" || len(s.r.Features) == 0 || !visionIsStub(s.r.Vision) {
 		return nil
 	}
 	return []Finding{finding(checkUnfilledVision, s.r.Rel(s.r.Vision),

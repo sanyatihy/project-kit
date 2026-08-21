@@ -1,0 +1,28 @@
+# What every project ignores, whatever it is built in: the droppings an editor and an
+# operating system leave beside your work. No language, no framework, no cloud — those
+# would be a guess at what this project is, and `git add -A` runs before anyone knows.
+#
+# `kit init --stack <name>` writes that stack's file in place of this one.
+
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Linux
+.directory
+.Trash-*
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Merge and patch leftovers
+*.orig
+*.rej

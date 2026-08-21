@@ -18,14 +18,20 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 
 	for _, want := range []string{
 		"docs/VISION.md",
-		"docs/features/TEMPLATE.md",
-		"docs/features/BACKLOG.md",
 		"docs/INBOX.md",
+		"docs/TECH.md",
+		"docs/features/BACKLOG.md",
 		"AGENTS.md",
 	} {
 		if !p.exists(want) {
 			t.Errorf("init did not write %s", want)
 		}
+	}
+	// The layout is every file a project gets, and a conventions doc nothing reads is
+	// not one: `kit new` writes a doc from the embedded template, so a placed copy is a
+	// file the project maintains for the tool.
+	if p.exists("docs/features/TEMPLATE.md") {
+		t.Error("init wrote docs/features/TEMPLATE.md, which nothing reads")
 	}
 	// The protocol is what makes the docs actionable; a layout without it is inert.
 	agents := p.read("AGENTS.md")
@@ -40,6 +46,58 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 	}
 	if !strings.Contains(agents, "House rules go here") {
 		t.Errorf("AGENTS.md never says where a project's own rules go:\n%s", agents)
+	}
+}
+
+func TestInitWritesAGitignoreThatGuessesAtNoLanguage(t *testing.T) {
+	t.Parallel()
+	// A refusal expressed as a file: the first `git add -A` an agent runs commits
+	// whatever the editor and the OS left behind, and `kit claim` pushes HEAD, so it
+	// reaches the branch the next agent works in.
+	p := newProject(t)
+	p.run("init").ok()
+
+	got := p.read(".gitignore")
+	for _, want := range []string{".DS_Store", "Thumbs.db", ".idea/", ".vscode/", "*.swp"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the default .gitignore does not ignore %s:\n%s", want, got)
+		}
+	}
+	// What it ignores is what is true of every project, not what this one will be built
+	// in. A language, a framework or a cloud here is a guess at a project one command old.
+	for _, unwanted := range []string{"vendor/", "go.work", "node_modules", "__pycache__",
+		"tfstate", "terraform", "ansible", "vault"} {
+		if strings.Contains(got, unwanted) {
+			t.Errorf("the default .gitignore names %s, which is a guess at the stack:\n%s",
+				unwanted, got)
+		}
+	}
+}
+
+func TestInitStackGoReplacesTheDefaultGitignore(t *testing.T) {
+	t.Parallel()
+	// A stack's copy is the whole file, not an addition to the default: one file to
+	// read. So it carries Go's lines and repeats the editor and OS ones.
+	p := newProject(t)
+	p.run("init", "--stack", "go").ok()
+
+	got := p.read(".gitignore")
+	for _, want := range []string{"vendor/", "go.work", "*.test", ".DS_Store", ".idea/"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the go .gitignore does not ignore %s:\n%s", want, got)
+		}
+	}
+	// Infrastructure this stack scaffolds none of. Deployment is deliberately not
+	// generated, so ignoring its output was fifteen lines about files that never appear.
+	for _, unwanted := range []string{"terraform", "tfstate", "tfvars", "vault", "ansible"} {
+		if strings.Contains(got, unwanted) {
+			t.Errorf("the go .gitignore still names %s, which the stack scaffolds none of:\n%s",
+				unwanted, got)
+		}
+	}
+	// And it is written from the stack once, not written twice and reported both ways.
+	if n := strings.Count(p.run("init", "--stack", "go").ok().Stdout, ".gitignore"); n != 1 {
+		t.Errorf("a re-run reported .gitignore %d times, want 1", n)
 	}
 }
 
@@ -59,66 +117,66 @@ func TestInitCreatesAGitRepoButLeavesAnExistingOneAlone(t *testing.T) {
 
 func TestInitNeverOverwrites(t *testing.T) {
 	t.Parallel()
+	// Every file the layout places, held against a project that already wrote it. This
+	// is the guarantee `kit init` is run on populated repositories for: it is worth more
+	// than any line the tool might add.
+	mine := map[string]string{
+		// A project that already states its vision is the common case for adopting the
+		// kit, and it is the one file here nobody could reconstruct.
+		"docs/VISION.md":           "# Why we are building this\n",
+		"docs/INBOX.md":            "MINE — do not touch\n",
+		"docs/TECH.md":             "# As built\n\nOne process, one database.\n",
+		"docs/features/BACKLOG.md": "MINE — ideas\n",
+		".gitignore":               "build/\n",
+	}
 	p := newProject(t)
-	p.write("docs/INBOX.md", "MINE — do not touch\n")
-	// A project that already states its vision is the common case for adopting the
-	// kit, and it is the one file here nobody could reconstruct.
-	p.write("docs/VISION.md", "# Why we are building this\n")
+	for path, want := range mine {
+		p.write(path, want)
+	}
 	p.write("AGENTS.md", "# House rules\n\nKeep me.\n")
 
 	p.run("init").ok()
 
-	if got := p.read("docs/INBOX.md"); got != "MINE — do not touch\n" {
-		t.Errorf("init overwrote docs/INBOX.md: %q", got)
-	}
-	if got := p.read("docs/VISION.md"); got != "# Why we are building this\n" {
-		t.Errorf("init overwrote docs/VISION.md: %q", got)
+	for path, want := range mine {
+		if got := p.read(path); got != want {
+			t.Errorf("init overwrote %s: %q", path, got)
+		}
 	}
 	if !strings.Contains(p.read("AGENTS.md"), "Keep me.") {
 		t.Error("init destroyed existing AGENTS.md content")
 	}
 }
 
-func TestInitRefreshesTheDocsItOwnsAndNothingElse(t *testing.T) {
+func TestInitRewritesNothingItPlacedOnceTheProjectHasFilledItIn(t *testing.T) {
 	t.Parallel()
-	// The line this pins: a file the kit owns is one whose project copy nothing
-	// reads, so replacing it takes nothing away. Everything a project fills in is
-	// the only copy there is and must survive every re-run forever.
+	// Re-running is the documented way to pick up a protocol change, so the run that
+	// does it lands on a project that has been worked in. Nothing outside the protocol
+	// section of AGENTS.md is the kit's to rewrite: every file the layout places is one
+	// the project fills in, and its copy is the only copy there is.
 	p := newProject(t)
 	p.run("init").ok()
 
-	// A project scaffolded by an older kit: its reference doc predates a format change.
-	p.write("docs/features/TEMPLATE.md", "# an older format\n")
-	// And its own documents, which are the whole point of the distinction.
-	p.write("docs/VISION.md", "MINE — what we are building\n")
-	p.write("docs/INBOX.md", "- [ ] 2026-01-02 · 0001 · FYI · mine\n")
-	p.write("docs/features/BACKLOG.md", "MINE — ideas\n")
+	mine := map[string]string{
+		"docs/VISION.md":           "MINE — what we are building\n",
+		"docs/INBOX.md":            "- [ ] 2026-01-02 · 0001 · FYI · mine\n",
+		"docs/TECH.md":             "MINE — one process, one database\n",
+		"docs/features/BACKLOG.md": "MINE — ideas\n",
+		".gitignore":               "build/\n",
+	}
+	for path, want := range mine {
+		p.write(path, want)
+	}
 
 	second := p.run("init").ok()
 
-	if got := p.read("docs/features/TEMPLATE.md"); !strings.Contains(got, "needs:") {
-		t.Error("init did not refresh the template it owns")
-	}
-	second.has("refreshed", "TEMPLATE.md")
-
-	for _, mine := range []struct{ path, want string }{
-		{"docs/VISION.md", "MINE — what we are building\n"},
-		{"docs/INBOX.md", "- [ ] 2026-01-02 · 0001 · FYI · mine\n"},
-		{"docs/features/BACKLOG.md", "MINE — ideas\n"},
-	} {
-		if got := p.read(mine.path); got != mine.want {
-			t.Errorf("init touched %s, which the project owns: %q", mine.path, got)
+	for path, want := range mine {
+		if got := p.read(path); got != want {
+			t.Errorf("a second init touched %s, which the project owns: %q", path, got)
 		}
 	}
-}
-
-func TestInitDoesNotClaimToRefreshWhatItDidNotChange(t *testing.T) {
-	t.Parallel()
-	// A refresh reported on every run makes the word meaningless in the output
-	// where it matters.
-	p := newProject(t)
-	p.run("init").ok()
-	p.run("init").ok().lacks("refreshed  docs/features/TEMPLATE.md")
+	// A refresh reported on every run makes the word meaningless in the output where it
+	// matters, and the only thing that can honestly be refreshed is the protocol.
+	second.lacks("refreshed")
 }
 
 func TestInitIsIdempotent(t *testing.T) {

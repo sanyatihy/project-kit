@@ -38,7 +38,7 @@ var refusals = map[string]struct {
 	list []refusal
 }{
 	"ship": {[]string{"Ship"}, []refusal{
-		{"box is ticked", "a box still unticked"},
+		{`every "## Tasks" box is ticked`, "a box still unticked"},
 		{"no ## Tasks boxes", "a doc with no boxes at all"},
 		{"already Shipped", "a doc that is already Shipped"},
 		{"Dropped", "a doc that was retired"},
@@ -94,14 +94,20 @@ func TestEveryRefusalIsInTheCommandsHelp(t *testing.T) {
 
 	// The protocol used to restate four of `ship`'s refusals as the whole list, which is
 	// how a rule an agent reads every session came to describe a command that refuses for
-	// twice as many reasons. One list, in the command that makes them.
+	// twice as many reasons. One list, in the command that makes them, and the protocol
+	// carries none of it: a rule that restates a refusal is a second list to keep in step,
+	// and the command says it at the moment it matters rather than a session earlier.
 	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
 	if err != nil {
 		t.Fatalf("reading the protocol: %v", err)
 	}
-	if !strings.Contains(string(raw), "kit ship --help") {
-		t.Error("the protocol does not send the reader to `kit ship --help`, so its own " +
-			"partial list of refusals is the only one they get")
+	for cmd, spec := range refusals {
+		for _, r := range spec.list {
+			if strings.Contains(string(raw), r.says) {
+				t.Errorf("the protocol restates %q, which is kit %s refusing %s — "+
+					"the command's help is the one list", r.says, cmd, r.why)
+			}
+		}
 	}
 }
 
