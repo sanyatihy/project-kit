@@ -45,10 +45,14 @@ README advertises.
 - [x] `make release` runs the gate and cuts an annotated tag
 - [x] The protocol names tagging as what follows a round landing
 - [x] `audit` reports a tag far enough behind the trunk to mislead `@latest`
-- [ ] A release is cut for the current trunk, and `go install @latest` is verified against it
+- [x] A release is cut for the current trunk, and `go install @latest` is verified against it
 
 ## Log
 - 2026-08-21 — the protocol names the act and not `make release`. The Go stack `kit init`
   scaffolds already ships a `release` target that builds a static binary, so a generated
   rule naming the command would mean the wrong thing in every project the kit writes. The
   command is named in this repo's own `## Changing the kit`, beside `make check`.
+- 2026-08-21 — v0.3.0 names a commit that does not contain the target that cut it.
+  `make release` refuses a HEAD that is not the trunk's tip, and the target ships on this
+  branch, so the first release was cut from a detached checkout of the trunk with the
+  target passed by `make -f`. Every release after this one finds it on the trunk.
