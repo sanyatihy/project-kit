@@ -26,6 +26,10 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # The default is six hours, which is what a hung step costs when nothing caps it.
+    # The job is minutes: the gate is a 10s test run locally, and the two network
+    # steps download. 15 is room for a cold module cache, not for a hang.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
