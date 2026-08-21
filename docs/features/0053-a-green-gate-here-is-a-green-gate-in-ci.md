@@ -48,10 +48,13 @@ numbers — introduced by the round that added it, and invisible to `make check`
 
 ## Tasks
 
-- [ ] `make check` runs the lint, and the deprecation that has `main` red is fixed
+- [x] `make check` runs the lint, and the deprecation that has `main` red is fixed
 - [ ] `.golangci.yml` is committed and the action pins a version
 - [ ] CI is `make check` plus the network steps, and a test compares the two lists
 - [ ] The workflow sets `timeout-minutes`
 - [ ] Coverage is either instrumented through the conformance binary or no longer reported
 
 ## Log
+- 2026-08-21 — an absent `golangci-lint` skips with a notice rather than failing, which is
+  what the Makefile `kit init` writes already does: a fresh clone goes green with only Go
+  present. CI installs the linter, so the skip cannot hide a finding there.

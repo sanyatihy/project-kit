@@ -23,7 +23,7 @@ build:
 # was an external script outside the build, which is how it got deleted without
 # anything noticing.
 .PHONY: check
-check: fmt-check vet test
+check: fmt-check vet lint test
 
 # How many tests run at once. The suite is 190-odd independent tests, each with its own
 # temporary directory, so this is pure wall clock: on a 12-core machine `go test -race`
@@ -58,11 +58,13 @@ fmt-check:
 vet:
 	$(GO) vet $(PKG)
 
+# lint is skipped with a notice when golangci-lint is not installed, so a fresh
+# clone goes green with only Go present. CI installs it, so there it really runs.
 .PHONY: lint
 lint:
 	@which golangci-lint >/dev/null 2>&1 \
 		&& golangci-lint run \
-		|| echo "note: golangci-lint not installed, skipping"
+		|| echo "note: golangci-lint not installed, skipping (https://golangci-lint.run)"
 
 # install puts `kit` on your PATH via the Go toolchain.
 .PHONY: vuln
@@ -79,7 +81,7 @@ help:
 	@echo "Targets:"
 	@echo "  build       - compile ./$(BIN)"
 	@echo "  install     - go install onto your PATH"
-	@echo "  check       - fmt-check + vet + test (the gate)"
+	@echo "  check       - fmt-check + vet + lint + test (the gate)"
 	@echo "  test        - unit tests + the conformance suite"
 	@echo "  fmt         - gofmt -s -w ."
 	@echo "  fmt-check   - fail if anything is unformatted"
