@@ -737,6 +737,31 @@ func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 	}
 }
 
+func TestAShippedButUnmergedFeatureAppearsOnceOnTheBoard(t *testing.T) {
+	t.Parallel()
+	// It was listed under `taken` and again under `awaiting review`, which reads as two
+	// features. The second is the true one: nothing is left to build, and the claim is
+	// only waiting for somebody to merge it.
+	a, _ := twoAgents(t)
+	shipOnItsBranch(a, "0007", "widget", "A widget")
+
+	plan := a.plan("next", "--json")
+	if !plan.Empty() {
+		t.Errorf("a shipped-and-unmerged feature is still on the board: %+v", plan)
+	}
+	if len(plan.AwaitingReview) != 1 {
+		t.Fatalf("awaiting review = %+v, want just 0007", plan.AwaitingReview)
+	}
+
+	r := a.run("next").ok().has("awaiting review", "0007")
+	if strings.Contains(r.Stdout, "taken") {
+		t.Errorf("0007 is reported as taken as well as awaiting review:\n%s", r.Stdout)
+	}
+	// And one instruction under it rather than two: the guidance says merging is the
+	// work, so the command for drafting the next feature must not be printed beside it.
+	r.lacks("kit new")
+}
+
 func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
 	t.Parallel()
 	// A coordinator that is itself an agent needs one fact from this board: which

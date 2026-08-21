@@ -167,7 +167,31 @@ func NewPlan() Plan {
 func Survey(r *Repo) Plan {
 	plan := NewPlan()
 	plan.Branch = r.HeadBranch()
+	// Before the board, because the board is what this takes entries out of. A feature
+	// its builder has shipped is finished work waiting for a merge, not a claim somebody
+	// is holding, and it was reported as both — one feature under `taken` and again under
+	// `awaiting review`, which reads as two.
+	//
+	// The local walk is asked for first, because it is what starts the remote round trip
+	// and the answer below is what that round trip returns. Reading it here otherwise
+	// makes the wait follow the walk instead of overlapping it.
+	r.loadGit()
+	reviewing := map[string]bool{}
+	for _, waiting := range r.AwaitingReview() {
+		reviewing[waiting.Feature.ID] = true
+		plan.AwaitingReview = append(plan.AwaitingReview, Waiting{
+			ID:     waiting.Feature.ID,
+			Title:  waiting.Feature.Title,
+			Doc:    waiting.Feature.Rel,
+			Branch: waiting.Branch,
+			Since:  waiting.Since,
+			Mine:   waiting.Mine,
+		})
+	}
 	for _, f := range r.ActiveFeatures() {
+		if reviewing[f.ID] {
+			continue
+		}
 		open, total := f.TaskCount()
 		item := Item{
 			ID:     f.ID,
@@ -292,16 +316,6 @@ func Survey(r *Repo) Plan {
 			group[i].Task = ""
 		}
 	}
-	for _, waiting := range r.AwaitingReview() {
-		plan.AwaitingReview = append(plan.AwaitingReview, Waiting{
-			ID:     waiting.Feature.ID,
-			Title:  waiting.Feature.Title,
-			Doc:    waiting.Feature.Rel,
-			Branch: waiting.Branch,
-			Since:  waiting.Since,
-			Mine:   waiting.Mine,
-		})
-	}
 	// After the work, so it reports what actually went unanswered.
 	plan.RemoteUnanswered = r.RemoteUnanswered()
 	plan.Guidance = guidanceFor(r, plan)
@@ -384,8 +398,10 @@ func guidanceFor(r *Repo, plan Plan) string {
 		return "nothing is free: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
 			"Stopping here is the right outcome: say so and wait."
+	// Everything open is finished and waiting, which is not the same as nothing having
+	// been planned: the entries below are plans that were built.
 	case len(plan.AwaitingReview) > 0:
-		return "nothing is planned. " + reviewing(len(plan.AwaitingReview))
+		return "nothing is left to build. " + reviewing(len(plan.AwaitingReview))
 	// The branch that used to sit here said drafts were waiting on a human to accept
 	// them. It is gone with the gate: a Draft is active work now, so it reaches Ready
 	// or Blocked like anything else and never leaves the plan empty.

@@ -305,10 +305,10 @@ when a BLOCKING docs/INBOX.md line carries its id in the id field, or when somet
 in its "needs:" has not shipped yet.
 
 Below the board, "awaiting review" is the far side of ship: a branch the remote has,
-carrying a doc that says Shipped, not yet on the trunk. The status is read from the
-branch, because on the trunk it still says what it said when the plan round landed.
-Entries you built are marked; where reviewing is all there is, the closing guidance
-says so instead of telling you to stop.
+carrying a doc that says Shipped, not yet on the trunk, and off the board above while
+it waits. The status is read from the branch, because on the trunk it still says what
+it said when the plan round landed. Entries you built are marked; where reviewing is
+all there is, the closing guidance says so instead of telling you to stop.
 
 What is ready is how much can happen at once: three ready features means three agents
 can take one each, which falls out of what the docs declare rather than being planned.
