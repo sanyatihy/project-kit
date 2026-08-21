@@ -42,7 +42,10 @@ needs:               # feature ids that must ship first, e.g. 0002, 0003. Empty 
        yes  The cache is per-process. A shared one needs cross-worker invalidation, which
             this deployment does not have.
      The third clause was about the work rather than the system, so it is gone rather
-     than split. -->
+     than split.
+
+     A doc is as long as its decisions and no longer. One a reader cannot hold in one
+     sitting is describing a feature that is too big, not a design worth the length. -->
 
 ## Tasks
 <!-- Each box is one PR-sized outcome you can verify without asking anyone, in the

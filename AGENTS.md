@@ -71,10 +71,10 @@ Do this only when you are asked to plan.
 2. **A feature is one shipped increase in what the project can do, or can be trusted to
    do.** Name it in one sentence an operator would recognise: "the board no longer hands one
    feature to two agents", not "refactor `Mine`". No such sentence means it is a task box in
-   another feature, or a chore commit. A separate doc earns its place when it holds a
-   decision someone must read before building, that is not recoverable from the code or the
-   commit. A change nobody could review in one sitting is too big — split it by value, not
-   by layer.
+   another feature, or a chore commit that rides on a pull request under a branch name
+   carrying no id. A separate doc earns its place when it holds a decision someone must read
+   before building, that is not recoverable from the code or the commit. A change nobody
+   could review in one sitting is too big — split it by value, not by layer.
 3. **Draft the whole set in one session, not the first one only.** Write every doc with
    `kit new "<title>"`. Never copy the template by hand.
 4. **Fill `needs:` on every draft.** List the feature ids that must ship before this one
@@ -87,10 +87,6 @@ Do this only when you are asked to plan.
    change a status. Never edit `status:` or `shipped:` by hand.
 7. **Never invent a product decision on the human's behalf.** What you cannot settle goes in
    `## Open questions`; what only a human can answer goes to `kit block <id> "<question>"`.
-
-**Work that is not a feature** — a fix to something already shipped, a chore, a data
-update — goes on a branch whose name contains no four-digit id, and needs no doc. Only a
-feature gets one.
 
 ### Taking work
 

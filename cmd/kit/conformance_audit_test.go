@@ -347,8 +347,8 @@ func TestSecretInDocFiresOnEveryShape(t *testing.T) {
 
 func TestSecretInDocScansEveryDocAgentsWriteTo(t *testing.T) {
 	t.Parallel()
-	// Rule 6 sends discovered work to BACKLOG.md, so agents write to it as freely as to
-	// a feature doc, and it is committed like everything else. It was the one
+	// The protocol sends discovered work to BACKLOG.md, so agents write to it as freely
+	// as to a feature doc, and it is committed like everything else. It was the one
 	// agent-writable document the scan did not open.
 	for _, where := range []string{
 		"docs/features/BACKLOG.md",

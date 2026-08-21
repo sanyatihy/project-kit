@@ -95,7 +95,7 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
 - [x] `init` stops writing the `VISION.md` stub, and `no-protocol` carries the prompt
 - [x] The protocol drops the rules a refusal already makes, and rule 10 goes as false
 - [x] Rule 2's "and" test is replaced by the doc-earns-its-place test
-- [ ] The protocol stops routing work away from the kit, and says how long a doc runs
+- [x] The protocol stops routing work away from the kit, and says how long a doc runs
 - [ ] `go-checklist` leaves the binary, and the ceilings fall with the files
 
 ## Open questions
@@ -108,6 +108,11 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
   drop it and let `no-protocol` say so.
 
 ## Log
+
+- 2026-08-21 — the replacement position is folded into rule 2 rather than left as a
+  paragraph of its own: a chore commit rides on a pull request under a branch name carrying
+  no id. The rule that decides what is a feature is where the alternative belongs, and the
+  id constraint is the load-bearing half of the sentence that went.
 
 - 2026-08-21 — seven rules go, not the five this doc named: 8, 10, 13, 23, 24, 26, 27.
   Each of 8, 13, 23, 24 and 26 is printed by a command at the moment it matters —
