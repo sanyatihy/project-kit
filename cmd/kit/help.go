@@ -101,8 +101,8 @@ var commandHelp = map[string]string{
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes docs/VISION.md, an empty docs/features/ and AGENTS.md. With --stack it
-also scaffolds the code layout and one CI pipeline.
+and writes AGENTS.md and an empty docs/features/. With --stack it also scaffolds the
+code layout and one CI pipeline.
 
 Which CI file that is depends on where the project is hosted, and it is worked out
 from the first thing that actually says: a .gitlab-ci.yml or .github/workflows the
@@ -119,8 +119,10 @@ Re-running is also how a project gets its CI file once it has a remote, and how 
 IDs its docs already hold are reserved — after which deleting a doc cannot free its
 number for a later "kit new" to hand out again.
 
-Files the project fills in only when it has something to put in them are not
-scaffolded: "kit block" creates docs/INBOX.md and "kit ship" creates docs/TECH.md.
+A project carries only what it fills in, so nothing else is written. docs/VISION.md
+is yours to write and a stub would answer none of it — "kit audit" asks for it once
+features exist, and "kit help vision" prints the shape. docs/INBOX.md is created by
+"kit block" and docs/TECH.md by "kit ship".
 
 Deployment scaffolding is deliberately not generated. Add it when the project has
 something to deploy.

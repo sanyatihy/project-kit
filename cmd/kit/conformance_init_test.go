@@ -17,7 +17,6 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 	p.run("init").ok()
 
 	for _, want := range []string{
-		"docs/VISION.md",
 		// The board is a directory listing, and git drops an empty directory, so the
 		// file that keeps it is what makes `next`, `audit` and `new` work in a clone
 		// of a project that has planned nothing yet.
@@ -28,10 +27,12 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 			t.Errorf("init did not write %s", want)
 		}
 	}
-	// A file the kit writes is one the project will fill in. These four were maintained
-	// for the tool rather than for the project, and two of them are now written by the
-	// command that first needs them.
+	// A file the kit writes is one the project will fill in. Two of these were
+	// maintained for the tool rather than for the project, two are written by the
+	// command that first needs them, and the vision is the operator's to write —
+	// a stub answers none of it and reports itself from the first minute.
 	for _, unwanted := range []string{
+		"docs/VISION.md",
 		"docs/features/TEMPLATE.md",
 		"docs/features/BACKLOG.md",
 		"docs/INBOX.md",
@@ -130,11 +131,8 @@ func TestInitIsIdempotent(t *testing.T) {
 	second := p.run("init").ok()
 
 	second.has("kept")
-	if strings.Contains(second.Stdout, "created    docs/VISION.md") {
-		t.Error("a second init claimed to create docs/VISION.md again")
-	}
-	if strings.Contains(second.Stdout, "created    docs/features/.gitkeep") {
-		t.Error("a second init claimed to create the features directory again")
+	if strings.Contains(second.Stdout, "created ") {
+		t.Errorf("a second init created something again:\n%s", second.Stdout)
 	}
 }
 

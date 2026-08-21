@@ -29,22 +29,20 @@ func cleanProject(t *testing.T) *project {
 	return p
 }
 
-// writeVision answers the stub `kit init` leaves behind. A project still carrying that
-// stub is a real finding — unfilled-vision — so a fixture that keeps it is not a
-// project with nothing wrong.
+// writeVision answers the question `kit init` no longer asks by scaffolding: a project
+// with features and no VISION.md is a real finding — no-protocol — so a fixture without
+// one is not a project with nothing wrong.
 func writeVision(p *project) {
 	p.t.Helper()
 	p.write("docs/VISION.md", "# VISION\n\n## What this is\nA thing that does the thing.\n")
 }
 
-// visionStub puts back the stub `kit init` writes, rather than an imitation of it, so
-// the cases below run against the template as it actually ships.
+// visionStub is the shape `kit help vision` prints, saved and left unanswered — the one
+// way a project gets a stub now that nothing scaffolds one. Taken from the binary rather
+// than imitated, so the cases below run against the template as it actually ships.
 func visionStub(p *project) {
 	p.t.Helper()
-	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
-		p.t.Fatalf("removing VISION.md: %v", err)
-	}
-	p.run("init").ok()
+	p.write("docs/VISION.md", p.run("help", "vision").ok().Stdout)
 }
 
 func (p *project) auditCodes(flags ...string) []string {
@@ -232,8 +230,8 @@ var auditCases = []struct {
 		p.write("AGENTS.md", "# House rules\n\n## Work protocol\n\nAn older protocol.\n")
 	}},
 	{"unfilled-vision", func(p *project) {
-		// A fresh `kit init` and nothing else. The template's guidance is all
-		// comments, so every section under its headings reads as empty.
+		// `kit help vision > docs/VISION.md` and nothing else. The template's guidance
+		// is all comments, so every section under its headings reads as empty.
 		visionStub(p)
 	}},
 }
@@ -424,18 +422,16 @@ func TestAuditIsQuietOnACleanProject(t *testing.T) {
 	p.run("audit").ok().has("docs and repo agree")
 }
 
-func TestNoVisionStaysQuietBeforeAnythingIsPlanned(t *testing.T) {
+func TestAScaffoldedProjectHasNothingToReport(t *testing.T) {
 	t.Parallel()
-	// The baseline covers a project that has both. This pins the other half of the
-	// rule: with no features there is nothing to decompose, so a fresh `kit init`
-	// must not be greeted with a finding at the moment the tool is being judged.
+	// The whole of what `kit init` leaves behind, audited. A scaffold that reports a
+	// finding at once is the tool judging itself, and it was the only finding a project
+	// with nothing in it ever had: with no features there is nothing to decompose, so
+	// nothing is owed a vision yet.
 	p := newProject(t)
 	p.run("init").ok()
-	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
-		t.Fatalf("removing VISION.md: %v", err)
-	}
-	if codes := p.auditCodes(); slices.Contains(codes, "no-protocol") {
-		t.Errorf("a missing vision was reported before anything was planned: %v", codes)
+	if codes := p.auditCodes(); len(codes) != 0 {
+		t.Errorf("a project one command old already has findings: %v", codes)
 	}
 }
 
@@ -460,9 +456,8 @@ func TestUnfilledVisionStaysQuietOnAPartlyWrittenVision(t *testing.T) {
 
 func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 	t.Parallel()
-	// The missing-file case belongs to no-protocol, which reports every document
-	// `kit init` writes. Reporting both would make one gap produce two findings with two
-	// different fixes.
+	// The missing-file case belongs to no-protocol, which carries the prompt once
+	// features exist. Reporting both would make one gap produce two findings.
 	p := cleanProject(t)
 	if err := os.Remove(p.path("docs/VISION.md")); err != nil {
 		t.Fatalf("removing VISION.md: %v", err)

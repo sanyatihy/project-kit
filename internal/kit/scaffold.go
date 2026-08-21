@@ -22,17 +22,6 @@ const ProtocolMarker = "## Work protocol"
 // reads the embedded copy cannot look at two different files.
 const ProtocolTemplate = "templates/AGENTS-section.md"
 
-// docLayout maps a template to its destination, relative to the project root.
-//
-// A file the kit writes is one the project will fill in, or the kit does not write it.
-// `TEMPLATE.md` and `BACKLOG.md` were read by nothing — `kit new` writes from the
-// embedded copy and the conventions doc was read by nobody — so they were four files
-// a project maintained for the tool rather than for itself. `docs/INBOX.md` is created
-// by `kit block` on first use, the way `kit ship` creates `docs/TECH.md`.
-var docLayout = []struct{ src, dest string }{
-	{"templates/VISION.md", "docs/VISION.md"},
-}
-
 // stackLayout is per-stack scaffolding. Deployment files are deliberately absent:
 // they rot fastest and are not needed to write code. Add them when the project
 // actually has something to deploy.
@@ -88,6 +77,11 @@ func Stacks(templates fs.FS) []string {
 }
 
 // Init sets a project up, or fills in what an existing one is missing.
+//
+// A project carries only what it fills in: the documents `kit init` writes are
+// `AGENTS.md` and, with a stack, the code layout. `docs/VISION.md` is the operator's to
+// write and a stub would answer none of it; `docs/INBOX.md` and `docs/TECH.md` are made
+// by the command that first needs them.
 //
 // Your files are never overwritten. The kit-owned protocol section inside
 // AGENTS.md is refreshed, so projects pick up changes without losing their own
@@ -163,18 +157,11 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 		}
 	}
 
-	featuresDir := FindFeaturesDir(root)
-	for _, doc := range docLayout {
-		dest := filepath.Join(root, strings.Replace(doc.dest, "docs/features", featuresDir, 1))
-		if err := place(templates, doc.src, dest, root, nil, res); err != nil {
-			return nil, err
-		}
-	}
-
 	// The board is a directory listing, so `next`, `audit` and `new` all exit 2 until it
 	// exists — and git drops an empty directory, so a clone of a project that has planned
 	// nothing yet would arrive without one. Same rule as the stack's: a .gitkeep only
 	// earns its place where git would otherwise drop the directory.
+	featuresDir := FindFeaturesDir(root)
 	if dir := filepath.Join(root, featuresDir); isEmptyDir(dir) {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return nil, err

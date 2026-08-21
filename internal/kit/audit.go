@@ -114,7 +114,7 @@ var (
 	// reason: the template's guidance lives in comments, which every parser here
 	// strips, so an empty section means the section was never written.
 	checkUnfilledVision = Check{"unfilled-vision", Medium,
-		"docs/VISION.md is still the stub — every section under its headings is empty"}
+		"docs/VISION.md carries the shape from kit help vision and nothing under it"}
 	checkDoneNotShipped = Check{"done-not-shipped", Medium,
 		"every task is ticked but the status is still open"}
 	// One question with two answers, because a missing as-built doc and a stale one are
@@ -700,7 +700,7 @@ func tagStale(s *repoState) []Finding {
 // compares a section it cannot find and so stays quiet, and nothing else looks — so the
 // project audits clean while every agent in it is working from whatever it invents.
 func noProtocol(s *repoState) []Finding {
-	var missing []string
+	var missing, fixes []string
 	switch raw, err := os.ReadFile(s.r.Protocol); {
 	case s.r.Protocol == "":
 		missing = append(missing, "no AGENTS.md, so agents have no protocol and will invent one")
@@ -708,18 +708,23 @@ func noProtocol(s *repoState) []Finding {
 		missing = append(missing, "no "+ProtocolMarker+" section in "+s.r.Rel(s.r.Protocol)+
 			", so agents have no protocol and will invent one")
 	}
+	if len(missing) > 0 {
+		fixes = append(fixes, "run: kit init . — it writes the protocol and overwrites nothing you wrote")
+	}
 	// Only once features exist: a project set up and not yet planned has nothing to
-	// decompose, and a finding on a fresh `kit init` would be noise at the moment the
-	// tool is judged.
+	// decompose, and a finding on a fresh scaffold would be noise at the moment the
+	// tool is judged. This is the whole prompt for the one file the kit will not write —
+	// a scaffolded stub answered nothing and reported itself from the first minute.
 	if s.r.Vision == "" && len(s.r.Features) > 0 {
 		missing = append(missing, "no docs/VISION.md, and features are being planned "+
 			"with nothing saying what the project is for")
+		fixes = append(fixes, "write docs/VISION.md — see: kit help vision")
 	}
 	if len(missing) == 0 {
 		return nil
 	}
-	return []Finding{finding(checkNoProtocol, s.r.Name, strings.Join(missing, "; "),
-		"run: kit init . — it writes what is missing and overwrites nothing you wrote")}
+	return []Finding{finding(checkNoProtocol, s.r.Name,
+		strings.Join(missing, "; "), strings.Join(fixes, "; "))}
 }
 
 // Which side is behind decides the fix, because one of the two fixes destroys work:
@@ -800,15 +805,15 @@ func secretsInDocs(s *repoState) []Finding {
 	return out
 }
 
-// The same gap one step later: `kit init` writes the stub, so the run that answers the
-// missing file leaves the question itself unanswered. Not gated on features existing — the
-// stub is worth reporting from the moment it is there, before the first draft it shapes.
+// The same gap one step later: the headings are there and the answers are not. Nothing
+// scaffolds this file any more, so it exists because somebody started it — which is why
+// it is worth reporting before the first draft it shapes rather than once features exist.
 func unfilledVision(s *repoState) []Finding {
 	if s.r.Vision == "" || !visionIsStub(s.r.Vision) {
 		return nil
 	}
 	return []Finding{finding(checkUnfilledVision, s.r.Rel(s.r.Vision),
-		"every section is empty — the stub was written by kit init and never filled in",
+		"every section under its headings is empty — the shape was copied in and left",
 		"say what the project is for, who for, and what it is not; "+
 			"see: kit help vision")}
 }

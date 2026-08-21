@@ -16,8 +16,8 @@ import (
 )
 
 // setUp returns a project that has already been initialised, with its vision
-// answered: the stub `kit init` leaves is itself a finding, so a project still
-// carrying it is not a quiet baseline.
+// answered: `kit init` writes no vision, and a project planning features without one
+// is itself a finding, so a project missing it is not a quiet baseline.
 func setUp(t *testing.T) *project {
 	t.Helper()
 	p := newProject(t)

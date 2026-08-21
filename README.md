@@ -59,9 +59,9 @@ kit init /path/to/project --forge gitlab   # when nothing says which
 Run it from anywhere — `kit` is on your `$PATH`. Prompting an agent inside the kit's own
 repo to set up some other project gives it write access to the tool it is using.
 
-It creates the directory if missing, makes it a git repo, and writes `docs/VISION.md`,
-an empty `docs/features/` and `AGENTS.md`. It overwrites nothing you wrote, so it is safe
-on a populated directory and safe to re-run.
+It creates the directory if missing, makes it a git repo, and writes `AGENTS.md` and an
+empty `docs/features/`. It overwrites nothing you wrote, so it is safe on a populated
+directory and safe to re-run.
 
 With `--stack go` it also writes `Makefile`, `.gitignore`, `go.mod`, `cmd/<name>/`,
 `internal/`, a `README.md`, and one CI pipeline running `make check`.
@@ -83,9 +83,11 @@ refreshed: the `## Work protocol` section of `AGENTS.md`. Everything you fill in
 vision and every stack file — is never touched, and house rules live above the marker
 comment in `AGENTS.md`.
 
-A file the kit writes is one the project will fill in. The two that wait for a reason to
-exist are not scaffolded: `kit block` creates `docs/INBOX.md` with the first question, and
-`kit ship` creates `docs/TECH.md` when something has shipped.
+A file the kit writes is one the project will fill in, so nothing else is scaffolded.
+`docs/VISION.md` is the one document only you can write, and a stub would answer none of
+it: `kit audit` asks for it once features exist, and `kit help vision` prints the shape.
+`kit block` creates `docs/INBOX.md` with the first question, and `kit ship` creates
+`docs/TECH.md` when something has shipped.
 
 Once set up you never run anything yourself. `AGENTS.md` tells the agent to run
 `kit next` at the start of a session, so "what should I work on?" is enough.

@@ -92,7 +92,7 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
 ## Tasks
 
 - [x] `init` stops writing `TEMPLATE.md` and `BACKLOG.md`, and `kit block` creates `INBOX.md`
-- [ ] `init` stops writing the `VISION.md` stub, and `no-protocol` carries the prompt
+- [x] `init` stops writing the `VISION.md` stub, and `no-protocol` carries the prompt
 - [ ] The protocol drops the rules a refusal already makes, and rule 10 goes as false
 - [ ] Rule 2's "and" test is replaced by the doc-earns-its-place test
 - [ ] The protocol stops routing work away from the kit, and says how long a doc runs
@@ -108,6 +108,13 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
   drop it and let `no-protocol` say so.
 
 ## Log
+
+- 2026-08-21 — the open question is settled the way it leaned: no `VISION.md` at all, not
+  an empty heading. `no-protocol` gained a second fix line for it, because `kit init .`
+  no longer writes the file the finding asks for and offering that command would be false.
+- 2026-08-21 — `unfilled-vision` stays. Nothing scaffolds a stub now, but
+  `kit help vision > docs/VISION.md` still produces one and leaving it unanswered is the
+  same defect it always reported.
 
 - 2026-08-21 — `init` still writes one thing into `docs/features/`: a `.gitkeep`. The board
   is a directory listing, so `next`, `audit` and `new` all exit 2 without the directory,
