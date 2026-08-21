@@ -261,6 +261,16 @@ Draft -> Shipped     (exit: Dropped)
   a doc growing and no reviewer counts lines. Tiered by how long the reader is expected to
   sit with it: command help tightest, then the protocol, then topics, then the two whole
   documents. Ceilings only — a floor rewards padding.
+- **The binary names nothing it does not have.** Tests hold `help.go` against the check
+  registry, against `main.go`'s dispatcher and against the topic map, both ways —
+  `kit ship --help` advertised `doc-bloat` for a release after the check was deleted.
+- **A refusal list is complete or it is not a list.** `cmd/kit/refusals_test.go` names every
+  reason `ship`, `release` and `claim` turn work away and counts the refusals in the source,
+  so a new one reaches neither the code nor the help alone. The protocol points at
+  `kit ship --help` rather than carrying a second copy.
+- **`--json` is a contract and its shape is pinned.** The board's four groups are `[]` when
+  empty, `moved` is absent rather than a year-1 timestamp — `omitempty` does nothing for a
+  struct — and a directory nothing surveyed reports through `error` at exit 2.
 
 ## Gotchas
 
@@ -276,7 +286,9 @@ Each of these has already caused a bug.
   underline closed the block early, a document-wide replace stamped the ship date into a
   `title:` quoting a status, and `\s+#` cut `title: Fix #123 crash` down to `Fix`.
 - **Go's `flag` stops parsing at the first positional.** `parseArgs` loops it so a flag
-  after an argument still parses.
+  after an argument still parses. It also writes usage to the stream it writes a
+  bad-flag error to, so `newFlagSet` picks the stream from the args: help asked for is
+  output, help printed after an error is a diagnostic.
 - **The `## Work protocol` section of a project's `AGENTS.md` is regenerated** by `init`.
   Edits inside it are lost; durable house rules go above the marker.
 - **`kit help checks` is generated from the registry `audit` reports from.** Add checks

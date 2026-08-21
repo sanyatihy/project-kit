@@ -66,7 +66,11 @@ const (
 	// 327 on merging 0056, which states where a claim is read from. Ten lines rather than
 	// its own seven: 0050 landed three over the ceiling nobody raised, because a merge
 	// result is the one state neither pull request's own gate ever runs against.
-	techBudget = 327
+	// 339 since 0055. Three guarantees rather than the routing rule's one line: what the
+	// binary may name, that a refusal list is whole, and the shape of `--json`. Each is a
+	// contract a later change can break silently, so each states what holds and what
+	// broke — and the twelfth line is the `flag` gotcha growing a second half.
+	techBudget = 339
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

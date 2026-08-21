@@ -1,9 +1,9 @@
 ---
 id: 0055
 title: The binary never describes a feature it does not have
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs: 0050, 0051, 0052
 ---
 
@@ -61,3 +61,10 @@ as the one that enforces the registry.
 - [x] The eleven false statements are corrected and the orphaned comments deleted
 
 ## Log
+
+- 2026-08-21 — the doc's eleventh false statement is not one:
+  `TestEveryRegisteredCheckIsExercised` exists and does what AGENTS.md, README.md and
+  TECH.md say. Nothing was corrected for it.
+- 2026-08-21 — three counts were wrong. `ship` refuses for eight reasons, not six;
+  `release`'s list omitted four, not two, one of them added by 0050 after this was drafted;
+  and none of `claim`'s seven exit 2 refusals is one the board makes, not three.
