@@ -88,8 +88,12 @@ func (p *project) run(args ...string) *result {
 	p.t.Helper()
 	cmd := exec.Command(kitBinary(p.t), args...)
 	cmd.Dir = p.Root
-	// TERM=dumb keeps colour codes out of the assertions.
-	cmd.Env = append(os.Environ(), "TERM=dumb")
+	// gitEnv, not os.Environ: every git call the binary makes is a git call this suite
+	// is asserting on, so it needs the same fixed configuration the fixtures get.
+	// Inheriting the developer's ~/.gitconfig made three tests pass on a machine whose
+	// init.defaultBranch is main and fail on any other. TERM=dumb keeps colour codes
+	// out of the assertions.
+	cmd.Env = gitEnv("TERM=dumb")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 

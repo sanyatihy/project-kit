@@ -19,8 +19,8 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 
 	// Everything the binary can tell someone, in one place.
 	all := p.run("help").ok().Stdout
-	for _, topic := range []string{"protocol", "template", "conventions", "checks",
-		"inbox", "vision", "as-built", "go-checklist", "deployment"} {
+	for _, topic := range []string{"protocol", "template", "checks",
+		"inbox", "vision", "as-built", "go-checklist"} {
 		all += p.run("help", topic).ok().Stdout
 	}
 	// Both streams: the flag package prints a command's help on stderr, so reading
@@ -39,8 +39,8 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 		concluded: "kit next cannot see claims made in another clone",
 		needs:     []string{"remote branches"},
 	}, {
-		concluded: "features of equal status have no defined order",
-		needs:     []string{"lowest ID first"},
+		concluded: "features have no defined order",
+		needs:     []string{"Lowest ID first"},
 	}, {
 		concluded: "nothing exits non-zero when audit finds something HIGH",
 		needs:     []string{"--strict"},
@@ -51,7 +51,7 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 		needs:     []string{"kit claim"},
 	}, {
 		concluded: "a claimed checkout is a fine place to start the next feature",
-		needs:     []string{"One feature per checkout."},
+		needs:     []string{"one feature per checkout."},
 	}, {
 		concluded: "sequential IDs are handed out safely, so they cannot collide",
 		needs:     []string{"Where two agents can still collide", "duplicate-id"},

@@ -41,11 +41,15 @@ const (
 	// process.
 	offlineBudget = 29
 
-	// `kit audit` against a local bare remote, every doc Shipped — the state that makes
-	// the claim checks ask about every feature. The remote is on disk, so the round trip
+	// `kit audit` against a local bare remote. The remote is on disk, so the round trip
 	// is one cheap process and what grows with the board is the fan-out. 67 before 0039
 	// read the trunk's statuses in one pass, 10 after.
-	onlineBudget = 10
+	//
+	// 11 since 0048: the plan checks gate on whether a doc is committed, which is a new
+	// question and so costs a process — one `ls-tree` for the whole tree. It was 40 for a
+	// day, one `cat-file` per feature, which is exactly the shape this ceiling exists to
+	// catch, and it caught it.
+	onlineBudget = 11
 )
 
 func TestABoardReadStaysWithinItsGitBudget(t *testing.T) {
@@ -94,7 +98,7 @@ func budgetFixture(t *testing.T) *project {
 	for i := 1; i <= budgetFeatures; i++ {
 		id := fmt.Sprintf("%04d", i)
 		feature(p, id, fmt.Sprintf("feature-%d", i), fmt.Sprintf("Feature %d", i),
-			"Accepted", "- [ ] One\n- [ ] Two")
+			"Draft", "- [ ] One\n- [ ] Two")
 	}
 	p.git("remote", "add", "origin", origin)
 	p.commitAll("a board")
@@ -113,7 +117,7 @@ func shipEverything(t *testing.T, p *project) {
 	for i := 1; i <= budgetFeatures; i++ {
 		rel := fmt.Sprintf("docs/features/%04d-feature-%d.md", i, i)
 		doc := strings.NewReplacer(
-			"status: Accepted", "status: Shipped",
+			"status: Draft", "status: Shipped",
 			"- [ ] One", "- [x] One",
 			"- [ ] Two", "- [x] Two",
 		).Replace(p.read(rel))

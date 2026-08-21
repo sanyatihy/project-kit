@@ -29,6 +29,11 @@ type Item struct {
 	WaitingOn string   `json:"waiting_on,omitempty"`
 	Mine      bool     `json:"mine,omitempty"`
 
+	// Unplanned marks a feature blocked only because nobody has written its plan. That
+	// is the one blocked state whose fix is the reader's own next action rather than
+	// somebody else's, so the closing guidance has to tell them apart.
+	Unplanned bool `json:"unplanned,omitempty"`
+
 	// Moved is the claim branch's last commit — how long the work has been sitting
 	// where it is. Zero when nothing claims the feature or the branch cannot be read.
 	Moved time.Time `json:"moved,omitempty"`
@@ -44,11 +49,6 @@ type Waiting struct {
 	Branch string    `json:"branch"`
 	Since  time.Time `json:"since"`          // when the branch last moved
 	Mine   bool      `json:"mine,omitempty"` // the reader built it, so it is not theirs to merge
-
-	// NeedsHuman is the doc's review: mark. A coordinator agent may merge what is not
-	// marked and not its own; this is the rest, and it says so rather than the agent
-	// having to open the doc to find out.
-	NeedsHuman bool `json:"needs_human,omitempty"`
 }
 
 // Plan sorts the open features into what is yours, what you can start, what is
@@ -107,6 +107,21 @@ func (p Plan) InProgress() int {
 		}
 	}
 	return n
+}
+
+// unplanned names the first doc that is blocked only because nobody wrote it, and "" when
+// something else could be worked instead. A feature nobody has written is the reader's own
+// unfinished business; every other blocked state is somebody else's.
+func (p Plan) unplanned() string {
+	if len(p.Yours) > 0 || len(p.Ready) > 0 {
+		return ""
+	}
+	for _, item := range p.Blocked {
+		if item.Unplanned {
+			return item.Doc
+		}
+	}
+	return ""
 }
 
 // Empty reports whether there is nothing open at all.
@@ -174,6 +189,13 @@ func Survey(r *Repo) Plan {
 			} else if claim != "" {
 				item.ClaimedBy = claim
 				plan.Taken = append(plan.Taken, item)
+			} else if f.Status != StatusDraft {
+				// `claim` refuses any status it does not know, so offering one here would
+				// send an agent to a command that turns it away. Draft is the only status
+				// work starts from; anything else open is a doc left behind by an older
+				// kit, and fixing it is what has to happen first.
+				item.WaitingOn = "unknown status " + f.Status + " — set it to " + StatusDraft
+				plan.Blocked = append(plan.Blocked, item)
 			} else if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
 				// `claim` refuses this, so offering it is the board sending an agent to a
 				// command that turns it away — the loop 0013 exists to stop. The branch
@@ -191,6 +213,7 @@ func Survey(r *Repo) Plan {
 				// two causes with opposite fixes.
 				item.WaitingOn = "no plan yet — ## " + strings.Join(unplanned, ", ## ") +
 					" never written"
+				item.Unplanned = true
 				plan.Blocked = append(plan.Blocked, item)
 			} else if item.Task == "" {
 				// Nothing to do has two causes needing opposite fixes: the work is
@@ -222,10 +245,6 @@ func Survey(r *Repo) Plan {
 			Branch: waiting.Branch,
 			Since:  waiting.Since,
 			Mine:   waiting.Mine,
-
-			// Read from this checkout, unlike the status: the mark is set when the round
-			// is accepted, so it landed on the trunk with the doc and is here to read.
-			NeedsHuman: waiting.Feature.NeedsHuman(),
 		})
 	}
 	// After the work, so it reports what actually went unanswered.
@@ -236,7 +255,7 @@ func Survey(r *Repo) Plan {
 
 // waitingOnNeeds says what an unmet needs: is waiting for.
 //
-// A dependency that is Dropped or Superseded can never ship, so "to ship first" is a
+// A dependency that is Dropped can never ship, so "to ship first" is a
 // promise the board cannot keep: the agent reads it as a wait that ends, and it does not.
 // The two need opposite answers — one ends on its own, the other only when somebody edits
 // the field — so the line has to say which. `audit` already tells them apart; this is the
@@ -245,7 +264,7 @@ func waitingOnNeeds(r *Repo, unmet []string) string {
 	var pending, dead []string
 	for _, id := range unmet {
 		if dep := r.FeatureByID(id); dep != nil &&
-			(dep.Status == "Dropped" || dep.Status == "Superseded") {
+			dep.Status == StatusDropped {
 			dead = append(dead, id+" ("+dep.Status+")")
 			continue
 		}
@@ -276,6 +295,13 @@ func guidanceFor(r *Repo, plan Plan) string {
 		return "nothing is free to build: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
 			reviewing(len(plan.AwaitingReview))
+	// Before the "nothing is free" arm below, because it is not true here: the work is
+	// to write the plan for the doc that was just created. An agent that ran `kit new`
+	// and then `kit next` — the documented sequence — was told to stop and wait.
+	case plan.unplanned() != "":
+		return "write the plan in " + plan.unplanned() + " — fill in ## Problem, " +
+			"## Design and ## Tasks, then run kit next again. Nothing can be claimed " +
+			"until a doc says what to build."
 	case !plan.Empty():
 		return "nothing is free: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +

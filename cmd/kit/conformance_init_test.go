@@ -4,6 +4,7 @@ package main
 // destroys anything — it is run on populated repos, and repeatedly.
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -15,7 +16,6 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 
 	for _, want := range []string{
 		"docs/VISION.md",
-		"docs/features/README.md",
 		"docs/features/TEMPLATE.md",
 		"docs/features/BACKLOG.md",
 		"docs/INBOX.md",
@@ -26,8 +26,18 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 		}
 	}
 	// The protocol is what makes the docs actionable; a layout without it is inert.
-	if !strings.Contains(p.read("AGENTS.md"), "## Work protocol") {
+	agents := p.read("AGENTS.md")
+	if !strings.Contains(agents, "## Work protocol") {
 		t.Error("AGENTS.md has no work protocol section")
+	}
+	// And it opens on the project rather than on a bare `##`, with the marker that says
+	// where house rules survive a refresh. The file used to start mid-document, so the
+	// promise that everything above the marker is kept reached nobody.
+	if !strings.HasPrefix(agents, "# "+filepath.Base(p.Root)+"\n") {
+		t.Errorf("AGENTS.md does not open with the project's name:\n%.80s", agents)
+	}
+	if !strings.Contains(agents, "House rules go here") {
+		t.Errorf("AGENTS.md never says where a project's own rules go:\n%s", agents)
 	}
 }
 
@@ -168,25 +178,8 @@ Below the section.
 			t.Errorf("refreshing the protocol destroyed %q, which is not kit-owned", keep)
 		}
 	}
-	if !strings.Contains(got, "One agent per feature") {
+	if !strings.Contains(got, "Take a feature with `kit claim <id>`") {
 		t.Error("the refreshed section does not contain the current protocol")
-	}
-}
-
-func TestInitRespectsAnExistingFeaturesLayout(t *testing.T) {
-	t.Parallel()
-	// A project already using features/ must not end up with both that and
-	// docs/features/ — re-running would otherwise fork the board in two.
-	p := newProject(t)
-	p.write("features/0001-existing.md", "---\nid: 0001\n---\n")
-
-	p.run("init").ok()
-
-	if p.exists("docs/features/README.md") {
-		t.Error("init forked the board: the project uses features/, not docs/features/")
-	}
-	if !p.exists("features/README.md") {
-		t.Error("init did not fill in the layout the project already uses")
 	}
 }
 

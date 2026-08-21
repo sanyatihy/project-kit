@@ -45,4 +45,4 @@ jobs:
 
       # No install step: `go run` builds from the checkout, so this works on a
       # private repo with no token.
-      - run: go run ./cmd/kit audit . --strict
+      - run: go run ./cmd/kit audit --strict

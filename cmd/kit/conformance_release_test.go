@@ -104,3 +104,55 @@ func TestReleaseRefusalsThatAreNotAboutWork(t *testing.T) {
 	// A feature that does not exist at all.
 	a.run("release", "0099").fails(2)
 }
+
+// The claim-theft chain, end to end. An agent that loses the race can see the winner's
+// branch on the remote but never created it, so releasing it is refused. Without this,
+// the losing agent could free the feature and claim it, and both checkouts were then
+// told the feature was theirs.
+func TestReleaseRefusesAClaimThisCloneNeverCreated(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	b.git("fetch", "-q", "origin")
+
+	b.run("release", "0007").fails(2).errHas("never created", "--force")
+
+	if !hasRemoteBranch(t, a, "0007-widget") {
+		t.Fatal("the refusal deleted the winner's claim anyway")
+	}
+	// And the winner still holds it: the loser cannot get in by claiming again.
+	b.run("claim", "0007").fails(1)
+}
+
+// The refusal `claim` prints must not name a command that takes somebody's branch.
+// It named `git push --delete`, which has neither the work guard nor the ownership
+// check, and a losing agent that ran it won the feature on the next attempt.
+func TestLosingAClaimNeverPointsAtARawBranchDelete(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	b.git("fetch", "-q", "origin")
+
+	lost := b.run("claim", "0007").fails(1)
+	lost.errHas("kit release 0007")
+	if strings.Contains(lost.Stderr, "--delete") {
+		t.Errorf("the losing agent is told how to delete the winner's branch:\n%s", lost.Stderr)
+	}
+}
+
+// `BranchBuildsOn` answers "carries no work" when no trunk resolves, and that is the
+// answer that deletes. A project whose default branch is neither `main` nor `master`
+// reached that state from any claim checkout, and released real commits at exit 0.
+func TestReleaseRefusesWhenNoTrunkResolves(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgentsOn(t, "trunk")
+	a.run("claim", "0007").ok()
+	workOn(t, a, "0007-widget")
+	a.git("push", "-q", "origin", "0007-widget")
+
+	a.run("release", "0007").fails(2)
+
+	if !hasRemoteBranch(t, a, "0007-widget") {
+		t.Fatal("release deleted a branch carrying work on a repo with no resolvable trunk")
+	}
+}

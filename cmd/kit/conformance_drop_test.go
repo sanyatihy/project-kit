@@ -59,7 +59,7 @@ func TestDropReportsWhoWasWaitingOnIt(t *testing.T) {
 	stranding := setUp(t)
 	feature(stranding, "0001", "base", "Base", "Draft", "- [ ] Something")
 	stranding.write("docs/features/0002-store.md",
-		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
 
 	r := stranding.run("drop", "0001", "not worth it").ok()
 	r.has("still needed by", "0002", "needs:")

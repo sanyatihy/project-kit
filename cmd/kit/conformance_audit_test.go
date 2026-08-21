@@ -25,7 +25,7 @@ func cleanProject(t *testing.T) *project {
 	p := newProject(t)
 	p.run("init").ok()
 	writeVision(p)
-	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	feature(p, "0001", "thing", "A thing", "Draft", "- [ ] Do the thing")
 	return p
 }
 
@@ -53,15 +53,13 @@ func (p *project) auditCodes(flags ...string) []string {
 	if r.Code > 1 {
 		p.t.Fatalf("audit --json failed: %s", r.context())
 	}
-	var payload map[string]audited
+	var payload audited
 	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
 		p.t.Fatalf("audit --json emitted invalid JSON: %v\n%s", err, r.Stdout)
 	}
 	var codes []string
-	for _, one := range payload {
-		for _, f := range one.Findings {
-			codes = append(codes, f.Code)
-		}
+	for _, f := range payload.Findings {
+		codes = append(codes, f.Code)
 	}
 	return codes
 }
@@ -77,7 +75,7 @@ func daysAgo(n int) string {
 // there is no longer one that could.
 func abandonedClaim(p *project, id, slug string, daysOld int) {
 	p.t.Helper()
-	feature(p, id, slug, "Stuck", "Accepted", "- [ ] Never finished")
+	feature(p, id, slug, "Stuck", "Draft", "- [ ] Never finished")
 	p.commitAllAt("the plan", daysAgo(daysOld))
 	trunk := p.headBranch()
 	p.git("checkout", "-q", "-b", id+"-"+slug)
@@ -115,7 +113,7 @@ var auditCases = []struct {
 		// nothing for git to conflict on. The filename prefix matches the id in both,
 		// so this is a clean duplicate and not an id-mismatch wearing a disguise.
 		p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
-			"Accepted", "", "- [ ] Something"))
+			"Draft", "", "- [ ] Something"))
 	}},
 	{"stalled", func(p *project) {
 		abandonedClaim(p, "0002", "stuck", 40)
@@ -130,23 +128,6 @@ var auditCases = []struct {
 		p.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
 			"shipped: "+daysAgo(1), "- [x] Built it"))
 		p.commitAll("ship 0002 and tell nobody")
-	}},
-	{"session-narration", func(p *project) {
-		// The work, not the system: a line that stops being true the moment it is fixed.
-		p.write("docs/features/0002-narrated.md", doc("0002", "Narrated", "Accepted", "",
-			"- [ ] Something")+"- 2026-01-01 — both failures this session live here.\n")
-	}},
-	{"doc-bloat", func(p *project) {
-		// Padding, not content: a doc past the line limit with nothing in it worth
-		// keeping. The quiet half is every other case in this table.
-		p.write("docs/features/0002-long.md", doc("0002", "Long", "Accepted", "",
-			"- [ ] Something")+strings.Repeat("\nrestating what the section above said.\n", 90))
-	}},
-	{"long-sentence", func(p *project) {
-		// Three claims welded together, hard-wrapped the way every doc here is. The
-		// wrap is the point: a line-at-a-time count sees four short lines.
-		p.write("docs/features/0002-stacked.md", doc("0002", "Stacked", "Accepted", "",
-			"- [ ] Something")+"\n"+stackedSentence+"\n")
 	}},
 	{"unticked-shipped", func(p *project) {
 		p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
@@ -170,10 +151,6 @@ var auditCases = []struct {
 			"# Inbox\n\n- [ ] %s · 0099 · BLOCKING · About a feature that never existed?\n",
 			daysAgo(1)))
 	}},
-	{"unchecked", func(p *project) {
-		p.write("docs/features/0002-bet.md", doc("0002", "A bet", "Accepted",
-			"check: "+daysAgo(5), "- [ ] Do the thing"))
-	}},
 	{"no-plan", func(p *project) {
 		// Commits but no feature doc: what adoption failing looks like.
 		if err := os.Remove(p.path("docs/features/0001-thing.md")); err != nil {
@@ -182,7 +159,10 @@ var auditCases = []struct {
 		p.commitAll("work with nothing written down")
 	}},
 	{"done-not-shipped", func(p *project) {
-		feature(p, "0002", "done", "Done", "Accepted", "- [x] All finished")
+		// Committed, because the gate is now whether HEAD carries the doc: a plan still
+		// being written in a working tree is nobody's defect.
+		feature(p, "0002", "done", "Done", "Draft", "- [x] All finished")
+		p.commitAll("a feature with every box ticked")
 	}},
 	{"tech-drift", func(p *project) {
 		p.write("docs/TECH.md", "# As built\n\nThe old description.\n")
@@ -193,14 +173,8 @@ var auditCases = []struct {
 	{"shipped-no-date", func(p *project) {
 		feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
 	}},
-	{"missing-section", func(p *project) {
-		// Shipped only: an Accepted feature has nothing to log yet.
-		p.write("docs/features/0002-silent.md",
-			"---\nid: 0002\ntitle: Silent\nstatus: Shipped\nshipped: "+daysAgo(1)+"\n---\n\n"+
-				"## Problem\nReal.\n\n## Design\nThis way.\n\n## Tasks\n- [x] Done\n\n## Log\n")
-	}},
 	{"id-mismatch", func(p *project) {
-		p.write("docs/features/0002-confused.md", doc("0009", "Confused", "Accepted",
+		p.write("docs/features/0002-confused.md", doc("0009", "Confused", "Draft",
 			"", "- [ ] Something"))
 	}},
 	{"no-status", func(p *project) {
@@ -216,19 +190,20 @@ var auditCases = []struct {
 		// unfilled-template's, so this is the narrower case: somebody wrote about the
 		// work without ever writing a box an agent can do.
 		p.write("docs/features/0002-empty.md",
-			"---\nid: 0002\ntitle: Empty\nstatus: Accepted\ncreated: 2026-01-01\n---\n\n"+
+			"---\nid: 0002\ntitle: Empty\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
 				"## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n"+
 				"## Tasks\nWe will figure the boxes out later.\n\n## Log\n- 2026-01-01 — started.\n")
+		p.commitAll("a plan with no boxes in it")
 	}},
 	{"unfilled-template", func(p *project) {
-		// `kit new` and then nothing but the status flipped. The template's guidance is
-		// all comments, so every section it did not write reads as empty.
+		// `kit new` and then nothing, committed. The template's guidance is all comments,
+		// so every section it did not write reads as empty; committing it is what turns a
+		// doc somebody is still writing into a plan the repo now claims to have.
 		p.run("new", "Never written").ok()
-		path := "docs/features/0002-never-written.md"
-		p.write(path, strings.Replace(p.read(path), "status: Draft", "status: Accepted", 1))
+		p.commitAll("commit a doc nobody wrote")
 	}},
 	{"split-claim", func(p *project) {
-		feature(p, "0002", "contested", "Contested", "Accepted", "- [ ] Something")
+		feature(p, "0002", "contested", "Contested", "Draft", "- [ ] Something")
 		p.commitAll("the doc")
 		p.git("branch", "0002-contested")
 		p.git("branch", "0002-contested-again")
@@ -237,24 +212,13 @@ var auditCases = []struct {
 		p.commitAll("something")
 		p.git("branch", "0099-long-gone")
 	}},
-	{"draft-claimed", func(p *project) {
-		// Two facts together: the doc's ## Open questions are still open, and the
-		// branch carries code as well as the doc. Building on a Draft is the normal
-		// flow; building on questions nobody answered is not.
-		unsettled(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
-		p.commitAll("the doc")
-		p.git("checkout", "-q", "-b", "0002-unsettled")
-		p.write("internal/thing/thing.go", "package thing\n")
-		p.commitAll("start building")
-		p.git("checkout", "-q", "-")
-	}},
 	{"no-protocol", func(p *project) {
 		if err := os.Remove(p.path("AGENTS.md")); err != nil {
 			p.t.Fatalf("removing AGENTS.md: %v", err)
 		}
 	}},
 	{"dead-link", func(p *project) {
-		p.write("docs/features/0002-linky.md", doc("0002", "Linky", "Accepted", "",
+		p.write("docs/features/0002-linky.md", doc("0002", "Linky", "Draft", "",
 			"- [ ] Read [the design](./nowhere.md)"))
 	}},
 	{"no-tech", func(p *project) {
@@ -264,23 +228,23 @@ var auditCases = []struct {
 	}},
 	{"needs-unknown", func(p *project) {
 		p.write("docs/features/0002-hopeful.md",
-			doc("0002", "Hopeful", "Accepted", "needs: 0099", "- [ ] Do it"))
+			doc("0002", "Hopeful", "Draft", "needs: 0099", "- [ ] Do it"))
 	}},
 	{"needs-cycle", func(p *project) {
 		p.write("docs/features/0002-chicken.md",
-			doc("0002", "Chicken", "Accepted", "needs: 0003", "- [ ] Do it"))
+			doc("0002", "Chicken", "Draft", "needs: 0003", "- [ ] Do it"))
 		p.write("docs/features/0003-egg.md",
-			doc("0003", "Egg", "Accepted", "needs: 0002", "- [ ] Do it"))
+			doc("0003", "Egg", "Draft", "needs: 0002", "- [ ] Do it"))
 	}},
 	{"shipped-early", func(p *project) {
-		// 0001 from cleanProject is Accepted, so this shipped ahead of it.
+		// 0001 from cleanProject is a Draft, so this shipped ahead of it.
 		p.write("docs/features/0002-ahead.md",
 			doc("0002", "Ahead", "Shipped", "needs: 0001\nshipped: "+daysAgo(1), "- [x] Done"))
 	}},
 	{"secret-in-doc", func(p *project) {
 		// The realistic path: an agent writes up a failed deploy and pastes what it
 		// was holding into the Log.
-		p.write("docs/features/0002-leaky.md", doc("0002", "Leaky thing", "Accepted", "",
+		p.write("docs/features/0002-leaky.md", doc("0002", "Leaky thing", "Draft", "",
 			"- [ ] Do it\n\n## Log\n- 2026-01-02 — deploy failed with "+fakeSecrets[0].value))
 	}},
 	{"protocol-stale", func(p *project) {
@@ -291,7 +255,7 @@ var auditCases = []struct {
 	{"no-vision", func(p *project) {
 		// A feature exists, so there is something that should have been decomposed
 		// from a vision, and nothing to decompose it from.
-		feature(p, "0002", "planned", "Planned thing", "Accepted", "- [ ] Do it")
+		feature(p, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
 		if err := os.Remove(p.path("docs/VISION.md")); err != nil {
 			p.t.Fatalf("removing VISION.md: %v", err)
 		}
@@ -354,23 +318,6 @@ var fakeSecrets = []struct {
 	{"api key", "sk-ant-" + strings.Repeat("E", 24)},
 }
 
-func TestADraftAwaitingReviewOnABranchIsNotAClaim(t *testing.T) {
-	t.Parallel()
-	// The first step of the loop: an agent drafts a feature and leaves it for a
-	// human. Nothing goes to the default branch, so the proposal waits on a branch
-	// of its own. Reporting that as "someone is building on a design nobody settled"
-	// fires on correct behaviour, which is the one thing audit cannot afford.
-	p := cleanProject(t)
-	p.commitAll("baseline")
-	p.git("checkout", "-q", "-b", "0002-proposed")
-	feature(p, "0002", "proposed", "Proposed", "Draft", "- [ ] Something")
-	p.commitAll("draft 0002 for review")
-
-	if codes := p.auditCodes(); slices.Contains(codes, "draft-claimed") {
-		t.Errorf("draft-claimed fired on a doc-only branch awaiting review: %v", codes)
-	}
-}
-
 func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
 	t.Parallel()
 	// The shape every real project has: a chain, a diamond, and a feature depending
@@ -380,13 +327,13 @@ func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
 	p.write("docs/features/0001-thing.md",
 		doc("0001", "A thing", "Shipped", "shipped: "+daysAgo(2), "- [x] Done"))
 	p.write("docs/features/0002-left.md",
-		doc("0002", "Left", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0002", "Left", "Draft", "needs: 0001", "- [ ] Do it"))
 	p.write("docs/features/0003-right.md",
-		doc("0003", "Right", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0003", "Right", "Draft", "needs: 0001", "- [ ] Do it"))
 	p.write("docs/features/0004-join.md",
-		doc("0004", "Join", "Accepted", "needs: 0002, 0003", "- [ ] Do it"))
+		doc("0004", "Join", "Draft", "needs: 0002, 0003", "- [ ] Do it"))
 	p.write("docs/features/0005-alone.md",
-		doc("0005", "Alone", "Accepted", "", "- [ ] Do it"))
+		doc("0005", "Alone", "Draft", "", "- [ ] Do it"))
 
 	for _, code := range []string{"needs-unknown", "needs-cycle", "shipped-early"} {
 		if codes := p.auditCodes(); slices.Contains(codes, code) {
@@ -435,7 +382,7 @@ func TestSecretInDocStaysQuietOnProseAboutSecrets(t *testing.T) {
 	// asks for. A check that fires on the correct behaviour would train people to
 	// ignore it, and audit has nothing but being believed.
 	p := cleanProject(t)
-	p.write("docs/features/0002-talky.md", doc("0002", "Talky thing", "Accepted", "",
+	p.write("docs/features/0002-talky.md", doc("0002", "Talky thing", "Draft", "",
 		"- [ ] Read GITHUB_TOKEN from the environment, never a ghp_ literal\n"+
 			"- [ ] Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in CI, not here\n"+
 			"- [ ] Connect with postgres://app@db.example.com/prod and a password from the vault\n"+
@@ -596,106 +543,6 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	}
 }
 
-// stackedSentence is 47 words carrying three claims, wrapped at the width these docs use.
-// One claim would be "the cache is per-process"; the rest is what the rule names.
-const stackedSentence = `The cache is per-process because a shared one would need
-invalidation across every worker, which this deployment does not have, and it also
-drops the dependency we have been trying to get rid of since the migration that the
-previous quarter's work left half finished behind it.`
-
-func TestLongSentenceMeasuresProseAndNothingElse(t *testing.T) {
-	t.Parallel()
-	// The quiet half is the one that decides whether the check is usable. A doc about
-	// writing quotes long examples in fences and comments, a table row is not a sentence
-	// however wide it is, and a task box is an outcome that 0037 froze as written.
-	p := cleanProject(t)
-	oneLine := strings.ReplaceAll(stackedSentence, "\n", " ")
-	p.write("docs/features/0002-quoting.md", doc("0002", "Quoting", "Accepted", "",
-		"- [ ] "+oneLine)+
-		"\n<!-- "+stackedSentence+" -->\n"+
-		"\n```\n"+stackedSentence+"\n```\n"+
-		"\n| what | why |\n| --- | --- |\n| a row | "+oneLine+" |\n")
-	if codes := p.auditCodes(); slices.Contains(codes, "long-sentence") {
-		t.Errorf("fired on a fence, a comment, a table row or a task box: %v", codes)
-	}
-
-	// And the firing half, on the same sentence as prose. One finding per doc, for
-	// session-narration's reason: the fix is the same edit every time.
-	p = cleanProject(t)
-	p.write("docs/features/0002-stacked.md", doc("0002", "Stacked", "Accepted", "",
-		"- [ ] Something")+"\n"+stackedSentence+"\n\n"+stackedSentence+"\n")
-	r := p.run("audit").ok()
-	r.has("long-sentence", "47 words")
-	if n := strings.Count(r.Stdout, "long-sentence"); n != 1 {
-		t.Errorf("reported long-sentence %d times, want one finding for the doc:\n%s",
-			n, r.Stdout)
-	}
-}
-
-func TestSessionNarrationIsAPreciseBackstop(t *testing.T) {
-	t.Parallel()
-	// The quiet half is the one that decides whether the check is usable: a doc *about*
-	// the rule quotes the markers, and the template's guidance is nothing but comments.
-	// Reporting either would make the rule a violation of itself.
-	p := cleanProject(t)
-	p.write("docs/features/0002-about.md", doc("0002", "About", "Accepted", "",
-		"- [ ] Ban narration")+
-		"<!-- not \"this session\", which is the work -->\n"+
-		"\n```\n- 2026-01-01 — this session went badly\n```\n")
-	if codes := p.auditCodes(); slices.Contains(codes, "session-narration") {
-		t.Errorf("fired on markers quoted in a comment and a fence: %v", codes)
-	}
-
-	// And the loud half, reported once however often the doc narrates.
-	p.write("docs/features/0003-narrated.md", doc("0003", "Narrated", "Accepted", "",
-		"- [ ] Something")+
-		"- 2026-01-01 — this session found it.\n- 2026-01-02 — it turned out to be worse.\n")
-	r := p.run("audit").ok()
-	r.has("session-narration", "this session")
-	if n := strings.Count(r.Stdout, "session-narration"); n != 1 {
-		t.Errorf("reported %d times; one finding per doc is the whole point:\n%s", n, r.Stdout)
-	}
-
-	// Shipped is frozen by rule 11, so the same doc must go quiet the moment it ships —
-	// a finding whose fix the protocol forbids is noise on every later board.
-	p.write("docs/features/0003-narrated.md", doc("0003", "Narrated", "Shipped",
-		"shipped: 2026-01-02", "- [x] Something")+
-		"- 2026-01-01 — this session found it.\n")
-	if codes := p.auditCodes(); slices.Contains(codes, "session-narration") {
-		t.Errorf("fired on a Shipped doc, which rule 11 forbids editing: %v", codes)
-	}
-
-	// A ## Log revising an earlier entry is the transcript of the work: what survives the
-	// revision is one line about the system, and the argument belongs in the PR. The
-	// marker straddles the wrap here, which is how it is written in a real doc.
-	p.write("docs/features/0004-revised.md", doc("0004", "Revised", "Accepted", "",
-		"- [ ] Something")+
-		"- 2026-01-01 — capped at 2048.\n- 2026-01-02 — that diagnosis was\n  wrong: the cap was fine.\n")
-	p.run("audit").ok().has("session-narration", "was wrong")
-}
-
-func TestDocBloatMeasuresTheWholeDocAndNothingInsideIt(t *testing.T) {
-	t.Parallel()
-	// A long ## Log is no longer bloat. 0038 capped a single entry using a corpus whose
-	// Logs had just been cut; against one written to the standard the kit wants, that cap
-	// falls on the entries carrying what the doing taught. Only the whole file is measured.
-	p := cleanProject(t)
-	entry := "- 2026-01-01 — a measurement, and what it changed downstream"
-	for i := 0; i < 12; i++ {
-		entry += "\n  spilling onto another line"
-	}
-	p.write("docs/features/0002-taught.md", doc("0002", "Taught", "Accepted", "",
-		"- [ ] Something")+"\n"+entry+"\n")
-	if codes := p.auditCodes(); slices.Contains(codes, "doc-bloat") {
-		t.Errorf("fired on a short doc with a long ## Log entry: %v", codes)
-	}
-
-	// The doc as a whole still has a ceiling, and it is reported in lines.
-	p.write("docs/features/0003-long.md", doc("0003", "Long", "Accepted", "",
-		"- [ ] Something")+strings.Repeat("\nrestating what the section above said.\n", 90))
-	p.run("audit").ok().has("doc-bloat", fmt.Sprintf("over %d", kit.DocLineLimit))
-}
-
 func TestEveryRegisteredCheckIsExercised(t *testing.T) {
 	t.Parallel()
 	// AGENTS.md requires a test that a new check fires and one that it stays quiet.
@@ -763,25 +610,25 @@ func TestIDMismatchFailsStrict(t *testing.T) {
 	t.Parallel()
 	// Raised from MEDIUM. A doc whose id: and filename disagree is not untidy: the
 	// branch comes from the filename and the board looks for the id, so the feature's
-	// own claim is invisible and it keeps being handed out. --strict is rule 12's
-	// gate, so this is what stops it being left sitting while agents run.
+	// own claim is invisible and it keeps being handed out. --strict is the gate in
+	// front of `kit ship`, so this is what stops it being left sitting while agents run.
 	mismatched := cleanProject(t)
 	mismatched.write("docs/features/0002-confused.md",
-		doc("0009", "Confused", "Accepted", "", "- [ ] Something"))
+		doc("0009", "Confused", "Draft", "", "- [ ] Something"))
 	mismatched.run("audit", "--strict").fails(1).has("id-mismatch")
 
 	// The quiet half: agreeing is the normal case and must not fail anything.
 	agreed := cleanProject(t)
 	agreed.write("docs/features/0002-agreed.md",
-		doc("0002", "Agreed", "Accepted", "", "- [ ] Something"))
+		doc("0002", "Agreed", "Draft", "", "- [ ] Something"))
 	agreed.run("audit", "--strict").ok().lacks("id-mismatch")
 }
 
 func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
 	t.Parallel()
-	// The failure this closes: `In progress` is set on the feature branch, so the trunk
-	// checkout — the only one a human or a supervising agent audits — sees `Accepted`
-	// and reported nothing. An agent that died holding a feature was indistinguishable
+	// The failure this closes: a status set on the feature branch never reaches the trunk
+	// checkout — the only one a human or a supervising agent audits — so it saw an open
+	// doc and reported nothing. An agent that died holding a feature was indistinguishable
 	// from one hard at work, permanently, and the board just said "taken".
 	//
 	// Liveness now comes from the claim branch, so what is being asserted is both
@@ -798,7 +645,7 @@ func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
 			p := newProject(t)
 			p.run("init").ok()
 			// Trunk carries the doc exactly as it looks after a draft PR merges.
-			feature(p, "0002", "widget", "Widget", "Accepted", "- [ ] Build it")
+			feature(p, "0002", "widget", "Widget", "Draft", "- [ ] Build it")
 			p.commitAllAt("the plan", daysAgo(tc.age))
 			trunk := p.headBranch()
 
@@ -808,7 +655,7 @@ func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
 			p.commitAllAt("0002: start building", daysAgo(tc.age))
 			p.git("checkout", "-q", trunk)
 
-			// Read from the trunk, where the doc still says Accepted.
+			// Read from the trunk, where the doc still says Draft.
 			if got := slices.Contains(p.auditCodes(), "stalled"); got != tc.want {
 				t.Errorf("work %d day(s) old, seen from %s: stalled=%v, want %v",
 					tc.age, trunk, got, tc.want)
@@ -824,7 +671,7 @@ func TestAClaimCarryingNoWorkIsNeverCalledStalled(t *testing.T) {
 	// finding, so `next` reports it as taken and audit says nothing.
 	p := newProject(t)
 	p.run("init").ok()
-	feature(p, "0002", "widget", "Widget", "Accepted", "- [ ] Build it")
+	feature(p, "0002", "widget", "Widget", "Draft", "- [ ] Build it")
 	p.commitAllAt("the plan", daysAgo(60))
 	p.git("branch", "0002-widget")
 
@@ -838,8 +685,8 @@ func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
 	// The trunk used to be the first of `main`/`master` that resolved. A project whose
 	// default branch is neither had no trunk to compare against, so BranchBuildsOn
 	// answered "nothing changed" for every branch — and every check built on it went
-	// quiet. draft-claimed is the observable one: somebody building on an unsettled
-	// design was invisible for the whole class of repos that do not use those two names.
+	// quiet. `stalled` is the observable one: an agent that died holding a feature was
+	// invisible for the whole class of repos that do not use those two names.
 	// Both ways a project can have one: read from the remote, which is the case that
 	// matters for anything hosted, and guessed from HEAD when there is no remote to ask.
 	for _, withRemote := range []bool{true, false} {
@@ -851,8 +698,8 @@ func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
 			p := newProject(t)
 			p.run("init").ok()
 			p.git("checkout", "-q", "-b", "develop")
-			unsettled(p, "0002", "unsettled", "Unsettled", "Draft", "- [ ] Something")
-			p.commitAll("a draft on develop")
+			feature(p, "0002", "widget", "Widget", "Draft", "- [ ] Build it")
+			p.commitAllAt("the plan", daysAgo(kit.StalledDays+1))
 
 			if withRemote {
 				origin := filepath.Join(p.Root, "..", "origin.git")
@@ -863,14 +710,14 @@ func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
 			}
 
 			// A branch carrying work beyond the doc, off a trunk called neither
-			// main nor master.
-			p.git("checkout", "-q", "-b", "0002-unsettled")
+			// main nor master, and nothing has touched it since.
+			p.git("checkout", "-q", "-b", "0002-widget")
 			p.write("internal/thing.go", "package thing\n")
-			p.commitAll("0002: build on a design nobody settled")
+			p.commitAllAt("0002: started and left", daysAgo(kit.StalledDays+1))
 			p.git("checkout", "-q", "develop")
 
-			if codes := p.auditCodes(); !slices.Contains(codes, "draft-claimed") {
-				t.Errorf("work on a Draft went unreported because the trunk is called "+
+			if codes := p.auditCodes(); !slices.Contains(codes, "stalled") {
+				t.Errorf("an abandoned claim went unreported because the trunk is called "+
 					"develop; audit said %v", codes)
 			}
 		})
@@ -881,7 +728,7 @@ func TestAnFYINeverFailsTheShipGate(t *testing.T) {
 	t.Parallel()
 	// `kit block --fyi` promises the feature is not blocked and work continues.
 	// BlockersFor kept that promise and inbox-stale broke it anyway: FYI was reported at
-	// HIGH, so rule 12's `kit audit --strict` refused to let anything ship over a note
+	// HIGH, so the `kit audit --strict` gate refused to let anything ship over a note
 	// whose whole point was that it needed no answer.
 	p := cleanProject(t)
 	p.write("docs/INBOX.md", fmt.Sprintf(
@@ -1043,7 +890,7 @@ func TestDuplicateIDDoesNotFireOnDocsWithNoIDAtAll(t *testing.T) {
 	p := cleanProject(t)
 	for _, name := range []string{"0002-nameless", "0003-alsonameless"} {
 		p.write("docs/features/"+name+".md",
-			"---\ntitle: No id here\nstatus: Accepted\n---\n\n"+
+			"---\ntitle: No id here\nstatus: Draft\n---\n\n"+
 				"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] y\n\n## Log\n- 2026-01-01 — x.\n")
 	}
 
@@ -1060,7 +907,7 @@ func TestDuplicateIDNamesBothDocs(t *testing.T) {
 	// you cannot pick which without seeing both.
 	p := cleanProject(t)
 	p.write("docs/features/0001-thing-as-well.md", doc("0001", "Thing as well",
-		"Accepted", "", "- [ ] Something"))
+		"Draft", "", "- [ ] Something"))
 
 	p.run("audit").ok().has("duplicate-id",
 		"docs/features/0001-thing.md", "docs/features/0001-thing-as-well.md")
@@ -1087,7 +934,7 @@ func TestNextNeverHandsOverWorkThatIsNotYours(t *testing.T) {
 	// --json is the format agents are told to read, so it is the one that matters.
 	p := cleanProject(t)
 	p.write("docs/features/0002-waiting.md",
-		doc("0002", "Waiting", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0002", "Waiting", "Draft", "needs: 0001", "- [ ] Do it"))
 	p.commitAll("two features")
 	p.git("branch", "0001-thing")
 
@@ -1177,134 +1024,12 @@ func TestABranchThatCannotBeResolvedIsNotJudged(t *testing.T) {
 	}
 }
 
-func TestBuildingOnASettledDraftIsNotAFinding(t *testing.T) {
-	t.Parallel()
-	// The normal flow now: an agent claims a Draft and builds. `status:` orders the
-	// board and does not gate it, so reporting this would fire on correct behaviour —
-	// the one thing audit cannot afford. What draft-claimed still reports is the
-	// narrower case where the doc's ## Open questions are open.
-	p := cleanProject(t)
-	p.commitAll("baseline")
-	feature(p, "0002", "settled", "Settled", "Draft", "- [ ] Something")
-	p.commitAll("a settled draft")
-	p.git("checkout", "-q", "-b", "0002-settled")
-	p.write("internal/thing/thing.go", "package thing\n")
-	p.commitAll("0002: build it")
-	p.git("checkout", "-q", "-")
-
-	if codes := p.auditCodes(); slices.Contains(codes, "draft-claimed") {
-		t.Errorf("draft-claimed fired on work against a settled Draft: %v", codes)
-	}
-}
-
-func TestAuditSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
-	t.Parallel()
-	// Same failure as `next`, and the same reason it matters: an operator auditing a
-	// fleet got an error about the path they did not care about and silence about the
-	// projects they did.
-	for _, last := range []bool{true, false} {
-		name := "the unusable path last"
-		if !last {
-			name = "the unusable path first"
-		}
-		t.Run(name, func(t *testing.T) {
-			p := cleanProject(t)
-			p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-				"shipped: "+daysAgo(1), "- [ ] Not actually done"))
-			gone := filepath.Join(p.Root, "gone")
-
-			args := []string{"audit", gone, p.Root}
-			if last {
-				args = []string{"audit", p.Root, gone}
-			}
-			r := p.run(args...).fails(2)
-
-			r.outHas("unticked-shipped", gone, "not a directory")
-			r.errHas("kit audit: not a directory: " + gone)
-
-			found, failure := strings.Index(r.Stdout, "unticked-shipped"), strings.Index(r.Stdout, "not a directory")
-			if last != (found < failure) {
-				t.Errorf("the report reordered the paths it was given:\n%s", r.Stdout)
-			}
-		})
-	}
-}
-
-func TestAuditReportsSeveralProjectsInPathOrder(t *testing.T) {
-	t.Parallel()
-	// The projects are read concurrently, so the order of the page is the one thing the
-	// fan-out could take away — and a board whose lines move between runs cannot be
-	// compared with the last one. Two healthy projects, because the failing-path case
-	// above already pins the order when one of them cannot be read at all.
-	first, second := cleanProject(t), cleanProject(t)
-	first.write("docs/features/0002-alpha.md", doc("0002", "AlphaOne", "Shipped",
-		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
-	second.write("docs/features/0003-beta.md", doc("0003", "BetaTwo", "Shipped",
-		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
-
-	for _, forward := range []bool{true, false} {
-		name := "second project last"
-		args := []string{"audit", first.Root, second.Root}
-		if !forward {
-			name = "second project first"
-			args = []string{"audit", second.Root, first.Root}
-		}
-		t.Run(name, func(t *testing.T) {
-			r := first.run(args...).ok()
-			r.outHas("AlphaOne", "BetaTwo")
-
-			alpha, beta := strings.Index(r.Stdout, "AlphaOne"), strings.Index(r.Stdout, "BetaTwo")
-			if forward != (alpha < beta) {
-				t.Errorf("the report reordered the paths it was given:\n%s", r.Stdout)
-			}
-		})
-	}
-}
-
-func TestAuditJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
-	t.Parallel()
-	p := cleanProject(t)
-	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
-	gone := filepath.Join(p.Root, "gone")
-
-	r := p.run("audit", p.Root, gone, "--json").fails(2)
-	var payload map[string]audited
-	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
-		t.Fatalf("--json stopped being parseable when a path was unreadable: %v\n%s",
-			err, r.Stdout)
-	}
-	if healthy := payload[filepath.Base(p.Root)]; len(healthy.Findings) == 0 {
-		t.Errorf("--json lost the audited project: %+v", payload)
-	}
-	if payload[gone].Error == "" {
-		t.Errorf("--json never said %s could not be read: %+v", gone, payload)
-	}
-}
-
-func TestAuditRanksAnUnreadablePathAboveAStrictFinding(t *testing.T) {
-	t.Parallel()
-	// The two codes mean different things to the script running them: 1 is "the audit
-	// found something HIGH", 2 is "the command could not do what it was asked". A path
-	// that could not be read is the second, and reporting it as the first would have a
-	// CI gate treat a vanished project as a finding it could go and fix.
-	p := cleanProject(t)
-	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
-		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
-	gone := filepath.Join(p.Root, "gone")
-
-	// The HIGH finding on its own is still 1.
-	p.run("audit", "--strict", p.Root).fails(1)
-	// With a path it could not read, 2 — and the finding is still reported.
-	p.run("audit", "--strict", p.Root, gone).fails(2).has("unticked-shipped")
-}
-
 func TestADocLeftSayingInProgressIsReported(t *testing.T) {
 	t.Parallel()
 	// The migration path. `In progress` left the vocabulary because nothing could set it
-	// without breaking rule 1, so a doc still carrying it is a leftover — most likely a
-	// claim released without deleting the branch — and `bad-status` says so rather than
-	// the board quietly ignoring the feature.
+	// without contradicting the claim branch, so a doc still carrying it is a leftover —
+	// most likely a claim released without deleting the branch — and `bad-status` says so
+	// rather than the board quietly ignoring the feature.
 	p := cleanProject(t)
 	p.write("docs/features/0002-working.md",
 		doc("0002", "Working", "In progress", "", "- [ ] Something"))
@@ -1312,10 +1037,56 @@ func TestADocLeftSayingInProgressIsReported(t *testing.T) {
 	if codes := p.auditCodes(); !slices.Contains(codes, "bad-status") {
 		t.Errorf("a doc saying In progress reported %v, want bad-status", codes)
 	}
-	// Nothing else breaks: it is not offered as work, and claiming it is refused with the
-	// message for a status nobody can work, not a crash or a raw git error.
-	if got := boardGroup(p.plan("next", "--json"), "0002"); got != "absent" {
-		t.Errorf("0002 is %s on the board; a doc with an unrecognised status is not work", got)
+	// The feature stays visible and is reported as blocked, never dropped. Selecting the
+	// board on a status allow-list would make every doc carrying a status a later kit
+	// removed vanish silently — which is what dropping `Accepted` would have done to every
+	// project already using the kit. Blocked, so `claim` cannot disagree with the board.
+	if got := boardGroup(p.plan("next", "--json"), "0002"); got != "blocked" {
+		t.Errorf("0002 is %s on the board; an unrecognised status is blocked, not hidden", got)
 	}
 	p.run("claim", "0002").fails(1).errHas("not open work")
+}
+
+func TestAuditRefusesAPathArgument(t *testing.T) {
+	t.Parallel()
+	// `audit` reads the project you are standing in and nothing else, so a path is a
+	// broken invocation rather than a second project to report on. Exit 2, the reason
+	// on stderr, and the shell loop that does what the argument was reaching for.
+	p := cleanProject(t)
+	p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+
+	for _, arg := range []string{p.Root, filepath.Join(p.Root, "gone")} {
+		r := p.run("audit", arg).fails(2)
+		r.errHas("takes no arguments", "cd $d && kit audit")
+		r.lacks("unticked-shipped")
+	}
+}
+
+func TestTheAuditSummaryCountsBySeverity(t *testing.T) {
+	t.Parallel()
+	// The line used to read "N thing(s) to fix. HIGH first." for every board, including
+	// one with no HIGH on it at all — so the instruction it gave was wrong more often
+	// than it was right, and the count it gave was never singular.
+	high := cleanProject(t)
+	high.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+		"shipped: "+daysAgo(1), "- [ ] Not actually done"))
+	high.run("audit", "--strict").fails(1).outHas("1 HIGH finding, 0 MEDIUMs. Fix the HIGH first.")
+
+	// No HIGH, so nothing is told to fix the HIGH first.
+	medium := cleanProject(t)
+	feature(medium, "0002", "undated", "Undated", "Shipped", "- [x] Done")
+	r := medium.run("audit").ok()
+	r.outHas("1 MEDIUM finding to fix.")
+	r.lacks("HIGH first")
+
+	// LOW is hygiene, and a summary that counted it would ask for a fix the severity
+	// says can wait. The findings themselves are still printed.
+	low := cleanProject(t)
+	if err := os.Remove(low.path("docs/INBOX.md")); err != nil {
+		t.Fatalf("removing the inbox: %v", err)
+	}
+	quiet := low.run("audit").ok()
+	quiet.outHas("no-inbox")
+	quiet.lacks("to fix.")
 }

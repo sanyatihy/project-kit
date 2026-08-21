@@ -17,45 +17,47 @@ const overview = `kit — bootstrap projects and run them with agents.
 Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
-  kit accept <id>                     settle a Draft — the human's call, not an agent's
   kit claim <id>                      take a feature: push the branch, win or lose
   kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
-  kit check <id> "<outcome>"          settle a bet: stamp checked:, log what happened
   kit drop  <id> "<why>"              retire a feature that will not be built
-  kit next  [PATH ...] [--json] [--offline]
-                                      what should I work on?
-  kit audit [PATH ...] [--json] [--strict] [--offline]
+  kit next  [--json] [--offline]      what should I work on?
+  kit audit [--json] [--strict] [--offline]
                                       where do the docs disagree with the repo?
   kit help  [TOPIC]                   this, or a topic below
   kit version
 
 How it works:
   Plans live in docs/features/, one markdown file per feature, named NNNN-name.md.
-  The directory listing is the board and "status:" in the frontmatter is canonical.
-  There is no database and no queue: the docs and the git branches are the state.
+  The directory listing is the board. There is no database and no queue: the docs
+  and the git branches are the state.
 
-    Draft -> Accepted -> Shipped   (exits: Dropped, Superseded)
+    Draft -> Shipped   (exits: Dropped)
 
-  "status:" orders the board rather than gating it. Accepted is a human saying they
-  have looked and blessed the design, so it is offered first; a Draft is invented
-  and not yet blessed, so it is offered last and you should expect to settle its
-  "## Open questions" before building. Neither is permission: what refuses a claim
-  is a doc nobody wrote, and a BLOCKING line in docs/INBOX.md.
+  Three statuses, and only "kit ship" and "kit drop" write them. Work starts when a
+  claim branch is pushed, so there is no status for it and nothing to set by hand.
+
+  "kit next" and "kit audit" read the project you are in. For several projects:
+    for d in ~/code/*; do (cd $d && kit next); done
 
 The four rules:
-  1. Accepted before Draft, lowest ID first within each, and the claim you already
-     hold before anything free. Blessed beats unblessed; finishing beats starting.
+  1. Lowest ID first, and the claim this checkout already holds before anything
+     free. Finishing beats starting.
   2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
      order of work, so ordering needs no extra syntax.
   3. One agent per feature, one feature per checkout. "kit claim <id>" pushes the
      branch that claims it, and creating that ref on the remote is what decides:
      exit 1 means another agent won it. Local branches, remote branches and
      worktrees all count as claims. Work in the worktree it prints, not here.
-  4. A feature named in an open docs/INBOX.md question is blocked until answered.
-     "Named" means the id field of the line, not a mention in the question text.
+  4. A feature named by a BLOCKING line in docs/INBOX.md is blocked until it is
+     answered, and so is one whose "needs:" has not shipped. "Named" means the id
+     field of the line, not a mention in the question text. FYI lines never block.
      See "kit help inbox" for the format.
+
+A claim is refused by: an unmet "needs:", a BLOCKING inbox line, an unwritten
+## Problem, ## Design or ## Tasks, an id: that disagrees with the filename, a
+duplicate id, or a plan that has not reached the default branch.
 
 Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
 which writes docs/INBOX.md in the format the tool parses, then move to another
@@ -65,18 +67,17 @@ Exit codes, so a script can tell these apart:
   0  it worked
   1  it ran and the answer is no: "kit claim" lost the feature to another agent,
      or "kit audit --strict" found something HIGH
-  2  the command could not run: unknown command, bad flag, missing path
+  2  the command could not run, or refused: unknown command, bad flag, or a
+     refusal named above
 
 Topics:
   kit help protocol      the rules agents follow, as written into AGENTS.md
   kit help template      the feature doc format, field by field
-  kit help conventions   how the features directory works
   kit help checks        every audit finding and what it means
   kit help inbox         the docs/INBOX.md format, and what BLOCKING means
   kit help vision        the docs/VISION.md shape, and what it is not for
   kit help as-built      the docs/TECH.md shape, section by section
   kit help go-checklist  engineering practices for Go projects, tiered
-  kit help deployment    patterns for going to production, and their traps
 
 Run "kit <command> --help" for a command's options.`
 
@@ -85,9 +86,7 @@ Run "kit <command> --help" for a command's options.`
 var topics = map[string]string{
 	"protocol":     "templates/AGENTS-section.md",
 	"template":     "templates/features-TEMPLATE.md",
-	"conventions":  "templates/features-README.md",
 	"go-checklist": "templates/go-checklist.md",
-	"deployment":   "templates/deployment.md",
 	"vision":       "templates/VISION.md",
 	"as-built":     "templates/TECH.md",
 	"inbox":        "templates/INBOX.md",
@@ -101,8 +100,8 @@ var commandHelp = map[string]string{
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes docs/VISION.md, docs/features/{README,TEMPLATE,BACKLOG}.md, docs/INBOX.md
-and AGENTS.md.
+and writes docs/VISION.md, docs/features/{TEMPLATE,BACKLOG}.md, docs/INBOX.md and
+AGENTS.md.
 With --stack it also scaffolds the code layout and one CI pipeline.
 
 Which CI file that is depends on where the project is hosted, and it is worked out
@@ -112,10 +111,11 @@ names a forge (~/code/gitlab.example.com/team/thing). When nothing says, no CI
 file is written and the run tells you so — a missing pipeline is visible, and one
 for the wrong forge is not. --forge settles it outright.
 
-Your files are never overwritten or deleted, so it is safe to run on a populated
-directory and safe to re-run. Re-running is how a project picks up protocol
-changes: only the "## Work protocol" section of AGENTS.md is refreshed, and it is
-also how a project gets its CI file once it has a remote.
+Nothing you wrote is overwritten or deleted, so it is safe on a populated directory
+and safe to re-run. Two kit-owned files are refreshed on every run: the
+"## Work protocol" section of AGENTS.md, and docs/features/TEMPLATE.md. Everything
+you fill in is left alone, and house rules go above the marker comment in AGENTS.md.
+Re-running is also how a project gets its CI file once it has a remote.
 
 Deployment scaffolding is deliberately not generated. Add it when the project has
 something to deploy.
@@ -133,37 +133,11 @@ Fails rather than overwrites, so two agents drafting at once get an error instea
 of one silently losing its work.
 
 Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in
-## Open questions and the doc stays Draft; anything only a human can answer goes
-in docs/INBOX.md. A human settles it with "kit accept"; never set the status
-yourself.
+## Open questions; anything only a human can answer goes in docs/INBOX.md via
+"kit block". Never set status: or shipped: yourself — "kit ship" and "kit drop"
+are the only things that write them.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
-
-	"accept": `kit accept <id> [--review]
-
-Settle a Draft: set status to Accepted. This is the human's call, and it is a
-signal rather than a gate — agents can work a Draft, and accepting says the design
-has been looked at, which moves it up the board ahead of anything unblessed.
-
-Refuses when there is nothing to settle, or when the doc says the design is not
-settled yet:
-
-  the status is not Draft          nothing to accept; the message names what it is
-  ## Open questions is not empty   that section is what Draft is for
-  a BLOCKING inbox line names it   a human already owes an answer, so answer that
-
-Run it on the draft's own branch, so the acceptance lands in the same review
-as the draft. Accepting after that request merges means a second one for a one-line
-change.
-
---review writes "review: human" into the doc: a person merges this one, whatever the
-trunk allows. Set it now rather than later — this is the moment the whole round is in
-front of you, and nobody has sunk work into the outcome yet. It marks the entry on
-"kit next"'s review board; branch protection is what enforces anything.
-
-No date is stamped. "created:" already records when the feature was proposed.
-
-  kit accept 3                   # ids may be typed without leading zeros`,
 
 	"claim": `kit claim <id>
 
@@ -276,26 +250,6 @@ past what anyone reads.
   kit ship 0007
   kit ship 7`,
 
-	"check": `kit check <id> "<outcome>"
-
-Settle a bet. Stamps checked: with today's date and writes the outcome into "## Log",
-which is the pair of edits the "unchecked" finding asks for.
-
-Both land in a doc that is almost always Shipped, and rule 11 says a Shipped doc is
-frozen history nobody edits. The rule stays absolute because this command owns the
-writes — the same bargain as "kit ship" owning status:.
-
-Refuses a doc that names no check: date. That field says a feature is a bet worth
-revisiting and it is set while the doc is written; a revisit you want after the fact is
-a line in BACKLOG.md, which costs nothing and edits no history. It also refuses a doc
-already checked: the outcome that was measured is the one that stands.
-
-Say what happened rather than that you looked. "slug collisions stayed under 0.1%" is
-an outcome; a stamped date with nothing behind it is not.
-
-  kit check 0007 "collisions stayed under 0.1%, so base62 stays"
-  kit check 7 "nobody used it — 0021 takes it out again"`,
-
 	"drop": `kit drop <id> "<why>"
 
 Retire a feature that will not be built. Sets status: Dropped and records the
@@ -319,19 +273,15 @@ says so too, rather than promising a wait that will not end.
   kit drop 0007 "superseded by 0011's router"
   kit drop 7 "the metric it was chasing moved on its own"`,
 
-	"next": `kit next [PATH ...] [--json]
+	"next": `kit next [--json] [--offline]
 
 What should I work on? Reads the feature docs and git, and names one task.
 
-Ranks Accepted before Draft, then by lowest ID, and within a feature returns the
-topmost unticked "## Tasks" box. What this checkout claims comes first of all.
+Ranks by lowest ID, and within a feature returns the topmost unticked "## Tasks"
+box. What this checkout already claims comes first of all.
 
-A Draft is offered like anything else — accepting promotes work rather than
-unlocking it. A doc with an empty ## Problem or ## Design is reported as blocked
-instead, because "kit claim" would refuse it.
-
-Several paths survey several projects at once. One that cannot be read is reported in
-its place and exits 2; the others still report, in the order given.
+A doc with an empty ## Problem, ## Design or ## Tasks is reported as blocked rather
+than offered, because "kit claim" would refuse it.
 
 Each feature shows ticked-over-total, "2/4", carried in --json as "done" and "total".
 For a feature somebody else holds the count comes from its claim branch, where the
@@ -342,14 +292,14 @@ A feature is reported as taken when a branch cites its id — local branches, re
 branches and worktrees all count, so a stale fetch hides someone else's claim. The
 one exception is the branch this checkout is on: that claim is yours, and it is
 reported as "yours" and offered as the work to do. A feature is reported as blocked
-when an open docs/INBOX.md line carries its id in the id field, or when something in
-its "needs:" has not shipped yet.
+when a BLOCKING docs/INBOX.md line carries its id in the id field, or when something
+in its "needs:" has not shipped yet.
 
 Below the board, "awaiting review" is the far side of ship: a branch the remote has,
 carrying a doc that says Shipped, not yet on the trunk. The status is read from the
 branch, because on the trunk it still says what it said when the plan round landed.
-Entries you built are marked, and ones a human must see; where reviewing is all there
-is, the closing guidance says so instead of telling you to stop.
+Entries you built are marked; where reviewing is all there is, the closing guidance
+says so instead of telling you to stop.
 
 What is ready is how much can happen at once: three ready features means three agents
 can take one each, which falls out of what the docs declare rather than being planned.
@@ -358,14 +308,14 @@ The board asks the remote which branches exist, bounded at 15 seconds. If that d
 answer the page says so: claims fall back to the last fetch, and anything awaiting review
 is missing rather than absent. --offline skips the question and stays quiet.
 
-Reads only. With no PATH it uses the repo you are in, from any subdirectory.
+Reads only. Uses the repo you are in, from any subdirectory. For several projects:
+  for d in ~/code/*; do (cd $d && kit next); done
 
   kit next                       # this project
-  kit next ~/code/*              # every project at once
   kit next --json                # for agents
   kit next --offline             # do not ask the remote which branches exist`,
 
-	"audit": `kit audit [PATH ...] [--json] [--strict]
+	"audit": `kit audit [--json] [--strict] [--offline]
 
 Where do the docs disagree with the repo? Names the file, the problem, and the fix.
 
@@ -373,15 +323,11 @@ Findings are ranked HIGH (a doc says something untrue, or work is stuck and nobo
 noticed), MEDIUM (incomplete or drifting), LOW (hygiene). See "kit help checks"
 for every finding and what it means.
 
-Reads only, and never edits a file. With no PATH it uses the repo you are in.
-
-Several paths audit several projects. One that cannot be read is reported in its
-place and exits 2, which outranks --strict's 1 — a path you asked about and did not
-get is a worse answer than findings you did get.
+Reads only, and never edits a file. Uses the repo you are in. For several projects:
+  for d in ~/code/*; do (cd $d && kit audit); done
 
   kit audit                      # this project
-  kit audit ~/code/*             # every project at once
-  kit audit . --strict           # exit 1 on any HIGH, for CI
+  kit audit --strict             # exit 1 on any HIGH, for CI
   kit audit --offline            # do not ask the remote which branches exist`,
 }
 

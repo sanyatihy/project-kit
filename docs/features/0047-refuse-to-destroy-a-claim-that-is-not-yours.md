@@ -1,9 +1,9 @@
 ---
 id: 0047
 title: Refuse to destroy a claim that is not yours
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 check:
 checked:
 review:
@@ -57,10 +57,16 @@ Reproduced against the built binary:
 
 ## Tasks
 
-- [ ] `Release` refuses a claim this checkout does not hold; `--force` is the way past
-- [ ] `findTrunk` consults the remote-tracking trunk, and `Release` refuses when none resolves
-- [ ] The taken-feature refusal in `claim` names `kit release`, and prints no raw git delete
-- [ ] `project.run` uses `gitEnv()`, and the suite passes under a foreign `init.defaultBranch`
-- [ ] Tests drive a foreign checkout releasing a claim, and a release on a non-`main` trunk
+- [x] `Release` refuses a claim this checkout does not hold; `--force` is the way past
+- [x] `findTrunk` consults the remote-tracking trunk, and `Release` refuses when none resolves
+- [x] The taken-feature refusal in `claim` names `kit release`, and prints no raw git delete
+- [x] `project.run` uses `gitEnv()`, and the suite passes under a foreign `init.defaultBranch`
+- [x] Tests drive a foreign checkout releasing a claim, and a release on a non-`main` trunk
 
 ## Log
+- 2026-08-21 — the ownership test is a local head, not `Repo.Mine`. The design named `Mine`
+  because `Ship` uses it, and that premise was wrong: `Mine` asks whether HEAD *is* the
+  claim branch, so an agent that had just claimed a feature and not yet moved to the
+  worktree could not release what it had taken. A local ref answers "this clone created
+  the branch", which holds for every worktree sharing it and fails for an agent that only
+  saw the claim over the wire.

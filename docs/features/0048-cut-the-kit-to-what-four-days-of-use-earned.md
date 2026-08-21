@@ -1,9 +1,9 @@
 ---
 id: 0048
 title: Cut the kit to what four days of use earned
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 check:
 checked:
 review:
@@ -65,12 +65,19 @@ deleted command is worse than one that never cut.
 
 ## Tasks
 
-- [ ] `accept`, `check` and their statuses, fields, flags and checks are gone from the binary
-- [ ] `Superseded` and `related:` are gone; `unfilled-template` and `no-tasks` gate on tracked
-- [ ] `next` and `audit` take no paths; the fan-out and the keyed payload are deleted
-- [ ] `conventions` and `deployment` topics and their templates are gone
-- [ ] `repo.go` splits by subject and the dead identifiers named in the audit are deleted
-- [ ] Protocol, help, README, TECH and templates describe only what remains
-- [ ] The protocol's feature rule leads with "records a decision"
+- [x] `accept`, `check` and their statuses, fields, flags and checks are gone from the binary
+- [x] `Superseded` and `related:` are gone; `unfilled-template` and `no-tasks` gate on tracked
+- [x] `next` and `audit` take no paths; the fan-out and the keyed payload are deleted
+- [x] `conventions` and `deployment` topics and their templates are gone
+- [x] `repo.go` splits by subject and the dead identifiers named in the audit are deleted
+- [x] Protocol, help, README, TECH and templates describe only what remains
+- [x] The protocol's feature rule leads with "records a decision"
 
 ## Log
+- 2026-08-21 — dropping `Accepted` needed a migration the design did not name.
+  `ActiveFeatures` selected on a status allow-list, so every doc in an adopting project
+  carrying the removed status would have vanished from the board silently. 0049 makes the
+  board keep any status that is neither terminal nor missing.
+- 2026-08-21 — gating the plan checks on `TrackedAtHEAD` cost one `cat-file` per feature,
+  taking a 30-feature board read from 10 git processes to 40. One memoised `ls-tree`
+  replaces it; the ceiling moves 10 to 11, which is the new question this feature asks.
