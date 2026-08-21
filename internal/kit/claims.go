@@ -1,6 +1,8 @@
 package kit
 
 import (
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -86,8 +88,8 @@ func (r *Repo) trunkRef() string {
 	return ""
 }
 
-// HeadBranch is the branch this checkout is on, empty when HEAD is detached or
-// there is no git repository.
+// HeadBranch is the branch this checkout is on, empty when HEAD is detached and no
+// rebase says which branch it came off, or when there is no git repository.
 //
 // A worktree has its own HEAD, so in a worktree this is that worktree's branch —
 // which is the whole point: it is how the kit tells the checkout you are standing
@@ -101,8 +103,39 @@ func (r *Repo) HeadBranch() string {
 		r.headAsked = true
 		r.head = strings.TrimPrefix(
 			strings.TrimSpace(r.git("symbolic-ref", "--quiet", "HEAD")), "refs/heads/")
+		if r.head == "" {
+			r.head = r.rebasingBranch()
+		}
 	}
 	return r.head
+}
+
+// rebasingBranch is the branch a rebase in progress is replaying, empty when there is
+// none. Asked only of a detached HEAD, so it costs a process in no ordinary command.
+//
+// A rebase detaches HEAD, so `symbolic-ref` names nothing and every ownership question
+// answers "somebody else's": tidying your own branch made the board report the feature as
+// taken by the branch you were standing on, and `ship` told you to go and ship it from
+// the worktree you were already in. Git keeps the name it is replaying onto beside HEAD;
+// `git branch` renders it as `(no branch, rebasing 0002-beta)`, which is a sentence.
+func (r *Repo) rebasingBranch() string {
+	dir := strings.TrimSpace(r.git("rev-parse", "--git-dir"))
+	if dir == "" {
+		return ""
+	}
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(r.Root, dir)
+	}
+	// Two directories because git has two rebase backends, and either may be the one
+	// running: `rebase-merge` for the default, `rebase-apply` for `--apply`.
+	for _, state := range []string{"rebase-merge", "rebase-apply"} {
+		raw, err := os.ReadFile(filepath.Join(dir, state, "head-name"))
+		if err != nil {
+			continue
+		}
+		return strings.TrimPrefix(strings.TrimSpace(string(raw)), "refs/heads/")
+	}
+	return ""
 }
 
 // Claims lists the distinct branches claiming a feature. More than one means two
