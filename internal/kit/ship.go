@@ -30,8 +30,15 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	if target == nil {
 		return nil, fmt.Errorf("no feature %q", id)
 	}
-	if target.Status == StatusShipped {
+	// A terminal status is terminal in both directions. `drop` refuses a Shipped doc as
+	// frozen history; this refused only Shipped, so `kit ship` on a retired feature exited
+	// 0 and reported `(was Dropped)` — the kit itself reopening an end state.
+	switch {
+	case target.Status == StatusShipped:
 		return nil, fmt.Errorf("%s is already Shipped", target.Name())
+	case terminal(target.Status):
+		return nil, fmt.Errorf("%s is %s — it is a retired plan, not work to finish",
+			target.Name(), target.Status)
 	}
 	if open, total := target.TaskCount(); total == 0 {
 		return nil, fmt.Errorf("%s has no ## Tasks boxes — there is nothing to have finished",

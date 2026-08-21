@@ -122,6 +122,20 @@ func TestShipRefusesAFeatureWithNoBoxesAtAll(t *testing.T) {
 	shipping(p, "0007").fails(2).errHas("no ## Tasks boxes")
 }
 
+func TestShipRefusesARetiredFeature(t *testing.T) {
+	t.Parallel()
+	// The other direction of the same rule. `drop` refuses a Shipped doc as frozen history
+	// (TestDropRefusesAShippedDoc); `ship` refused only Shipped, so a Dropped feature whose
+	// boxes were ticked shipped, exit 0, reported as `(was Dropped)`.
+	p := setUp(t)
+	feature(p, "0007", "retired", "Retired", "Dropped", "- [x] One")
+
+	shipping(p, "0007").fails(2).errHas("Dropped")
+	if strings.Contains(p.read("docs/features/0007-retired.md"), "status: Shipped") {
+		t.Error("ship wrote the status despite refusing")
+	}
+}
+
 func TestShipRefusesTwice(t *testing.T) {
 	t.Parallel()
 	// The second run would rewrite frozen history and restamp the date.
