@@ -164,9 +164,14 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			then = "this was read from the last fetch, not from the remote, so it may name a\n" +
 				"  branch that no longer exists — run git fetch --prune, then claim again"
 		case len(claims) == 1 && !r.BranchBuildsOn(claims[0], target.Rel):
+			// A branch carrying no work is either an agent that just claimed it or a
+			// leftover from a merged draft, and nothing here can tell those apart. The
+			// way out is `kit release`, which checks ownership and refuses over work;
+			// naming the raw git delete instead handed a losing claimant the one command
+			// that takes the winner's branch.
 			then = "that branch carries no work. If an agent just took it, leave it alone.\n" +
-				"  If it is a leftover from a draft that already merged, remove it and claim\n" +
-				"  again: " + deleteHint(r, remote, claims[0])
+				"  If it is a leftover from a draft that already merged, end the claim with\n" +
+				"  kit release " + target.ID + " — it refuses if the branch turns out to carry work"
 		}
 		return nil, &NotYours{
 			fmt.Sprintf("%s is already claimed by %s", target.Name(), strings.Join(claims, " and ")),
@@ -233,24 +238,6 @@ func orTrunk(trunk string) string {
 		return "this branch"
 	}
 	return trunk
-}
-
-// deleteHint names the commands that would actually remove a branch, which depends on
-// where the branch is. Naming `git push --delete` for a ref the remote does not have —
-// which is what the old message did unconditionally — produces two errors and no
-// progress, and the agent reading it has no way to know the advice was wrong.
-func deleteHint(r *Repo, remote, branch string) string {
-	var parts []string
-	if heads, ok := r.remoteHeads(); ok && remote != "" && contains(heads, branch) {
-		parts = append(parts, "git push "+remote+" --delete "+branch)
-	}
-	if r.hasRef("refs/heads/" + branch) {
-		parts = append(parts, "git branch -D "+branch)
-	}
-	if len(parts) == 0 {
-		return "git fetch --prune"
-	}
-	return strings.Join(parts, " && ")
 }
 
 // Status flags from `git push --porcelain`, which prefixes each ref's line with

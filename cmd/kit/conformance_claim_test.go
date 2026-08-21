@@ -47,19 +47,28 @@ func gitIn(t *testing.T, dir string, args ...string) {
 // trusts the exit code hands one feature to both of them.
 func twoAgents(t *testing.T) (*project, *project) {
 	t.Helper()
+	return twoAgentsOn(t, "main")
+}
+
+// twoAgentsOn is the same fixture on a named default branch. A project whose default is
+// neither `main` nor `master` is what the trunk ladder has to survive: `a` pushed its
+// branch rather than cloning, so it has no `origin/HEAD` to read the answer from.
+func twoAgentsOn(t *testing.T, trunk string) (*project, *project) {
+	t.Helper()
 	base := t.TempDir()
 	if resolved, err := filepath.EvalSymlinks(base); err == nil {
 		base = resolved
 	}
 	origin := filepath.Join(base, "origin.git")
-	gitIn(t, base, "init", "-q", "--bare", "-b", "main", origin)
+	gitIn(t, base, "init", "-q", "--bare", "-b", trunk, origin)
 
 	a := projectAt(t, filepath.Join(base, "a"))
 	a.run("init").ok()
+	a.git("branch", "-m", trunk)
 	feature(a, "0007", "widget", "A widget", "Accepted", "- [ ] Build it")
 	a.git("remote", "add", "origin", origin)
 	a.commitAll("the plan")
-	a.git("push", "-q", "origin", "HEAD:refs/heads/main")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
 
 	gitIn(t, base, "clone", "-q", origin, filepath.Join(base, "b"))
 	return a, projectAt(t, filepath.Join(base, "b"))

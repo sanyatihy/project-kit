@@ -668,6 +668,18 @@ func (r *Repo) findTrunk() string {
 			return candidate
 		}
 	}
+	// The remote-tracking copy, before falling back to HEAD. `origin/HEAD` is written by
+	// `clone` and not by `push -u`, so a project that started life locally has a real
+	// trunk on the remote and no symbolic ref naming it. Without this rung a checkout
+	// standing on a claim branch found no trunk at all, and `BranchBuildsOn` answers
+	// "carries no work" for an empty trunk — which is the answer that deletes.
+	for _, remote := range r.remotes() {
+		for _, candidate := range []string{"main", "master"} {
+			if r.hasRef("refs/remotes/" + remote + "/" + candidate) {
+				return candidate
+			}
+		}
+	}
 	// No remote to ask and neither conventional name: fall back to the branch this
 	// checkout is on, but only when it is not claim-shaped. A claim branch leads with its
 	// feature's ID, so refusing those is what stops a worktree deciding it is the trunk —
