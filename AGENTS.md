@@ -127,9 +127,9 @@ feature gets one.
 
 22. **When the last box is ticked, run these three in order:** `make check`,
     `kit audit --strict`, `kit ship <id>`.
-23. **`kit ship` refuses for four reasons, and each one is expected:** a box still
-    unticked, a file uncommitted or untracked, a `needs:` that has not shipped, or a claim
-    another checkout holds. Fix the cause and run it again.
+23. **Every `kit ship` refusal is expected; `kit ship --help` lists every one.** The four
+    you will meet: a box still unticked, a file uncommitted or untracked, a `needs:` that
+    has not shipped, a claim another checkout holds. Fix the cause and run it again.
 24. **Move durable facts to `docs/TECH.md`** — one line each, only what stays true after
     this ships.
 25. **Push the branch, open the pull request, and stop. You never merge your own work.**
