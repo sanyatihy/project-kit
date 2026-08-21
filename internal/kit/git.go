@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -256,10 +257,19 @@ func (r *Repo) RemoteUnanswered() bool {
 
 // branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
 // recognised as one branch rather than two claims on the same feature.
-func branchName(ref string) string {
-	if i := strings.Index(ref, "/"); i >= 0 && (strings.HasPrefix(ref, "origin/") ||
-		strings.HasPrefix(ref, "remotes/")) {
-		return ref[i+1:]
+//
+// Every remote this project has configured, not the conventional name alone. A clone
+// whose remote is called `upstream` read its trunk out of `upstream/HEAD` and kept the
+// prefix, so the trunk was `upstream/main` — a name no ref resolves. Everything that
+// compares against the trunk then had nothing to compare with: `stalled` could never
+// fire, and `release` refused every claim.
+//
+// `remotes/` stays unconditional: it is the prefix of a ref path rather than a remote's
+// name, and no project can configure it away.
+func (r *Repo) branchName(ref string) string {
+	name, rest, found := strings.Cut(ref, "/")
+	if found && (name == "remotes" || slices.Contains(r.remotes(), name)) {
+		return rest
 	}
 	return ref
 }

@@ -56,7 +56,7 @@ Reproduced:
 
 - [x] `release` asks the remote ref, and refuses when local and remote disagree
 - [x] Progress and `stalled` read the authoritative ref, and a test drives two checkouts
-- [ ] Any remote prefix is stripped, not just `origin/`
+- [x] Any remote prefix is stripped, not just `origin/`
 - [ ] `Trunk()` is memoised on a flag, and the budget fixture covers a repo with no trunk
 
 ## Log

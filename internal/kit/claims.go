@@ -30,7 +30,7 @@ func (r *Repo) findTrunk() string {
 	for _, remote := range r.remotes() {
 		ref := strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short",
 			"refs/remotes/"+remote+"/HEAD"))
-		if name := branchName(ref); name != "" && name != "HEAD" {
+		if name := r.branchName(ref); name != "" && name != "HEAD" {
 			return name
 		}
 	}
@@ -123,7 +123,7 @@ func (r *Repo) Claims(id string) []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, ref := range r.refs {
-		name := branchName(ref)
+		name := r.branchName(ref)
 		if r.isTrunk(name) || seen[name] || !mentionsAny(name, ids) {
 			continue
 		}
@@ -482,7 +482,7 @@ func (r *Repo) OrphanClaims() []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, ref := range r.refs {
-		name := branchName(ref)
+		name := r.branchName(ref)
 		if r.isTrunk(name) || seen[name] {
 			continue
 		}
@@ -508,7 +508,7 @@ func (r *Repo) OrphanClaims() []string {
 func (r *Repo) HasClaimShapedBranch() bool {
 	r.loadGit()
 	for _, ref := range r.refs {
-		name := branchName(ref)
+		name := r.branchName(ref)
 		if !r.isTrunk(name) && idPrefixRe.FindString(name) != "" {
 			return true
 		}
