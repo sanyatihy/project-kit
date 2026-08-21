@@ -63,6 +63,11 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 			target.Name(), branch, id)
 	}
 
+	remote, err := pickRemote(r)
+	if err != nil {
+		return nil, err
+	}
+
 	// Whether a branch carries work cannot be read from its name, and "no work" is the
 	// answer that deletes it — so a branch this checkout cannot resolve stops here rather
 	// than being released out of ignorance.
@@ -70,6 +75,24 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 	if rev == "" {
 		return nil, fmt.Errorf("%s is a branch this checkout cannot resolve, so whether it "+
 			"carries work cannot be read\nrun git fetch, then release", branch)
+	}
+	// The ref this deletes lives on the remote, and every copy of it here is a cache: a
+	// local head records the last push and `refs/remotes/*` the last fetch. A checkout
+	// left behind reads "carries no work" for a branch another checkout has pushed
+	// commits to, which is how a release at exit 0 made reviewed work unreachable.
+	//
+	// Containment rather than equality, because being ahead of the remote is the ordinary
+	// state of an agent that has committed and not pushed. Once the remote's tip is an
+	// ancestor of what is asked, asking the local copy answers for the remote's commits
+	// too. Anything else — behind, diverged, or an object this clone has never had — is
+	// unreadable, and unreadable must not be the permissive answer in a command that
+	// deletes.
+	if !force && remote != "" {
+		if tip, ok := r.remoteTip(remote, branch); ok && !r.reaches(tip, rev) {
+			return nil, fmt.Errorf("%s/%s is not the copy of %s this checkout has, so what "+
+				"the remote carries cannot be read — and it is the remote's branch this "+
+				"deletes\nrun git fetch, then release", remote, branch, branch)
+		}
 	}
 	// The same reasoning one level up: with no trunk to diff against, `BranchBuildsOn`
 	// answers "carries no work" for a branch full of commits. Silence must not be the
@@ -86,10 +109,6 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 			"kit release %s --force", branch, orTrunk(r.Trunk()), id)
 	}
 
-	remote, err := pickRemote(r)
-	if err != nil {
-		return nil, err
-	}
 	res := &Released{Branch: branch}
 	if remote != "" {
 		heads, ok := r.remoteHeads()

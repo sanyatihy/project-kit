@@ -77,6 +77,10 @@ type Repo struct {
 	headsKnown bool
 	headsAsked bool
 
+	// What each remote advertises for each branch, from the same round trip. `release`
+	// deletes a ref on the remote, so it has to know whether the copy it read is that ref.
+	tips map[string]string
+
 	// headsFailed records that the remote was asked and did not answer — a timeout or a
 	// failed call. Distinct from having no remote to ask, which is not a failure and has
 	// nothing to report.
