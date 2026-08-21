@@ -67,7 +67,7 @@ unsilenceable while an unparseable one reports "no shipped: date" when there is 
 - [x] An unreadable feature doc is a HIGH finding and still reserves its id
 - [x] Paths are read `-z`, and a non-ASCII filename no longer disables the plan checks
 - [x] `--offline` names what it skipped; a project with no `docs/features` exits 2
-- [ ] `done-not-shipped` needs a `## Tasks` section; `shipped:` is validated as a real date
+- [x] `done-not-shipped` needs a `## Tasks` section; `shipped:` is validated as a real date
 - [ ] `protocol-stale` says which side is behind, and never offers a fix that overwrites the newer one
 
 ## Log

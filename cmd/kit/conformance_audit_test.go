@@ -173,6 +173,13 @@ var auditCases = []struct {
 	{"shipped-no-date", func(p *project) {
 		feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
 	}},
+	{"shipped-bad-date", func(p *project) {
+		// Nothing validated the field, so `tech-drift` compared against it: a day that
+		// has not arrived is never older than the as-built doc, and that finding then
+		// had no fix for as long as the date said.
+		p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+			"shipped: 2099-01-01", "- [x] Done"))
+	}},
 	{"id-mismatch", func(p *project) {
 		p.write("docs/features/0002-confused.md", doc("0009", "Confused", "Draft",
 			"", "- [ ] Something"))
@@ -677,6 +684,79 @@ func TestAuditNeverWrites(t *testing.T) {
 	if after := p.read("docs/features/0002-undated.md"); after != before {
 		t.Error("audit modified a document it was only meant to report on")
 	}
+}
+
+func TestTheShippedDateIsReadAsWrittenOrReportedAsWrong(t *testing.T) {
+	t.Parallel()
+	// Three states of one field, and only the first was told apart from the others.
+	for _, tc := range []struct {
+		name, line, want string
+	}{
+		{"absent", "", "shipped-no-date"},
+		// Reported as "Shipped with no shipped: date" on a doc that has one.
+		{"unparseable", "shipped: last Tuesday", "shipped-bad-date"},
+		{"in the future", "shipped: 2099-01-01", "shipped-bad-date"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/features/0002-odd.md",
+				doc("0002", "Odd", "Shipped", tc.line, "- [x] Done"))
+			codes := p.auditCodes()
+			if !slices.Contains(codes, tc.want) {
+				t.Errorf("shipped: %q reported %v, want %s", tc.line, codes, tc.want)
+			}
+		})
+	}
+
+	// And a date that has not arrived no longer sets the bar tech-drift compares against,
+	// which nothing could ever clear.
+	p := cleanProject(t)
+	p.write("docs/TECH.md", "# As built\n\nThe description.\n")
+	p.write("docs/features/0002-early.md",
+		doc("0002", "Early", "Shipped", "shipped: 2099-01-01", "- [x] Done"))
+	p.commitAll("describe the system")
+	if codes := p.auditCodes(); slices.Contains(codes, "tech-drift") {
+		t.Errorf("tech-drift measured against a day that has not happened: %v", codes)
+	}
+}
+
+func TestDoneNotShippedNeedsBoxesToCallDone(t *testing.T) {
+	t.Parallel()
+	// "every task is ticked" on a doc with no ## Tasks section at all, whose fix —
+	// `kit ship` — refuses it for having no boxes. A zero-byte doc got the same finding
+	// with `run: kit ship ` and no id in it.
+	for _, tc := range []struct{ name, body string }{
+		{"no Tasks section", "---\nid: 0002\ntitle: Sectionless\nstatus: Draft\n" +
+			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n"},
+		{"empty file", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/features/0002-sectionless.md", tc.body)
+			p.commitAll("a doc with no boxes anywhere in it")
+
+			r := p.run("audit").ok()
+			r.lacks("done-not-shipped")
+			// unfilled-template already says what is wrong with it, and its fix works.
+			r.has("unfilled-template")
+		})
+	}
+
+	// The quiet half: a doc whose boxes are all ticked is still reported, with the fix
+	// that does the job.
+	p := cleanProject(t)
+	p.write("docs/features/0002-done.md", doc("0002", "Done", "Draft", "", "- [x] Finished"))
+	p.commitAll("every box ticked")
+	p.run("audit").ok().has("done-not-shipped", "kit ship 0002")
+
+	// And with no id: there is no such command, so the fix names the edit instead of
+	// printing `run: kit ship ` with nothing after it.
+	nameless := cleanProject(t)
+	nameless.write("docs/features/0002-nameless.md",
+		"---\ntitle: Nameless\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
+			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [x] Done\n\n## Log\n- x\n")
+	nameless.commitAll("a doc with no id in it")
+	nameless.run("audit").ok().has("done-not-shipped").lacks("run: kit ship  ")
 }
 
 func TestAuditOnAnUnsetUpProjectExitsTwo(t *testing.T) {

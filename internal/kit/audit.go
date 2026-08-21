@@ -116,6 +116,11 @@ var (
 		"the as-built doc predates the most recent shipped: date"}
 	checkShippedNoDate = Check{"shipped-no-date", Medium,
 		"Shipped with no shipped: date"}
+	// Nothing validated the field, so `tech-drift` compared against whatever was in it:
+	// one date in the future can never be older than the as-built doc, which made that
+	// finding unfixable for as long as the date says.
+	checkShippedBadDate = Check{"shipped-bad-date", Medium,
+		"a shipped: that is not a date, or is one that has not arrived yet"}
 	// Only at Shipped. An Accepted feature has nothing to log yet, and demanding one
 	// before work starts produced a fix line telling the author to set it back to Draft.
 	// HIGH, not tidiness: the branch is named from the filename and `Claims` matches
@@ -177,7 +182,8 @@ var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate, checkUnreadableDoc,
 	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
 	checkShippedNotPushed,
-	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
+	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift,
+	checkShippedNoDate, checkShippedBadDate,
 	checkInboxUnparsed, checkInboxUnknown,
 	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
@@ -308,7 +314,7 @@ func finding(c Check, where, problem, fix string) Finding {
 var featureChecks = []featureCheck{
 	{[]Check{checkUnreadableDoc}, unreadableDoc},
 	{[]Check{checkUntickedShipped}, untickedShipped},
-	{[]Check{checkShippedNoDate}, shippedNoDate},
+	{[]Check{checkShippedNoDate, checkShippedBadDate}, shippedDate},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
 	{[]Check{checkStalled}, stalled},
 	{[]Check{checkNoTasks, checkDoneNotShipped}, taskState},
@@ -409,13 +415,29 @@ func untickedShipped(s *docState) []Finding {
 	return nil
 }
 
-func shippedNoDate(s *docState) []Finding {
-	if s.f.Status != StatusShipped || !s.f.Shipped.IsZero() {
+// One decision with three outcomes, because the field is one thing: absent, unparseable,
+// or a day that has not happened. Reading only the parsed value collapsed the middle into
+// the first and reported "no shipped: date" on a doc that had one written in it.
+func shippedDate(s *docState) []Finding {
+	if s.f.Status != StatusShipped {
 		return nil
 	}
-	return []Finding{finding(checkShippedNoDate, s.at,
-		s.f.Name()+": Shipped with no shipped: date",
-		"add the date it actually shipped")}
+	switch {
+	case s.f.shippedText == "":
+		return []Finding{finding(checkShippedNoDate, s.at,
+			s.f.Name()+": Shipped with no shipped: date",
+			"add the date it actually shipped")}
+	case s.f.Shipped.IsZero():
+		return []Finding{finding(checkShippedBadDate, s.at,
+			fmt.Sprintf("%s: shipped: %q is not a date", s.f.Name(), clip(s.f.shippedText, 40)),
+			"write it as "+DateLayout)}
+	case s.f.Shipped.After(s.today):
+		return []Finding{finding(checkShippedBadDate, s.at,
+			fmt.Sprintf("%s: shipped: %s has not arrived yet",
+				s.f.Name(), s.f.Shipped.Format(DateLayout)),
+			"correct it to the day it actually shipped")}
+	}
+	return nil
 }
 
 // Shipping is a handoff, and this is the far side of it: the doc says the builder is
@@ -480,12 +502,21 @@ func taskState(s *docState) []Finding {
 		return []Finding{finding(checkNoTasks, s.at,
 			fmt.Sprintf("%s: %s with no ## Tasks boxes", s.f.Name(), s.f.Status),
 			`write the plan as PR-sized boxes, or set status: Draft until you can`)}
-	case open == 0:
+	// Boxes, not the absence of open ones. A doc with no ## Tasks section at all has none
+	// open either, and was reported as finished — with a fix, `kit ship`, that refuses it
+	// for exactly that reason. What that doc is, unfilled-template already says.
+	case total > 0 && open == 0:
+		// Naming the command, not the edit: hand-stamping the status and date is what
+		// unticked-shipped and shipped-no-date are the wreckage of. With no id: there is
+		// no command to name — `kit ship` takes one — so the fix says what has to be
+		// true first rather than printing `run: kit ship ` and stopping.
+		fix := "run: kit ship " + s.f.ID + " — or add the next task"
+		if s.f.ID == "" {
+			fix = "give it an id: matching its filename, then run kit ship"
+		}
 		return []Finding{finding(checkDoneNotShipped, s.at,
 			fmt.Sprintf("%s: every task is ticked but status is %s", s.f.Name(), s.f.Status),
-			// Naming the command, not the edit: hand-stamping the status and date is what
-			// unticked-shipped and shipped-no-date are the wreckage of.
-			"run: kit ship "+s.f.ID+" — or add the next task")}
+			fix)}
 	}
 	return nil
 }
@@ -615,7 +646,10 @@ func inboxState(s *repoState) []Finding {
 func techState(s *repoState) []Finding {
 	newestShip := time.Time{}
 	for _, f := range s.r.Features {
-		if f.Shipped.After(newestShip) {
+		// A date that has not arrived is shipped-bad-date's finding, and letting it set
+		// the bar here makes this one unsilenceable: no edit to the as-built doc can be
+		// newer than a day that has not happened.
+		if f.Shipped.After(newestShip) && !f.Shipped.After(s.today) {
 			newestShip = f.Shipped
 		}
 	}

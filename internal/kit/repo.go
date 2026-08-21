@@ -198,6 +198,7 @@ func (r *Repo) readFeature(path string) *Feature {
 		f.Status = fields["status"]
 		f.Needs = ParseIDList(fields["needs"])
 		f.Shipped = ParseDate(fields["shipped"])
+		f.shippedText = strings.TrimSpace(fields["shipped"])
 		f.sections = ParseSections(body)
 	}
 	if f.Title == "" {
