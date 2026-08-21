@@ -20,7 +20,8 @@ import (
 // is cached: it cannot change under a single command, and both the claim checks and
 // BranchBuildsOn ask for it per feature.
 func (r *Repo) Trunk() string {
-	if r.trunk == "" {
+	if !r.trunkAsked {
+		r.trunkAsked = true
 		r.trunk = r.findTrunk()
 	}
 	return r.trunk

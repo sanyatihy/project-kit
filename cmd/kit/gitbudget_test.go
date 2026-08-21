@@ -50,6 +50,14 @@ const (
 	// day, one `cat-file` per feature, which is exactly the shape this ceiling exists to
 	// catch, and it caught it.
 	onlineBudget = 11
+
+	// The same board where no trunk resolves. `Trunk()` answered "" there, and "" was
+	// also its "not asked yet" sentinel, so `findTrunk` ran the whole ladder again for
+	// every caller: 747 processes on this fixture, 721 of them one `symbolic-ref`, and
+	// growing with the board. The fixture above always resolves a trunk, which is the
+	// only reason the ceiling never caught it. One `show` under the offline number
+	// because this checkout stands on a claim, and its own boxes are read from the tree.
+	noTrunkBudget = 28
 )
 
 func TestABoardReadStaysWithinItsGitBudget(t *testing.T) {
@@ -81,17 +89,73 @@ func TestABoardReadStaysWithinItsGitBudget(t *testing.T) {
 	}
 }
 
+func TestABoardWithNoTrunkStaysWithinItsGitBudget(t *testing.T) {
+	t.Parallel()
+	p := noTrunkFixture(t)
+
+	n, breakdown := countGit(t, p, "next", "--offline")
+	t.Logf("%d features, %d claims, no trunk: %d git processes (ceiling %d)\n%s",
+		budgetFeatures, budgetClaims, n, noTrunkBudget, breakdown)
+	if n > noTrunkBudget {
+		t.Errorf("`kit next --offline` spawned %d git processes on a board with no trunk, "+
+			"over its %d ceiling.\nAn answer that cannot change inside one command is asked "+
+			"once, and that includes the answer \"there is none\".\n%s",
+			n, noTrunkBudget, breakdown)
+	}
+}
+
 // budgetFixture is a project with a board to walk, claim branches to resolve, and a bare
 // remote on disk to ask.
 func budgetFixture(t *testing.T) *project {
 	t.Helper()
-	base := t.TempDir()
+	base, origin := budgetRemote(t, "main")
+	p := budgetBoard(t, base)
+	p.git("remote", "add", "origin", origin)
+	p.commitAll("a board")
+	p.git("push", "-q", "origin", "HEAD:refs/heads/main")
+	p.git("fetch", "-q", "origin")
+	for i := 1; i <= budgetClaims; i++ {
+		p.git("branch", fmt.Sprintf("%04d-feature-%d", i, i))
+	}
+	return p
+}
+
+// noTrunkFixture is the same board in the state where nothing resolves a trunk: a remote
+// pushed to rather than cloned from, so nothing wrote `origin/HEAD`; a default branch
+// called neither `main` nor `master`; and a checkout standing on a claim, which the last
+// rung of the ladder refuses to call a trunk. Every claim worktree of a project that
+// started life locally is in it.
+func noTrunkFixture(t *testing.T) *project {
+	t.Helper()
+	base, origin := budgetRemote(t, "develop")
+	p := budgetBoard(t, base)
+	p.git("branch", "-m", "develop")
+	p.git("remote", "add", "origin", origin)
+	p.commitAll("a board")
+	p.git("push", "-q", "origin", "develop")
+	for i := 1; i <= budgetClaims; i++ {
+		p.git("branch", fmt.Sprintf("%04d-feature-%d", i, i))
+	}
+	p.git("checkout", "-q", "0001-feature-1")
+	return p
+}
+
+// budgetRemote is a bare remote on disk, and the directory to put a project beside it.
+func budgetRemote(t *testing.T, trunk string) (base, origin string) {
+	t.Helper()
+	base = t.TempDir()
 	if resolved, err := filepath.EvalSymlinks(base); err == nil {
 		base = resolved
 	}
-	origin := filepath.Join(base, "origin.git")
-	gitIn(t, base, "init", "-q", "--bare", "-b", "main", origin)
+	origin = filepath.Join(base, "origin.git")
+	gitIn(t, base, "init", "-q", "--bare", "-b", trunk, origin)
+	return base, origin
+}
 
+// budgetBoard writes the features, uncommitted: what a caller does with git afterwards is
+// what the two fixtures differ in.
+func budgetBoard(t *testing.T, base string) *project {
+	t.Helper()
 	p := projectAt(t, filepath.Join(base, "project"))
 	p.run("init").ok()
 	writeVision(p)
@@ -99,13 +163,6 @@ func budgetFixture(t *testing.T) *project {
 		id := fmt.Sprintf("%04d", i)
 		feature(p, id, fmt.Sprintf("feature-%d", i), fmt.Sprintf("Feature %d", i),
 			"Draft", "- [ ] One\n- [ ] Two")
-	}
-	p.git("remote", "add", "origin", origin)
-	p.commitAll("a board")
-	p.git("push", "-q", "origin", "HEAD:refs/heads/main")
-	p.git("fetch", "-q", "origin")
-	for i := 1; i <= budgetClaims; i++ {
-		p.git("branch", fmt.Sprintf("%04d-feature-%d", i, i))
 	}
 	return p
 }
