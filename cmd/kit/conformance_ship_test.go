@@ -251,6 +251,23 @@ func TestShipRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
 	p.run("audit").has("duplicate-key")
 }
 
+func TestShipRefusesAnIDThatNamesTwoDocs(t *testing.T) {
+	t.Parallel()
+	// duplicate-id is HIGH because one id has to name one doc. `claim` counted the
+	// matches and refused; this took the first and shipped it, so the other doc kept the
+	// same id and nothing said which one had been shipped.
+	p := setUp(t)
+	p.write("docs/features/0007-one.md", doc("0007", "One", "Draft", "", "- [x] Done"))
+	p.write("docs/features/0007-two.md", doc("0007", "Two", "Draft", "", "- [x] Done"))
+
+	shipping(p, "0007").fails(2).errHas("0007-one.md", "0007-two.md")
+	for _, rel := range []string{"docs/features/0007-one.md", "docs/features/0007-two.md"} {
+		if strings.Contains(p.read(rel), "status: Shipped") {
+			t.Errorf("%s was shipped despite the refusal", rel)
+		}
+	}
+}
+
 func TestShipRefusesAnUnknownFeature(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)

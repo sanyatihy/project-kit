@@ -67,6 +67,22 @@ func TestDropRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
 	}
 }
 
+func TestDropRefusesAnIDThatNamesTwoDocs(t *testing.T) {
+	t.Parallel()
+	// Reproduced: drop retired the first of the two and printed nothing about the second,
+	// so the board went on offering a feature whose id had just been declared dead.
+	p := setUp(t)
+	p.write("docs/features/0001-one.md", doc("0001", "One", "Draft", "", "- [ ] Something"))
+	p.write("docs/features/0001-two.md", doc("0001", "Two", "Draft", "", "- [ ] Something"))
+
+	p.run("drop", "0001", "changed my mind").fails(2).errHas("0001-one.md", "0001-two.md")
+	for _, rel := range []string{"docs/features/0001-one.md", "docs/features/0001-two.md"} {
+		if strings.Contains(p.read(rel), "status: Dropped") {
+			t.Errorf("%s was retired despite the refusal", rel)
+		}
+	}
+}
+
 func TestDropReportsWhoWasWaitingOnIt(t *testing.T) {
 	t.Parallel()
 	// Dropping stranded every feature declaring the id in needs: without a word — `audit`
@@ -120,7 +136,9 @@ func TestDropReportsALeftoverClaimRatherThanDeletingIt(t *testing.T) {
 	t.Parallel()
 	// The doc is this command's to retire and the branch is not. A branch named after
 	// the doc still reads as a claim, so the board would show work nobody is doing.
-	p := cleanProject(t)
+	// setUp and not cleanProject: that fixture already carries a doc with id 0001, and
+	// `drop` refuses an id naming two docs rather than retiring whichever sorted first.
+	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] Something")
 	p.commitAll("the plan")
 	p.git("branch", "0001-shorten")

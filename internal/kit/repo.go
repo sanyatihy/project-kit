@@ -225,10 +225,29 @@ func (r *Repo) FeatureByID(id string) *Feature {
 // behind and `audit` repeated the same finding with the same fix for ever. Which line the
 // author meant is not the kit's to guess.
 func (r *Repo) WriteTarget(id string) (*Feature, error) {
-	target := r.FeatureByID(id)
-	if target == nil {
+	var share []*Feature
+	for _, f := range r.Features {
+		if f.ID == id {
+			share = append(share, f)
+		}
+	}
+	if len(share) == 0 {
 		return nil, fmt.Errorf("no feature %q", id)
 	}
+	// FeatureByID answers with the first match, so an id naming two docs was invisible to
+	// the three commands that write: `drop` retired whichever sorted first, and said
+	// nothing. `claim` counts them and refuses, because one branch cannot claim two
+	// features; a write cannot land on two docs either.
+	if len(share) > 1 {
+		var where []string
+		for _, f := range share {
+			where = append(where, f.Rel)
+		}
+		return nil, fmt.Errorf("%d feature docs declare id %s (%s), so this cannot tell "+
+			"which one to act on\nrun kit audit and renumber all but one",
+			len(share), id, strings.Join(where, " and "))
+	}
+	target := share[0]
 	if len(target.Duplicates) > 0 {
 		return nil, fmt.Errorf("%s declares %s twice in its frontmatter, so the line the "+
 			"kit reads is not the line it would rewrite\ndelete the one that is wrong, "+

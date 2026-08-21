@@ -79,6 +79,20 @@ func TestBlockRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
 	}
 }
 
+func TestBlockRefusesAnIDThatNamesTwoDocs(t *testing.T) {
+	t.Parallel()
+	// One inbox line blocks by id, so against two docs it blocks both — and clearing it
+	// clears both. That is the same ambiguity `claim` refuses.
+	p := setUp(t)
+	p.write("docs/features/0007-one.md", doc("0007", "One", "Draft", "", "- [ ] Something"))
+	p.write("docs/features/0007-two.md", doc("0007", "Two", "Draft", "", "- [ ] Something"))
+
+	p.run("block", "0007", "Which one is it?").fails(2).errHas("0007-one.md", "0007-two.md")
+	if got := p.read("docs/INBOX.md"); strings.Contains(got, "Which one is it?") {
+		t.Errorf("block wrote the question despite refusing:\n%s", got)
+	}
+}
+
 func TestBlockNeedsAnIDAndAQuestion(t *testing.T) {
 	t.Parallel()
 	p := blockable(t)
