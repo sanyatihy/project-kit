@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -169,6 +170,7 @@ func (r *Repo) remoteHeads() ([]string, bool) {
 // nothing on the Repo is written from two places at once.
 type headsResult struct {
 	heads  []string
+	tips   map[string]string // "<remote>/<branch>" -> the commit the remote advertises
 	known  bool
 	failed bool
 }
@@ -196,13 +198,14 @@ func (r *Repo) collectRemoteHeads() {
 }
 
 func (r *Repo) apply(res headsResult) {
-	r.heads, r.headsKnown, r.headsFailed = res.heads, res.known, res.failed
+	r.heads, r.tips, r.headsKnown, r.headsFailed = res.heads, res.tips, res.known, res.failed
 }
 
 // fetchHeads does the asking and touches no memo, so it is safe on a goroutine of its
 // own: everything it decides comes back in the result.
 func (r *Repo) fetchHeads(remotes []string) headsResult {
 	var out []string
+	tips := map[string]string{}
 	answered := false
 	for _, remote := range remotes {
 		ctx, cancel := context.WithTimeout(context.Background(), remoteTimeout)
@@ -216,16 +219,32 @@ func (r *Repo) fetchHeads(remotes []string) headsResult {
 		}
 		answered = true
 		for _, line := range strings.Split(string(raw), "\n") {
-			_, ref, found := strings.Cut(strings.TrimSpace(line), "\t")
+			sha, ref, found := strings.Cut(strings.TrimSpace(line), "\t")
 			if !found {
 				continue
 			}
 			if name := strings.TrimPrefix(ref, "refs/heads/"); name != ref && name != "" {
 				out = append(out, name)
+				tips[remote+"/"+name] = sha
 			}
 		}
 	}
-	return headsResult{heads: out, known: answered}
+	return headsResult{heads: out, tips: tips, known: answered}
+}
+
+// remoteTip is the commit a remote advertises for a branch, and false when that could not
+// be had: offline, a remote that did not answer, or a branch it does not carry.
+//
+// The sha comes from the same `ls-remote` the board already runs, so it costs nothing
+// beyond keeping the half of each line that was being thrown away. It is the only reading
+// of a claim branch that cannot be stale — `refs/remotes/*` is a cache of the last fetch,
+// and a local head is a cache of the last push.
+func (r *Repo) remoteTip(remote, branch string) (string, bool) {
+	if _, ok := r.remoteHeads(); !ok {
+		return "", false
+	}
+	sha, ok := r.tips[remote+"/"+branch]
+	return sha, ok
 }
 
 // RemoteUnanswered reports whether something this command needed from the remote could
@@ -245,10 +264,19 @@ func (r *Repo) RemoteUnanswered() bool {
 
 // branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
 // recognised as one branch rather than two claims on the same feature.
-func branchName(ref string) string {
-	if i := strings.Index(ref, "/"); i >= 0 && (strings.HasPrefix(ref, "origin/") ||
-		strings.HasPrefix(ref, "remotes/")) {
-		return ref[i+1:]
+//
+// Every remote this project has configured, not the conventional name alone. A clone
+// whose remote is called `upstream` read its trunk out of `upstream/HEAD` and kept the
+// prefix, so the trunk was `upstream/main` — a name no ref resolves. Everything that
+// compares against the trunk then had nothing to compare with: `stalled` could never
+// fire, and `release` refused every claim.
+//
+// `remotes/` stays unconditional: it is the prefix of a ref path rather than a remote's
+// name, and no project can configure it away.
+func (r *Repo) branchName(ref string) string {
+	name, rest, found := strings.Cut(ref, "/")
+	if found && (name == "remotes" || slices.Contains(r.remotes(), name)) {
+		return rest
 	}
 	return ref
 }

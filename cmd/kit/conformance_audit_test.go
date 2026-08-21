@@ -966,6 +966,35 @@ func TestTheDefaultBranchIsAskedForRatherThanAssumed(t *testing.T) {
 	}
 }
 
+func TestARemoteNeedNotBeCalledOriginForTheTrunkToResolve(t *testing.T) {
+	t.Parallel()
+	// The trunk comes from `<remote>/HEAD`, and only an `origin/` prefix was stripped off
+	// the answer — so a clone whose remote is `upstream` resolved its trunk as
+	// `upstream/develop`, which names no ref. Everything comparing against the trunk then
+	// had nothing to compare with: `stalled` went quiet, and `release` refused every claim.
+	p := newProject(t)
+	p.run("init").ok()
+	p.git("checkout", "-q", "-b", "develop")
+	feature(p, "0002", "widget", "Widget", "Draft", "- [ ] Build it")
+	p.commitAllAt("the plan", daysAgo(kit.StalledDays+1))
+
+	remote := filepath.Join(p.Root, "..", "upstream.git")
+	gitIn(t, p.Root, "init", "-q", "--bare", "-b", "develop", remote)
+	p.git("remote", "add", "upstream", remote)
+	p.git("push", "-q", "upstream", "develop")
+	p.git("remote", "set-head", "upstream", "develop")
+
+	p.git("checkout", "-q", "-b", "0002-widget")
+	p.write("internal/thing.go", "package thing\n")
+	p.commitAllAt("0002: started and left", daysAgo(kit.StalledDays+1))
+	p.git("checkout", "-q", "develop")
+
+	if codes := p.auditCodes(); !slices.Contains(codes, "stalled") {
+		t.Errorf("an abandoned claim went unreported because the remote is called "+
+			"upstream; audit said %v", codes)
+	}
+}
+
 func TestAnFYINeverFailsTheShipGate(t *testing.T) {
 	t.Parallel()
 	// `kit block --fyi` promises the feature is not blocked and work continues.

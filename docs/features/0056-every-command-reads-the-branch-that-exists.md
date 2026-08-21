@@ -1,9 +1,9 @@
 ---
 id: 0056
 title: Every command reads the branch that exists
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -54,9 +54,17 @@ Reproduced:
 
 ## Tasks
 
-- [ ] `release` asks the remote ref, and refuses when local and remote disagree
-- [ ] Progress and `stalled` read the authoritative ref, and a test drives two checkouts
-- [ ] Any remote prefix is stripped, not just `origin/`
-- [ ] `Trunk()` is memoised on a flag, and the budget fixture covers a repo with no trunk
+- [x] `release` asks the remote ref, and refuses when local and remote disagree
+- [x] Progress and `stalled` read the authoritative ref, and a test drives two checkouts
+- [x] Any remote prefix is stripped, not just `origin/`
+- [x] `Trunk()` is memoised on a flag, and the budget fixture covers a repo with no trunk
 
 ## Log
+
+- Containment, not equality, decides whether `release` may read a local copy: a branch
+  ahead of the remote is the ordinary state of an agent that has committed and not pushed,
+  and refusing there would refuse every honest release.
+- Two ways a claim branch can be unreadable, and they need opposite answers. A branch
+  carrying no doc keeps the checkout's count, which `next` already promised; a revision
+  this clone never fetched shows none, because the copy here is the trunk's and reads as
+  an agent that has done nothing.

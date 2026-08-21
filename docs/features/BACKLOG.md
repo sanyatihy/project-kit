@@ -17,9 +17,10 @@ machine's refs.
 So the mutual visibility the multi-agent model rests on is the shared local object store,
 not the remote. On one machine with worktrees that holds. Across two it does not, and it
 fails silently: `stalled` never ages a claim carrying no commits beyond the doc, which is
-exactly what a live agent looks like from anywhere else. Two checkouts of one feature have
-been observed reporting different progress for it in the same instant, because each read
-whichever copy of the branch it happened to have.
+exactly what a live agent looks like from anywhere else. Two checkouts of one feature were
+observed reporting different progress for it in the same instant; since 0056 the board
+reads the tip `ls-remote` advertises and a checkout that cannot reach it shows no count at
+all, which is silence rather than liveness.
 
 The fix is that the push becomes the heartbeat — the claim branch gets one when a box is
 ticked — after which `stalled` can age from the remote branch's commit date and be true from

@@ -284,9 +284,10 @@ A doc with an empty ## Problem, ## Design or ## Tasks is reported as blocked rat
 than offered, because "kit claim" would refuse it.
 
 Each feature shows ticked-over-total, "2/4", carried in --json as "done" and "total".
-For a feature somebody else holds the count comes from its claim branch, where the
-boxes are actually ticked, and the entry says when that branch last moved. A count of
-boxes and not an estimate: boxes are not equal sizes.
+For a feature somebody else holds the count comes from the branch the remote has,
+where the boxes are actually ticked, and the entry says when that branch last moved.
+A claim this checkout has never fetched shows no count rather than a stale one. A
+count of boxes and not an estimate: boxes are not equal sizes.
 
 A feature is reported as taken when a branch cites its id — local branches, remote
 branches and worktrees all count, so a stale fetch hides someone else's claim. The

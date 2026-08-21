@@ -21,7 +21,8 @@ import (
 // is cached: it cannot change under a single command, and both the claim checks and
 // BranchBuildsOn ask for it per feature.
 func (r *Repo) Trunk() string {
-	if r.trunk == "" {
+	if !r.trunkAsked {
+		r.trunkAsked = true
 		r.trunk = r.findTrunk()
 	}
 	return r.trunk
@@ -31,7 +32,7 @@ func (r *Repo) findTrunk() string {
 	for _, remote := range r.remotes() {
 		ref := strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short",
 			"refs/remotes/"+remote+"/HEAD"))
-		if name := branchName(ref); name != "" && name != "HEAD" {
+		if name := r.branchName(ref); name != "" && name != "HEAD" {
 			return name
 		}
 	}
@@ -160,7 +161,7 @@ func (r *Repo) Claims(id string) []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, ref := range r.refs {
-		name := branchName(ref)
+		name := r.branchName(ref)
 		if r.isTrunk(name) || seen[name] || !mentionsAny(name, ids) {
 			continue
 		}
@@ -195,6 +196,25 @@ func mentionsAny(text string, ids []string) bool {
 func (r *Repo) Mine(id string) bool {
 	f := r.FeatureByID(id)
 	return f != nil && r.HeadBranch() == f.Branch()
+}
+
+// claimRev is the revision a claim is: the commit the remote advertises for the branch,
+// because the branch on the remote is the claim. Every copy here is a cache of it — a
+// local head records the last push, `refs/remotes/*` the last fetch — and either can be
+// days behind the agent holding it, which is how one feature read 0/2 in one checkout and
+// 1/2 in another at the same instant.
+//
+// This checkout's own copy when no remote carries the branch: a claim only this machine
+// has, which is also what `--offline` and a project with no remote look like. A commit
+// this clone has never fetched resolves to nothing readable, and every caller treats that
+// the way the kit treats any answer it cannot get.
+func (r *Repo) claimRev(branch string) string {
+	for _, remote := range r.remotes() {
+		if tip, ok := r.remoteTip(remote, branch); ok {
+			return tip
+		}
+	}
+	return r.resolveBranch(branch)
 }
 
 // BranchBuildsOn reports whether a branch has changed anything beyond the one file
@@ -506,7 +526,7 @@ func (r *Repo) OrphanClaims() []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, ref := range r.refs {
-		name := branchName(ref)
+		name := r.branchName(ref)
 		if r.isTrunk(name) || seen[name] {
 			continue
 		}
@@ -532,7 +552,7 @@ func (r *Repo) OrphanClaims() []string {
 func (r *Repo) HasClaimShapedBranch() bool {
 	r.loadGit()
 	for _, ref := range r.refs {
-		name := branchName(ref)
+		name := r.branchName(ref)
 		if !r.isTrunk(name) && idPrefixRe.FindString(name) != "" {
 			return true
 		}

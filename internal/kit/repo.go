@@ -63,8 +63,14 @@ type Repo struct {
 
 	commits []commit
 	refs    []string
-	trunk   string
 	loaded  bool
+
+	// The default branch, asked once. The flag is what makes "there is no trunk" an
+	// answer rather than a question not yet asked: without it, every caller re-ran the
+	// whole ladder, and on a board where nothing resolves that is one `symbolic-ref` per
+	// claim per feature.
+	trunk      string
+	trunkAsked bool
 
 	// refsAuthoritative records whether the claim refs came from the remote itself or
 	// from a past fetch. Only the second can produce a claim nobody holds, so only the
@@ -77,6 +83,10 @@ type Repo struct {
 	heads      []string
 	headsKnown bool
 	headsAsked bool
+
+	// What each remote advertises for each branch, from the same round trip. `release`
+	// deletes a ref on the remote, so it has to know whether the copy it read is that ref.
+	tips map[string]string
 
 	// headsFailed records that the remote was asked and did not answer — a timeout or a
 	// failed call. Distinct from having no remote to ask, which is not a failure and has

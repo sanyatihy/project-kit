@@ -483,7 +483,11 @@ func stalled(s *docState) []Finding {
 		return nil
 	}
 	claim := s.claims[0]
-	if !s.r.BranchBuildsOn(claim, s.f.Rel) {
+	// The claim is the branch the remote has, and this checkout's copy of it can be days
+	// behind. Where that revision cannot be read here, `BranchBuildsOn` answers "carries
+	// no work" and the check stays quiet — which is the right way round: an age measured
+	// from a stale copy reports an agent that pushed an hour ago as dead for a week.
+	if !s.r.BranchBuildsOn(s.r.claimRev(claim), s.f.Rel) {
 		return nil
 	}
 	// Not the doc's mtime alone. For a tracked file that records when git last wrote it

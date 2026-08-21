@@ -716,3 +716,36 @@ func TestATakenEntrySaysWhenItsBranchLastMoved(t *testing.T) {
 	}
 	p.run("next").ok().has("0001-widget, 2 days ago")
 }
+
+func TestTheBoardCountsTheBoxesTheRemoteHas(t *testing.T) {
+	t.Parallel()
+	// One feature, two checkouts, one instant. The ticks live on the claim branch, and
+	// each checkout holds a copy of that branch which can be behind: b fetched when the
+	// claim was made and a has been working since. Counting the copy printed 0/1 in b and
+	// 1/2 in a for the same feature, and 0/1 is the picture of an agent that has done
+	// nothing.
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	b.git("fetch", "-q", "origin")
+
+	a.git("checkout", "-q", "0007-widget")
+	feature(a, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [ ] Ship it")
+	a.commitAll("0007: one box")
+	a.git("push", "-q", "origin", "0007-widget")
+
+	stale := b.plan("next", "--json").Taken
+	if len(stale) != 1 {
+		t.Fatalf("want 0007 taken in the other checkout, got %+v", stale)
+	}
+	if stale[0].Total != 0 {
+		t.Errorf("a checkout that has never fetched the claim reports %d/%d for it",
+			stale[0].Done, stale[0].Total)
+	}
+
+	// And with the objects in hand it is the remote's branch that is counted.
+	b.git("fetch", "-q", "origin")
+	if taken := b.plan("next", "--json").Taken; len(taken) != 1 ||
+		taken[0].Done != 1 || taken[0].Total != 2 {
+		t.Errorf("the board says %+v; the branch the remote has is one of two ticked", taken)
+	}
+}

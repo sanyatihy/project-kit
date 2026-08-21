@@ -181,3 +181,24 @@ func TestATagNamedLikeTheClaimDoesNotStrandIt(t *testing.T) {
 		t.Error("release exited 0 but the remote still has 0007-widget, so the claim stands")
 	}
 }
+
+// The deleted-commit case, reproduced: one checkout's copy of the claim was left behind
+// while another pushed real work to the same branch. `release` read the copy, called the
+// branch empty, and deleted the ref carrying the commits — exit 0, no `--force`, and the
+// work unreachable.
+func TestReleaseRefusesWhenTheRemoteHasCommitsThisCheckoutHasNotSeen(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	b.git("fetch", "-q", "origin")
+	b.git("checkout", "-q", "-b", "0007-widget", "origin/0007-widget")
+	b.write("main.go", "package main\n")
+	b.commitAll("0007: build it")
+	b.git("push", "-q", "origin", "0007-widget")
+
+	a.run("release", "0007").fails(2).errHas("git fetch")
+
+	if !hasRemoteBranch(t, a, "0007-widget") {
+		t.Fatal("release deleted a branch whose commits this checkout had never seen")
+	}
+}
