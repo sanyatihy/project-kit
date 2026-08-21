@@ -1333,8 +1333,11 @@ func TestADraftOnItsOwnBranchIsNotAnOrphan(t *testing.T) {
 	p.commitAll("bootstrap")
 	trunk := p.headBranch()
 
-	p.git("checkout", "-q", "-b", "0001-a-feature")
+	// Drafted here and committed there, because `kit new` refuses to write a doc on a
+	// branch whose name cites an id. The state under test is the same one either way: a
+	// claim-shaped branch carrying a doc the trunk has never seen.
 	p.run("new", "A feature").ok()
+	p.git("checkout", "-q", "-b", "0001-a-feature")
 	p.commitAll("Plan 0001")
 	p.git("checkout", "-q", trunk)
 

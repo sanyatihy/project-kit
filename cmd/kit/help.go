@@ -150,6 +150,10 @@ could not give.
 Fails rather than overwrites, so two agents drafting at once get an error instead
 of one silently losing its work.
 
+Refuses on a branch whose name cites a four-digit id that is not its own claim. Any
+branch citing an id claims that feature, so a round drafted on one claims a feature
+it has nothing to do with. Put the round on a "plan/" branch with no id in the name.
+
 Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in
 ## Open questions; anything only a human can answer goes in docs/INBOX.md via
 "kit block". Never set status: or shipped: yourself — "kit ship" and "kit drop"
@@ -171,6 +175,7 @@ so of any number of agents claiming at once exactly one wins.
      whatever the status
   2  it could not run: no such feature, two docs share the id, no commits yet,
      the plan not committed here, the plan not landed on the default branch,
+     this checkout already claims something,
      this checkout ahead of the default branch, several remotes and no origin,
      or the push said nothing about the ref
 

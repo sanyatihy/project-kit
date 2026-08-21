@@ -301,6 +301,35 @@ func TestNewRefusesATitleItCannotUse(t *testing.T) {
 	p.run("new", "!!!").fails(2).errHas("no usable characters")
 }
 
+func TestNewRefusesToDraftOnABranchThatClaimsAFeature(t *testing.T) {
+	t.Parallel()
+	// A branch citing a four-digit id claims that feature, wherever in the name it
+	// sits, so a plan round drafted on one claims a feature it has nothing to do with:
+	// `plan/fold-in-0007-fix` made the board report 0007 as taken while `audit` exited
+	// 0 saying the docs and the repo agreed. Closed here rather than by narrowing what
+	// counts as a claim, which would have made the guarantee smaller.
+	a, _ := twoAgents(t)
+	a.git("checkout", "-q", "-b", "plan/fold-in-0007-fix")
+
+	a.run("new", "Later").fails(2).errHas("0007", "no four-digit id")
+
+	if matches, err := filepath.Glob(a.path("docs/features/*-later.md")); err != nil ||
+		len(matches) > 0 {
+		t.Errorf("a refused draft wrote %v", matches)
+	}
+	if got := a.reservedIDs(); slices.Contains(got, "0008") {
+		t.Errorf("a refused draft burned an id: the remote reserves %v", got)
+	}
+
+	// The quiet half: a round whose name cites nothing, which is what the protocol asks
+	// for, and a feature's own claim branch, where work discovered mid-build is written.
+	a.git("checkout", "-q", "-b", "plan/round-two")
+	a.run("new", "Later").ok().has("0008-later.md")
+	a.commitAll("the second round")
+	a.git("checkout", "-q", "-b", "0008-later")
+	a.run("new", "Discovered").ok().has("0009-discovered.md")
+}
+
 func TestNewOnAnUnsetUpProjectSaysHowToFixIt(t *testing.T) {
 	t.Parallel()
 	p := newProject(t)

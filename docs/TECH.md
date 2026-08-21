@@ -91,6 +91,14 @@ Draft -> Shipped     (exit: Dropped)
   holds one feature, and its claim reads as *yours* while HEAD *is* the branch named after
   the doc — `notes-0001-alpha` mentions the id and confers nothing. A rebase detaches HEAD,
   so the name is read from git's rebase state instead.
+- **One checkout takes one claim, and the branch name is what refuses.** `claim` refuses
+  while HEAD's name cites any four-digit id: the ahead-of-the-trunk check sees a second
+  claim only once the first branch carries a commit, so `kit claim 0008` inside 0007's
+  worktree pushed both at exit 0.
+- **A branch citing an id claims that feature, so `new` refuses to draft on one.**
+  `plan/fold-in-0002-fix` made the board report 0002 as taken while `audit` exited 0. The
+  draft is refused rather than `Claims` narrowed, which would shrink the guarantee; a
+  feature's own claim branch is exempt, so a doc discovered mid-build still lands there.
 - **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks
   whether HEAD *is* the claim branch, which is right for `ship` — shipping happens in the
   worktree doing the work — and wrong for `release`, because `claim` tells you to make that

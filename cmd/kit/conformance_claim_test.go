@@ -294,6 +294,36 @@ func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
 	a.run("claim", "0008").ok().has("claimed", "0008-later")
 }
 
+func TestClaimRefusesFromACheckoutThatAlreadyHoldsAClaim(t *testing.T) {
+	t.Parallel()
+	// One feature per checkout was a rule in prose and nothing else: the board printed
+	// "take one of those in a worktree of its own, never here" and `claim` took it
+	// anyway. A claim made a moment ago carries no commits, so the ahead-of-the-trunk
+	// check cannot see it — this is what does.
+	a, _ := twoAgents(t)
+	trunk := a.headBranch()
+	feature(a, "0008", "later", "A later thing", "Draft", "- [ ] Build it")
+	a.commitAll("a second feature")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
+
+	a.run("claim", "0007").ok()
+	a.git("checkout", "-q", "0007-widget")
+
+	// Exit 2: the feature may well be free, and the repository is in the wrong state
+	// for taking it here, so "take something else" would be the wrong instruction.
+	a.run("claim", "0008").fails(2).errHas("one feature per checkout", "git worktree add")
+
+	for _, name := range a.branches() {
+		if strings.HasPrefix(name, "0008") {
+			t.Errorf("a refused claim still created branch %q", name)
+		}
+	}
+
+	// The quiet half: the same claim from a checkout that holds nothing.
+	a.git("checkout", "-q", trunk)
+	a.run("claim", "0008").ok().has("claimed", "0008-later")
+}
+
 func TestTheFirstClaimOfAFreshProjectIsNotRefused(t *testing.T) {
 	t.Parallel()
 	// The trunk barrier must not break a project that has no trunk to land on. A fresh
