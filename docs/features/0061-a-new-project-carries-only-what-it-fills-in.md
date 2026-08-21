@@ -93,7 +93,7 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
 
 - [x] `init` stops writing `TEMPLATE.md` and `BACKLOG.md`, and `kit block` creates `INBOX.md`
 - [x] `init` stops writing the `VISION.md` stub, and `no-protocol` carries the prompt
-- [ ] The protocol drops the rules a refusal already makes, and rule 10 goes as false
+- [x] The protocol drops the rules a refusal already makes, and rule 10 goes as false
 - [ ] Rule 2's "and" test is replaced by the doc-earns-its-place test
 - [ ] The protocol stops routing work away from the kit, and says how long a doc runs
 - [ ] `go-checklist` leaves the binary, and the ceilings fall with the files
@@ -108,6 +108,24 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
   drop it and let `no-protocol` say so.
 
 ## Log
+
+- 2026-08-21 — seven rules go, not the five this doc named: 8, 10, 13, 23, 24, 26, 27.
+  Each of 8, 13, 23, 24 and 26 is printed by a command at the moment it matters —
+  `kit claim` says "Land the round, then claim", `next` closes every run with an
+  instruction including "say so and wait", each `ship` refusal names its own fix, `ship`
+  prints "move durable facts into docs/TECH.md, one line each", and `next` prints
+  "your own is never yours to merge" itself. 24 was also said twice inside the protocol,
+  by **Every fact has one home**.
+- 2026-08-21 — rule 22 is kept and corrected rather than cut. Dropping it would leave
+  nothing saying to run `kit audit --strict` before `kit ship`, which no refusal makes;
+  what was wrong with it was naming `make check`, so it now names the project's own gate.
+  A test holds the protocol against naming `make check`, `make install` or `make release`.
+- 2026-08-21 — rules 11 and 12 stay. The refusal they collapse into is 0062's and has not
+  shipped, and 0062's own `## Design` says it turns them into a refusal and one line of
+  prose — so it is that feature's cut. Removing them first would leave the protocol silent
+  about the failure `split-claim` is HIGH for.
+- 2026-08-21 — rule 27's fact is true of this repo and not of a project the kit scaffolds,
+  so it moved above the marker in this repo's own `AGENTS.md` rather than being deleted.
 
 - 2026-08-21 — the open question is settled the way it leaned: no `VISION.md` at all, not
   an empty heading. `no-protocol` gained a second fix line for it, because `kit init .`
