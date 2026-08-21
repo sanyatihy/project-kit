@@ -76,6 +76,7 @@ Topics:
   kit help template      the feature doc format, field by field
   kit help checks        every audit finding and what it means
   kit help inbox         the docs/INBOX.md format, and what BLOCKING means
+  kit help backlog       the docs/features/BACKLOG.md format, and what promotes an entry
   kit help vision        the docs/VISION.md shape, and what it is not for
   kit help as-built      the docs/TECH.md shape, section by section
   kit help go-checklist  engineering practices for Go projects, tiered
@@ -91,6 +92,7 @@ var topics = map[string]string{
 	"vision":       "templates/VISION.md",
 	"as-built":     "templates/TECH.md",
 	"inbox":        "templates/INBOX.md",
+	"backlog":      "templates/BACKLOG.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
