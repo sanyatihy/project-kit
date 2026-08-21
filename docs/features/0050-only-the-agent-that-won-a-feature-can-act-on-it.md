@@ -53,7 +53,7 @@ Reproduced against the installed binary:
 ## Tasks
 
 - [x] `Mine` is branch equality, and a scratch branch citing an id confers nothing
-- [ ] `claim` cannot leave a ref on the remote it does not own locally
+- [x] `claim` cannot leave a ref on the remote it does not own locally
 - [ ] Refs are read from `for-each-ref`, so git's pseudo-branch names are never claims
 - [ ] A test drives each of the four states above
 
