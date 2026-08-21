@@ -170,10 +170,9 @@ Draft -> Shipped     (exit: Dropped)
   `## Tasks` as unwritten** — so a doc out of `kit new` stays quiet, `claim` refuses what
   the board declines, and a stub `drop` retired stops refusing every ship in the project.
 - **Three docs, three tenses:** VISION what the project is becoming, `features/` what is
-  being done now, TECH what exists. **A file is the kit's to refresh when nothing reads the
-  project's copy** — `TEMPLATE.md` is written from the embedded copy, so `init` replaces it
-  and it cannot describe a format the tool no longer produces. Anything a project fills in
-  is never touched; house rules go above the marker.
+  being done now, TECH what exists. **`kit init` writes a file only if the project will
+  fill it in**, and refreshes nothing but the protocol section; `docs/INBOX.md` and
+  `docs/TECH.md` are made by the command that first needs them.
 - **`kit init` writes an `AGENTS.md` with a title and the marker note.** It used to write
   the bare protocol section, opening on an `##` heading with no project name and nothing
   saying the section is regenerated — so the promise that house rules survive above the
@@ -212,8 +211,8 @@ Draft -> Shipped     (exit: Dropped)
   a note `--fyi` cleared to wait. What a terminal doc is still asked is the frontmatter
   the kit writes — repairable without reopening the plan — and a leaked credential.
 - **One defect is one finding; the code names the category, not one member.** Seven pairs
-  merged, each survivor's `Means` restated. A missing `VISION.md` or `INBOX.md` is
-  `no-protocol`: `kit init` writes all three, so one fix clears them.
+  merged, each survivor's `Means` restated. A missing `VISION.md` and a missing work
+  protocol are both `no-protocol`: one project to repair, not two reports to read.
 - **Severity is the damage.** `split-claim` is HIGH — two agents owning one feature is the
   worst failure here, and it gated nothing at MEDIUM. `id-mismatch` is HIGH because the
   branch comes from the filename and the claim is looked up by the id, so the board keeps

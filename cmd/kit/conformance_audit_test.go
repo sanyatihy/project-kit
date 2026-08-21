@@ -622,28 +622,27 @@ func TestProtocolStaleNeverOffersToOverwriteTheNewerSide(t *testing.T) {
 	}
 }
 
-func TestTheDocumentsKitInitWritesAreOneFinding(t *testing.T) {
+func TestTheDocumentsAnAgentReadsAreOneFinding(t *testing.T) {
 	t.Parallel()
-	// One command writes all three, creates only what is missing and overwrites nothing,
-	// so a project lacking them has one defect with one fix. It was three findings at two
-	// severities telling the reader to run `kit init .` three times.
+	// A project missing both is one project to repair, not two reports to read. It was
+	// three findings at two severities telling the reader to run `kit init .` three times.
 	p := cleanProject(t)
 	feature(p, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
-	for _, rel := range []string{"AGENTS.md", "docs/INBOX.md", "docs/VISION.md"} {
+	for _, rel := range []string{"AGENTS.md", "docs/VISION.md"} {
 		if err := os.Remove(p.path(rel)); err != nil {
 			t.Fatalf("removing %s: %v", rel, err)
 		}
 	}
 
 	if n := strings.Count(strings.Join(p.auditCodes(), " "), "no-protocol"); n != 1 {
-		t.Errorf("three missing documents reported %d findings, want 1", n)
+		t.Errorf("two missing documents reported %d findings, want 1", n)
 	}
 	// One finding still has to say which files, or it is not actionable.
-	p.run("audit").ok().has("AGENTS.md", "INBOX.md", "VISION.md", "run: kit init .")
+	p.run("audit").ok().has("AGENTS.md", "VISION.md")
 
-	// And each on its own, because a merged check that only fires when all three are gone
+	// And each on its own, because a merged check that only fires when both are gone
 	// would be silent on the case that actually happens.
-	for _, rel := range []string{"AGENTS.md", "docs/INBOX.md", "docs/VISION.md"} {
+	for _, rel := range []string{"AGENTS.md", "docs/VISION.md"} {
 		t.Run(rel, func(t *testing.T) {
 			one := cleanProject(t)
 			feature(one, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
@@ -654,6 +653,20 @@ func TestTheDocumentsKitInitWritesAreOneFinding(t *testing.T) {
 				t.Errorf("a project with no %s reported %v", rel, codes)
 			}
 		})
+	}
+}
+
+func TestAMissingInboxIsNeverAFinding(t *testing.T) {
+	t.Parallel()
+	// `kit block` creates it with the first question, so its absence says nothing has
+	// needed a human yet. Reporting it would nag every project that has never been stuck.
+	p := cleanProject(t)
+	feature(p, "0002", "planned", "Planned thing", "Draft", "- [ ] Do it")
+	if p.exists("docs/INBOX.md") {
+		t.Fatal("something scaffolded an inbox, so this proves nothing")
+	}
+	if codes := p.auditCodes(); slices.Contains(codes, "no-protocol") {
+		t.Errorf("a project with no inbox was reported: %v", codes)
 	}
 }
 

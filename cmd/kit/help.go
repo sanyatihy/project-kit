@@ -101,9 +101,8 @@ var commandHelp = map[string]string{
 Set a project up, or fill in what an existing one is missing.
 
 Creates the directory if it does not exist, makes it a git repo if it is not one,
-and writes docs/VISION.md, docs/features/{TEMPLATE,BACKLOG}.md, docs/INBOX.md and
-AGENTS.md.
-With --stack it also scaffolds the code layout and one CI pipeline.
+and writes docs/VISION.md, an empty docs/features/ and AGENTS.md. With --stack it
+also scaffolds the code layout and one CI pipeline.
 
 Which CI file that is depends on where the project is hosted, and it is worked out
 from the first thing that actually says: a .gitlab-ci.yml or .github/workflows the
@@ -113,12 +112,15 @@ file is written and the run tells you so — a missing pipeline is visible, and 
 for the wrong forge is not. --forge settles it outright.
 
 Nothing you wrote is overwritten or deleted, so it is safe on a populated directory
-and safe to re-run. Two kit-owned files are refreshed on every run: the
-"## Work protocol" section of AGENTS.md, and docs/features/TEMPLATE.md. Everything
-you fill in is left alone, and house rules go above the marker comment in AGENTS.md.
+and safe to re-run. One kit-owned thing is refreshed on every run: the
+"## Work protocol" section of AGENTS.md. Everything you fill in is left alone, and
+house rules go above the marker comment in AGENTS.md.
 Re-running is also how a project gets its CI file once it has a remote, and how the
 IDs its docs already hold are reserved — after which deleting a doc cannot free its
 number for a later "kit new" to hand out again.
+
+Files the project fills in only when it has something to put in them are not
+scaffolded: "kit block" creates docs/INBOX.md and "kit ship" creates docs/TECH.md.
 
 Deployment scaffolding is deliberately not generated. Add it when the project has
 something to deploy.
@@ -222,8 +224,9 @@ is left to remove — until it goes, this checkout still reads the feature as ta
 
 	"block": `kit block <id> "<question>" [--fyi]
 
-Blocked on something only a human can decide? Write it here and move on. Appends
-one line to docs/INBOX.md in the format the tool parses:
+Blocked on something only a human can decide? Write it here and move on. Creates
+docs/INBOX.md if this is the first question, and appends one line in the format the
+tool parses:
 
   - [ ] YYYY-MM-DD · <id> · BLOCKING|FYI · <question>
 

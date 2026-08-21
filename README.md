@@ -60,8 +60,8 @@ Run it from anywhere — `kit` is on your `$PATH`. Prompting an agent inside the
 repo to set up some other project gives it write access to the tool it is using.
 
 It creates the directory if missing, makes it a git repo, and writes `docs/VISION.md`,
-`docs/features/{TEMPLATE,BACKLOG}.md`, `docs/INBOX.md` and `AGENTS.md`. It overwrites
-nothing you wrote, so it is safe on a populated directory and safe to re-run.
+an empty `docs/features/` and `AGENTS.md`. It overwrites nothing you wrote, so it is safe
+on a populated directory and safe to re-run.
 
 With `--stack go` it also writes `Makefile`, `.gitignore`, `go.mod`, `cmd/<name>/`,
 `internal/`, a `README.md`, and one CI pipeline running `make check`.
@@ -78,12 +78,14 @@ Which CI file depends on where the project is hosted, from the first thing that 
 A hostname cannot tell a self-hosted GitLab from a Gitea, so a file the project already
 carries outranks it. `--forge github|gitlab` settles it outright.
 
-Re-running is how a project catches up after the kit is upgraded. Two kit-owned things are
-refreshed: the `## Work protocol` section of `AGENTS.md`, and `docs/features/TEMPLATE.md`.
-Everything you fill in — `VISION.md`, `INBOX.md`,
-`BACKLOG.md` and every stack file — is never touched, and house rules live above the
-marker comment in `AGENTS.md`. `docs/TECH.md` is not written at all: it describes what
-exists, so it waits until something ships, and `kit help as-built` prints its shape.
+Re-running is how a project catches up after the kit is upgraded. One kit-owned thing is
+refreshed: the `## Work protocol` section of `AGENTS.md`. Everything you fill in — the
+vision and every stack file — is never touched, and house rules live above the marker
+comment in `AGENTS.md`.
+
+A file the kit writes is one the project will fill in. The two that wait for a reason to
+exist are not scaffolded: `kit block` creates `docs/INBOX.md` with the first question, and
+`kit ship` creates `docs/TECH.md` when something has shipped.
 
 Once set up you never run anything yourself. `AGENTS.md` tells the agent to run
 `kit next` at the start of a session, so "what should I work on?" is enough.

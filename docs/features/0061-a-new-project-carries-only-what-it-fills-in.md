@@ -91,7 +91,7 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
 
 ## Tasks
 
-- [ ] `init` stops writing `TEMPLATE.md` and `BACKLOG.md`, and `kit block` creates `INBOX.md`
+- [x] `init` stops writing `TEMPLATE.md` and `BACKLOG.md`, and `kit block` creates `INBOX.md`
 - [ ] `init` stops writing the `VISION.md` stub, and `no-protocol` carries the prompt
 - [ ] The protocol drops the rules a refusal already makes, and rule 10 goes as false
 - [ ] Rule 2's "and" test is replaced by the doc-earns-its-place test
@@ -108,3 +108,11 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
   drop it and let `no-protocol` say so.
 
 ## Log
+
+- 2026-08-21 — `init` still writes one thing into `docs/features/`: a `.gitkeep`. The board
+  is a directory listing, so `next`, `audit` and `new` all exit 2 without the directory,
+  and git drops an empty one — a clone of a project that has planned nothing would arrive
+  unable to plan. Same rule the stack already uses for `internal/`.
+- 2026-08-21 — `no-protocol` stops reporting a missing `docs/INBOX.md`. The check named
+  the documents `kit init` writes; the inbox is no longer one of them, and reporting it
+  would nag every project that has never been stuck.

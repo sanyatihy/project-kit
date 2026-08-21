@@ -162,11 +162,11 @@ var (
 		"no status: in the frontmatter, or one the kit does not recognise"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
 		"AGENTS.md and the installed kit disagree about the work protocol, so one side is superseded"}
-	// One command writes all three of these files and overwrites none of them, so a
-	// project missing more than one is one defect with one fix. It was three findings
-	// telling the reader to run `kit init .` three times.
+	// Two documents an agent is stopped by the absence of, and one fix each. The inbox
+	// is not among them: `kit block` creates it on first use, so a project that has never
+	// had a question to park is missing nothing.
 	checkNoProtocol = Check{"no-protocol", Medium,
-		"a document kit init writes is missing: AGENTS.md's work protocol, INBOX.md, or VISION.md"}
+		"a document agents read is missing: AGENTS.md's work protocol, or VISION.md once features exist"}
 )
 
 // OfflineChecks are the checks that cannot run without an answer from the remote: under
@@ -689,9 +689,11 @@ func tagStale(s *repoState) []Finding {
 		"cut a tag on the trunk and push it — until it is pushed nothing installs it")}
 }
 
-// One command writes AGENTS.md, docs/INBOX.md and docs/VISION.md, creates only what is
-// missing and overwrites nothing — so a project lacking any of them has one defect with
-// one fix, and reporting it three times told the reader to run `kit init .` three times.
+// One finding for the documents whose absence stops an agent, because a project missing
+// both is one project to repair rather than two reports to read.
+//
+// `docs/INBOX.md` is not one of them: `kit block` creates it with the first question, so
+// its absence says nothing has needed a human yet.
 //
 // Two ways to have no protocol, and only the first was ever reported. A file whose
 // `## Work protocol` heading has been deleted is worse than a missing one: `protocol-stale`
@@ -705,9 +707,6 @@ func noProtocol(s *repoState) []Finding {
 	case err == nil && !strings.Contains(Normalise(string(raw)), ProtocolMarker):
 		missing = append(missing, "no "+ProtocolMarker+" section in "+s.r.Rel(s.r.Protocol)+
 			", so agents have no protocol and will invent one")
-	}
-	if s.r.Inbox == "" {
-		missing = append(missing, "no docs/INBOX.md, so a blocked agent has nowhere to put a question")
 	}
 	// Only once features exist: a project set up and not yet planned has nothing to
 	// decompose, and a finding on a fresh `kit init` would be noise at the moment the
