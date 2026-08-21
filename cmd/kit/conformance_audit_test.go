@@ -532,6 +532,24 @@ func TestAnUnreadableDocIsReportedOnceAndKeepsItsID(t *testing.T) {
 	}
 }
 
+func TestANonASCIIFilenameDoesNotDisableThePlanChecks(t *testing.T) {
+	t.Parallel()
+	// git C-quotes any path outside printable ASCII, so `ls-tree` never named the file
+	// `os.ReadDir` had named and `tracked` answered false — the gate on every check that
+	// reads a committed plan. The two docs below differ by one character and nothing else,
+	// and the accented one used to audit clean and exit 0.
+	for _, name := range []string{"0002-blank.md", "0002-blànk.md"} {
+		t.Run(name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/features/"+name,
+				"---\nid: 0002\ntitle: Blank\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
+					"## Problem\n\n## Design\n\n## Tasks\n\n## Log\n")
+			p.commitAll("a plan nobody wrote")
+			p.run("audit", "--strict").fails(1).has("unfilled-template")
+		})
+	}
+}
+
 func TestNoProtocolFiresOnAFileWithNoProtocolSection(t *testing.T) {
 	t.Parallel()
 	// AGENTS.md present, its kit-owned section gone. Nothing looked for the heading, so

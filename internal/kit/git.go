@@ -264,13 +264,30 @@ func (r *Repo) TrackedAtHEAD(rel string) bool {
 	if !r.headPathsAsked {
 		r.headPathsAsked = true
 		r.headPaths = map[string]bool{}
-		for _, line := range strings.Split(r.git("ls-tree", "-r", "--name-only", "HEAD"), "\n") {
-			if path := strings.TrimSpace(line); path != "" {
-				r.headPaths[path] = true
-			}
+		for _, path := range gitPaths(r.git("ls-tree", "-r", "-z", "--name-only", "HEAD")) {
+			r.headPaths[path] = true
 		}
 	}
 	return r.headPaths[rel]
+}
+
+// gitPaths splits a NUL-separated path list into the bytes the filesystem uses.
+//
+// Every git read here that yields a path asks for `-z`. Without it git C-quotes anything
+// outside printable ASCII — `"docs/features/0001-bl\303\240nk.md"` — and every one of
+// these answers is then compared against a name `os.ReadDir` produced, so the lookup
+// silently misses. One accented character disabled `unfilled-template`, `no-tasks` and
+// `done-not-shipped` on that doc, and made `shipped-not-pushed` fire at HIGH on work
+// that was pushed. `-z` also settles a newline inside a filename, which no line-oriented
+// parse can.
+func gitPaths(out string) []string {
+	var paths []string
+	for _, path := range strings.Split(out, "\x00") {
+		if path != "" {
+			paths = append(paths, path)
+		}
+	}
+	return paths
 }
 
 // trackedAt reports whether a repo-relative path exists in a revision's tree.
@@ -298,15 +315,22 @@ func (r *Repo) commitDate(rev string) time.Time {
 // Unknown answers empty, the way every other git question here does. This one feeds a
 // refusal, so inventing files from a failed call would block a ship for no reason.
 func (r *Repo) DirtyFiles() []string {
-	out, err := r.gitRun("status", "--porcelain")
+	out, err := r.gitRun("status", "--porcelain", "-z")
 	if err != nil {
 		return nil
 	}
 	var paths []string
-	for _, line := range strings.Split(Normalise(out), "\n") {
+	records := gitPaths(out)
+	for i := 0; i < len(records); i++ {
 		// Two status columns, a space, then the path: "?? scratch/out.json".
-		if len(line) > 3 {
-			paths = append(paths, strings.TrimSpace(line[3:]))
+		if len(records[i]) <= 3 {
+			continue
+		}
+		paths = append(paths, records[i][3:])
+		// A rename or a copy carries its source in a record of its own, with no status
+		// columns on it. Read as an ordinary entry it would lose its first three bytes.
+		if strings.ContainsAny(records[i][:2], "RC") {
+			i++
 		}
 	}
 	return paths
