@@ -1,9 +1,9 @@
 ---
 id: 0052
 title: Audit is silent only about what it checked
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -63,11 +63,22 @@ unsilenceable while an unparseable one reports "no shipped: date" when there is 
 
 ## Tasks
 
-- [ ] `no-protocol` reports an `AGENTS.md` that carries no protocol section
-- [ ] An unreadable feature doc is a HIGH finding and still reserves its id
-- [ ] Paths are read `-z`, and a non-ASCII filename no longer disables the plan checks
-- [ ] `--offline` names what it skipped; a project with no `docs/features` exits 2
-- [ ] `done-not-shipped` needs a `## Tasks` section; `shipped:` is validated as a real date
-- [ ] `protocol-stale` says which side is behind, and never offers a fix that overwrites the newer one
+- [x] `no-protocol` reports an `AGENTS.md` that carries no protocol section
+- [x] An unreadable feature doc is a HIGH finding and still reserves its id
+- [x] Paths are read `-z`, and a non-ASCII filename no longer disables the plan checks
+- [x] `--offline` names what it skipped; a project with no `docs/features` exits 2
+- [x] `done-not-shipped` needs a `## Tasks` section; `shipped:` is validated as a real date
+- [x] `protocol-stale` says which side is behind, and never offers a fix that overwrites the newer one
 
 ## Log
+- 2026-08-21 — the Problem's claim that this repo's own `AGENTS.md` is structurally broken
+  does not hold: the `## Work protocol` heading is intact here, so `no-protocol` is
+  correctly quiet about it. The check still closes the state for every project in it.
+- 2026-08-21 — the `-z` box covers four git path readers, not the two the Design names.
+  `BranchBuildsOn` and `statusesOn` compare the same quoted output against the same
+  filesystem names, so one accented doc name also made `shipped-not-pushed` fire at HIGH
+  on work that was pushed.
+- 2026-08-21 — `protocol-stale` decides direction from one fact rather than a version
+  stamp: a project carrying `templates/AGENTS-section.md` is where the protocol is
+  written, so a binary whose embedded copy differs from that file is the older side.
+  Nothing else in either file orders the two.

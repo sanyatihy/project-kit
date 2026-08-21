@@ -31,6 +31,20 @@ func TestShipRefusesWhileABoxIsOpen(t *testing.T) {
 	}
 }
 
+func TestShipNamesDebrisAsItIsOnDisk(t *testing.T) {
+	t.Parallel()
+	// `git status --porcelain` C-quotes a non-ASCII path, so the refusal named a file
+	// that exists under no such name: the agent told to remove it cannot find it.
+	p := setUp(t)
+	feature(p, "0007", "done", "All done", "Draft", "- [x] One")
+	p.commitAll("the work")
+	p.write("probe-outpüt.json", "{}\n")
+
+	r := p.run("ship", "0007").fails(2)
+	r.errHas("probe-outpüt.json")
+	r.lacks(`\303`)
+}
+
 func TestShipRefusesDebrisInTheWorktree(t *testing.T) {
 	t.Parallel()
 	// The scratch a feature generates is the agent's to clean up. Shipping over it

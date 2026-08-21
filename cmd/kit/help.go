@@ -308,6 +308,9 @@ The board asks the remote which branches exist, bounded at 15 seconds. If that d
 answer the page says so: claims fall back to the last fetch, and anything awaiting review
 is missing rather than absent. --offline skips the question and stays quiet.
 
+A directory with no docs/features exits 2: nothing was surveyed, so an empty board is
+not a report that there is nothing to do.
+
 Reads only. Uses the repo you are in, from any subdirectory. For several projects:
   for d in ~/code/*; do (cd $d && kit next); done
 
@@ -322,6 +325,10 @@ Where do the docs disagree with the repo? Names the file, the problem, and the f
 Findings are ranked HIGH (a doc says something untrue, or work is stuck and nobody
 noticed), MEDIUM (incomplete or drifting), LOW (hygiene). See "kit help checks"
 for every finding and what it means.
+
+--offline names the checks it did not run, because a check that was skipped and one
+that passed otherwise print the same page. A directory with no docs/features exits 2:
+nothing was read, so there is no finding and no clean bill either.
 
 Reads only, and never edits a file. Uses the repo you are in. For several projects:
   for d in ~/code/*; do (cd $d && kit audit); done

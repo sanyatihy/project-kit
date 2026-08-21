@@ -181,6 +181,13 @@ var auditCases = []struct {
 	{"shipped-no-date", func(p *project) {
 		feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
 	}},
+	{"shipped-bad-date", func(p *project) {
+		// Nothing validated the field, so `tech-drift` compared against it: a day that
+		// has not arrived is never older than the as-built doc, and that finding then
+		// had no fix for as long as the date said.
+		p.write("docs/features/0002-early.md", doc("0002", "Early", "Shipped",
+			"shipped: 2099-01-01", "- [x] Done"))
+	}},
 	{"id-mismatch", func(p *project) {
 		p.write("docs/features/0002-confused.md", doc("0009", "Confused", "Draft",
 			"", "- [ ] Something"))
@@ -202,6 +209,14 @@ var auditCases = []struct {
 				"## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n"+
 				"## Tasks\nWe will figure the boxes out later.\n\n## Log\n- 2026-01-01 — started.\n")
 		p.commitAll("a plan with no boxes in it")
+	}},
+	{"unreadable-doc", func(p *project) {
+		// A doc the kit cannot open. It used to be dropped on the floor by readFeature,
+		// so no command mentioned it again and every check it should have failed was
+		// skipped rather than reported.
+		p.write("docs/features/0002-locked.md",
+			doc("0002", "Locked", "Draft", "", "- [ ] Do it"))
+		makeUnreadable(p, "docs/features/0002-locked.md")
 	}},
 	{"unfilled-template", func(p *project) {
 		// `kit new` and then nothing, committed. The template's guidance is all comments,
@@ -492,6 +507,125 @@ func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 	}
 }
 
+// makeUnreadable takes a file's permissions away, and gives up rather than asserting
+// when the user running the suite can read it anyway — root ignores the mode bits, so on
+// such a machine the state under test cannot be built at all.
+func makeUnreadable(p *project, rel string) {
+	p.t.Helper()
+	if err := os.Chmod(p.path(rel), 0); err != nil {
+		p.t.Fatalf("chmod %s: %v", rel, err)
+	}
+	if _, err := os.ReadFile(p.path(rel)); err == nil {
+		p.t.Skip("this user reads a mode-000 file, so an unreadable doc cannot be set up")
+	}
+}
+
+func TestAnUnreadableDocIsReportedOnceAndKeepsItsID(t *testing.T) {
+	t.Parallel()
+	p := cleanProject(t)
+	p.write("docs/features/0002-locked.md", doc("0002", "Locked", "Draft", "", "- [ ] Do it"))
+	p.commitAll("a doc that stops being readable")
+	makeUnreadable(p, "docs/features/0002-locked.md")
+
+	codes := p.auditCodes()
+	if !slices.Contains(codes, "unreadable-doc") {
+		t.Errorf("a doc nobody could read went unreported: %v", codes)
+	}
+	// Nothing else may speak for it. Every content check fires on the empty struct, and
+	// not one of those findings is a fact about the file.
+	for _, guess := range []string{"no-status", "unfilled-template", "done-not-shipped", "no-tasks"} {
+		if slices.Contains(codes, guess) {
+			t.Errorf("%s was reported on a doc whose content nobody has: %v", guess, codes)
+		}
+	}
+
+	// The id stays taken. `kit new` reads the highest id from disk, so a doc it skipped
+	// handed its number out a second time — the duplicate-id that audit reports at HIGH.
+	p.run("new", "Something else").ok()
+	if p.exists("docs/features/0002-something-else.md") {
+		t.Error("kit new re-minted the id of a doc it could not read")
+	}
+}
+
+func TestANonASCIIFilenameDoesNotDisableThePlanChecks(t *testing.T) {
+	t.Parallel()
+	// git C-quotes any path outside printable ASCII, so `ls-tree` never named the file
+	// `os.ReadDir` had named and `tracked` answered false — the gate on every check that
+	// reads a committed plan. The two docs below differ by one character and nothing else,
+	// and the accented one used to audit clean and exit 0.
+	for _, name := range []string{"0002-blank.md", "0002-blànk.md"} {
+		t.Run(name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/features/"+name,
+				"---\nid: 0002\ntitle: Blank\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
+					"## Problem\n\n## Design\n\n## Tasks\n\n## Log\n")
+			p.commitAll("a plan nobody wrote")
+			p.run("audit", "--strict").fails(1).has("unfilled-template")
+		})
+	}
+}
+
+func TestProtocolStaleNeverOffersToOverwriteTheNewerSide(t *testing.T) {
+	t.Parallel()
+	// The finding read "older than the installed kit" whichever way the difference ran,
+	// and offered `kit init .` — which replaces the section with the binary's copy. In
+	// the one project that writes the protocol, that reverts it, and it did so here
+	// silently, mid-edit, every time the protocol changed before make install.
+	p := cleanProject(t)
+	newer := "## Work protocol\n\nThe protocol as this checkout writes it.\n"
+	p.write(kit.ProtocolTemplate, newer)
+	p.write("AGENTS.md", "# The kit\n\n"+newer)
+
+	r := p.run("audit").ok()
+	r.has("protocol-stale", "make install")
+	r.lacks("run: kit init .")
+
+	// `next` is the command every session starts with, so it carries the same direction —
+	// in both formats, since agents read the second.
+	board := p.run("next").ok()
+	board.has("make install")
+	board.lacks("run kit init .")
+	if plan := p.plan("next", "--json"); !plan.ProtocolAhead || !plan.ProtocolStale {
+		t.Errorf("--json said stale=%v ahead=%v; agents read that format, not the prose",
+			plan.ProtocolStale, plan.ProtocolAhead)
+	}
+
+	// The other direction is unchanged: an ordinary project's section is kit-owned, so
+	// the older side is the project's and `kit init .` is the repair.
+	behind := cleanProject(t)
+	behind.write("AGENTS.md", "# House rules\n\n## Work protocol\n\nAn older protocol.\n")
+	behind.run("audit").ok().has("protocol-stale", "run: kit init .")
+	if plan := behind.plan("next", "--json"); plan.ProtocolAhead {
+		t.Error("a project with no protocol template of its own was called the newer side")
+	}
+}
+
+func TestNoProtocolFiresOnAFileWithNoProtocolSection(t *testing.T) {
+	t.Parallel()
+	// AGENTS.md present, its kit-owned section gone. Nothing looked for the heading, so
+	// audit reported that the docs and the repo agree while every agent in the project
+	// read a file with no protocol in it.
+	p := cleanProject(t)
+	p.write("AGENTS.md", "# House rules\n\nNever deploy on Friday.\n")
+
+	codes := p.auditCodes()
+	if !slices.Contains(codes, "no-protocol") {
+		t.Errorf("an AGENTS.md with no protocol section went unreported: %v", codes)
+	}
+	// One defect, one finding: protocol-stale compares a section that is not there, and
+	// both fixes are the same command anyway.
+	if slices.Contains(codes, "protocol-stale") {
+		t.Errorf("a missing section was reported as a stale one as well: %v", codes)
+	}
+
+	// The quiet half. `kit init` appends the section to the rules already there, and the
+	// check has to accept what the kit itself writes.
+	p.run("init").ok()
+	if codes := p.auditCodes(); slices.Contains(codes, "no-protocol") {
+		t.Errorf("no-protocol fired on the section kit init just wrote: %v", codes)
+	}
+}
+
 func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	t.Parallel()
 	// Three ways for the work to be somewhere, and the check has to be silent in all of
@@ -593,6 +727,106 @@ func TestAuditNeverWrites(t *testing.T) {
 	if after := p.read("docs/features/0002-undated.md"); after != before {
 		t.Error("audit modified a document it was only meant to report on")
 	}
+}
+
+func TestTheShippedDateIsReadAsWrittenOrReportedAsWrong(t *testing.T) {
+	t.Parallel()
+	// Three states of one field, and only the first was told apart from the others.
+	for _, tc := range []struct {
+		name, line, want string
+	}{
+		{"absent", "", "shipped-no-date"},
+		// Reported as "Shipped with no shipped: date" on a doc that has one.
+		{"unparseable", "shipped: last Tuesday", "shipped-bad-date"},
+		{"in the future", "shipped: 2099-01-01", "shipped-bad-date"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/features/0002-odd.md",
+				doc("0002", "Odd", "Shipped", tc.line, "- [x] Done"))
+			codes := p.auditCodes()
+			if !slices.Contains(codes, tc.want) {
+				t.Errorf("shipped: %q reported %v, want %s", tc.line, codes, tc.want)
+			}
+		})
+	}
+
+	// And a date that has not arrived no longer sets the bar tech-drift compares against,
+	// which nothing could ever clear.
+	p := cleanProject(t)
+	p.write("docs/TECH.md", "# As built\n\nThe description.\n")
+	p.write("docs/features/0002-early.md",
+		doc("0002", "Early", "Shipped", "shipped: 2099-01-01", "- [x] Done"))
+	p.commitAll("describe the system")
+	if codes := p.auditCodes(); slices.Contains(codes, "tech-drift") {
+		t.Errorf("tech-drift measured against a day that has not happened: %v", codes)
+	}
+}
+
+func TestDoneNotShippedNeedsBoxesToCallDone(t *testing.T) {
+	t.Parallel()
+	// "every task is ticked" on a doc with no ## Tasks section at all, whose fix —
+	// `kit ship` — refuses it for having no boxes. A zero-byte doc got the same finding
+	// with `run: kit ship ` and no id in it.
+	for _, tc := range []struct{ name, body string }{
+		{"no Tasks section", "---\nid: 0002\ntitle: Sectionless\nstatus: Draft\n" +
+			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n"},
+		{"empty file", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := cleanProject(t)
+			p.write("docs/features/0002-sectionless.md", tc.body)
+			p.commitAll("a doc with no boxes anywhere in it")
+
+			r := p.run("audit").ok()
+			r.lacks("done-not-shipped")
+			// unfilled-template already says what is wrong with it, and its fix works.
+			r.has("unfilled-template")
+		})
+	}
+
+	// The quiet half: a doc whose boxes are all ticked is still reported, with the fix
+	// that does the job.
+	p := cleanProject(t)
+	p.write("docs/features/0002-done.md", doc("0002", "Done", "Draft", "", "- [x] Finished"))
+	p.commitAll("every box ticked")
+	p.run("audit").ok().has("done-not-shipped", "kit ship 0002")
+
+	// And with no id: there is no such command, so the fix names the edit instead of
+	// printing `run: kit ship ` with nothing after it.
+	nameless := cleanProject(t)
+	nameless.write("docs/features/0002-nameless.md",
+		"---\ntitle: Nameless\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
+			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [x] Done\n\n## Log\n- x\n")
+	nameless.commitAll("a doc with no id in it")
+	nameless.run("audit").ok().has("done-not-shipped").lacks("run: kit ship  ")
+}
+
+func TestAuditOnAnUnsetUpProjectExitsTwo(t *testing.T) {
+	t.Parallel()
+	// Nothing was read, so "no findings" is not a statement about this directory. Both
+	// forms exited 0, which made `kit audit --strict` a green CI gate for a repository
+	// carrying no docs at all — the one repository it most needed to fail.
+	p := newProject(t)
+	p.run("audit").fails(2).has("not set up yet", "kit init")
+	p.run("audit", "--strict").fails(2)
+	p.run("audit", "--json").fails(2).outHas("not set up yet")
+}
+
+func TestOfflineNamesTheCheckItDidNotRun(t *testing.T) {
+	t.Parallel()
+	// --offline drops the same HIGH check an unreachable remote does. The unreachable
+	// path prints a notice and this one printed nothing, so --strict exited 0 where it
+	// would have exited 1 with no line on the page to say a check had been skipped
+	// rather than passed.
+	p := cleanProject(t)
+	r := p.run("audit", "--offline").ok()
+	r.outHas("--offline", "shipped-not-pushed", "did not run")
+	p.run("audit", "--json", "--offline").ok().outHas(`"skipped"`, "shipped-not-pushed")
+
+	// And nothing of the sort when the kit was allowed to ask.
+	p.run("audit").ok().lacks("--offline")
+	p.run("audit", "--json").ok().lacks("skipped")
 }
 
 func TestAuditStrictExitsOnHighOnly(t *testing.T) {

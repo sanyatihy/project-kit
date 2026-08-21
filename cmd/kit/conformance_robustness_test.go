@@ -36,7 +36,7 @@ func TestADocWithNoFrontmatterIsReportedNotFatal(t *testing.T) {
 	p.run("audit").ok().has("no-status")
 }
 
-func TestAnUnparseableDateIsTreatedAsAbsent(t *testing.T) {
+func TestAnUnparseableDateIsReportedNotFatal(t *testing.T) {
 	t.Parallel()
 	// Rather than crashing, or worse, being read as some other date.
 	p := setUp(t)
@@ -44,7 +44,7 @@ func TestAnUnparseableDateIsTreatedAsAbsent(t *testing.T) {
 		"---\nid: 0001\ntitle: Odd\nstatus: Shipped\nshipped: sometime last spring\n---\n\n"+
 			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [x] Done\n\n## Log\n- 2026-01-01 — x.\n")
 
-	p.run("audit").ok().has("shipped-no-date")
+	p.run("audit").ok().has("shipped-bad-date")
 }
 
 func TestExamplesInFencedBlocksAreNotRealTasks(t *testing.T) {

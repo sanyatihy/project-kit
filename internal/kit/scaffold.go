@@ -17,6 +17,11 @@ import (
 // ProtocolMarker delimits the kit-owned section inside a project's AGENTS.md.
 const ProtocolMarker = "## Work protocol"
 
+// ProtocolTemplate is where the protocol is written, both inside the embedded assets and
+// inside the one project that carries them. Named once so `audit` and the command that
+// reads the embedded copy cannot look at two different files.
+const ProtocolTemplate = "templates/AGENTS-section.md"
+
 // docLayout maps a template to its destination, relative to the project root.
 //
 // `owned` marks the files the kit refreshes on every run rather than writing once.
@@ -274,26 +279,54 @@ func writeProtocol(templates fs.FS, root string, res *Result) error {
 	return nil
 }
 
-// ProtocolIsStale reports whether the project's work-protocol section differs from the
-// one the running binary would write.
+// ProtocolDrift is how a project's work-protocol section stands against the one the
+// running binary would write.
+type ProtocolDrift int
+
+const (
+	// ProtocolCurrent is no difference, or nothing that could be compared.
+	ProtocolCurrent ProtocolDrift = iota
+	// ProtocolBehind is the project following rules an older kit scaffolded.
+	ProtocolBehind
+	// ProtocolAhead is the project holding the newer protocol and the binary an older
+	// copy of it.
+	ProtocolAhead
+)
+
+// ProtocolState reports which side of a protocol difference is behind.
 //
 // Shared by `audit`, which reports it, and `next`, which warns about it. One binary on
 // `$PATH` serves every project and only `kit init` rewrites `AGENTS.md`, so a project runs
 // whatever rules it was scaffolded with and nothing inside it can tell — which is why the
 // command every session starts with has to say so, not only the one nobody is told to run.
 //
+// Direction is reported because the repair is destructive in one direction: `kit init .`
+// replaces the section with the binary's copy, so offering it to the side holding the
+// newer text overwrites the newer protocol with the older one. It did that here, silently,
+// mid-edit. The one project that can be ahead is the one carrying the template the binary
+// embeds — everywhere else the section is kit-owned, written by `kit init`, and the file
+// says in a comment that edits inside it are lost.
+//
 // `protocol` is passed in because internal/kit cannot embed a parent directory.
-func ProtocolIsStale(r *Repo, protocol string) bool {
+func ProtocolState(r *Repo, protocol string) ProtocolDrift {
 	if r.Protocol == "" || protocol == "" {
-		return false
+		return ProtocolCurrent
 	}
 	raw, err := os.ReadFile(r.Protocol)
 	if err != nil {
-		return false
+		return ProtocolCurrent
 	}
 	current := Normalise(string(raw))
 	updated, ok := ReplaceSection(current, ProtocolMarker, protocol)
-	return ok && updated != current
+	if !ok || updated == current {
+		return ProtocolCurrent
+	}
+	source, err := os.ReadFile(filepath.Join(r.Root, ProtocolTemplate))
+	if err == nil && strings.TrimSpace(Normalise(string(source))) !=
+		strings.TrimSpace(Normalise(protocol)) {
+		return ProtocolAhead
+	}
+	return ProtocolBehind
 }
 
 // ReplaceSection swaps one `## Heading` section, leaving every other section

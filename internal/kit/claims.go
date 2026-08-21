@@ -172,9 +172,8 @@ func (r *Repo) BranchBuildsOn(branch, rel string) bool {
 	}
 	// Three dots: what the branch changed since it diverged, not what has landed on
 	// trunk meanwhile. Otherwise every branch looks busy as soon as trunk moves.
-	changed := r.git("diff", "--name-only", trunk+"..."+branch)
-	for _, line := range strings.Split(changed, "\n") {
-		if path := strings.TrimSpace(line); path != "" && path != rel {
+	for _, path := range gitPaths(r.git("diff", "--name-only", "-z", trunk+"..."+branch)) {
+		if path != rel {
 			return true
 		}
 	}
@@ -315,14 +314,14 @@ func (r *Repo) trunkStatuses() (map[string]string, bool) {
 // statusesOn reads every feature doc's status from one revision's tree, nil when it cannot
 // be read at all.
 func (r *Repo) statusesOn(ref string) map[string]string {
-	listing, err := r.gitRun("ls-tree", "-r", ref, "--", r.FeaturesDir)
+	listing, err := r.gitRun("ls-tree", "-r", "-z", ref, "--", r.FeaturesDir)
 	if err != nil {
 		return nil
 	}
 	paths := map[string]string{} // blob sha -> path
 	var wanted strings.Builder
-	for _, line := range strings.Split(listing, "\n") {
-		meta, path, found := strings.Cut(strings.TrimSpace(line), "\t")
+	for _, entry := range gitPaths(listing) {
+		meta, path, found := strings.Cut(entry, "\t")
 		if !found {
 			continue
 		}
