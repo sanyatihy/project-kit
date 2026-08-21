@@ -137,6 +137,10 @@ either creates the ref or it does not, so of any number of agents drafting at
 once no two are handed the same number. The ref outlives the doc, so deleting a
 doc does not free its ID either.
 
+With no remote there is nothing to compare and swap against. The doc is still
+written, under the next free ID on disk, and the run says which guarantee it
+could not give.
+
 Fails rather than overwrites, so two agents drafting at once get an error instead
 of one silently losing its work.
 

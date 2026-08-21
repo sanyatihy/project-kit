@@ -222,6 +222,14 @@ func runNew(args []string) int {
 	if drafted.Remote != "" {
 		fmt.Printf("  reserved  %s on %s — no other agent can be handed it\n",
 			drafted.ID, drafted.Remote)
+	} else {
+		// Said out loud rather than degraded quietly. The reservation is the whole of
+		// what stops two agents being handed one number, and a project with no remote
+		// has nothing to make it against — which is the state the old behaviour was in
+		// everywhere, and the reason it stayed invisible for 57 features.
+		fmt.Printf("\n  no remote, so nothing reserved %s — another agent drafting off\n",
+			drafted.ID)
+		fmt.Printf("  this trunk right now can be handed the same id\n")
 	}
 	fmt.Printf("\n  fill in Problem, Non-goals, Design, and Tasks.\n")
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")

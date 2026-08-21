@@ -273,6 +273,19 @@ func TestNewUnderConcurrencyLosesNothing(t *testing.T) {
 	}
 }
 
+func TestNewWithNoRemoteNamesTheGuaranteeItCannotGive(t *testing.T) {
+	t.Parallel()
+	// A project with no remote still drafts: refusing would make the kit unusable
+	// before the first push. What it cannot do is reserve, and the number it hands out
+	// is then the highest one on disk — which is the state every project was in before
+	// this, and it stayed invisible because nothing said so.
+	p := setUp(t)
+
+	r := p.run("new", "Alone").ok().has("0001-alone.md")
+	r.has("no remote", "nothing reserved 0001", "handed the same id")
+	r.lacks("reserved 0001 on")
+}
+
 func TestNewRefusesATitleItCannotUse(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)
