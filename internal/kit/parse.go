@@ -83,15 +83,31 @@ func forEachField(text string, visit func(key, value string)) {
 
 // FrontmatterBounds gives the byte range of the frontmatter block's body — what sits
 // between the opening `---` and the closing one — reporting false when there is none.
+//
+// The close is a whole line of three dashes, not the first "\n---" anywhere. As a
+// substring it also matched a longer run — a setext underline — which ended the block
+// early and dropped every field below it, reported as `no-status` on a doc that has one.
 func FrontmatterBounds(text string) (start, end int, ok bool) {
 	if !strings.HasPrefix(text, "---\n") {
 		return 0, 0, false
 	}
-	at := strings.Index(text[4:], "\n---")
-	if at == -1 {
-		return 0, 0, false
+	for at := 4; ; {
+		found := strings.Index(text[at:], "\n---")
+		if found == -1 {
+			return 0, 0, false
+		}
+		found += at
+		line := text[found+1:]
+		if nl := strings.Index(line, "\n"); nl != -1 {
+			line = line[:nl]
+		}
+		// Trailing blanks are tolerated: they are invisible in an editor, and a doc
+		// whose fence carries one is not a doc without frontmatter.
+		if strings.TrimRight(line, " \t") == "---" {
+			return 4, found, true
+		}
+		at = found + 1
 	}
-	return 4, at + 4, true
 }
 
 // SetField rewrites one `key: value` line inside the frontmatter. Reports false when

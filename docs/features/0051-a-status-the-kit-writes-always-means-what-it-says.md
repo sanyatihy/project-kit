@@ -62,7 +62,7 @@ Reproduced:
 - [x] The `shipped:` fallback uses `AddField`; a fenced `status:` in the body survives a ship
 - [x] A duplicate frontmatter key is a HIGH finding and a refusal in `ship`, `drop` and `block`
 - [x] `ship`, `drop` and `block` refuse an id that names two docs, as `claim` already does
-- [ ] The frontmatter close is line-anchored
+- [x] The frontmatter close is line-anchored
 - [ ] A value containing `#` keeps its text — `title: Fix #123 crash` is not `Fix`
 
 ## Log

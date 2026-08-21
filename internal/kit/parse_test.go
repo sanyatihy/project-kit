@@ -28,6 +28,23 @@ func TestParseFrontmatter(t *testing.T) {
 	}
 }
 
+func TestParseFrontmatterClosesOnAWholeLine(t *testing.T) {
+	t.Parallel()
+	// A run of more than three dashes is a setext underline, not a fence. The close was a
+	// substring search for the first "\n---", which matched it — so the block ended
+	// early, every field below it was lost, and audit reported no-status on a doc that
+	// declares one.
+	fields, body := ParseFrontmatter("---\nid: 0007\ntitle: T\n---------\n" +
+		"status: Draft\n---\n\n## Problem\np\n")
+
+	if got := fields["status"]; got != "Draft" {
+		t.Errorf("status = %q, want Draft — the block ended at the underline", got)
+	}
+	if want := "\n\n## Problem\np\n"; body != want {
+		t.Errorf("body = %q, want %q", body, want)
+	}
+}
+
 func TestDuplicateKeys(t *testing.T) {
 	t.Parallel()
 	// The state `ship` used to produce: it rewrote the first status: and the parser reads
