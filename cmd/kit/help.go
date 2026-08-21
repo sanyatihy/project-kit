@@ -348,7 +348,9 @@ Reads only, and never edits a file. Uses the repo you are in. For several projec
 
 // runHelp prints the overview, or one topic.
 func runHelp(templates fs.FS, args []string) int {
-	if len(args) == 0 {
+	// `kit help -h` asked for the overview and got "no topic \"-h\"" at exit 2, which is
+	// the one command where being turned away for asking is absurd.
+	if len(args) == 0 || isHelpFlag(args[0]) {
 		fmt.Println(overview)
 		return 0
 	}

@@ -99,7 +99,7 @@ func run() int {
 
 func runInit(args []string) int {
 	stacks := kit.Stacks(templates)
-	fs := newFlagSet("init")
+	fs := newFlagSet("init", args)
 	stack := fs.String("stack", "", "also scaffold a language stack ("+
 		strings.Join(stacks, ", ")+")")
 	forge := fs.String("forge", "", "where the project is hosted ("+
@@ -178,7 +178,7 @@ func runInit(args []string) int {
 
 func runNew(args []string) int {
 	for _, a := range args {
-		if a == "-h" || a == "--help" || a == "-help" {
+		if isHelpFlag(a) {
 			fmt.Println(commandHelp["new"])
 			return 0
 		}
@@ -215,7 +215,7 @@ func runNew(args []string) int {
 // ---------------------------------------------------------------- drop
 
 func runDrop(args []string) int {
-	fs := newFlagSet("drop")
+	fs := newFlagSet("drop", args)
 	rest := parseArgs(fs, args)
 	if len(rest) < 1 {
 		fmt.Fprintf(os.Stderr, "kit drop: need one feature id\n\n%s\n", commandHelp["drop"])
@@ -265,7 +265,7 @@ func runDrop(args []string) int {
 // ---------------------------------------------------------------- claim
 
 func runClaim(args []string) int {
-	fs := newFlagSet("claim")
+	fs := newFlagSet("claim", args)
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
 		fmt.Fprintf(os.Stderr, "kit claim: need one feature id\n\n%s\n", commandHelp["claim"])
@@ -315,7 +315,7 @@ func runClaim(args []string) int {
 // ---------------------------------------------------------------- release
 
 func runRelease(args []string) int {
-	fs := newFlagSet("release")
+	fs := newFlagSet("release", args)
 	force := fs.Bool("force", false, "delete the branch even though it carries work")
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
@@ -359,7 +359,7 @@ func runRelease(args []string) int {
 // ---------------------------------------------------------------- block
 
 func runBlock(args []string) int {
-	fs := newFlagSet("block")
+	fs := newFlagSet("block", args)
 	fyi := fs.Bool("fyi", false, "record it without blocking the feature")
 	rest := parseArgs(fs, args)
 
@@ -403,7 +403,7 @@ func runBlock(args []string) int {
 // ---------------------------------------------------------------- ship
 
 func runShip(args []string) int {
-	fs := newFlagSet("ship")
+	fs := newFlagSet("ship", args)
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
 		fmt.Fprintf(os.Stderr, "kit ship: need one feature id\n\n%s\n", commandHelp["ship"])
@@ -459,7 +459,7 @@ func runShip(args []string) int {
 // ---------------------------------------------------------------- next
 
 func runNext(args []string) int {
-	fs := newFlagSet("next")
+	fs := newFlagSet("next", args)
 	asJSON := fs.Bool("json", false, "machine-readable output")
 	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
 	if rest := parseArgs(fs, args); len(rest) > 0 {
@@ -685,7 +685,7 @@ func waited(since time.Time) string {
 // ---------------------------------------------------------------- audit
 
 func runAudit(args []string) int {
-	fs := newFlagSet("audit")
+	fs := newFlagSet("audit", args)
 	asJSON := fs.Bool("json", false, "machine-readable output")
 	strict := fs.Bool("strict", false, "exit 1 if anything HIGH is found")
 	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
@@ -834,16 +834,32 @@ func count(n int, noun string) string {
 
 // newFlagSet builds a subcommand's flags with help that describes the command,
 // not just its options — an agent should not need the source to use it.
-func newFlagSet(name string) *flag.FlagSet {
+//
+// The args decide where that help goes. Asked for, it is the output: `kit next -h`
+// wrote to stderr and exited 0, so redirecting it produced an empty file while
+// `kit new --help` produced the text. Printed after a bad flag it is a diagnostic and
+// stays with the error, because flag writes both to one stream and stdout has to stay
+// clean on a failure.
+func newFlagSet(name string, args []string) *flag.FlagSet {
+	out := os.Stderr
+	if slices.ContainsFunc(args, isHelpFlag) {
+		out = os.Stdout
+	}
 	fs := flag.NewFlagSet("kit "+name, flag.ExitOnError)
+	fs.SetOutput(out)
 	fs.Usage = func() {
 		// Nothing useful to do if printing help fails; the process is on its
 		// way out either way.
-		_, _ = fmt.Fprintln(fs.Output(), commandHelp[name])
-		_, _ = fmt.Fprintln(fs.Output(), "\nOptions:")
+		_, _ = fmt.Fprintln(out, commandHelp[name])
+		_, _ = fmt.Fprintln(out, "\nOptions:")
 		fs.PrintDefaults()
 	}
 	return fs
+}
+
+// isHelpFlag names the three spellings Go's flag package answers to.
+func isHelpFlag(arg string) bool {
+	return arg == "-h" || arg == "--help" || arg == "-help"
 }
 
 // parseArgs parses flags that appear anywhere, not only before the first path.

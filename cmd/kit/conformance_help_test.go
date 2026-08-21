@@ -84,3 +84,35 @@ func TestEveryTopicIsReachableFromTheOverview(t *testing.T) {
 		}
 	}
 }
+
+func TestHelpAskedForIsOutputAndNotADiagnostic(t *testing.T) {
+	t.Parallel()
+	// `kit next -h > next.txt` wrote an empty file: flag prints usage to the stream it
+	// prints a bad-flag error to, and that is stderr. `kit new --help` wrote to stdout,
+	// because it answers the flag itself — so the binary disagreed with itself about
+	// what asking for help is.
+	p := newProject(t)
+	for _, cmd := range append(subcommands(t), "help") {
+		for _, flag := range []string{"-h", "--help"} {
+			r := p.run(cmd, flag).ok()
+			if strings.TrimSpace(r.Stdout) == "" {
+				t.Errorf("kit %s %s wrote nothing to stdout%s", cmd, flag, r.context())
+			}
+			if strings.TrimSpace(r.Stderr) != "" {
+				t.Errorf("kit %s %s wrote help to stderr, so redirecting it loses the "+
+					"text and keeps the noise%s", cmd, flag, r.context())
+			}
+		}
+	}
+}
+
+func TestABadFlagKeepsItsDiagnosticsOffStdout(t *testing.T) {
+	t.Parallel()
+	// The other half of routing help by what was asked for: usage printed after an
+	// error is part of the error, and stdout stays clean on a failure.
+	r := newProject(t).run("audit", "--nonesuch").fails(2)
+	if strings.TrimSpace(r.Stdout) != "" {
+		t.Errorf("a rejected flag put text on stdout%s", r.context())
+	}
+	r.errHas("nonesuch", "kit audit")
+}
