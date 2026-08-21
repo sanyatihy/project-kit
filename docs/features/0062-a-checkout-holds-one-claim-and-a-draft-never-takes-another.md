@@ -1,9 +1,9 @@
 ---
 id: 0062
 title: A checkout holds one claim, and a draft never takes another
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -56,3 +56,9 @@ moved since.
 - [x] 0057's claim branch is released, and the board shows no work nobody is doing
 
 ## Log
+
+- The salvage needed two helpers `0684b67` does not carry: `HeldClaim` and `ForeignClaim`
+  come from an earlier commit on 0057's branch, which also built `kit chore`, so they were
+  written in here without it.
+- The hunk editing 0057's own doc was dropped rather than applied — that doc is `Dropped`,
+  and a terminal doc is frozen.

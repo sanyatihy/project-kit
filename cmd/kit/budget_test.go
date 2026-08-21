@@ -90,7 +90,11 @@ const (
 	// place, what a claim carries out of the checkout it is made from, and the Go gotcha
 	// under a bound that could not be enforced. Eleven lines for four states an agent was
 	// sent into, each of which a later change can restore without any output looking wrong.
-	techBudget = 360
+	// 368 on 0062. Eight lines for two refusals nothing else records: one checkout taking
+	// one claim, and a draft never taking another. Each names the state it closes — two
+	// claims pushed from one checkout at exit 0, a plan branch holding a feature while
+	// `audit` agreed — because both read as correct output until you know what to look for.
+	techBudget = 368
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
