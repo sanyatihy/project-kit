@@ -85,6 +85,7 @@ var refusals = map[string]struct {
 		{"the plan not committed here", "a claim that would carry no plan"},
 		{"not landed on the default branch", "a claim branching off the plan round"},
 		{"ahead of the default branch", "a claim carrying another feature's commits"},
+		{"this checkout already claims something", "a second unit of work in one checkout"},
 		{"a branch already claims it", "a claim this checkout can already see"},
 		{"another agent got there first", "a lost race"},
 		{"the push said nothing about the ref", "a push that answered nothing"},

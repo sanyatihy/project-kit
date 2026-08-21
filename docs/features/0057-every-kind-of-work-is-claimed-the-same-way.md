@@ -62,7 +62,7 @@ states out loud — see `## Open questions`.
 
 - [x] `kit chore "<what>"` claims a named unit of work and records one line
 - [x] The board lists claimed chores, and `kit release` ends a chore claim
-- [ ] `claim` refuses when this checkout already holds a claim
+- [x] `claim` and `new` refuse when this checkout already holds a claim
 - [ ] The protocol routes non-feature work to `kit chore` instead of to an unclaimed branch
 
 ## Open questions
@@ -89,3 +89,6 @@ states out loud — see `## Open questions`.
 - `kit chore` refuses a title carrying a four-digit number, and refuses a second chore
   under a name somebody already holds. The first is this feature's own hole; the second
   is what "two agents given the same bug" needs, since sequential ids cannot collide.
+- The third box grew `new`, because closing the `plan/` hole there is the same rule the
+  box already states: one checkout, one claim. `new` exempts a feature's own claim
+  branch, so work discovered mid-build can still be written down where it was found.
