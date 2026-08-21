@@ -1,9 +1,9 @@
 ---
 id: 0053
 title: A green gate here is a green gate in CI
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 

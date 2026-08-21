@@ -32,7 +32,7 @@ invent product decisions on the human's behalf — ask in `docs/INBOX.md`.
 ## Changing the kit
 
 ```sh
-make check     # fmt-check, vet, unit tests, conformance suite — the whole gate
+make check     # fmt-check, vet, lint, unit tests, conformance suite — the whole gate
 make install   # go install ./cmd/kit
 ```
 
