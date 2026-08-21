@@ -69,15 +69,23 @@ func TestNewFeatureFillsFrontmatter(t *testing.T) {
 	}
 	r := &Repo{Root: dir, FeaturesDir: features}
 
-	path, err := NewFeature(templateFS(), r, "Shorten URLs", testDate)
+	drafted, err := NewFeature(templateFS(), r, "Shorten URLs", testDate)
 	if err != nil {
 		t.Fatalf("NewFeature: %v", err)
 	}
-	if want := "0001-shorten-urls.md"; filepath.Base(path) != want {
-		t.Errorf("path = %q, want basename %q", path, want)
+	if want := "0001-shorten-urls.md"; filepath.Base(drafted.Path) != want {
+		t.Errorf("path = %q, want basename %q", drafted.Path, want)
+	}
+	// No git here at all, so there is no remote to reserve on and the ID is the disk
+	// scan's. The caller has to be able to tell that apart from a reserved one.
+	if drafted.Remote != "" {
+		t.Errorf("remote = %q, want none — this project has no git", drafted.Remote)
+	}
+	if drafted.ID != "0001" {
+		t.Errorf("ID = %q, want 0001", drafted.ID)
 	}
 
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(drafted.Path)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -198,12 +198,16 @@ func runNew(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit new: %v\n", err)
 		return 2
 	}
-	path, err := kit.NewFeature(templates, repo, title, time.Now().UTC())
+	drafted, err := kit.NewFeature(templates, repo, title, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit new: %v\n", err)
 		return 2
 	}
-	fmt.Printf("\n  created  %s\n", repo.Rel(path))
+	fmt.Printf("\n  created   %s\n", repo.Rel(drafted.Path))
+	if drafted.Remote != "" {
+		fmt.Printf("  reserved  %s on %s — no other agent can be handed it\n",
+			drafted.ID, drafted.Remote)
+	}
 	fmt.Printf("\n  fill in Problem, Non-goals, Design, and Tasks.\n")
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
