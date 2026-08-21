@@ -63,14 +63,17 @@ Draft -> Shipped     (exit: Dropped)
 - **The claim is a branch name, and the push is what decides.** Only a *created* ref is a
   win: pushing to a branch the remote already holds at that commit prints "Everything
   up-to-date" and exits 0, which hands one feature to two agents. Ref creation is a
-  server-side compare-and-swap, so exactly one claimant wins. A name is read **whole**,
-  namespace included: on the last path segment alone, a worktree reads its own checkout as
-  a rival claim.
+  server-side compare-and-swap, so exactly one claimant wins. The local branch is made
+  before the push and deleted if it loses: a claim is held in both places or in neither.
+  A name is read **whole**, namespace included, and from `for-each-ref` — `git branch`
+  writes a page for a reader, and `(no branch, rebasing 0002-x)` read as a rival claim.
 - **A claim carries the plan, and branches from the trunk.** The doc must be in `HEAD`'s
   tree and in `trunkRef()`'s, or the claim is a child of the plan branch and only its own
   author can integrate it.
-- **The checkout is the unit of isolation.** A worktree holds one feature; this checkout's
-  own claim reads as *yours*.
+- **The checkout is the unit of isolation, and ownership is branch equality.** A worktree
+  holds one feature, and its claim reads as *yours* while HEAD *is* the branch named after
+  the doc — `notes-0001-alpha` mentions the id and confers nothing. A rebase detaches HEAD,
+  so the name is read from git's rebase state instead.
 - **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks
   whether HEAD *is* the claim branch, which is right for `ship` — shipping happens in the
   worktree doing the work — and wrong for `release`, because `claim` tells you to make that

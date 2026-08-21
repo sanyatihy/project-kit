@@ -1,9 +1,9 @@
 ---
 id: 0050
 title: Only the agent that won a feature can act on it
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
