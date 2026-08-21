@@ -481,7 +481,8 @@ func runNext(args []string) int {
 	if repo.FeaturesDir == "" {
 		notSetUp = "not set up yet — run: kit init " + repo.Root
 	}
-	plan := kit.Plan{Error: notSetUp}
+	plan := kit.NewPlan()
+	plan.Error = notSetUp
 	if notSetUp == "" {
 		plan = kit.Survey(repo)
 		drift := kit.ProtocolState(repo, currentProtocol())
@@ -588,8 +589,8 @@ func printPlan(plan kit.Plan, color bool) {
 			// steadily from one that stopped an hour in. `stalled` only speaks at three
 			// days, and by then the answer has cost two.
 			moved := ""
-			if !item.Moved.IsZero() {
-				moved = ", " + ago(item.Moved)
+			if item.Moved != nil {
+				moved = ", " + ago(*item.Moved)
 			}
 			fmt.Printf("    %s  %-5s %s — %s%s\n", item.ID, item.Progress(),
 				kit.Show(item.Title, 34), item.ClaimedBy, moved)

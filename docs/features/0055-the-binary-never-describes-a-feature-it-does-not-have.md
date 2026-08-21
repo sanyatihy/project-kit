@@ -56,7 +56,7 @@ as the one that enforces the registry.
 
 - [x] Check codes, command names and topic names in help are tested against their registries
 - [x] The refusal lists for `ship`, `release` and `claim` match the code, with a test
-- [ ] `--json` shapes are pinned, `moved` stops emitting a zero time, empty groups are `[]`
+- [x] `--json` shapes are pinned, `moved` stops emitting a zero time, empty groups are `[]`
 - [ ] `-h` writes to stdout for every command
 - [ ] The eleven false statements are corrected and the orphaned comments deleted
 

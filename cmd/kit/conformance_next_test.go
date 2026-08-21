@@ -708,10 +708,10 @@ func TestATakenEntrySaysWhenItsBranchLastMoved(t *testing.T) {
 	p.git("checkout", "-q", trunk)
 
 	taken := p.plan("next", "--json").Taken
-	if len(taken) != 1 || taken[0].Moved.IsZero() {
+	if len(taken) != 1 || taken[0].Moved == nil {
 		t.Fatalf("--json carries no moved time for a taken feature: %+v", taken)
 	}
-	if days := int(time.Since(taken[0].Moved).Hours() / 24); days != 2 {
+	if days := int(time.Since(*taken[0].Moved).Hours() / 24); days != 2 {
 		t.Errorf("moved reads %d days old, want 2", days)
 	}
 	p.run("next").ok().has("0001-widget, 2 days ago")

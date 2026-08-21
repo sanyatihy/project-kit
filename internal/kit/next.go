@@ -35,8 +35,10 @@ type Item struct {
 	Unplanned bool `json:"unplanned,omitempty"`
 
 	// Moved is the claim branch's last commit — how long the work has been sitting
-	// where it is. Zero when nothing claims the feature or the branch cannot be read.
-	Moved time.Time `json:"moved,omitempty"`
+	// where it is. Absent when nothing claims the feature or the branch cannot be read.
+	// A pointer because `omitempty` does nothing for a struct: as a value, every
+	// unclaimed feature in --json carried a year-1 timestamp saying when it last moved.
+	Moved *time.Time `json:"moved,omitempty"`
 }
 
 // Waiting is one feature on the review board: shipped by its builder, pushed, and not
@@ -134,9 +136,17 @@ func (p Plan) Empty() bool {
 	return len(p.Yours) == 0 && len(p.Ready) == 0 && len(p.Taken) == 0 && len(p.Blocked) == 0
 }
 
+// NewPlan is a board with every group present and empty. An absent group and an empty
+// one say the same thing, and `null` says it in a third shape a consumer has to special
+// case — `findings` in `audit --json` has always been `[]`, and these four were not.
+func NewPlan() Plan {
+	return Plan{Yours: []Item{}, Ready: []Item{}, Taken: []Item{}, Blocked: []Item{}}
+}
+
 // Survey answers: what should I work on?
 func Survey(r *Repo) Plan {
-	plan := Plan{Branch: r.HeadBranch()}
+	plan := NewPlan()
+	plan.Branch = r.HeadBranch()
 	for _, f := range r.ActiveFeatures() {
 		open, total := f.TaskCount()
 		item := Item{
@@ -170,7 +180,9 @@ func Survey(r *Repo) Plan {
 		// branch instead. Not for your own claim: there the working tree is this branch,
 		// and fresher than any commit on it.
 		if rev := r.claimRev(claim); claim != "" && rev != "" {
-			item.Moved = r.commitDate(rev)
+			if when := r.commitDate(rev); !when.IsZero() {
+				item.Moved = &when
+			}
 			if !item.Mine {
 				open, total, ok := r.TasksOn(rev, f.Rel)
 				switch {
@@ -181,7 +193,7 @@ func Survey(r *Repo) Plan {
 				// with no doc on it that the case above falls back for. The copy here is
 				// the trunk's, nothing ticked, and printing it as the claim's progress
 				// paints the agent holding it as having done nothing.
-				case item.Moved.IsZero():
+				case item.Moved == nil:
 					item.Done, item.Total = 0, 0
 				}
 			}
