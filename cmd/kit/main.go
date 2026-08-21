@@ -664,8 +664,10 @@ func printPlan(plan kit.Plan, color bool) {
 	if plan.Guidance != "" && len(plan.Yours) == 0 && len(plan.Ready) == 0 {
 		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
 		// The command goes on its own line, unwrapped, so it can be copied. The
-		// guidance says what to do; this is the thing to run.
-		if plan.Empty() {
+		// guidance says what to do; this is the thing to run. Not while something is
+		// awaiting review: there the guidance says merging is the work, and a second
+		// command under it is the page giving two answers.
+		if plan.Empty() && len(plan.AwaitingReview) == 0 {
 			fmt.Printf("    kit new \"<what the feature does>\"\n")
 		}
 	}

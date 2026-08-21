@@ -39,7 +39,12 @@ const (
 	// `symbolic-ref refs/remotes/origin/HEAD`, and the harness this replaced measured a
 	// project with no remote at all. One fixture serves both runs, which is worth a
 	// process.
-	offlineBudget = 29
+	//
+	// 30 since 0059: whether a feature's plan has reached the trunk is a new question,
+	// and the board has to ask it or it goes on offering claims that exit 2. One
+	// `ls-tree` reads the trunk's whole tree, so the cost is fixed rather than one
+	// `cat-file` per feature — the shape this ceiling exists to catch.
+	offlineBudget = 30
 
 	// `kit audit` against a local bare remote. The remote is on disk, so the round trip
 	// is one cheap process and what grows with the board is the fan-out. 67 before 0039

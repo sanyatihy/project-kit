@@ -34,6 +34,11 @@ type Item struct {
 	// somebody else's, so the closing guidance has to tell them apart.
 	Unplanned bool `json:"unplanned,omitempty"`
 
+	// Unlanded marks a feature whose plan round has not reached the trunk. Like
+	// Unplanned it is the reader's own next action — land the round — and not a wait on
+	// somebody else, and the closing guidance says which.
+	Unlanded bool `json:"unlanded,omitempty"`
+
 	// Moved is the claim branch's last commit — how long the work has been sitting
 	// where it is. Absent when nothing claims the feature or the branch cannot be read.
 	// A pointer because `omitempty` does nothing for a struct: as a value, every
@@ -131,6 +136,21 @@ func (p Plan) unplanned() string {
 	return ""
 }
 
+// unlanded reports whether the only thing standing between the reader and claimable work
+// is a plan round that has not reached the trunk. Told apart from the waits below for the
+// same reason `unplanned` is: landing the round is the reader's own next action.
+func (p Plan) unlanded() bool {
+	if len(p.Yours) > 0 || len(p.Ready) > 0 {
+		return false
+	}
+	for _, item := range p.Blocked {
+		if item.Unlanded {
+			return true
+		}
+	}
+	return false
+}
+
 // Empty reports whether there is nothing open at all.
 func (p Plan) Empty() bool {
 	return len(p.Yours) == 0 && len(p.Ready) == 0 && len(p.Taken) == 0 && len(p.Blocked) == 0
@@ -147,7 +167,31 @@ func NewPlan() Plan {
 func Survey(r *Repo) Plan {
 	plan := NewPlan()
 	plan.Branch = r.HeadBranch()
+	// Before the board, because the board is what this takes entries out of. A feature
+	// its builder has shipped is finished work waiting for a merge, not a claim somebody
+	// is holding, and it was reported as both — one feature under `taken` and again under
+	// `awaiting review`, which reads as two.
+	//
+	// The local walk is asked for first, because it is what starts the remote round trip
+	// and the answer below is what that round trip returns. Reading it here otherwise
+	// makes the wait follow the walk instead of overlapping it.
+	r.loadGit()
+	reviewing := map[string]bool{}
+	for _, waiting := range r.AwaitingReview() {
+		reviewing[waiting.Feature.ID] = true
+		plan.AwaitingReview = append(plan.AwaitingReview, Waiting{
+			ID:     waiting.Feature.ID,
+			Title:  waiting.Feature.Title,
+			Doc:    waiting.Feature.Rel,
+			Branch: waiting.Branch,
+			Since:  waiting.Since,
+			Mine:   waiting.Mine,
+		})
+	}
 	for _, f := range r.ActiveFeatures() {
+		if reviewing[f.ID] {
+			continue
+		}
 		open, total := f.TaskCount()
 		item := Item{
 			ID:     f.ID,
@@ -250,6 +294,15 @@ func Survey(r *Repo) Plan {
 					item.WaitingOn = "every task is ticked — ship it or add the next task"
 				}
 				plan.Blocked = append(plan.Blocked, item)
+			} else if !r.PlanLanded(f) {
+				// Last, the way it is last in `claim`, so an unwritten plan is still
+				// reported as the unwritten plan it is. Offering this one sent every new
+				// project from `kit claim <id>` to exit 2 at step 9 of the protocol: the
+				// round the doc arrived on is not on the trunk, and nothing branching off
+				// it could be merged by anyone but its own author.
+				item.WaitingOn = waitingOnLanding(r, f)
+				item.Unlanded = true
+				plan.Blocked = append(plan.Blocked, item)
 			} else {
 				plan.Ready = append(plan.Ready, item)
 			}
@@ -262,16 +315,6 @@ func Survey(r *Repo) Plan {
 		for i := range group {
 			group[i].Task = ""
 		}
-	}
-	for _, waiting := range r.AwaitingReview() {
-		plan.AwaitingReview = append(plan.AwaitingReview, Waiting{
-			ID:     waiting.Feature.ID,
-			Title:  waiting.Feature.Title,
-			Doc:    waiting.Feature.Rel,
-			Branch: waiting.Branch,
-			Since:  waiting.Since,
-			Mine:   waiting.Mine,
-		})
 	}
 	// After the work, so it reports what actually went unanswered.
 	plan.RemoteUnanswered = r.RemoteUnanswered()
@@ -307,6 +350,22 @@ func waitingOnNeeds(r *Repo, unmet []string) string {
 	return strings.Join(parts, "; ")
 }
 
+// waitingOnLanding names what has to reach the trunk before a feature can be claimed.
+//
+// The round is the branch the doc is committed on. A doc committed nowhere is not on a
+// round at all, and the two need different first moves — commit, or open the request —
+// so the line says which.
+func waitingOnLanding(r *Repo, f *Feature) string {
+	if !r.TrackedAtHEAD(f.Rel) {
+		return "not committed yet — commit the plan, then land it on " + r.Trunk()
+	}
+	round := r.HeadBranch()
+	if round == "" {
+		round = "this branch"
+	}
+	return "the round on " + round + " is not on " + r.Trunk() + " yet — land it"
+}
+
 // guidanceFor is the single decision behind both outputs, so they cannot drift.
 // Every state closes with something a reader can act on: three vacuums have been
 // fixed by adding a sentence, and each time an agent had reached the end of the
@@ -328,12 +387,21 @@ func guidanceFor(r *Repo, plan Plan) string {
 		return "write the plan in " + plan.unplanned() + " — fill in ## Problem, " +
 			"## Design and ## Tasks, then run kit next again. Nothing can be claimed " +
 			"until a doc says what to build."
+	// Also the reader's own next action, and also not a wait. `claim` refuses everything
+	// on a round the trunk does not have, so telling the agent to stop here leaves the
+	// round sitting where nobody can build on it.
+	case plan.unlanded():
+		return "land the plan round on " + orTrunk(r.Trunk()) + " — a pull or merge " +
+			"request, if the default branch is protected — then run kit next again. " +
+			"Nothing on a round can be claimed until the round is on the trunk."
 	case !plan.Empty():
 		return "nothing is free: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
 			"Stopping here is the right outcome: say so and wait."
+	// Everything open is finished and waiting, which is not the same as nothing having
+	// been planned: the entries below are plans that were built.
 	case len(plan.AwaitingReview) > 0:
-		return "nothing is planned. " + reviewing(len(plan.AwaitingReview))
+		return "nothing is left to build. " + reviewing(len(plan.AwaitingReview))
 	// The branch that used to sit here said drafts were waiting on a human to accept
 	// them. It is gone with the gate: a Draft is active work now, so it reaches Ready
 	// or Blocked like anything else and never leaves the plan empty.

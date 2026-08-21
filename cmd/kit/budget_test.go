@@ -86,7 +86,11 @@ const (
 	// vocabulary, so the catalogue of what was deleted and why compresses into the rule it
 	// was evidence for, and the `linkRe` gotcha went with the parser it was about. The
 	// number falls under 0058's rather than past it, because that round's eight lines stand.
-	techBudget = 349
+	// 360 on merging 0059: the board and the commands answering one question from one
+	// place, what a claim carries out of the checkout it is made from, and the Go gotcha
+	// under a bound that could not be enforced. Eleven lines for four states an agent was
+	// sent into, each of which a later change can restore without any output looking wrong.
+	techBudget = 360
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

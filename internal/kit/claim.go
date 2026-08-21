@@ -140,15 +140,24 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	//
 	// An ordinary error rather than NotYours: nothing on an unlanded round is claimable,
 	// so an agent told to take something else meets the same wall at the next id.
-	//
-	// A project with one branch and no remote resolves no trunk, and there this is
-	// skipped — there is nothing for the doc to be absent from, and refusing would break
-	// the first claim of every new project.
-	if trunk := r.trunkRef(); trunk != "" && !r.trackedAt(trunk, target.Rel) {
+	if !r.PlanLanded(target) {
 		return nil, fmt.Errorf("%s is not on %s, so this claim would branch off the plan "+
 			"round instead of the trunk, and only its own author could merge it.\n"+
 			"Land the round first — a pull or merge request, if the default branch is "+
 			"protected — then claim", target.Rel, r.Trunk())
+	}
+
+	// The same question asked of HEAD rather than of the doc. The claim pushes HEAD, so
+	// every commit the trunk does not have travels under the new feature's name:
+	// reproduced in the worktree that had just shipped 0001, where `kit claim 0002`
+	// exited 0 and the branch it pushed logged 0001's commits against the trunk. That
+	// pull request contains another feature, and only its author could merge it.
+	if trunk := r.trunkRef(); trunk != "" && !r.reaches("HEAD", trunk) {
+		return nil, fmt.Errorf("this checkout is ahead of %s, so the branch this would "+
+			"push carries commits that are not %s's — another feature's work, which only "+
+			"its own author could merge.\nClaim from a checkout of the trunk: git worktree "+
+			"add --detach ../%s-trunk %s, then claim there", r.Trunk(), target.ID,
+			r.Name, r.Trunk())
 	}
 
 	remote, err := pickRemote(r)

@@ -165,7 +165,8 @@ so of any number of agents claiming at once exactly one wins.
      whatever the status
   2  it could not run: no such feature, two docs share the id, no commits yet,
      the plan not committed here, the plan not landed on the default branch,
-     several remotes and no origin, or the push said nothing about the ref
+     this checkout ahead of the default branch, several remotes and no origin,
+     or the push said nothing about the ref
 
 Every exit 1 refusal is one "kit next" already makes, bar the race it cannot see: the
 board and the commands read the same facts, so claiming by id without consulting it
@@ -173,8 +174,8 @@ cannot get you further. The exit 2 ones are about the repository rather than the
 and the board reports none of them.
 
 The doc has to be on the default branch. Drafting and reading the board from a plan
-branch are correct, so "next" goes on offering the feature there — taking it is what
-waits. A claim made from an unmerged round pushes a branch whose parent is that plan
+branch are correct, and "next" reports the feature as blocked there rather than offering
+it. A claim made from an unmerged round pushes a branch whose parent is that plan
 branch, so the only way to integrate the work is a merge into the branch its own author
 coordinated. Land the round, then claim. A project with no trunk to land on — one
 branch, no remote — is unaffected.
@@ -297,8 +298,8 @@ What should I work on? Reads the feature docs and git, and names one task.
 Ranks by lowest ID, and within a feature returns the topmost unticked "## Tasks"
 box. What this checkout already claims comes first of all.
 
-A doc with an empty ## Problem, ## Design or ## Tasks is reported as blocked rather
-than offered, because "kit claim" would refuse it.
+Blocked rather than offered: a doc with an empty ## Problem, ## Design or ## Tasks, and
+a feature whose plan round is not on the trunk yet. "kit claim" refuses both.
 
 Each feature shows ticked-over-total, "2/4", carried in --json as "done" and "total".
 For a feature somebody else holds the count comes from the branch the remote has,
@@ -314,10 +315,10 @@ when a BLOCKING docs/INBOX.md line carries its id in the id field, or when somet
 in its "needs:" has not shipped yet.
 
 Below the board, "awaiting review" is the far side of ship: a branch the remote has,
-carrying a doc that says Shipped, not yet on the trunk. The status is read from the
-branch, because on the trunk it still says what it said when the plan round landed.
-Entries you built are marked; where reviewing is all there is, the closing guidance
-says so instead of telling you to stop.
+carrying a doc that says Shipped, not yet on the trunk, and off the board above while
+it waits. The status is read from the branch, because on the trunk it still says what
+it said when the plan round landed. Entries you built are marked; where reviewing is
+all there is, the closing guidance says so instead of telling you to stop.
 
 What is ready is how much can happen at once: three ready features means three agents
 can take one each, which falls out of what the docs declare rather than being planned.

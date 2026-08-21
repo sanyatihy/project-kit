@@ -7,8 +7,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -411,6 +414,43 @@ func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
 	}
 }
 
+func TestNextNeverOffersAClaimThatWouldBeRefused(t *testing.T) {
+	t.Parallel()
+	// The state every new project reaches at step 9 of the protocol, as it was measured:
+	// `next` printed `kit claim 0008` and exited 0, and `kit claim 0008` exited 2 saying
+	// to land the round first. The board and the command were asking different questions
+	// about the same feature; they ask one now.
+	a, b := twoAgents(t)
+	b.run("claim", "0007").ok() // so the round is the only thing left to offer
+	trunk := a.headBranch()
+	a.git("checkout", "-q", "-b", "plan/round-two")
+	feature(a, "0008", "later", "A later thing", "Draft", "- [ ] Build it")
+	a.commitAll("the second round")
+
+	r := a.run("next").ok()
+	r.has("blocked", "0008", "plan/round-two")
+	r.lacks("kit claim 0008")
+	// The pairing is the point: what the board withholds is exactly what the command
+	// refuses, so neither can send an agent to the other and be wrong.
+	a.run("claim", "0008").fails(2).errHas("Land the round first")
+
+	plan := a.plan("next", "--json")
+	if len(plan.Blocked) != 1 || !plan.Blocked[0].Unlanded {
+		t.Fatalf("blocked = %+v, want 0008 flagged unlanded", plan.Blocked)
+	}
+	// And the closing line is the reader's own next action. "Stopping here is the right
+	// outcome" would leave the round sitting where nobody can build on it.
+	if !strings.Contains(plan.Guidance, "land the plan round on main") {
+		t.Errorf("guidance says %q, which never says to land the round", plan.Guidance)
+	}
+
+	// The quiet half: the same feature, once the round has landed.
+	a.git("checkout", "-q", trunk)
+	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
+
+	a.run("next").ok().has("start here", "0008", "kit claim 0008")
+}
+
 func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
 	t.Parallel()
 	// Measured before this existed: standing in 0001's checkout, `next` offered 0002
@@ -529,6 +569,91 @@ func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
 	}
 }
 
+// hangingGit puts a `git` ahead of the real one on PATH that answers `ls-remote` the way
+// a black-holed remote does: it leaves a process holding the stdout pipe it inherited.
+// Everything else passes straight through. The sleeper is killed when the test ends, so
+// nothing outlives the run.
+func hangingGit(t *testing.T) string {
+	t.Helper()
+	realGit, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("finding git: %v", err)
+	}
+	dir := t.TempDir()
+	pids := filepath.Join(dir, "pids")
+	// It exits 0 rather than hanging itself, which is the harder half of the same bug:
+	// the deadline has nothing left to kill, so without WaitDelay the read never ends.
+	script := fmt.Sprintf(`#!/bin/sh
+for a in "$@"; do
+	if [ "$a" = "ls-remote" ]; then
+		sleep 45 &
+		echo $! >> %q
+		exit 0
+	fi
+done
+exec %q "$@"
+`, pids, realGit)
+	if err := os.WriteFile(filepath.Join(dir, "git"), []byte(script), 0o755); err != nil {
+		t.Fatalf("writing the shim: %v", err)
+	}
+	t.Cleanup(func() {
+		raw, err := os.ReadFile(pids)
+		if err != nil {
+			return
+		}
+		for _, field := range strings.Fields(string(raw)) {
+			if pid, err := strconv.Atoi(field); err == nil {
+				if proc, err := os.FindProcess(pid); err == nil {
+					_ = proc.Kill()
+				}
+			}
+		}
+	})
+	return dir
+}
+
+func TestTheRemoteQuestionComesBackWhileAGrandchildHoldsThePipe(t *testing.T) {
+	t.Parallel()
+	// `exec.CommandContext` kills `git` and nothing git started, so `git-remote-https`
+	// goes on holding the stdout pipe and `cmd.Output()` blocks on a read that never
+	// ends. Measured against a black-holed remote: 75s against the 15s the help states,
+	// and 15s once cmd.WaitDelay closed the pipes.
+	//
+	// The shim is that shape with the network taken out, so this is a second either way
+	// rather than a minute — and it is the case where the deadline cannot help at all,
+	// because the process it would kill has already exited.
+	p := setUp(t)
+	feature(p, "0001", "thing", "A thing", "Draft", "- [ ] Build it")
+	p.commitAll("the plan")
+	p.git("remote", "add", "origin", filepath.Join(t.TempDir(), "origin.git"))
+
+	cmd := exec.Command(kitBinary(t), "next")
+	cmd.Dir = p.Root
+	cmd.Env = append(gitEnv("TERM=dumb"),
+		"PATH="+hangingGit(t)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	started := time.Now()
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("starting kit next: %v", err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+
+	// Well above the bound and well under the 45s the sleeper holds the pipe, so a
+	// failure here is the read never ending rather than a slow machine.
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("kit next exited %v while the remote went unanswered", err)
+		}
+		t.Logf("the board came back in %s", time.Since(started).Round(time.Millisecond))
+	case <-time.After(25 * time.Second):
+		_ = cmd.Process.Kill()
+		<-done
+		t.Fatal("kit next never came back: the remote question is bounded by a deadline " +
+			"that kills git and not what git left holding the pipe")
+	}
+}
+
 func TestNextRefusesAPathArgument(t *testing.T) {
 	t.Parallel()
 	// `next` reads the project you are standing in and nothing else. A path is not a
@@ -610,6 +735,31 @@ func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 	if got := a.plan("next", "--json").AwaitingReview; len(got) != 0 {
 		t.Errorf("after landing, %d still awaiting review: %+v", len(got), got)
 	}
+}
+
+func TestAShippedButUnmergedFeatureAppearsOnceOnTheBoard(t *testing.T) {
+	t.Parallel()
+	// It was listed under `taken` and again under `awaiting review`, which reads as two
+	// features. The second is the true one: nothing is left to build, and the claim is
+	// only waiting for somebody to merge it.
+	a, _ := twoAgents(t)
+	shipOnItsBranch(a, "0007", "widget", "A widget")
+
+	plan := a.plan("next", "--json")
+	if !plan.Empty() {
+		t.Errorf("a shipped-and-unmerged feature is still on the board: %+v", plan)
+	}
+	if len(plan.AwaitingReview) != 1 {
+		t.Fatalf("awaiting review = %+v, want just 0007", plan.AwaitingReview)
+	}
+
+	r := a.run("next").ok().has("awaiting review", "0007")
+	if strings.Contains(r.Stdout, "taken") {
+		t.Errorf("0007 is reported as taken as well as awaiting review:\n%s", r.Stdout)
+	}
+	// And one instruction under it rather than two: the guidance says merging is the
+	// work, so the command for drafting the next feature must not be printed beside it.
+	r.lacks("kit new")
 }
 
 func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {

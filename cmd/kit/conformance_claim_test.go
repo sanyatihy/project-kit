@@ -262,6 +262,38 @@ func TestClaimingFromAnUnmergedPlanRoundIsRefusedUntilItLands(t *testing.T) {
 	a.run("claim", "0008").ok().has("claimed", "0008-later")
 }
 
+func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
+	t.Parallel()
+	// The mirror of the check above, on HEAD. Reproduced in the worktree that had just
+	// shipped 0001: `kit claim 0002` exited 0 and the branch it pushed logged 0001's
+	// commits against the trunk, so that pull request carried another feature's work and
+	// only its own author could merge it.
+	a, _ := twoAgents(t)
+	trunk := a.headBranch()
+	feature(a, "0008", "later", "A later thing", "Draft", "- [ ] Build it")
+	a.commitAll("a second feature")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
+
+	a.run("claim", "0007").ok()
+	a.git("checkout", "-q", "0007-widget")
+	a.write("widget.go", "package widget\n")
+	a.commitAll("0007: build it")
+
+	// Exit 2: the repository is in the wrong state, and every other id would carry the
+	// same commits, so "take something else" would send the agent into the same wall.
+	a.run("claim", "0008").fails(2).errHas("ahead of "+trunk, "git worktree add")
+
+	for _, name := range a.branches() {
+		if strings.HasPrefix(name, "0008") {
+			t.Errorf("a refused claim still created branch %q", name)
+		}
+	}
+
+	// The quiet half: the same claim from a checkout that carries only the trunk.
+	a.git("checkout", "-q", trunk)
+	a.run("claim", "0008").ok().has("claimed", "0008-later")
+}
+
 func TestTheFirstClaimOfAFreshProjectIsNotRefused(t *testing.T) {
 	t.Parallel()
 	// The trunk barrier must not break a project that has no trunk to land on. A fresh
