@@ -55,7 +55,11 @@ const (
 	// 0048 retook all three against what the cut left: TECH 287, AGENTS 159, README 279.
 	// The headroom is deliberate and small — under the routing rule a shipped feature adds
 	// one line each, so a jump means facts arrived with their history attached again.
-	techBudget = 292
+	// 296 since 0056: the claim is the tip `ls-remote` advertises and not the branch list
+	// alone, which three commands now read; the trunk belongs to whichever remote a clone
+	// has; and a memo whose answer can be empty needs a flag. Three constraints, seven
+	// lines, none of them history.
+	techBudget = 296
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

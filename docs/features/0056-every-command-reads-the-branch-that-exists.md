@@ -1,9 +1,9 @@
 ---
 id: 0056
 title: Every command reads the branch that exists
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -60,3 +60,11 @@ Reproduced:
 - [x] `Trunk()` is memoised on a flag, and the budget fixture covers a repo with no trunk
 
 ## Log
+
+- Containment, not equality, decides whether `release` may read a local copy: a branch
+  ahead of the remote is the ordinary state of an agent that has committed and not pushed,
+  and refusing there would refuse every honest release.
+- Two ways a claim branch can be unreadable, and they need opposite answers. A branch
+  carrying no doc keeps the checkout's count, which `next` already promised; a revision
+  this clone never fetched shows none, because the copy here is the trunk's and reads as
+  an agent that has done nothing.

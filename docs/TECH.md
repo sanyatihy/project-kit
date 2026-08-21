@@ -82,7 +82,9 @@ Draft -> Shipped     (exit: Dropped)
   branches full of commits at exit 0 on any project whose default branch was neither `main`
   nor `master`. The trunk ladder is `origin/HEAD`, local `main`, local `master`, the
   remote-tracking copy of either, then a HEAD that is not claim-shaped — and `release`
-  refuses outright when none of them resolves.
+  refuses outright when none of them resolves. A branch name strips *any* configured
+  remote's prefix: with `origin/` alone, a clone whose remote is `upstream` resolved
+  `upstream/main`, which matches no ref.
 - **Ordering needs no syntax.** Task order is dependency order and `next` returns the
   topmost unticked box. This replaced a dependency graph.
 - **`needs:` is the only cross-feature ordering, and it is declared.** Blocked until every
@@ -103,9 +105,11 @@ Draft -> Shipped     (exit: Dropped)
 - **An answer that cannot change inside one command is asked once** — the trunk, this
   checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`), and
   every feature doc's status on the trunk. Per feature instead, a 30-feature board read
-  cost 116 git processes against 29 now, and 10 online. Both are ceilings the gate fails
-  on, and both are measured, because a regression can leave the offline number identical.
-  `make gitcount` prints them.
+  cost 116 git processes against 29 now, and 10 online. A memo whose answer can be empty
+  needs a flag of its own: the trunk's used `""` for *not asked yet*, so a checkout where
+  none resolves re-ran the ladder per caller — 747 processes against 28. Each is a ceiling
+  the gate fails on, and each is measured, because a regression can leave the others
+  identical. `make gitcount` prints them.
 - **One project per invocation.** `next` and `audit` read the repo you are in and take no
   paths. The fan-out that read several at once keyed its payload by directory basename, so
   two projects called `proj` reported as one, silently, at exit 0 — and it had no `recover`,
@@ -113,11 +117,14 @@ Draft -> Shipped     (exit: Dropped)
   zero times. A shell loop replaces it, and the two defects were deleted rather than fixed.
 - **Claims are read from the remote, not from `refs/remotes/*`**, which git prunes on
   neither `fetch` nor `pull`, so a branch deleted on merge reads as a live claim for ever.
-  One `ls-remote` per remote, bounded at 15s — 5s is inside a working remote's latency
-  (5.58s to GitHub over SSH) and the board silently printed nothing. `RemoteUnanswered`
-  separates *asked and got nothing* from *nothing to ask*, because absence and ignorance
-  render identically. `--offline` stays quiet, being an instruction; `claim` never reads
-  the cache.
+  That `ls-remote` also advertises each branch's tip, and the tip is the claim: a local
+  head is only the last push. `release` refuses unless the tip is contained in the copy it
+  deletes; progress, *last moved* and `stalled` read it, and one never fetched counts
+  nothing rather than the trunk's zero. One `ls-remote` per remote, bounded at 15s — 5s is
+  inside a working remote's latency (5.58s to GitHub over SSH) and the board silently
+  printed nothing. `RemoteUnanswered` separates *asked and got nothing* from *nothing to
+  ask*, because absence and ignorance render identically. `--offline` stays quiet, being
+  an instruction; `claim` never reads the cache.
 - **Liveness comes from the claim branch, and there is no status for it.** A status set on
   the feature branch never reaches the trunk, which is the only checkout anyone audits. The
   log is read `--all` for the same reason; a doc's mtime is not a signal, since a merge
