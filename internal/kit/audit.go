@@ -574,18 +574,28 @@ func statusState(s *docState) []Finding {
 	return nil
 }
 
-// Draft is exempt because a doc still being written is not a defect. `claim` refuses an
-// unwritten doc whatever its status, which is what stops the exemption reaching an agent
-// now that a Draft can be claimed.
+// A terminal doc is asked nothing about its plan. A stub retired with `kit drop` before
+// anybody wrote it reported three HIGH findings whose fixes were to write a plan for work
+// that will never happen, or to set a status back to Draft — the edit rule 21 forbids. It
+// is HIGH and `--strict` is project-wide, so one such doc refused every ship in the
+// project for ever.
+//
+// An untracked doc is exempt for the other reason: `kit new` writes the headings and
+// nothing under them, so a doc still being written in a working tree is nobody's defect.
 func unfilledTemplate(s *docState) []Finding {
-	if !s.tracked {
+	if !s.tracked || terminal(s.f.Status) {
 		return nil
+	}
+	// Naming the command rather than the edit: the only status work starts from is Draft,
+	// so "set it to Draft" was advice to leave a doc exactly as it already was.
+	fix := `write the plan, or retire it: kit drop ` + s.f.ID + ` "<why>"`
+	if s.f.ID == "" {
+		fix = "write the plan, or give it an id: and retire it with kit drop"
 	}
 	var out []Finding
 	for _, heading := range s.f.Unwritten() {
 		out = append(out, finding(checkUnfilledTemplate, s.at,
-			fmt.Sprintf("%s: ## %s was never written", s.f.Name(), heading),
-			"write it, or set status: Draft until you can"))
+			fmt.Sprintf("%s: ## %s was never written", s.f.Name(), heading), fix))
 	}
 	return out
 }

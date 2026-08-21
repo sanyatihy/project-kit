@@ -70,7 +70,7 @@ unrelated doc to refuse every agent's ship.
 
 ## Tasks
 
-- [ ] No check asks for an edit to a terminal doc, and a dropped stub audits clean
+- [x] No check asks for an edit to a terminal doc, and a dropped stub audits clean
 - [ ] `unticked-shipped` and `shipped-early` are deleted, with their tests
 - [ ] `needs-cycle`, `no-plan`, `dead-link` and `fyi-stale` are deleted, and `--fyi` with them
 - [ ] The seven duplicate findings are merged into one name each

@@ -582,6 +582,37 @@ func TestANonASCIIFilenameDoesNotDisableThePlanChecks(t *testing.T) {
 	}
 }
 
+func TestATerminalDocIsAskedNothingAboutItsPlan(t *testing.T) {
+	t.Parallel()
+	// The state that refused every ship in the project. `unfilled-template` is HIGH and
+	// `--strict` is project-wide, so one stub retired before anybody wrote it failed the
+	// gate in front of every other feature, permanently — and its fixes were to write a
+	// plan for work that will never happen, or to set the status back to Draft, which
+	// reopens retired history.
+	dropped := cleanProject(t)
+	dropped.run("new", "Never written").ok()
+	dropped.commitAll("commit a doc nobody wrote")
+	dropped.run("drop", "0002", "not worth building").ok()
+	dropped.commitAll("retire it")
+	dropped.run("audit", "--strict").ok().lacks("unfilled-template")
+
+	// Shipped is the other terminal status, and rule 21 freezes it harder: a doc written
+	// under a kit that did not have these headings is history, not work.
+	shipped := cleanProject(t)
+	shipped.write("docs/features/0002-frozen.md",
+		"---\nid: 0002\ntitle: Frozen\nstatus: Shipped\ncreated: 2026-01-01\nshipped: "+
+			daysAgo(1)+"\n---\n\n## Problem\n\n## Design\n\n## Tasks\n- [x] Done\n")
+	shipped.commitAll("a doc from an older kit")
+	shipped.run("audit", "--strict").ok().lacks("unfilled-template")
+
+	// The half that pays for it: an open doc nobody wrote is still HIGH, and its fix is
+	// now a command rather than an edit to the field only `ship` and `drop` may write.
+	open := cleanProject(t)
+	open.run("new", "Also never written").ok()
+	open.commitAll("commit a doc nobody wrote")
+	open.run("audit", "--strict").fails(1).has("unfilled-template", "kit drop 0002")
+}
+
 func TestTagStaleIsQuietUntilTheDistanceCouldMislead(t *testing.T) {
 	t.Parallel()
 	// The half that matters, and it is where the constant is decided: at the threshold an
