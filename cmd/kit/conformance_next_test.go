@@ -42,16 +42,6 @@ This way.
 `, id, title, status, tasks))
 }
 
-// unsettled writes a feature whose ## Open questions are still open. That, not the
-// status, is what draft-claimed reports when a branch builds on it anyway.
-func unsettled(p *project, id, slug, title, status, tasks string) {
-	p.t.Helper()
-	feature(p, id, slug, title, status, tasks)
-	rel := "docs/features/" + id + "-" + slug + ".md"
-	p.write(rel, strings.Replace(p.read(rel), "## Log",
-		"## Open questions\n- Which way round?\n\n## Log", 1))
-}
-
 // unwritten writes a doc straight out of `kit new`: the headings are there and
 // nothing under them. `claim` refuses it whatever its status.
 func unwritten(p *project, id, slug string) {
@@ -66,22 +56,18 @@ func unwritten(p *project, id, slug string) {
 func (p *project) plan(args ...string) kit.Plan {
 	p.t.Helper()
 	r := p.run(args...).ok()
-	var payload map[string]kit.Plan
-	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
+	var plan kit.Plan
+	if err := json.Unmarshal([]byte(r.Stdout), &plan); err != nil {
 		p.t.Fatalf("next --json emitted invalid JSON: %v\n%s", err, r.Stdout)
 	}
-	for _, plan := range payload {
-		return plan
-	}
-	p.t.Fatalf("next --json reported no project at all:\n%s", r.Stdout)
-	return kit.Plan{}
+	return plan
 }
 
 func TestNextHandsBackTheTopmostUntickedBox(t *testing.T) {
 	t.Parallel()
 	// List order is the order of work, which is what lets ordering need no syntax.
 	p := setUp(t)
-	feature(p, "0001", "shorten", "Shorten URLs", "Accepted",
+	feature(p, "0001", "shorten", "Shorten URLs", "Draft",
 		"- [x] Schema\n- [ ] The POST handler\n- [ ] The redirect")
 
 	r := p.run("next").ok()
@@ -95,8 +81,8 @@ func TestFinishingBeatsStartingWithoutAStatusToSaySo(t *testing.T) {
 	// holding a claim, that feature is what `next` names — ahead of anything free, and
 	// with no status anywhere asserting that work had started.
 	p := setUp(t)
-	feature(p, "0001", "first", "First", "Accepted", "- [ ] Do the first thing")
-	feature(p, "0002", "second", "Second", "Accepted", "- [ ] Do the second thing")
+	feature(p, "0001", "first", "First", "Draft", "- [ ] Do the first thing")
+	feature(p, "0002", "second", "Second", "Draft", "- [ ] Do the second thing")
 	p.commitAll("two features")
 	p.git("checkout", "-q", "-b", "0002-second")
 
@@ -117,7 +103,7 @@ func TestNextTreatsABranchAsAClaim(t *testing.T) {
 	t.Parallel()
 	// The claim is a branch name and nothing else — no lock file, no state to sync.
 	p := setUp(t)
-	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 	p.commitAll("add the feature doc")
 	p.git("branch", "0001-shorten")
 
@@ -135,7 +121,7 @@ func TestNextReportsThisCheckoutsOwnClaimAsYours(t *testing.T) {
 	// `next` reported 0001 as taken — by you — which is the tool stating a fact
 	// about the reader back to them as somebody else's.
 	p := setUp(t)
-	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 	p.commitAll("add the feature doc")
 	p.git("checkout", "-q", "-b", "0001-shorten")
 
@@ -151,8 +137,8 @@ func TestNextJSONSeparatesYoursFromTaken(t *testing.T) {
 	// --json is the interface agents actually read, so the distinction has to exist
 	// there and not only in the prose above it.
 	p := setUp(t)
-	feature(p, "0001", "mine", "Mine", "Accepted", "- [ ] Do it")
-	feature(p, "0002", "theirs", "Theirs", "Accepted", "- [ ] Do that")
+	feature(p, "0001", "mine", "Mine", "Draft", "- [ ] Do it")
+	feature(p, "0002", "theirs", "Theirs", "Draft", "- [ ] Do that")
 	p.commitAll("two features")
 	p.git("branch", "0002-theirs")
 	p.git("checkout", "-q", "-b", "0001-mine")
@@ -178,7 +164,7 @@ func TestNextReportsProgressThroughTheBoxes(t *testing.T) {
 	// which are moving, and only a count answers it. In --json too, because that is
 	// what anything watching the plan from outside has to read.
 	p := setUp(t)
-	feature(p, "0001", "part", "Partly done", "Accepted",
+	feature(p, "0001", "part", "Partly done", "Draft",
 		"- [x] One\n- [x] Two\n- [ ] Three\n- [ ] Four")
 	p.commitAll("a feature part-done")
 
@@ -200,9 +186,9 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 	// worked at once", so it has to be right in both directions — refusing work that
 	// cannot start, and releasing it the moment the dependency ships.
 	p := setUp(t)
-	feature(p, "0001", "base", "Base", "Accepted", "- [ ] Do it")
+	feature(p, "0001", "base", "Base", "Draft", "- [ ] Do it")
 	p.write("docs/features/0002-store.md",
-		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
 	p.commitAll("a chain of two")
 
 	plan := p.plan("next", "--json")
@@ -239,7 +225,7 @@ func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 	dead := setUp(t)
 	dead.write("docs/features/0001-base.md", doc("0001", "Base", "Dropped", "", "- [ ] Do it"))
 	dead.write("docs/features/0002-store.md",
-		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
 
 	r := dead.run("next").ok()
 	r.has("blocked", "0002", "can never ship")
@@ -258,9 +244,9 @@ func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 
 	// And a dependency that simply has not shipped yet keeps the wait that does end.
 	pending := setUp(t)
-	feature(pending, "0001", "base", "Base", "Accepted", "- [ ] Do it")
+	feature(pending, "0001", "base", "Base", "Draft", "- [ ] Do it")
 	pending.write("docs/features/0002-store.md",
-		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
 	pending.run("next").ok().has("needs 0001 to ship first").lacks("can never ship")
 }
 
@@ -272,7 +258,7 @@ func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
 	// Checked against the guidance the plan carries rather than the rendered text:
 	// the text is wrapped for a narrow terminal, so asserting phrases in it breaks
 	// on line breaks rather than on the thing being tested.
-	tell := []string{"kit claim", "draft a feature", "nothing is free", "waiting on a human"}
+	tell := []string{"kit claim", "draft a feature", "nothing is free", "write the plan in"}
 	ends := func(out string) bool {
 		for _, phrase := range tell {
 			if strings.Contains(out, phrase) {
@@ -288,32 +274,38 @@ func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
 			t.Errorf("no instruction:\n%s", out)
 		}
 	})
-	t.Run("only drafts", func(t *testing.T) {
+	t.Run("something ready", func(t *testing.T) {
 		p := setUp(t)
-		feature(p, "0001", "idea", "Idea", "Draft", "- [ ] Do it")
+		feature(p, "0001", "go", "Go", "Draft", "- [ ] Do it")
+		if out := p.run("next").ok().Stdout; !ends(out) {
+			t.Errorf("no instruction:\n%s", out)
+		}
+	})
+	t.Run("one doc, and nobody wrote it", func(t *testing.T) {
+		// The state `kit new` leaves behind, and the documented next step from it. The
+		// board has one blocked feature and nothing free, so the "nothing is free" arm
+		// used to answer — telling an agent to stop and wait for somebody else to write
+		// the doc it had just created itself.
+		p := setUp(t)
+		unwritten(p, "0001", "unwritten")
 		out := p.run("next").ok().Stdout
 		if !ends(out) {
 			t.Errorf("no instruction:\n%s", out)
 		}
-		// Accepting is a human's call, so the tool must not tell an agent to do it.
-		if strings.Contains(out, "set status: Accepted") {
-			t.Errorf("next told an agent to take the human's gate:\n%s", out)
+		if !strings.Contains(out, "docs/features/0001-unwritten.md") {
+			t.Errorf("the guidance never names the doc to write:\n%s", out)
 		}
-	})
-	t.Run("something ready", func(t *testing.T) {
-		p := setUp(t)
-		feature(p, "0001", "go", "Go", "Accepted", "- [ ] Do it")
-		if out := p.run("next").ok().Stdout; !ends(out) {
-			t.Errorf("no instruction:\n%s", out)
+		if strings.Contains(out, "Stopping here is the right outcome") {
+			t.Errorf("next told the agent to wait for a doc only it can write:\n%s", out)
 		}
 	})
 	t.Run("everything taken or blocked", func(t *testing.T) {
 		// The state that actually failed: one feature claimed by somebody else, the
 		// rest waiting on it. Nothing for this agent, and it must be told so.
 		p := setUp(t)
-		feature(p, "0001", "taken", "Taken", "Accepted", "- [ ] Do it")
+		feature(p, "0001", "taken", "Taken", "Draft", "- [ ] Do it")
 		p.write("docs/features/0002-waiting.md",
-			doc("0002", "Waiting", "Accepted", "needs: 0001", "- [ ] Do it"))
+			doc("0002", "Waiting", "Draft", "needs: 0001", "- [ ] Do it"))
 		p.commitAll("two features")
 		p.git("branch", "0001-taken")
 
@@ -330,7 +322,7 @@ func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
 func TestNextIsBlockedByAnOpenBlockingQuestion(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)
-	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 	p.write("docs/INBOX.md",
 		"# Inbox\n\n- [ ] 2026-01-01 · 0001 · BLOCKING · Should codes expire?\n")
 
@@ -346,7 +338,7 @@ func TestNextIsNotBlockedByAnFYIQuestion(t *testing.T) {
 	// FYI is recorded for a human without stopping the work, or every note would
 	// halt a feature.
 	p := setUp(t)
-	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 	p.write("docs/INBOX.md",
 		"# Inbox\n\n- [ ] 2026-01-01 · 0001 · FYI · Using base62 for slugs.\n")
 
@@ -358,7 +350,7 @@ func TestNextBlocksAFeatureWithEveryBoxTicked(t *testing.T) {
 	// Nothing left to do is not the same as ready to work: it needs shipping or a
 	// next task, and silently offering nothing would hide that.
 	p := setUp(t)
-	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [x] Done\n- [x] Also done")
+	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [x] Done\n- [x] Also done")
 
 	p.run("next").ok().has("blocked", "every task is ticked")
 }
@@ -377,24 +369,6 @@ func TestNextOffersADraftAsWork(t *testing.T) {
 	r.lacks("waiting on a human")
 }
 
-func TestNextRanksAcceptedAboveDraft(t *testing.T) {
-	t.Parallel()
-	// The whole autonomy signal: accepting does not unlock work, it promotes it. An
-	// agent handed the board takes what a human has looked at before what nobody has.
-	p := setUp(t)
-	feature(p, "0001", "drafted", "Drafted", "Draft", "- [ ] Later")
-	feature(p, "0002", "blessed", "Blessed", "Accepted", "- [ ] First")
-
-	ready := p.plan("next", "--json").Ready
-	if len(ready) != 2 {
-		t.Fatalf("expected both features ready, got %d", len(ready))
-	}
-	if ready[0].ID != "0002" || ready[1].ID != "0001" {
-		t.Errorf("next ranked %s before %s; Accepted outranks Draft",
-			ready[0].ID, ready[1].ID)
-	}
-}
-
 func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
 	t.Parallel()
 	// Counted from claims, which is the only record that somebody started something.
@@ -402,7 +376,7 @@ func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
 
 	claimed := func(p *project, ids ...string) {
 		for _, id := range ids {
-			feature(p, id, id, "Feature "+id, "Accepted", "- [ ] Task "+id)
+			feature(p, id, id, "Feature "+id, "Draft", "- [ ] Task "+id)
 		}
 		p.commitAll("the features")
 		for _, id := range ids {
@@ -428,7 +402,7 @@ func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
 	// skips the only step that settles who gets it. `kit claim` prints the worktree
 	// command itself, once it has won.
 	p := setUp(t)
-	feature(p, "0001", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 
 	r := p.run("next").ok()
 	r.has("kit claim 0001", "docs/features/0001-shorten.md")
@@ -443,8 +417,8 @@ func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
 	// under "start here". Followed literally that begins a second feature in the
 	// first one's branch, and the two ship as one.
 	p := setUp(t)
-	feature(p, "0001", "mine", "Mine", "Accepted", "- [ ] Finish this")
-	feature(p, "0002", "other", "Other", "Accepted", "- [ ] A different thing")
+	feature(p, "0001", "mine", "Mine", "Draft", "- [ ] Finish this")
+	feature(p, "0002", "other", "Other", "Draft", "- [ ] A different thing")
 	p.commitAll("two features")
 	p.git("checkout", "-q", "-b", "0001-mine")
 
@@ -462,8 +436,8 @@ func TestAClaimedCheckoutIsNotOfferedOtherWorkEvenWhenItsOwnIsBlocked(t *testing
 	// feature happens to be workable. A blocked feature is still the reason this
 	// branch exists, and starting a second one here would still be wrong.
 	p := setUp(t)
-	feature(p, "0001", "mine", "Mine", "Accepted", "- [ ] Finish this")
-	feature(p, "0002", "other", "Other", "Accepted", "- [ ] A different thing")
+	feature(p, "0001", "mine", "Mine", "Draft", "- [ ] Finish this")
+	feature(p, "0002", "other", "Other", "Draft", "- [ ] A different thing")
 	p.commitAll("two features")
 	p.git("checkout", "-q", "-b", "0001-mine")
 	p.run("block", "0001", "Which way round?").ok()
@@ -487,7 +461,7 @@ func TestNextIsNotBlockedByAQuestionAboutAnotherFeature(t *testing.T) {
 	// The ID lives in a field of the line. Matching the whole line blocks any
 	// feature a question happens to name, and the cause is invisible in the output.
 	p := setUp(t)
-	feature(p, "0007", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	feature(p, "0007", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 	p.write("docs/INBOX.md",
 		"# Inbox\n\n- [ ] 2026-08-11 · 0012 · BLOCKING · Should this match what we did in 0007?\n")
 
@@ -500,7 +474,7 @@ func TestNextStillBlocksOnAMalformedLineThatNamesTheFeature(t *testing.T) {
 	// over-blocks. That is the safe direction: missing a blocker sends an agent
 	// into work a human has not cleared. `inbox-unparsed` makes the line visible.
 	p := setUp(t)
-	feature(p, "0007", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	feature(p, "0007", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 	p.write("docs/INBOX.md", "# Inbox\n\n- [ ] is 0007 really the right approach\n")
 
 	p.run("next").ok().has("blocked")
@@ -512,11 +486,11 @@ func TestNextTellsAnEmptyPlanApartFromAFinishedOne(t *testing.T) {
 	// Both leave nothing to do, and the fixes are opposite: one needs the plan
 	// written, the other needs shipping.
 	never := setUp(t)
-	feature(never, "0001", "empty", "Empty", "Accepted", "")
+	feature(never, "0001", "empty", "Empty", "Draft", "")
 	never.run("next").ok().has("no task boxes yet")
 
 	finished := setUp(t)
-	feature(finished, "0001", "done", "Done", "Accepted", "- [x] All of it")
+	feature(finished, "0001", "done", "Done", "Draft", "- [x] All of it")
 	finished.run("next").ok().has("every task is ticked")
 }
 
@@ -528,7 +502,7 @@ func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
 	// scaffolded with and nothing inside it can tell — the failure 0009 recorded, where a
 	// real run went two features behind and "nothing looked wrong from inside".
 	stale := setUp(t)
-	feature(stale, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	feature(stale, "0001", "thing", "A thing", "Draft", "- [ ] Do the thing")
 	stale.write("AGENTS.md", "# House rules\n\nOurs.\n\n## Work protocol\n\nRules from an older kit.\n")
 
 	r := stale.run("next").ok() // never changes the exit code: the plan is still right
@@ -542,7 +516,7 @@ func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
 
 	// And silence when the protocol is current, or the line becomes noise nobody reads.
 	current := setUp(t)
-	feature(current, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	feature(current, "0001", "thing", "A thing", "Draft", "- [ ] Do the thing")
 	fresh := current.run("next").ok()
 	fresh.lacks("older than this kit")
 	if current.plan("next", "--json").ProtocolStale {
@@ -550,85 +524,20 @@ func TestNextSaysWhenTheProtocolIsStale(t *testing.T) {
 	}
 }
 
-func TestNextSurveysEveryPathWhenOneCannotBeRead(t *testing.T) {
+func TestNextRefusesAPathArgument(t *testing.T) {
 	t.Parallel()
-	// `kit next ~/code/*` is the fleet survey, so a glob picking up a deleted
-	// directory or a stray file used to blank the whole board: the run returned early
-	// and said nothing about the healthy projects it had already been handed. The two
-	// orders are both here because the first version reported whatever happened to
-	// come before the bad path and nothing after it.
-	for _, tc := range []struct {
-		name     string
-		unusable func(p *project) string
-		last     bool
-	}{
-		{"a missing directory, listed last", func(p *project) string {
-			return filepath.Join(p.Root, "gone")
-		}, true},
-		{"a stray file, listed first", func(p *project) string {
-			return p.path("docs/INBOX.md")
-		}, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			p := setUp(t)
-			feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
-			bad := tc.unusable(p)
-
-			args := []string{"next", bad, p.Root}
-			if tc.last {
-				args = []string{"next", p.Root, bad}
-			}
-			r := p.run(args...).fails(2)
-
-			// The healthy project is on the board whichever side of the bad path it sat.
-			r.outHas("start here", "Do the thing")
-			// And the bad path is named rather than skipped silently. The diagnostic
-			// still reaches stderr, where a single-path run has always put it.
-			r.outHas(bad, "not a directory")
-			r.errHas("kit next: not a directory: " + bad)
-
-			// Order is the order given, so a fleet survey reads the same way twice.
-			board, failure := strings.Index(r.Stdout, "Do the thing"), strings.Index(r.Stdout, "not a directory")
-			if tc.last != (board < failure) {
-				t.Errorf("the board reordered the paths it was given:\n%s", r.Stdout)
-			}
-		})
-	}
-}
-
-func TestNextJSONCarriesTheHealthyProjectsAndTheFailures(t *testing.T) {
-	t.Parallel()
-	// The format agents parse. Being told about one project while another vanished is
-	// worse than the error was: nothing in the payload says anything is missing.
+	// `next` reads the project you are standing in and nothing else. A path is not a
+	// board it can render, so it is a broken invocation: exit 2, the reason on stderr,
+	// and the shell loop that does what the argument was reaching for. Silently reading
+	// the current project instead would answer a question nobody asked.
 	p := setUp(t)
-	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
-	gone := filepath.Join(p.Root, "gone")
+	feature(p, "0001", "thing", "A thing", "Draft", "- [ ] Do the thing")
 
-	r := p.run("next", p.Root, gone, "--json").fails(2)
-	var payload map[string]kit.Plan
-	if err := json.Unmarshal([]byte(r.Stdout), &payload); err != nil {
-		t.Fatalf("--json stopped being parseable when a path was unreadable: %v\n%s",
-			err, r.Stdout)
+	for _, arg := range []string{p.Root, filepath.Join(p.Root, "gone")} {
+		r := p.run("next", arg).fails(2)
+		r.errHas("takes no arguments", "cd $d && kit next")
+		r.lacks("start here")
 	}
-	if healthy := payload[filepath.Base(p.Root)]; len(healthy.Ready) != 1 {
-		t.Errorf("--json lost the healthy project: %+v", payload)
-	}
-	if payload[gone].Error == "" {
-		t.Errorf("--json never said %s could not be read: %+v", gone, payload)
-	}
-}
-
-func TestNextStillRefusesASinglePathItCannotRead(t *testing.T) {
-	t.Parallel()
-	// One bad path on its own is a broken invocation, not a fleet with a hole in it.
-	// Nothing about it changes: exit 2, and the reason on stderr.
-	p := setUp(t)
-	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
-	gone := filepath.Join(p.Root, "gone")
-
-	r := p.run("next", gone).fails(2)
-	r.errHas("kit next: not a directory: " + gone)
-	r.lacks("start here")
 }
 
 // shipOnItsBranch builds and ships a feature the way the protocol does — on its claim
@@ -670,7 +579,7 @@ func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
 func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 	t.Parallel()
 	// The blind spot this closes: from the trunk, a feature shipped on its branch and
-	// never merged is invisible. The doc here still says Accepted — the status that
+	// never merged is invisible. The doc here still says Draft — the status that
 	// matters is the one on the branch, which is the only place the ship happened.
 	a, _ := twoAgents(t)
 	shipOnItsBranch(a, "0007", "widget", "A widget")
@@ -703,21 +612,22 @@ func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
 	// A coordinator that is itself an agent needs one fact from this board: which
 	// entries are its own. Its own work is the work it may not merge, and nothing else
 	// on the board answers it.
+	//
+	// The checkout standing on the claim branch is the whole answer. Comparing the
+	// branch's author with this checkout's git identity was the earlier one and
+	// distinguished nobody: measured on this repo, four agents shared the operator's.
 	a, b := twoAgents(t)
-	// The identity the fixture commits with. Real agents need distinct ones for any of
-	// this to mean anything — measured on this repo, four agents shared the operator's.
-	gitIn(t, a.Root, "config", "user.email", "kit@example.invalid")
 	shipOnItsBranch(a, "0007", "widget", "A widget")
 
-	// The builder's own checkout: the branch's commits carry its identity.
+	// The builder's own checkout, standing where the work was done.
+	a.git("checkout", "-q", "0007-widget")
 	if got := a.plan("next", "--json").AwaitingReview; len(got) != 1 || !got[0].Mine {
 		t.Errorf("the builder's own board does not say it built 0007: %+v", got)
 	}
 	a.run("next").ok().has("you built this")
 
-	// A different checkout, with an identity of its own, is free to merge it — and
-	// saying "you built this" there would be the kit inventing a reason to stop.
-	gitIn(t, b.Root, "config", "user.email", "coordinator@example.invalid")
+	// A different checkout is free to merge it — and saying "you built this" there
+	// would be the kit inventing a reason to stop.
 	b.git("fetch", "-q", "origin")
 	got := b.plan("next", "--json").AwaitingReview
 	if len(got) != 1 {
@@ -726,47 +636,7 @@ func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
 	if got[0].Mine {
 		t.Errorf("0007 is marked as the coordinator's own work: %+v", got[0])
 	}
-}
-
-func TestAReviewMarkChangesNothingElseOnTheBoard(t *testing.T) {
-	t.Parallel()
-	// The field is optional and new, so every doc written before it has to behave
-	// exactly as it did — and a doc carrying it must not become a finding, a blocker,
-	// or anything else the board treats differently. What it changes is who merges.
-	p := cleanProject(t)
-	p.write("docs/features/0002-marked.md",
-		doc("0002", "Marked", "Accepted", "review: human", "- [ ] Something"))
-
-	if codes := p.auditCodes(); len(codes) > 0 {
-		t.Errorf("a review: mark produced findings: %v", codes)
-	}
-	plan := p.plan("next", "--json")
-	if got := boardGroup(plan, "0002"); got != "ready" {
-		t.Errorf("a marked feature is %s on the board, want ready", got)
-	}
-	// And the unmarked doc beside it is untouched, which is what "absent behaves as
-	// empty" has to mean for the twenty-odd docs already written.
-	if got := boardGroup(plan, "0001"); got != "ready" {
-		t.Errorf("the unmarked feature is %s on the board, want ready", got)
-	}
-}
-
-func TestTheReviewBoardMarksWhatNeedsAHuman(t *testing.T) {
-	t.Parallel()
-	// The two facts a coordinator agent needs before merging anything: what it built,
-	// and what is nobody's but a person's. This is the second.
-	a, _ := twoAgents(t)
-	a.write("docs/features/0007-widget.md",
-		doc("0007", "A widget", "Accepted", "review: human", "- [ ] Build it"))
-	a.commitAll("mark 0007 for a human")
-	a.git("push", "-q", "origin", "HEAD:refs/heads/"+a.headBranch())
-	shipOnItsBranch(a, "0007", "widget", "A widget")
-
-	got := a.plan("next", "--json").AwaitingReview
-	if len(got) != 1 || !got[0].NeedsHuman {
-		t.Fatalf("the board does not mark 0007 as needing a human: %+v", got)
-	}
-	a.run("next").ok().has("needs a human")
+	b.run("next").ok().lacks("you built this")
 }
 
 func TestTheBoardCountsBoxesFromTheClaimBranch(t *testing.T) {
@@ -775,12 +645,12 @@ func TestTheBoardCountsBoxesFromTheClaimBranch(t *testing.T) {
 	// reported 0/3 for a feature somebody was two-thirds through — indistinguishable from
 	// an agent that had done nothing.
 	p := setUp(t)
-	feature(p, "0001", "widget", "Widget", "Accepted", "- [ ] One\n- [ ] Two\n- [ ] Three")
+	feature(p, "0001", "widget", "Widget", "Draft", "- [ ] One\n- [ ] Two\n- [ ] Three")
 	p.commitAll("the plan")
 	trunk := p.headBranch()
 
 	p.git("checkout", "-q", "-b", "0001-widget")
-	feature(p, "0001", "widget", "Widget", "Accepted", "- [x] One\n- [x] Two\n- [ ] Three")
+	feature(p, "0001", "widget", "Widget", "Draft", "- [x] One\n- [x] Two\n- [ ] Three")
 	p.write("widget.go", "package widget\n")
 	p.commitAll("0001: two boxes")
 	p.git("checkout", "-q", trunk)
@@ -806,7 +676,7 @@ func TestTheBoardKeepsItsOwnCountWhenTheBranchCannotBeRead(t *testing.T) {
 	p.commitAll("seed")
 	p.git("branch", "0001-widget")
 
-	feature(p, "0001", "widget", "Widget", "Accepted", "- [x] One\n- [ ] Two\n- [ ] Three")
+	feature(p, "0001", "widget", "Widget", "Draft", "- [x] One\n- [ ] Two\n- [ ] Three")
 	p.commitAll("the plan")
 
 	taken := p.plan("next", "--json").Taken
@@ -824,7 +694,7 @@ func TestATakenEntrySaysWhenItsBranchLastMoved(t *testing.T) {
 	// A count alone cannot tell an agent working steadily from one that stopped an hour
 	// in. `stalled` only speaks at three days, and by then the answer has cost two.
 	p := setUp(t)
-	feature(p, "0001", "widget", "Widget", "Accepted", "- [ ] One\n- [ ] Two")
+	feature(p, "0001", "widget", "Widget", "Draft", "- [ ] One\n- [ ] Two")
 	p.commitAll("the plan")
 	trunk := p.headBranch()
 	p.git("checkout", "-q", "-b", "0001-widget")

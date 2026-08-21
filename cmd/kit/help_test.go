@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -12,7 +12,7 @@ import (
 )
 
 // subcommands must stay in step with the dispatcher in main.go.
-var subcommands = []string{"init", "new", "accept", "claim", "release", "block", "ship", "check",
+var subcommands = []string{"init", "new", "claim", "release", "block", "ship",
 	"drop", "next", "audit"}
 
 func TestEveryCommandHasHelp(t *testing.T) {
@@ -28,7 +28,7 @@ func TestEveryCommandHasHelp(t *testing.T) {
 		}
 	}
 	for name := range commandHelp {
-		if !contains(subcommands, name) {
+		if !slices.Contains(subcommands, name) {
 			t.Errorf("commandHelp has %q, which is not a subcommand", name)
 		}
 	}
@@ -58,7 +58,11 @@ func TestOverviewDocumentsTheExitCodes(t *testing.T) {
 	}
 }
 
-func TestProtocolCitesRulesByNameNotNumber(t *testing.T) {
+// ruleNumberRe is a cross-reference to a numbered rule, which is the thing that rots:
+// inserting a rule above one renumbers it and no prose moves with it.
+var ruleNumberRe = regexp.MustCompile(`(?i)\brule \d+`)
+
+func TestTheProtocolCitesRulesByNameNotNumber(t *testing.T) {
 	t.Parallel()
 	// Two cross-references pointed at the wrong rules for months, because 0007 and
 	// 0009 inserted rules above them and numbers in prose do not move. Naming the
@@ -67,34 +71,11 @@ func TestProtocolCitesRulesByNameNotNumber(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading the protocol: %v", err)
 	}
-	if m := regexp.MustCompile(`(?i)\brule \d+`).FindString(string(raw)); m != "" {
+	if m := ruleNumberRe.FindString(string(raw)); m != "" {
 		t.Errorf("the protocol cites %q — a rule inserted above it will silently "+
 			"misdirect the reader; cite the rule by its bolded name instead", m)
 	}
-}
 
-func TestNoCommandTellsAnAgentToAcceptADraft(t *testing.T) {
-	t.Parallel()
-	// Accepting is the human's gate, and a tool that instructs an agent past it
-	// makes the gate advisory. 0014 removed this from `kit next` and from the
-	// protocol text, and it survived in `init` and `new` because the test read the
-	// protocol rather than what the commands print — which is where an agent meets
-	// the instruction.
-	raw, err := os.ReadFile("main.go")
-	if err != nil {
-		t.Fatalf("reading the command surface: %v", err)
-	}
-	for _, line := range strings.Split(string(raw), "\n") {
-		if !strings.Contains(line, "fmt.Printf") && !strings.Contains(line, "fmt.Fprintf") {
-			continue
-		}
-		for _, banned := range []string{"set status: Accepted", "set it to Accepted", "mark it Accepted"} {
-			if strings.Contains(line, banned) {
-				t.Errorf("a command prints %q — that is the human's call:\n  %s",
-					banned, strings.TrimSpace(line))
-			}
-		}
-	}
 }
 
 func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
@@ -139,9 +120,8 @@ func TestEveryTopicResolvesInTheBinary(t *testing.T) {
 // showsTaskSyntax are the topics whose job is to demonstrate the feature-doc format,
 // so a `- [ ]` in them is the subject matter rather than a mistake.
 var showsTaskSyntax = map[string]bool{
-	"template":    true,
-	"conventions": true,
-	"inbox":       true,
+	"template": true,
+	"inbox":    true,
 }
 
 // In kit, `- [ ]` means "a PR-sized unit of work, do the topmost one". Guidance that
@@ -161,7 +141,7 @@ func TestNoTopicLooksLikeATaskList(t *testing.T) {
 			trimmed := strings.TrimSpace(line)
 			if strings.HasPrefix(trimmed, "- [ ]") || strings.HasPrefix(trimmed, "- [x]") {
 				t.Errorf("%s:%d in topic %q is a task box: %q\n"+
-					"an agent following rule 3 would try to work through these",
+					"an agent working the topmost unticked box would try to work through these",
 					path, i+1, topic, trimmed)
 			}
 		}
@@ -209,7 +189,7 @@ func TestCheckRegistryIsSaneAndComplete(t *testing.T) {
 			t.Errorf("duplicate check code %q", c.Code)
 		case c.Means == "":
 			t.Errorf("check %q has no explanation, so `kit help checks` would be useless", c.Code)
-		case !contains(kit.Severities, c.Severity):
+		case !slices.Contains(kit.Severities, c.Severity):
 			t.Errorf("check %q has severity %q, which is not a real level", c.Code, c.Severity)
 		}
 		seen[c.Code] = true

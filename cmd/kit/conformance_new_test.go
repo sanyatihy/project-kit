@@ -79,10 +79,9 @@ func TestNewFillsTheFrontmatter(t *testing.T) {
 			t.Errorf("the new doc is missing %q:\n%s", want, doc)
 		}
 	}
-	// A new doc must start as a Draft, or `kit next` would hand out a design
-	// nobody has settled.
-	if strings.Contains(doc, "status: Accepted") {
-		t.Error("a new doc must not be Accepted")
+	// Draft is the only status a doc starts in, and the only one work starts from.
+	if !strings.Contains(doc, "status: Draft") {
+		t.Errorf("a new doc must start as a Draft:\n%s", doc)
 	}
 }
 
@@ -94,9 +93,9 @@ func TestANewDocIsEmptyToTheToolNotJustToTheReader(t *testing.T) {
 	// `audit` said the docs and the repo agreed.
 	p := setUp(t)
 	p.run("new", "Untouched").ok()
-	p.write("docs/features/0001-untouched.md",
-		strings.Replace(p.read("docs/features/0001-untouched.md"),
-			"status: Draft", "status: Accepted", 1))
+	// Committed, because that is what the plan checks gate on: a doc nobody has written
+	// is a defect once it reaches the tree others read, and a scratch file is not.
+	p.commitAll("the unwritten doc")
 
 	// Nothing to hand out, and the audit says why rather than nothing.
 	r := p.run("next").ok()

@@ -29,31 +29,18 @@ const (
 	// is the constraint and its consequence. A rule an agent must obey in a hurry has to
 	// survive being read in isolation, which is what the sub-bullets are for.
 	//
-	// 0041 raised it to 121 for two rules — what earns a feature doc, and write about the
-	// system rather than the session. Both delete a class of writing from every doc after
-	// them, which is the trade that buys protocol growth; a rule that only adds something
-	// to remember does not.
-	//
-	// 0044 raised it to 123 for the routing rule — every fact has one home, chosen as the
-	// sentence is written. It deletes the transcript of the work from every doc after it,
-	// which "write about the system" alone did not: a run that taught something read as
-	// durable and landed in the ## Log. The evidence rule folded into the bullet above it
-	// rather than adding a third.
-	//
-	// 0045 added the sentence rule — a sentence earns its place by deciding, constraining or
-	// measuring — and the ceiling held. It is the first rule here to arrive without a raise,
-	// which is the test it was written to pass: the evidence clause moved out of "write about
-	// the system" into it, and rule 4 now cites the routing rule rather than restating it. A
-	// raise would have been the signal that the rule was written as an addition.
-	protocolBudget = 123
+	// 0048 rewrote it as 26 numbered rules under four headings and it came out at 106,
+	// so the ceiling comes down with it. A ceiling left above what the text needs is not
+	// a ceiling: it is headroom nobody has to justify spending.
+	protocolBudget = 110
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
 	commandHelpBudget = 45
 
-	// Topics are read on demand and once. `go-checklist` and `deployment` are standing
-	// engineering guidance whose substance is the point, so this only catches
-	// unbounded growth rather than enforcing brevity.
+	// Topics are read on demand and once. `go-checklist` is standing engineering
+	// guidance whose substance is the point, so this only catches unbounded growth
+	// rather than enforcing brevity.
 	topicBudget = 220
 
 	// The two documents this repo itself reads every session: the protocol above, and the
@@ -62,19 +49,16 @@ const (
 	// nobody notices, because a paragraph is easier to add than to justify. Same escape
 	// hatch as the ceilings above: raise the number here and say why.
 	//
-	// 0044 retook it at 295 against a 289-line file, rewritten to state the rule and give
-	// the evidence a trailing clause. The headroom is deliberate and small: under the
-	// routing rule a shipped feature adds one line, so a jump means facts arrived with
-	// their history attached again.
-	//
-	// 0046 retook it at 299. Three commands land here — `release`, `check`, and `ship`
-	// refusing an unclean tree — at the rate of a line each; the fourth is the pair of
-	// fields `check` now owns, which is a decision the doc already carried in prose.
-	// 311 since 0047: three facts about what may destroy a claim, which is the one
-	// invariant a reader must not reverse. The ceiling is a ceiling, so it is raised with
-	// a reason rather than treated as a target — 0048 brings the file back under it.
-	techBudget   = 311
-	agentsBudget = 210
+	// 0048 retook all three against what the cut left: TECH 287, AGENTS 159, README 279.
+	// The headroom is deliberate and small — under the routing rule a shipped feature adds
+	// one line each, so a jump means facts arrived with their history attached again.
+	techBudget   = 292
+	agentsBudget = 165
+
+	// README.md is the first thing a person reads and the only one of these with no
+	// ceiling until now. It had drifted to 431 lines describing commands the binary
+	// already documents itself, which is the growth this catches.
+	readmeBudget = 285
 )
 
 func lines(text string) int { return len(strings.Split(strings.TrimRight(text, "\n"), "\n")) }
@@ -112,6 +96,7 @@ func TestTheKitsOwnDocsStayUnderTheirCeilings(t *testing.T) {
 	}{
 		{"../../docs/TECH.md", techBudget},
 		{"../../AGENTS.md", agentsBudget},
+		{"../../README.md", readmeBudget},
 	} {
 		raw, err := os.ReadFile(doc.path)
 		if err != nil {

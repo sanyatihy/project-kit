@@ -1,8 +1,8 @@
 // Command kit bootstraps projects and tells you what to work on.
 //
 //	kit init  [PATH] [--stack go]   set a project up, or fill in what is missing
-//	kit next  [PATH ...]            what should I work on?
-//	kit audit [PATH ...]            where do the docs disagree with the repo?
+//	kit next                        what should I work on?
+//	kit audit                       where do the docs disagree with the repo?
 //
 // Plans live in markdown in git. There is no database and no queue — the feature
 // docs and the git branches are the state.
@@ -17,8 +17,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	assets "github.com/sanyatihy/project-kit"
@@ -75,8 +75,6 @@ func run() int {
 		return runInit(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
-	case "accept":
-		return runAccept(os.Args[2:])
 	case "claim":
 		return runClaim(os.Args[2:])
 	case "release":
@@ -87,8 +85,6 @@ func run() int {
 		return runBlock(os.Args[2:])
 	case "ship":
 		return runShip(os.Args[2:])
-	case "check":
-		return runCheck(os.Args[2:])
 	case "next":
 		return runNext(os.Args[2:])
 	case "audit":
@@ -123,12 +119,12 @@ func runInit(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit init: not a directory: %s\n", target)
 		return 2
 	}
-	if *stack != "" && !contains(stacks, *stack) {
+	if *stack != "" && !slices.Contains(stacks, *stack) {
 		fmt.Fprintf(os.Stderr, "kit init: unknown stack %q (have: %s)\n",
 			*stack, strings.Join(stacks, ", "))
 		return 2
 	}
-	if *forge != "" && !contains(kit.Forges, *forge) {
+	if *forge != "" && !slices.Contains(kit.Forges, *forge) {
 		fmt.Fprintf(os.Stderr, "kit init: unknown forge %q (have: %s)\n",
 			*forge, strings.Join(kit.Forges, ", "))
 		return 2
@@ -213,50 +209,6 @@ func runNew(args []string) int {
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
 	fmt.Printf("  leave status: Draft — accepting it is the human's call, and\n")
 	fmt.Printf("  kit next will offer it once they have.\n\n")
-	return 0
-}
-
-// ---------------------------------------------------------------- accept
-
-func runAccept(args []string) int {
-	fs := newFlagSet("accept")
-	review := fs.Bool("review", false, "a human merges this one, whatever the trunk allows")
-	rest := parseArgs(fs, args)
-	if len(rest) != 1 {
-		fmt.Fprintf(os.Stderr, "kit accept: need one feature id\n\n%s\n", commandHelp["accept"])
-		return 2
-	}
-	repo, err := kit.Open(kit.ProjectRoot("."))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit accept: %v\n", err)
-		return 2
-	}
-	id, err := kit.ResolveID(repo, rest[0])
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit accept: %v\n", err)
-		return 2
-	}
-	res, err := kit.Accept(repo, id, *review)
-	if err != nil {
-		// Exit 2 throughout: unlike `claim`, none of these is another agent holding the
-		// feature, so "take something else" would be the wrong instruction.
-		fmt.Fprintf(os.Stderr, "kit accept: %v\n", err)
-		return 2
-	}
-
-	fmt.Printf("\n  accepted  %s  (was Draft)\n", res.Doc)
-	if res.NeedsHuman {
-		fmt.Printf("  review: human — a person merges this one, whatever the trunk allows\n")
-	}
-	fmt.Printf("\nnext:\n")
-	// Where the edit lands is the whole reason this prints anything. Accepting inside the
-	// draft's own pull request is one review and one merge per feature; accepting after it
-	// merges is a second pull request for a one-line change, which is what the protocol
-	// left undefined and a human had to guess at every time.
-	fmt.Printf("  commit this on %s so it lands in the same review as the draft\n",
-		res.Branch)
-	fmt.Printf("  the branch is deleted on merge — its name is the claim name\n")
-	fmt.Printf("  kit next\n\n")
 	return 0
 }
 
@@ -498,103 +450,47 @@ func runShip(args []string) int {
 	return 0
 }
 
-// ---------------------------------------------------------------- check
-
-func runCheck(args []string) int {
-	fs := newFlagSet("check")
-	rest := parseArgs(fs, args)
-	if len(rest) < 2 {
-		fmt.Fprintf(os.Stderr, "kit check: need a feature id and what happened\n\n%s\n",
-			commandHelp["check"])
-		return 2
-	}
-	repo, err := kit.Open(kit.ProjectRoot("."))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
-		return 2
-	}
-	id, err := kit.ResolveID(repo, rest[0])
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
-		return 2
-	}
-
-	outcome := strings.TrimSpace(strings.Join(rest[1:], " "))
-	res, err := kit.RecordCheck(repo, id, outcome, time.Now().UTC())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit check: %v\n", err)
-		return 2
-	}
-
-	fmt.Printf("\n  checked  %s  (due %s)\n", res.Doc, res.Due.UTC().Format(kit.DateLayout))
-	fmt.Printf("  the outcome is in ## Log — nothing else in the doc changed\n\n")
-	return 0
-}
-
 // ---------------------------------------------------------------- next
 
 func runNext(args []string) int {
 	fs := newFlagSet("next")
 	asJSON := fs.Bool("json", false, "machine-readable output")
 	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
-	paths := parseArgs(fs, args)
+	if rest := parseArgs(fs, args); len(rest) > 0 {
+		fmt.Fprintf(os.Stderr, "kit next: takes no arguments — it reads the project you "+
+			"are in\nfor several projects: for d in ~/code/*; do (cd $d && kit next); done\n")
+		return 2
+	}
 
-	all := survey(paths, *offline)
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit next: %v\n", err)
+		return 2
+	}
+	repo.Offline = *offline
 
-	// planFor keeps the staleness check next to the plan it belongs to, so both output
-	// formats carry the same fact and cannot drift.
-	protocol := currentProtocol()
-	planFor := func(r *kit.Repo) kit.Plan {
-		plan := kit.Survey(r)
-		plan.ProtocolStale = kit.ProtocolIsStale(r, protocol)
-		return plan
+	// Both formats carry the same facts, decided once, because an agent reading --json
+	// and a person reading the board must never be told different things.
+	notSetUp := ""
+	if repo.FeaturesDir == "" {
+		notSetUp = "not set up yet — run: kit init " + repo.Root
+	}
+	plan := kit.Plan{Error: notSetUp}
+	if notSetUp == "" {
+		plan = kit.Survey(repo)
+		plan.ProtocolStale = kit.ProtocolIsStale(repo, currentProtocol())
 	}
 
 	if *asJSON {
-		// Keyed by name for a project and by the path as given for one that could not
-		// be opened, so a fleet payload lists everything the caller asked about. The
-		// failure rides in the plan itself: an agent parsing this reads one entry per
-		// path either way, and cannot be handed four projects with a fifth missing.
-		plans := inParallel(all, func(s surveyed) kit.Plan {
-			if s.Err != "" {
-				return kit.Plan{Error: s.Err}
-			}
-			return planFor(s.Repo)
-		})
-		payload := map[string]kit.Plan{}
-		for i, s := range all {
-			payload[s.Name] = plans[i]
-		}
-		if code := emit(payload); code != 0 {
-			return code
-		}
-	} else {
-		color := isTTY()
-		// Read before anything is printed, so a fan-out cannot interleave two projects'
-		// output. One project sees no difference; a fleet gets its whole board when the
-		// slowest remote answers instead of one project at a time.
-		plans := inParallel(all, func(s surveyed) kit.Plan {
-			if s.Err != "" || s.Repo.FeaturesDir == "" {
-				return kit.Plan{}
-			}
-			return planFor(s.Repo)
-		})
-		for i, s := range all {
-			fmt.Print(paint("\n"+s.Name+"\n", "1", color))
-			switch {
-			case s.Err != "":
-				fmt.Printf("  %s — nothing to report for this path\n\n", s.Err)
-			case s.Repo.FeaturesDir == "":
-				fmt.Printf("  not set up yet — run:  kit init %s\n\n", s.Repo.Root)
-			default:
-				printPlan(s.Repo, plans[i], color)
-			}
-		}
+		return emit(plan)
 	}
-
-	if reportUnreadable(all, "kit next") {
-		return 2
+	color := isTTY()
+	fmt.Print(paint("\n"+repo.Name+"\n", "1", color))
+	if notSetUp != "" {
+		fmt.Printf("  not set up yet — run:  kit init %s\n\n", repo.Root)
+		return 0
 	}
+	printPlan(plan, color)
 	return 0
 }
 
@@ -607,7 +503,7 @@ func listItems(items []kit.Item) {
 	}
 }
 
-func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
+func printPlan(plan kit.Plan, color bool) {
 	// Above the board, because an agent that has read the plan and started working has
 	// already walked past anything printed after it. Never changes the exit code: the plan
 	// is still right, it is the rules around it that drifted.
@@ -693,9 +589,6 @@ func printPlan(r *kit.Repo, plan kit.Plan, color bool) {
 			// Whose it is decides what the reader may do with it, so it goes on the
 			// same line as the branch rather than being left to the guidance.
 			marks := ""
-			if item.NeedsHuman {
-				marks += " · " + paint("needs a human", "33", color)
-			}
 			if item.Mine {
 				marks += " · " + paint("you built this — not yours to merge", "33", color)
 			}
@@ -770,62 +663,54 @@ func runAudit(args []string) int {
 	asJSON := fs.Bool("json", false, "machine-readable output")
 	strict := fs.Bool("strict", false, "exit 1 if anything HIGH is found")
 	offline := fs.Bool("offline", false, "do not ask the remote which branches exist")
-	paths := parseArgs(fs, args)
+	if rest := parseArgs(fs, args); len(rest) > 0 {
+		fmt.Fprintf(os.Stderr, "kit audit: takes no arguments — it reads the project you "+
+			"are in\nfor several projects: for d in ~/code/*; do (cd $d && kit audit); done\n")
+		return 2
+	}
 
-	all := survey(paths, *offline)
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit audit: %v\n", err)
+		return 2
+	}
+	repo.Offline = *offline
 
-	today := time.Now().UTC().Truncate(24 * time.Hour)
-	protocol := currentProtocol()
-	order := inParallel(all, func(s surveyed) audited {
-		one := audited{Findings: []kit.Finding{}}
-		switch {
-		case s.Err != "":
-			one.Error = s.Err
-		case s.Repo.FeaturesDir != "":
-			if findings := kit.Audit(s.Repo, today, protocol); findings != nil {
-				one.Findings = findings
-			}
-			// After the audit, so it reports what actually went unanswered.
-			one.RemoteUnanswered = s.Repo.RemoteUnanswered()
+	result := audited{Findings: []kit.Finding{}}
+	if repo.FeaturesDir == "" {
+		result.Error = "not set up yet — run: kit init " + repo.Root
+	} else {
+		if findings := kit.Audit(repo, today(), currentProtocol()); findings != nil {
+			result.Findings = findings
 		}
-		return one
-	})
-	// Keyed after the fan-out, not inside it: the map is shared, and two paths naming
-	// one project have always reported under a single key.
-	results := make(map[string]audited, len(all))
-	for i, s := range all {
-		results[s.Name] = order[i]
+		// After the audit, so it reports what actually went unanswered.
+		result.RemoteUnanswered = repo.RemoteUnanswered()
 	}
 
 	if *asJSON {
-		if code := emit(results); code != 0 {
+		if code := emit(result); code != 0 {
 			return code
 		}
 	} else {
-		printFindings(all, order, isTTY())
+		printFindings(repo, result, isTTY())
 	}
 
-	// A path the caller named could not be audited at all, which outranks whatever was
-	// found in the ones that could: 2 is the more serious answer, and a script must not
-	// read "one project is missing" as "there are findings".
-	if reportUnreadable(all, "kit audit") {
-		return 2
-	}
 	if *strict {
-		for _, one := range results {
-			for _, f := range one.Findings {
-				if f.Severity == kit.High {
-					return 1
-				}
+		for _, f := range result.Findings {
+			if f.Severity == kit.High {
+				return 1
 			}
 		}
 	}
 	return 0
 }
 
-// audited is one path's audit in --json: what was found, or why nothing could be.
-// `next` carries its failure inside the plan, which is one object per project and
-// can say so itself; a findings list cannot, so this wraps it.
+// today is the date every dated check is measured against, read once and passed in.
+// A clock inside a check leaves a test unable to catch a UTC-midnight off-by-one.
+func today() time.Time { return time.Now().UTC().Truncate(24 * time.Hour) }
+
+// audited is the audit in --json: what was found, or why nothing could be. A bare
+// list has nowhere to say why it is empty, so the findings are wrapped.
 type audited struct {
 	Findings []kit.Finding `json:"findings"`
 	Error    string        `json:"error,omitempty"`
@@ -837,55 +722,66 @@ type audited struct {
 	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
 }
 
-func printFindings(all []surveyed, results []audited, color bool) {
-	actionable := 0
+func printFindings(repo *kit.Repo, result audited, color bool) {
 	tint := map[string]string{kit.High: "1;31", kit.Medium: "33", kit.Low: "2;37"}
 
-	for i, s := range all {
-		fmt.Print(paint("\n"+s.Name+"\n", "1", color))
-		if s.Err != "" {
-			fmt.Printf("  %s — nothing audited for this path\n\n", s.Err)
-			continue
-		}
-		if s.Repo.FeaturesDir == "" {
-			fmt.Printf("  not set up yet — run:  kit init %s\n\n", s.Repo.Root)
-			continue
-		}
-		if results[i].RemoteUnanswered {
-			fmt.Printf("  %s\n", paint("! the remote did not answer: shipped-not-pushed "+
-				"did not run, and the claim\n    checks read the last fetch", "33", color))
-		}
-		findings := results[i].Findings
-		if len(findings) == 0 {
-			fmt.Printf("  docs and repo agree\n\n")
-			continue
-		}
-		for _, severity := range kit.Severities {
-			printed := false
-			for _, f := range findings {
-				if f.Severity != severity {
-					continue
-				}
-				if !printed {
-					fmt.Printf("\n  %s\n", paint(severity, tint[severity], color))
-					printed = true
-				}
-				fmt.Printf("    %s  (%s)\n", f.Where, f.Code)
-				fmt.Printf("      %s\n", f.Problem)
-				fmt.Printf("      %s %s\n", paint("fix:", "2", color), f.Fix)
-			}
-		}
-		for _, f := range findings {
-			if f.Severity == kit.High || f.Severity == kit.Medium {
-				actionable++
-			}
-		}
-		fmt.Println()
+	fmt.Print(paint("\n"+repo.Name+"\n", "1", color))
+	if result.Error != "" {
+		fmt.Printf("  not set up yet — run:  kit init %s\n\n", repo.Root)
+		return
 	}
+	if result.RemoteUnanswered {
+		fmt.Printf("  %s\n", paint("! the remote did not answer: shipped-not-pushed "+
+			"did not run, and the claim\n    checks read the last fetch", "33", color))
+	}
+	if len(result.Findings) == 0 {
+		fmt.Printf("  docs and repo agree\n\n")
+		return
+	}
+	for _, severity := range kit.Severities {
+		printed := false
+		for _, f := range result.Findings {
+			if f.Severity != severity {
+				continue
+			}
+			if !printed {
+				fmt.Printf("\n  %s\n", paint(severity, tint[severity], color))
+				printed = true
+			}
+			fmt.Printf("    %s  (%s)\n", f.Where, f.Code)
+			fmt.Printf("      %s\n", f.Problem)
+			fmt.Printf("      %s %s\n", paint("fix:", "2", color), f.Fix)
+		}
+	}
+	fmt.Println()
 
-	if actionable > 0 {
-		fmt.Printf("%d thing(s) to fix. HIGH first.\n\n", actionable)
+	// Counted by severity, and said only when there is something to say. The line used
+	// to read "N thing(s) to fix. HIGH first." whether or not any finding was HIGH.
+	high, medium := 0, 0
+	for _, f := range result.Findings {
+		switch f.Severity {
+		case kit.High:
+			high++
+		case kit.Medium:
+			medium++
+		}
 	}
+	switch {
+	case high > 0:
+		fmt.Printf("%s, %s. Fix the HIGH first.\n\n", count(high, "HIGH finding"),
+			count(medium, "MEDIUM"))
+	case medium > 0:
+		fmt.Printf("%s to fix.\n\n", count(medium, "MEDIUM finding"))
+	}
+}
+
+// count writes "1 thing" or "3 things", because "1 thing(s)" is what the summary line
+// said for every count including one.
+func count(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }
 
 // ---------------------------------------------------------------- shared
@@ -921,87 +817,6 @@ func parseArgs(fs *flag.FlagSet, args []string) []string {
 	}
 }
 
-// surveyed is one path the board was asked about: the project it opened, or why it
-// did not. Name is what the board calls it — the project's name, or the path as
-// given when there is no project to name.
-// fleetParallel caps how many projects are read at once. What a board read spends is
-// one network round trip per project and almost nothing else — `ls-remote` to GitHub over
-// SSH is 2.3s where the whole rest of an audit is 0.09s — so this bounds how many
-// connections are opened to one forge, not CPU. 0034's `-parallel 4` caps a different
-// resource: CPU-bound tests running beside whatever else the operator is doing.
-const fleetParallel = 8
-
-// inParallel reads every surveyed project concurrently, capped, and returns the answers
-// in the order the paths were given. The projects share nothing — one Repo each, and
-// every package-level table in internal/kit is read-only — so order is the only thing
-// concurrency could take away, and 0026 made reporting positional precisely so a fleet
-// board can be compared with the last one.
-func inParallel[T any](all []surveyed, read func(surveyed) T) []T {
-	out := make([]T, len(all))
-	sem := make(chan struct{}, fleetParallel)
-	var wg sync.WaitGroup
-	for i, s := range all {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			out[i] = read(s)
-		}()
-	}
-	wg.Wait()
-	return out
-}
-
-type surveyed struct {
-	Repo *kit.Repo
-	Name string
-	Err  string
-}
-
-// survey opens every path it was given and never returns early. The surveyed
-// projects are independent, so one of them being gone says nothing about the
-// others — the same argument as remoteTimeout in internal/kit, where a board that
-// stops because one remote is unreachable is worse than one that reports what it
-// could reach and says what it could not. A path that cannot be read is a failure
-// in place, in the order it was given, and the caller turns that into exit 2.
-func survey(paths []string, offline bool) []surveyed {
-	if len(paths) == 0 {
-		paths = []string{kit.ProjectRoot(".")}
-	}
-	all := make([]surveyed, 0, len(paths))
-	for _, given := range paths {
-		root := expand(given)
-		if info, err := os.Stat(root); err != nil || !info.IsDir() {
-			all = append(all, surveyed{Name: given, Err: "not a directory"})
-			continue
-		}
-		r, err := kit.Open(root)
-		if err != nil {
-			all = append(all, surveyed{Name: given, Err: err.Error()})
-			continue
-		}
-		r.Offline = offline
-		all = append(all, surveyed{Repo: r, Name: r.Name})
-	}
-	return all
-}
-
-// reportUnreadable says on stderr which paths could not be surveyed, and whether
-// any could not. The board already carries the same failures on stdout so that a
-// fleet reads in order; this is the copy a script sees, and it is where a single
-// bad path has always reported itself.
-func reportUnreadable(all []surveyed, who string) bool {
-	failed := false
-	for _, s := range all {
-		if s.Err != "" {
-			fmt.Fprintf(os.Stderr, "%s: %s: %s\n", who, s.Err, s.Name)
-			failed = true
-		}
-	}
-	return failed
-}
-
 func emit(payload any) int {
 	out, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
@@ -1012,6 +827,8 @@ func emit(payload any) int {
 	return 0
 }
 
+// expand resolves a leading ~, which a shell would have done for an unquoted path but
+// does not for one typed inside quotes. `init` is the one command still taking a path.
 func expand(p string) string {
 	if strings.HasPrefix(p, "~") {
 		if home, err := os.UserHomeDir(); err == nil {
@@ -1031,15 +848,6 @@ func paint(text, code string, color bool) string {
 func isTTY() bool {
 	info, err := os.Stdout.Stat()
 	return err == nil && info.Mode()&os.ModeCharDevice != 0 && os.Getenv("TERM") != "dumb"
-}
-
-func contains(list []string, want string) bool {
-	for _, item := range list {
-		if item == want {
-			return true
-		}
-	}
-	return false
 }
 
 // currentProtocol is the work-protocol section this binary would write, so `audit`

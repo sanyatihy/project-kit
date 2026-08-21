@@ -2,6 +2,7 @@ package kit
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -23,13 +24,7 @@ type Released struct {
 // `BranchBuildsOn` already separates a claim nobody has built on from work in flight, and
 // `--force` is the way past it for commits that are genuinely worth nothing.
 func Release(r *Repo, id string, force bool) (*Released, error) {
-	var target *Feature
-	for _, f := range r.Features {
-		if f.ID == id {
-			target = f
-			break
-		}
-	}
+	target := r.FeatureByID(id)
 	if target == nil {
 		return nil, fmt.Errorf("no feature %s", id)
 	}
@@ -102,7 +97,7 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 			return nil, fmt.Errorf("%s did not answer, and the branch there is the claim "+
 				"— release again when it does", remote)
 		}
-		if contains(heads, branch) {
+		if slices.Contains(heads, branch) {
 			if _, err := r.gitRun("push", remote, "--delete", branch); err != nil {
 				return nil, err
 			}

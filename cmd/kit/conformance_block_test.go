@@ -12,7 +12,7 @@ import (
 func blockable(t *testing.T) *project {
 	t.Helper()
 	p := setUp(t)
-	feature(p, "0007", "shorten", "Shorten URLs", "Accepted", "- [ ] The POST handler")
+	feature(p, "0007", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 	return p
 }
 

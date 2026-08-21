@@ -17,7 +17,7 @@ func TestParsingSurvivesBOMAndCRLF(t *testing.T) {
 	t.Parallel()
 	// A doc saved by a Windows editor must behave exactly like one that was not.
 	p := setUp(t)
-	body := "---\nid: 0001\ntitle: Windows\nstatus: Accepted\ncreated: 2026-01-01\n---\n\n" +
+	body := "---\nid: 0001\ntitle: Windows\nstatus: Draft\ncreated: 2026-01-01\n---\n\n" +
 		"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] The only task\n\n## Log\n- 2026-01-01 — x.\n"
 	p.write("docs/features/0001-windows.md", "\uFEFF"+strings.ReplaceAll(body, "\n", "\r\n"))
 
@@ -49,13 +49,13 @@ func TestAnUnparseableDateIsTreatedAsAbsent(t *testing.T) {
 
 func TestExamplesInFencedBlocksAreNotRealTasks(t *testing.T) {
 	t.Parallel()
-	// The template and the conventions doc both show `- [ ]` inside fences. Counting
-	// those would have every project start life with imaginary work.
+	// The template shows `- [ ]` inside a fence. Counting those would have every project
+	// start life with imaginary work.
 	// The example has to sit inside ## Tasks to be a real test: OpenTasks only ever
 	// reads that section, so a fence anywhere else proves nothing.
 	p := setUp(t)
 	p.write("docs/features/0001-fenced.md",
-		"---\nid: 0001\ntitle: Fenced\nstatus: Accepted\ncreated: 2026-01-01\n---\n\n"+
+		"---\nid: 0001\ntitle: Fenced\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
 			"## Problem\nx\n\n## Design\nx\n\n"+
 			"## Tasks\n```markdown\n- [ ] An illustrative example\n```\n- [ ] The real task\n\n"+
 			"## Log\n- 2026-01-01 — x.\n")
@@ -71,20 +71,27 @@ func TestASectionHoldingOnlyACommentCountsAsEmpty(t *testing.T) {
 	// nobody had written would look complete and nothing would ever fire.
 	p := setUp(t)
 	p.write("docs/features/0001-hollow.md",
-		"---\nid: 0001\ntitle: Hollow\nstatus: Accepted\ncreated: 2026-01-01\n---\n\n"+
+		"---\nid: 0001\ntitle: Hollow\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
 			"## Problem\nReal enough.\n\n"+
 			"## Design\n<!-- describe how it works -->\n\n"+
 			"## Tasks\n- [ ] Something\n\n## Log\n- 2026-01-01 — x.\n")
+	// Committed, because that is what the check is gated on: a doc still being written
+	// in a working tree is nobody's defect.
+	p.commitAll("a doc with a hollow ## Design")
 
 	p.run("audit").ok().has("unfilled-template", "Design")
 }
 
-func TestNewDocsAreDraftsAndNotOffered(t *testing.T) {
+func TestADocNobodyWroteIsNeverOffered(t *testing.T) {
 	t.Parallel()
-	// Draft is where a human settles the design, so `next` never hands one out.
+	// A Draft is claimable now, so what withholds this one is that nobody has written
+	// it: `claim` refuses an empty ## Problem, ## Design or ## Tasks, and a board that
+	// offered it would send every agent to a command that turns it away.
 	p := setUp(t)
 	p.run("new", "Untouched").ok()
-	p.run("next").ok().lacks("start here")
+	r := p.run("next").ok()
+	r.lacks("start here")
+	r.has("blocked", "no plan yet")
 }
 
 func TestCommandsWorkFromASubdirectory(t *testing.T) {
@@ -92,7 +99,7 @@ func TestCommandsWorkFromASubdirectory(t *testing.T) {
 	// Documented behaviour: with no path they use the repo you are in, from
 	// anywhere inside it.
 	p := setUp(t)
-	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	feature(p, "0001", "thing", "A thing", "Draft", "- [ ] Do the thing")
 	if err := os.MkdirAll(p.path("internal/deep/nested"), 0o755); err != nil {
 		t.Fatalf("making a subdirectory: %v", err)
 	}
@@ -102,41 +109,25 @@ func TestCommandsWorkFromASubdirectory(t *testing.T) {
 	sub.run("audit").ok().has("docs and repo agree")
 }
 
-func TestFlagsAreAcceptedAfterPaths(t *testing.T) {
-	t.Parallel()
-	// Go's flag package stops at the first positional, so `kit audit PATH --json`
-	// would silently ignore the flag without parseArgs looping.
-	p := setUp(t)
-	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
-
-	after := p.run("audit", p.Root, "--json").ok()
-	if !strings.HasPrefix(strings.TrimSpace(after.Stdout), "{") {
-		t.Errorf("--json after a path was ignored:\n%s", after.Stdout)
-	}
-	p.run("next", p.Root, "--json").ok()
-}
-
 func TestJSONIsValidAndCarriesThePlan(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)
-	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	feature(p, "0001", "thing", "A thing", "Draft", "- [ ] Do the thing")
 
-	var plans map[string]kit.Plan
+	var plan kit.Plan
 	raw := p.run("next", "--json").ok().Stdout
-	if err := json.Unmarshal([]byte(raw), &plans); err != nil {
+	if err := json.Unmarshal([]byte(raw), &plan); err != nil {
 		t.Fatalf("next --json is not valid JSON: %v\n%s", err, raw)
 	}
-	for _, plan := range plans {
-		if len(plan.Ready) != 1 {
-			t.Fatalf("expected one ready item, got %d", len(plan.Ready))
-		}
-		item := plan.Ready[0]
-		if item.ID != "0001" || item.Task != "Do the thing" {
-			t.Errorf("json item is wrong: %+v", item)
-		}
-		if item.Branch == "" || item.Doc == "" {
-			t.Errorf("json item lacks the branch or doc an agent needs: %+v", item)
-		}
+	if len(plan.Ready) != 1 {
+		t.Fatalf("expected one ready item, got %d", len(plan.Ready))
+	}
+	item := plan.Ready[0]
+	if item.ID != "0001" || item.Task != "Do the thing" {
+		t.Errorf("json item is wrong: %+v", item)
+	}
+	if item.Branch == "" || item.Doc == "" {
+		t.Errorf("json item lacks the branch or doc an agent needs: %+v", item)
 	}
 }
 
@@ -145,10 +136,14 @@ func TestJSONStaysCleanOnStdoutWhenThereIsNothingToReport(t *testing.T) {
 	// A consumer piping --json must get parseable output even in the empty case,
 	// rather than a friendly sentence.
 	p := setUp(t)
-	var findings map[string]audited
+	var findings audited
 	raw := p.run("audit", "--json").ok().Stdout
 	if err := json.Unmarshal([]byte(raw), &findings); err != nil {
 		t.Fatalf("audit --json is not valid JSON when clean: %v\n%s", err, raw)
+	}
+	if findings.Findings == nil {
+		t.Errorf("findings is null rather than [], so a consumer has to special-case "+
+			"the clean board:\n%s", raw)
 	}
 }
 
@@ -157,7 +152,7 @@ func TestNonGitDirectoriesStillWork(t *testing.T) {
 	// git powers claims and staleness, but its absence must degrade rather than
 	// break — plenty of directories are not repositories yet.
 	p := setUp(t)
-	feature(p, "0001", "thing", "A thing", "Accepted", "- [ ] Do the thing")
+	feature(p, "0001", "thing", "A thing", "Draft", "- [ ] Do the thing")
 	if err := os.RemoveAll(p.path(".git")); err != nil {
 		t.Fatalf("removing .git: %v", err)
 	}
@@ -178,7 +173,7 @@ func TestExitCodesAreDistinct(t *testing.T) {
 
 	// 2 is usage: an unusable invocation, nothing to do with the docs.
 	p.run("nonesuch").fails(2)
-	p.run("audit", "/no/such/directory").fails(2)
+	p.run("audit", "/no/such/directory").fails(2) // audit takes no path at all
 	p.run("init", "--stack", "nonesuch").fails(2)
 
 	// 1 is reserved for --strict finding something HIGH.

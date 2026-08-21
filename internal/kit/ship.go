@@ -26,13 +26,7 @@ type ShipResult struct {
 // of the audit's findings and both come from doing this by hand, so doing it by
 // command removes the mistake rather than reporting it afterwards.
 func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, error) {
-	var target *Feature
-	for _, f := range r.Features {
-		if f.ID == id {
-			target = f
-			break
-		}
-	}
+	target := r.FeatureByID(id)
 	if target == nil {
 		return nil, fmt.Errorf("no feature %q", id)
 	}

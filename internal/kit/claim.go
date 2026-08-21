@@ -2,6 +2,7 @@ package kit
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -67,12 +68,11 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"make them match — rename the file, or fix the id: — then claim again"}
 	}
 
-	// Draft is claimable. `status:` orders the board rather than gating it: Accepted is
-	// the operator saying they have looked, not permission to start. What still refuses a
-	// claim is an unwritten plan (below) and a BLOCKING inbox line — the facts that mean
-	// nobody can build this yet, rather than nobody has blessed it.
+	// Draft is the only status work starts from. Shipped and Dropped are end states, and
+	// a claim on either reopens finished history. What else refuses a claim is an
+	// unwritten plan (below), a BLOCKING inbox line, and an unmet `needs:`.
 	switch target.Status {
-	case StatusAccepted, StatusDraft:
+	case StatusDraft:
 	case "":
 		return nil, &NotYours{target.Name() + " has no status:, so there is no work to claim",
 			"give it one: " + strings.Join(AllStatuses, ", ")}
@@ -222,7 +222,7 @@ func pickRemote(r *Repo) (string, error) {
 	switch {
 	case len(remotes) == 0:
 		return "", nil
-	case contains(remotes, "origin"):
+	case slices.Contains(remotes, "origin"):
 		return "origin", nil
 	case len(remotes) == 1:
 		return remotes[0], nil
@@ -280,13 +280,4 @@ func (r *Repo) remotes() []string {
 	}
 	r.remoteNames = out
 	return out
-}
-
-func contains(list []string, want string) bool {
-	for _, item := range list {
-		if item == want {
-			return true
-		}
-	}
-	return false
 }

@@ -3,6 +3,7 @@ package kit
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -30,13 +31,7 @@ type DropResult struct {
 // today is passed in rather than read here, the same way Ship takes it, so a test can
 // assert the date the log entry gets instead of guessing at the one the clock produced.
 func Drop(r *Repo, id, why string, today time.Time) (*DropResult, error) {
-	var target *Feature
-	for _, f := range r.Features {
-		if f.ID == id {
-			target = f
-			break
-		}
-	}
+	target := r.FeatureByID(id)
 	if target == nil {
 		return nil, fmt.Errorf("no feature %q", id)
 	}
@@ -98,4 +93,14 @@ func dependants(r *Repo, id string) []string {
 		}
 	}
 	return out
+}
+
+// appendLog puts an entry in `## Log`, creating the section when a doc predates it.
+// `drop` is the one command that writes a Log entry, because retiring a feature is a
+// change to the plan that nothing else records.
+func appendLog(body, entry string) string {
+	if logged, ok := AppendToSection(body, "Log", entry); ok {
+		return logged
+	}
+	return strings.TrimRight(body, "\n") + "\n\n## Log\n" + entry + "\n"
 }

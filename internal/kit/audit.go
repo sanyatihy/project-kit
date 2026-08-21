@@ -80,8 +80,6 @@ var (
 		"marked Shipped while ## Tasks still has open boxes"}
 	checkInboxStale = Check{"inbox-stale", High,
 		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
-	checkUnchecked = Check{"unchecked", High,
-		"a check: date passed and nobody recorded the outcome"}
 	checkSecretInDoc = Check{"secret-in-doc", High,
 		"a doc contains something shaped like a real credential"}
 	// HIGH for stalled's reasons: it is silent — every command exits 0, the doc says
@@ -96,7 +94,7 @@ var (
 	// template's guidance lives in comments, which every parser here strips, so an
 	// empty section means the section was never written.
 	checkUnfilledTemplate = Check{"unfilled-template", High,
-		"a non-Draft doc has an empty ## Problem, ## Design, or ## Tasks — nobody wrote the plan"}
+		"a committed doc has an empty ## Problem, ## Design, or ## Tasks — nobody wrote the plan"}
 
 	// MEDIUM — incomplete or drifting.
 	checkNoPlan = Check{"no-plan", Medium,
@@ -115,8 +113,6 @@ var (
 		"Shipped with no shipped: date"}
 	// Only at Shipped. An Accepted feature has nothing to log yet, and demanding one
 	// before work starts produced a fix line telling the author to set it back to Draft.
-	checkMissingSection = Check{"missing-section", Medium,
-		"a Shipped doc has an empty ## Log, so nothing records what was decided"}
 	// HIGH, not tidiness: the branch is named from the filename and `Claims` matches
 	// the id, so a doc in this state makes its own claim invisible and the board goes
 	// on handing the feature out. It has to fail --strict — it cannot be left sitting
@@ -132,13 +128,11 @@ var (
 	checkShippedEarly = Check{"shipped-early", Medium,
 		"Shipped while something in its needs: has not shipped"}
 	checkNoTasks = Check{"no-tasks", Medium,
-		"Accepted with no ## Tasks boxes at all, so there is nothing to do"}
+		"a committed doc with a ## Tasks section and no boxes in it"}
 	checkSplitClaim = Check{"split-claim", Medium,
 		"two branches claim one feature — two agents believe they own it"}
 	checkOrphanClaim = Check{"orphan-claim", Medium,
 		"a branch is named after a feature doc that does not exist"}
-	checkDraftClaimed = Check{"draft-claimed", Medium,
-		"a branch carries work on a doc whose ## Open questions are still open"}
 	checkNoStatus      = Check{"no-status", Medium, "no status: in the frontmatter"}
 	checkBadStatus     = Check{"bad-status", Medium, "an unrecognised status:"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
@@ -156,60 +150,18 @@ var (
 		"features are being planned but nothing says what the project is for"}
 	checkFYIStale = Check{"fyi-stale", Low,
 		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
-	// LOW, and it never rises: length is hygiene rather than something untrue, and a doc
-	// that earns its length says so in its Log instead of being cut to fit.
-	// LOW and a backstop: the marker set is precise and shallow, so a quiet doc is not a
-	// doc that obeyed the rule. See NarrationMarkers for what it does and does not catch.
-	checkSessionNarration = Check{"session-narration", Low,
-		"a feature doc narrates the work rather than describing the system"}
-	checkDocBloat = Check{"doc-bloat", Low,
-		fmt.Sprintf("a feature doc is over %d lines — agent context, paid per session",
-			DocLineLimit)}
-	// LOW and one finding per doc, for session-narration's reasons. A doc that stacks
-	// clauses does it more than once, and the fix is the same edit every time.
-	checkLongSentence = Check{"long-sentence", Low,
-		fmt.Sprintf("a sentence runs past %d words, so it carries more than one claim",
-			SentenceWordLimit)}
 )
-
-// SentenceWordLimit is where a sentence stops being one claim.
-//
-// Not a percentile, unlike DocLineLimit. Measured on 2026-08-20 over both corpora and
-// scoped the way the check is — feature docs in a live status plus the as-built and vision
-// docs, since rule 11 forbids the fix anywhere else. At 45 words that is 5 sentences across
-// 2 docs here and 11 across 3 in localcode, a worklist somebody clears in a sitting.
-// localcode's p99 of 57 was the draft's leaning and fires once in this whole repo, which
-// cannot change what gets written.
-//
-// This repo's sentences run to a median of 19 words and a p90 of 34, so the number sits
-// clear of ordinary prose and catches the third clause rather than the second.
-const SentenceWordLimit = 45
-
-// DocLineLimit is an alarm, not a target.
-//
-// 0038 took it from this repo immediately after 0037 cut it — median 63 lines, p90 88 — so
-// it measured a corpus that had just been trimmed, and only confirmed the trim. 0041 retakes
-// it from a corpus written to the standard the kit wants rather than the one it had:
-// localcode's 14 feature docs on 2026-08-18, median 104, p90 146, longest 211. The number is
-// that p90 rounded up, the statistic 0038 named.
-//
-// One doc in that sample is over it, and that is the behaviour wanted rather than a
-// miscalibration: it is a measurement-heavy feature whose length is earned, and the check's
-// own escape hatch — say in the ## Log why it earns the length — is what such a doc uses.
-const DocLineLimit = 150
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
 	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
 	checkShippedNotPushed,
-	checkUnchecked, checkSessionNarration,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
-	checkMissingSection, checkInboxUnparsed, checkInboxUnknown,
-	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim, checkDraftClaimed,
+	checkInboxUnparsed, checkInboxUnknown,
+	checkNeedsUnknown, checkShippedEarly, checkNoTasks, checkSplitClaim, checkOrphanClaim,
 	checkNoStatus, checkBadStatus, checkNoProtocol, checkProtocolStale,
-	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale, checkDocBloat,
-	checkLongSentence,
+	checkDeadLink, checkNoTech, checkNoInbox, checkNoVision, checkFYIStale,
 }
 
 var (
@@ -294,6 +246,12 @@ type docState struct {
 	today    time.Time
 	statuses string
 	claims   []string
+
+	// tracked is whether the doc exists in HEAD's tree. It replaces "not a Draft" as the
+	// gate on the plan checks: with Accepted gone every open doc is a Draft, and a check
+	// that skipped Drafts would skip everything. Committed-and-unwritten is the real
+	// defect anyway, and a doc fresh out of `kit new` is untracked and stays quiet.
+	tracked bool
 }
 
 // repoState is the same for the checks that are about the project rather than one doc.
@@ -328,18 +286,14 @@ func finding(c Check, where, problem, fix string) Finding {
 
 // featureChecks run in this order, and the order is the report's order.
 var featureChecks = []featureCheck{
-	{[]Check{checkDocBloat}, docBloat},
-	{[]Check{checkSessionNarration}, sessionNarration},
 	{[]Check{checkUntickedShipped}, untickedShipped},
 	{[]Check{checkShippedNoDate}, shippedNoDate},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
 	{[]Check{checkStalled}, stalled},
 	{[]Check{checkNoTasks, checkDoneNotShipped}, taskState},
-	{[]Check{checkUnchecked}, unchecked},
 	{[]Check{checkNoStatus, checkBadStatus}, statusState},
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
-	{[]Check{checkMissingSection}, missingLog},
-	{[]Check{checkSplitClaim, checkDraftClaimed}, claimState},
+	{[]Check{checkSplitClaim}, claimState},
 	{[]Check{checkIDMismatch}, idMismatch},
 	{[]Check{checkDeadLink}, deadLinks},
 }
@@ -356,7 +310,6 @@ var repoChecks = []repoCheck{
 	{[]Check{checkNeedsUnknown, checkShippedEarly}, needsState},
 	{[]Check{checkNeedsCycle}, needsCycles},
 	{[]Check{checkSecretInDoc}, secretsInDocs},
-	{[]Check{checkLongSentence}, longSentences},
 	{[]Check{checkNoVision}, noVision},
 	{[]Check{checkUnfilledVision}, unfilledVision},
 	// Reported first by Audit, before any feature check, so it is skipped here.
@@ -373,7 +326,8 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 
 	statuses := strings.Join(AllStatuses, ", ")
 	for _, f := range r.Features {
-		ds := &docState{r: r, f: f, at: f.Rel, today: today, statuses: statuses, claims: r.Claims(f.ID)}
+		ds := &docState{r: r, f: f, at: f.Rel, today: today, statuses: statuses,
+			claims: r.Claims(f.ID), tracked: r.TrackedAtHEAD(f.Rel)}
 		for _, c := range featureChecks {
 			found = append(found, c.Run(ds)...)
 		}
@@ -405,43 +359,6 @@ func duplicateID(s *repoState) []Finding {
 				"branch that claims them"))
 	}
 	return out
-}
-
-// sessionNarration reports the first marker only. A doc that narrates usually does it
-// several times, and one finding per doc says the same thing at a fraction of the board.
-func sessionNarration(s *docState) []Finding {
-	// Shipped is frozen by rule 11, so a finding on one is a fix nobody is allowed to
-	// make. The check belongs to the window where the doc is still being written, which
-	// is also the only window where the rule can change what gets written.
-	if s.f.Status == StatusShipped {
-		return nil
-	}
-	raw, err := os.ReadFile(s.f.Path)
-	if err != nil {
-		return nil
-	}
-	marker, line := Narration(string(raw))
-	if marker == "" {
-		return nil
-	}
-	return []Finding{finding(checkSessionNarration, s.at,
-		fmt.Sprintf("%s:%d: %q — that is the work, not the system", s.f.Name(), line, marker),
-		"say what holds instead; the incident belongs in the pull request")}
-}
-
-// Length is measured from the file rather than the parsed sections, because what costs a
-// later agent is the whole document it has to read.
-func docBloat(s *docState) []Finding {
-	raw, err := os.ReadFile(s.f.Path)
-	if err != nil {
-		return nil
-	}
-	if lines := Bloat(string(raw)); lines > DocLineLimit {
-		return []Finding{finding(checkDocBloat, s.at,
-			fmt.Sprintf("%s: %d lines, over %d", s.f.Name(), lines, DocLineLimit),
-			"cut the narration — or say in ## Log why it earns the length")}
-	}
-	return nil
 }
 
 func untickedShipped(s *docState) []Finding {
@@ -518,7 +435,7 @@ func stalled(s *docState) []Finding {
 // open. A section empty outright is unfilled-template's, so one defect never produces two
 // findings; no-tasks is the section with prose and no boxes.
 func taskState(s *docState) []Finding {
-	if s.f.Status != StatusAccepted {
+	if !s.tracked || terminal(s.f.Status) {
 		return nil
 	}
 	open, total := s.f.TaskCount()
@@ -537,17 +454,6 @@ func taskState(s *docState) []Finding {
 	return nil
 }
 
-// Opt-in: only features that set check: are claiming to be measurable.
-func unchecked(s *docState) []Finding {
-	if s.f.Check.IsZero() || !s.f.Checked.IsZero() || s.f.Check.After(s.today) {
-		return nil
-	}
-	return []Finding{finding(checkUnchecked, s.at,
-		fmt.Sprintf("%s: check was due %s ago and never happened",
-			s.f.Name(), countDays(Days(s.f.Check, s.today))),
-		`run: kit check `+s.f.ID+` "<what happened>" — it stamps checked: and logs the outcome`)}
-}
-
 func statusState(s *docState) []Finding {
 	switch {
 	case s.f.Status == "":
@@ -564,7 +470,7 @@ func statusState(s *docState) []Finding {
 // unwritten doc whatever its status, which is what stops the exemption reaching an agent
 // now that a Draft can be claimed.
 func unfilledTemplate(s *docState) []Finding {
-	if s.f.Status == StatusDraft {
+	if !s.tracked {
 		return nil
 	}
 	var out []Finding
@@ -576,15 +482,6 @@ func unfilledTemplate(s *docState) []Finding {
 	return out
 }
 
-func missingLog(s *docState) []Finding {
-	if s.f.Status != StatusShipped || s.f.Section("Log") != "" {
-		return nil
-	}
-	return []Finding{finding(checkMissingSection, s.at,
-		s.f.Name()+": ## Log is empty",
-		"record what was decided and why — a Shipped doc is frozen history")}
-}
-
 // The claim is a branch name and nothing else, so branches are the only place a claim can
 // disagree with a doc — and only for a feature still being worked: once it is Shipped its
 // branches are merged leftovers, which every project has.
@@ -592,7 +489,7 @@ func missingLog(s *docState) []Finding {
 // Building on a Draft is the normal flow. What is still a defect is building on questions
 // nobody answered: the design says unsettled and the branch says it is being built anyway.
 func claimState(s *docState) []Finding {
-	if s.f.ID == "" || (s.f.Status != StatusAccepted && s.f.Status != StatusDraft) {
+	if s.f.ID == "" || terminal(s.f.Status) {
 		return nil
 	}
 	var out []Finding
@@ -600,13 +497,6 @@ func claimState(s *docState) []Finding {
 		out = append(out, finding(checkSplitClaim, s.at,
 			fmt.Sprintf("%s: claimed by %s", s.f.Name(), strings.Join(s.claims, " and ")),
 			"one agent per feature — delete the branch that is not doing the work"))
-	}
-	if s.f.Section("Open questions") != "" && len(s.claims) > 0 &&
-		s.r.BranchBuildsOn(s.claims[0], s.f.Rel) {
-		out = append(out, finding(checkDraftClaimed, s.at,
-			fmt.Sprintf("%s: %s is building on open questions", s.f.Name(), s.claims[0]),
-			"settle them in the doc, or move what only a human can answer to the "+
-				"inbox: kit block "+s.f.ID+" \"<question>\""))
 	}
 	return out
 }
@@ -756,7 +646,15 @@ func needsState(s *repoState) []Finding {
 		if f.ID == "" {
 			continue
 		}
+		// `needs-unknown` asks what this feature is still waiting for, which a retired
+		// doc is not waiting for at all — and the only fix for a finding on one is an
+		// edit to frozen history, so it reported for ever. `shipped-early` below is the
+		// opposite question and is asked of Shipped docs only, so the guard is here
+		// rather than on the loop.
 		for _, id := range f.Needs {
+			if terminal(f.Status) {
+				break
+			}
 			dep := s.r.FeatureByID(id)
 			switch {
 			case id == f.ID:
@@ -766,7 +664,7 @@ func needsState(s *repoState) []Finding {
 				out = append(out, finding(checkNeedsUnknown, f.Rel,
 					fmt.Sprintf("%s: needs %s, which does not exist", f.Name(), id),
 					"fix the id, or remove it from needs:"))
-			case dep.Status == "Dropped" || dep.Status == "Superseded":
+			case dep.Status == StatusDropped:
 				out = append(out, finding(checkNeedsUnknown, f.Rel,
 					fmt.Sprintf("%s: needs %s, which is %s and will never ship", f.Name(), id, dep.Status),
 					"point at what replaced it, or remove it from needs:"))
@@ -814,38 +712,6 @@ func secretsInDocs(s *repoState) []Finding {
 				fmt.Sprintf("%s — docs are committed, and a pushed commit cannot be unpublished", what),
 				"remove it, rotate the credential, and name the variable instead of the value"))
 		}
-	}
-	return out
-}
-
-// longSentences scans what a person is still allowed to edit: the feature docs in a live
-// status, plus the as-built and vision docs, which have no status and are rewritten as the
-// system changes. Rule 11 freezes Shipped, and Dropped and Superseded are as unfixable in
-// practice, so the test is terminal rather than session-narration's narrower Shipped —
-// localcode's one Dropped doc was the finding that made the difference visible.
-func longSentences(s *repoState) []Finding {
-	docs := []string{s.r.Tech, s.r.Vision}
-	for _, f := range s.r.Features {
-		if !terminal(f.Status) {
-			docs = append(docs, f.Path)
-		}
-	}
-	var out []Finding
-	for _, path := range docs {
-		if path == "" {
-			continue
-		}
-		raw, err := os.ReadFile(path)
-		if err != nil {
-			continue
-		}
-		n, line := LongSentence(string(raw), SentenceWordLimit)
-		if n == 0 {
-			continue
-		}
-		out = append(out, finding(checkLongSentence, s.r.Rel(path),
-			fmt.Sprintf("%s:%d: %d words in one sentence", filepath.Base(path), line, n),
-			"split it — one claim per sentence, and evidence gets one clause"))
 	}
 	return out
 }
@@ -927,7 +793,14 @@ func linksIn(path string) []string {
 	}
 	var targets []string
 	for _, m := range linkRe.FindAllStringSubmatch(Normalise(string(raw)), -1) {
-		target := strings.TrimSpace(strings.Fields(m[1])[0])
+		// `linkRe` accepts any run of non-`)` characters, so a link written `[x](   )`
+		// yields no fields at all. Indexing that slice was a panic in the command that
+		// gates every ship and every CI run.
+		fields := strings.Fields(m[1])
+		if len(fields) == 0 {
+			continue
+		}
+		target := fields[0]
 		if schemeRe.MatchString(target) || strings.HasPrefix(target, "#") {
 			continue
 		}

@@ -31,7 +31,6 @@ var docLayout = []struct {
 	owned     bool
 }{
 	{"templates/VISION.md", "docs/VISION.md", false},
-	{"templates/features-README.md", "docs/features/README.md", true},
 	{"templates/features-TEMPLATE.md", "docs/features/TEMPLATE.md", true},
 	{"templates/BACKLOG.md", "docs/features/BACKLOG.md", false},
 	{"templates/INBOX.md", "docs/INBOX.md", false},
@@ -236,7 +235,16 @@ func writeProtocol(templates fs.FS, root string, res *Result) error {
 
 	existing, err := os.ReadFile(dest)
 	if os.IsNotExist(err) {
-		if err := os.WriteFile(dest, []byte(protocol), 0o644); err != nil {
+		// A title and the marker note, not the bare protocol. The file opened on an `##`
+		// heading with no `#` above it and nothing saying the section is regenerated, so
+		// the promise that house rules survive above the marker reached nobody, and the
+		// first thing every agent read had no project name on it.
+		header := "# " + filepath.Base(root) + "\n\n" +
+			"House rules go here, above the marker comment below.\n\n" +
+			"<!-- The section below is written by `kit init` from the kit's own template.\n" +
+			"     Edits inside it are lost on the next run; put durable house rules above\n" +
+			"     this comment. -->\n\n"
+		if err := os.WriteFile(dest, []byte(header+protocol), 0o644); err != nil {
 			return err
 		}
 		res.Created = append(res.Created, "AGENTS.md")

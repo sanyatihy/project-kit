@@ -34,8 +34,8 @@ than noise to be ignored.
 ## What it is not
 
 Not an issue tracker, and not a planning surface with a roadmap, milestones or dates.
-Not a build system, a CI system, or deployment scaffolding — those are named in
-`kit help deployment` as knowledge and deliberately not generated. Not a judge of
+Not a build system, a CI system, or deployment scaffolding — the last is the
+fastest-rotting part and is deliberately not generated. Not a judge of
 whether work is any good: `audit` reports what is checkable and never guesses, because
 being believed is the only thing it has. And not a service — nothing here may require
 a daemon, a server, or an account.
@@ -60,7 +60,7 @@ that fails both does not belong in the kit, whatever else it improves.
 
 ## Constraints
 
-One binary, no runtime dependencies, and state that is only markdown and git. An
+One binary, `git` as the only runtime dependency, and state that is only markdown and git. An
 agent must never need this repository to use the tool, so anything an agent has to
 know is embedded in `kit help`. A check that fires on healthy projects is worse than
 no check. And the kit stays small: every addition is weighed against the thing that

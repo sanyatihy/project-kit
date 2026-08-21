@@ -8,14 +8,14 @@ import (
 func TestParseFrontmatter(t *testing.T) {
 	t.Parallel()
 	fields, body := ParseFrontmatter("---\nid: 0007\n" +
-		"status: Accepted        # Draft | Accepted\n" +
+		"status: Draft        # Draft | Shipped | Dropped\n" +
 		"# a comment line\nshipped:\n---\n\n## Problem\np\n")
 
 	if got := fields["id"]; got != "0007" {
 		t.Errorf("id = %q, want 0007", got)
 	}
-	if got := fields["status"]; got != "Accepted" {
-		t.Errorf("status = %q, want Accepted (trailing comment must be dropped)", got)
+	if got := fields["status"]; got != "Draft" {
+		t.Errorf("status = %q, want Draft (trailing comment must be dropped)", got)
 	}
 	if got, ok := fields["shipped"]; !ok || got != "" {
 		t.Errorf("shipped = %q (%v), want empty and present", got, ok)
@@ -166,116 +166,5 @@ func TestParseIDList(t *testing.T) {
 				break
 			}
 		}
-	}
-}
-
-func TestBloatCountsLinesAndIgnoresTrailingBlanks(t *testing.T) {
-	t.Parallel()
-	// Trailing blank lines are an editor artefact rather than something a reader pays
-	// for, so a doc must not cross the limit by being saved.
-	doc := "---\nid: 0001\n---\n\n## Tasks\n- [x] one box\n\n## Log\n- 2026-01-01 — one line.\n\n\n\n"
-	if lines := Bloat(doc); lines != 9 {
-		t.Errorf("Bloat counted %d lines, want 9", lines)
-	}
-}
-
-func TestNarrationSkipsWhatADocAboutTheRuleQuotes(t *testing.T) {
-	t.Parallel()
-	// The whole risk in this check: a doc about the rule quotes the markers, and the
-	// template states them inside comments. Reporting either makes the rule report itself.
-	quoted := "## Design\n<!-- never \"this session\" -->\n\n```\n- this session went badly\n```\n"
-	if m, _ := Narration(quoted); m != "" {
-		t.Errorf("fired on %q quoted in a comment and a fence", m)
-	}
-	// And a comment span running over several lines, which is how the template writes them.
-	span := "## Log\n<!-- guidance\n     about this session\n     ends here -->\n- 2026-01-01 — a decision.\n"
-	if m, _ := Narration(span); m != "" {
-		t.Errorf("fired on %q inside a multi-line comment span", m)
-	}
-	// The loud half, with the line a reader would open.
-	if m, line := Narration("## Log\n- 2026-01-01 — this session found it.\n"); m != "this session" || line != 2 {
-		t.Errorf("got %q at line %d, want \"this session\" at 2", m, line)
-	}
-}
-
-func TestNarrationCatchesAMarkerSplitByTheWrap(t *testing.T) {
-	t.Parallel()
-	// Docs are hard-wrapped, and every marker is several words, so a line-at-a-time scan
-	// misses whichever ones the wrap happens to split. "wrong as written" straddled it in
-	// the doc the markers were taken from.
-	split := "## Log\n- 2026-01-01 — the cap diagnosis was\n  wrong, and here is the real one.\n"
-	if m, line := Narration(split); m != "was wrong" || line != 2 {
-		t.Errorf("got %q at line %d, want \"was wrong\" at 2", m, line)
-	}
-	// The line reported is where the marker starts. A marker lying wholly in the next
-	// line belongs to that line, not to the one the scan happened to join it to.
-	next := "## Log\n- 2026-01-01 — a decision, stated plainly.\n- 2026-01-02 — that was wrong.\n"
-	if m, line := Narration(next); m != "was wrong" || line != 3 {
-		t.Errorf("got %q at line %d, want \"was wrong\" at 3", m, line)
-	}
-}
-
-func TestLongSentenceCountsAcrossTheWrapAndNamesTheLine(t *testing.T) {
-	t.Parallel()
-	// Docs here are hard-wrapped around 95 characters, so anything worth reporting spans
-	// several lines. A line-at-a-time count would see four short lines and report nothing.
-	wrapped := "## Design\nA claim, stated plainly and at rather more length than it needs here.\n" +
-		"The cache is per-process because a shared one\n" +
-		"would need invalidation across every worker, which this deployment does not\n" +
-		"have, and it also drops the dependency nobody has had time to remove.\n"
-	if n, line := LongSentence(wrapped, 30); n != 32 || line != 3 {
-		t.Errorf("got %d words at line %d, want 32 at 3", n, line)
-	}
-	// The line named is where the sentence starts, and the first one over is the one
-	// reported — not the longest, and not the one that happens to sit last.
-	if n, line := LongSentence(wrapped, 10); n != 13 || line != 2 {
-		t.Errorf("got %d words at line %d, want 13 at 2", n, line)
-	}
-}
-
-func TestLongSentenceSplitsWhereAClaimEnds(t *testing.T) {
-	t.Parallel()
-	// Two claims of twelve words are not one of twenty-four. The abbreviation and the
-	// filename are the two ways a period lies about where a sentence ended.
-	for _, text := range []string{
-		"## Design\nThe cache is per-process and holds one entry per worker thread here.\n" +
-			"A shared one would need cross-worker invalidation, which does not exist yet.\n",
-		"## Design\nRoute the durable fact to docs/TECH.md. one line, chosen as you write it.\n",
-		"## Design\nEvery backend, e.g. the local one, reports the same four counters here.\n",
-	} {
-		if n, line := LongSentence(text, 16); n != 0 {
-			t.Errorf("joined two claims into %d words at line %d:\n%s", n, line, text)
-		}
-	}
-	// A sentence can open on an identifier and still be a new claim.
-	code := "## Design\nThe check reports one finding per doc, and never more than that.\n" +
-		"`long-sentence` at LOW, with its threshold measured rather than picked.\n"
-	if n, _ := LongSentence(code, 16); n != 0 {
-		t.Errorf("joined a sentence opening on an identifier: %d words", n)
-	}
-}
-
-func TestLongSentenceIgnoresWhatIsNotProse(t *testing.T) {
-	t.Parallel()
-	// A doc about writing quotes long examples, and the template's guidance is nothing
-	// but comments — Narration's bargain. A task box is an outcome 0037 froze as written,
-	// and a table row is a cell however wide it is.
-	long := "The cache is per-process because a shared one would need invalidation across " +
-		"every worker, which this deployment does not have, and it drops a dependency."
-	for _, text := range []string{
-		"## Design\n<!-- " + long + " -->\n",
-		"## Design\n\n```\n" + long + "\n```\n",
-		"## Design\n\n| what | why |\n| --- | --- |\n| a row | " + long + " |\n",
-		"## Tasks\n- [ ] " + long + "\n",
-	} {
-		if n, line := LongSentence(text, 20); n != 0 {
-			t.Errorf("counted %d words at line %d in:\n%s", n, line, text)
-		}
-	}
-	// Two list items are two thoughts, however they wrap; joining them invents a sentence.
-	items := "## Non-goals\n- A short reason, given once and no more than that\n" +
-		"- Another short reason, given once and no more than that\n"
-	if n, _ := LongSentence(items, 16); n != 0 {
-		t.Errorf("joined two list items into %d words", n)
 	}
 }

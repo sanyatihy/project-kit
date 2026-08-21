@@ -38,7 +38,7 @@ func gitIn(t *testing.T, dir string, args ...string) {
 }
 
 // twoAgents builds the situation the whole feature exists for: one bare remote
-// carrying an Accepted feature, and two clones of it that have each other's work
+// carrying one claimable feature, and two clones of it that have each other's work
 // nowhere in sight.
 //
 // Both sit on the same commit, which is the case that matters and the one that is
@@ -65,7 +65,7 @@ func twoAgentsOn(t *testing.T, trunk string) (*project, *project) {
 	a := projectAt(t, filepath.Join(base, "a"))
 	a.run("init").ok()
 	a.git("branch", "-m", trunk)
-	feature(a, "0007", "widget", "A widget", "Accepted", "- [ ] Build it")
+	feature(a, "0007", "widget", "A widget", "Draft", "- [ ] Build it")
 	a.git("remote", "add", "origin", origin)
 	a.commitAll("the plan")
 	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
@@ -214,7 +214,7 @@ func TestClaimRefusalsThatAreNotRaces(t *testing.T) {
 			p.commitAll("shipped work")
 		}, "Shipped"},
 		{"a feature a human has to unblock", func(p *project) {
-			feature(p, "0008", "stuck", "Stuck", "Accepted", "- [ ] Something")
+			feature(p, "0008", "stuck", "Stuck", "Draft", "- [ ] Something")
 			p.commitAll("the plan")
 			p.run("block", "0008", "Which way round?").ok()
 		}, "blocked"},
@@ -284,7 +284,7 @@ func TestClaimRefusesAnIDTwoDocsShare(t *testing.T) {
 	// first doc silently is how the ID stops being a primary key.
 	a, _ := twoAgents(t)
 	a.write("docs/features/0007-widget-as-well.md", doc("0007", "Widget as well",
-		"Accepted", "", "- [ ] Something"))
+		"Draft", "", "- [ ] Something"))
 	a.commitAll("a second doc with the same id")
 
 	a.run("claim", "0007").fails(2).errHas("share id 0007")
@@ -434,7 +434,7 @@ func TestClaimRefusesWhenTheBranchWouldCarryNoPlan(t *testing.T) {
 	// with it. This exited 0, reported a won claim, and sent the agent to a worktree
 	// holding nothing but the README — where `kit next` said the project was not set up.
 	a, _ := twoAgents(t)
-	feature(a, "0008", "uncommitted", "Uncommitted", "Accepted", "- [ ] Something")
+	feature(a, "0008", "uncommitted", "Uncommitted", "Draft", "- [ ] Something")
 	// Deliberately not committed.
 
 	r := a.run("claim", "0008").fails(2)
@@ -559,7 +559,7 @@ func TestClaimRefusesWhatItsNeedsHaveNotShipped(t *testing.T) {
 	// that is not there. Exit 1, like a lost race — the instruction is the same one.
 	p := cleanProject(t)
 	p.write("docs/features/0002-store.md",
-		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
 	p.commitAll("a chain of two")
 
 	r := p.run("claim", "0002").fails(1)
@@ -581,7 +581,7 @@ func TestClaimTakesAFeatureWhoseNeedsHaveShipped(t *testing.T) {
 	p.write("docs/features/0001-thing.md",
 		doc("0001", "A thing", "Shipped", "shipped: 2026-01-02", "- [x] Do the thing"))
 	p.write("docs/features/0002-store.md",
-		doc("0002", "Store", "Accepted", "needs: 0001", "- [ ] Do it"))
+		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
 	p.commitAll("one shipped, one waiting on it")
 
 	p.run("claim", "0002").ok().has("claimed", "0002-store")
@@ -608,7 +608,7 @@ func TestTheBoardDoesNotOfferWhatClaimRefuses(t *testing.T) {
 	// the rule 0023 established for needs:.
 	p := cleanProject(t)
 	p.write("docs/features/0002-confused.md",
-		doc("0009", "Confused", "Accepted", "", "- [ ] Something"))
+		doc("0009", "Confused", "Draft", "", "- [ ] Something"))
 	p.commitAll("a doc whose id and filename disagree")
 
 	if got := boardGroup(p.plan("next", "--json"), "0009"); got != "blocked" {
