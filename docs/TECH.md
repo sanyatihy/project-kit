@@ -152,9 +152,9 @@ Draft -> Shipped     (exit: Dropped)
   Comments are stripped before parsing, so guidance reaches the author and not the tool.
   Visible placeholder prose and two `- [ ] …` boxes make an unwritten doc parse as a
   finished plan, which `next` then hands an agent to build.
-- **The plan checks gate on *committed*, and never fire on a terminal doc.**
-  Committed-and-unwritten is the defect; a doc out of `kit new` is untracked and quiet,
-  and three HIGH findings on a stub `drop` had retired refused every ship in that project.
+- **The plan checks gate on *committed*, never on a terminal doc, and read a boxless
+  `## Tasks` as unwritten** — so a doc out of `kit new` stays quiet, `claim` refuses what
+  the board declines, and a stub `drop` retired stops refusing every ship in the project.
 - **Three docs, three tenses:** VISION what the project is becoming, `features/` what is
   being done now, TECH what exists. **A file is the kit's to refresh when nothing reads the
   project's copy** — `TEMPLATE.md` is written from the embedded copy, so `init` replaces it
@@ -197,9 +197,9 @@ Draft -> Shipped     (exit: Dropped)
   way: five demanded prose nobody owed, four reported a state `ship` refuses to create or
   a note `--fyi` cleared to wait. What a terminal doc is still asked is the frontmatter
   the kit writes — repairable without reopening the plan — and a leaked credential.
-- **One defect is one finding, and the code names the category, not one member.** Seven
-  pairs merged, each survivor's `Means` restated to cover both; a missing `VISION.md` or
-  `INBOX.md` is `no-protocol`, because `kit init` writes all three and overwrites none.
+- **One defect is one finding; the code names the category, not one member.** Seven pairs
+  merged, each survivor's `Means` restated. A missing `VISION.md` or `INBOX.md` is
+  `no-protocol`: `kit init` writes all three, so one fix clears them.
 - **Severity is the damage.** `split-claim` is HIGH — two agents owning one feature is the
   worst failure here, and it gated nothing at MEDIUM. `id-mismatch` is HIGH because the
   branch comes from the filename and the claim is looked up by the id, so the board keeps

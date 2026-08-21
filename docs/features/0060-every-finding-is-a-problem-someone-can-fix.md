@@ -1,9 +1,9 @@
 ---
 id: 0060
 title: Every finding is a problem someone can fix
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -84,25 +84,17 @@ unrelated doc to refuse every agent's ship.
   leaning is HIGH.
 
 ## Log
-- 2026-08-21 — `--fyi` stays, against the design. 0048's non-goals name the flag as
-  thin but real, and this feature's own non-goals forbid cutting what a shipped doc
-  protects. The check was a fuse on a note nobody owes an answer; the marker is what
-  keeps that note from blocking `next` and `claim`, which is a separate promise.
+- 2026-08-21 — `--fyi` stays, against the design: 0048's non-goals name the flag as thin
+  but real, and cutting what a shipped doc protects is this feature's own non-goal. The
+  check was a fuse on a note nobody owes an answer; the marker keeps that note from
+  blocking `next` and `claim`, which is a separate promise.
 - 2026-08-21 — deleting `needs-cycle` would have silenced a doc whose `needs:` cites its
-  own id: that case was deliberately left to the cycle walk so one defect made one
-  finding. It is a need nothing can satisfy, so `needs-unknown` reports it, and a loop
-  between two docs stays visible as two blocked features on the board.
-- 2026-08-21 — all seven pairings held on inspection, and merging `no-tasks` widened
-  `Unwritten()`, which `claim` refuses over: a `## Tasks` carrying prose and no boxes is
-  now refused as well as reported. The board already declined to offer such a doc, so the
-  command and the board now say it for one reason instead of disagreeing.
-- 2026-08-21 — the merges empty the LOW tier. `no-tech`, `no-inbox` and `no-vision` were
-  its last members and all three now report at MEDIUM, which refuses nothing new because
-  `--strict` reads HIGH.
-- 2026-08-21 — `split-claim` is HIGH, taking the open question's leaning. A project
-  holding a stray claim branch now cannot ship until `kit release` takes it back, which is
-  the point: the alternative was a `--strict` that refused work over a missing date and
-  said nothing about two agents building one feature. HIGH is 10 rather than the design's
-  9 because of it.
-- 2026-08-21 — the box carrying the vocabulary was rewritten to carry that decision, since
-  severity is part of what `kit help checks` prints.
+  own id, a case deliberately left to the cycle walk. `needs-unknown` reports it as the
+  need nothing can satisfy that it is; a loop between two docs stays visible as two
+  blocked features on the board.
+- 2026-08-21 — all seven pairings held, and merging `no-tasks` widened `Unwritten()`,
+  which `claim` refuses over: a `## Tasks` of prose with no boxes is now refused as well
+  as reported. Three LOW checks were merged into MEDIUM ones, which empties that level.
+- 2026-08-21 — `split-claim` is HIGH, taking the open question's leaning, so a project
+  holding a stray claim cannot ship until `kit release` takes it back. HIGH is 10 rather
+  than the design's 9 because of it, and the last box was rewritten to carry the decision.
