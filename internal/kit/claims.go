@@ -153,6 +153,25 @@ func (r *Repo) Mine(id string) bool {
 	return slices.Contains(r.Claims(id), r.HeadBranch())
 }
 
+// claimRev is the revision a claim is: the commit the remote advertises for the branch,
+// because the branch on the remote is the claim. Every copy here is a cache of it — a
+// local head records the last push, `refs/remotes/*` the last fetch — and either can be
+// days behind the agent holding it, which is how one feature read 0/2 in one checkout and
+// 1/2 in another at the same instant.
+//
+// This checkout's own copy when no remote carries the branch: a claim only this machine
+// has, which is also what `--offline` and a project with no remote look like. A commit
+// this clone has never fetched resolves to nothing readable, and every caller treats that
+// the way the kit treats any answer it cannot get.
+func (r *Repo) claimRev(branch string) string {
+	for _, remote := range r.remotes() {
+		if tip, ok := r.remoteTip(remote, branch); ok {
+			return tip
+		}
+	}
+	return r.resolveBranch(branch)
+}
+
 // BranchBuildsOn reports whether a branch has changed anything beyond the one file
 // given — that is, whether somebody is building on it rather than only proposing it.
 //

@@ -164,11 +164,20 @@ func Survey(r *Repo) Plan {
 		// an agent that has done nothing, the same picture `stalled` paints. Read the
 		// branch instead. Not for your own claim: there the working tree is this branch,
 		// and fresher than any commit on it.
-		if rev := r.resolveBranch(claim); claim != "" && rev != "" {
+		if rev := r.claimRev(claim); claim != "" && rev != "" {
 			item.Moved = r.commitDate(rev)
 			if !item.Mine {
-				if open, total, ok := r.TasksOn(rev, f.Rel); ok {
+				open, total, ok := r.TasksOn(rev, f.Rel)
+				switch {
+				case ok:
 					item.Done, item.Total = total-open, total
+				// A revision with no date is one this checkout has never fetched: the
+				// claim exists and what it carries is unknown, which is not the branch
+				// with no doc on it that the case above falls back for. The copy here is
+				// the trunk's, nothing ticked, and printing it as the claim's progress
+				// paints the agent holding it as having done nothing.
+				case item.Moved.IsZero():
+					item.Done, item.Total = 0, 0
 				}
 			}
 		}
