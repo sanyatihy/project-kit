@@ -1,6 +1,6 @@
 ---
 id: 0054
-title: Latest is the kit you built
+title: Installing the kit gets you the kit you built
 status: Draft
 created: 2026-08-21
 shipped:

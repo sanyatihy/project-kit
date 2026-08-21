@@ -1,6 +1,6 @@
 ---
 id: 0052
-title: Silence from audit means checked not skipped
+title: Audit is silent only about what it checked
 status: Draft
 created: 2026-08-21
 shipped:
@@ -49,6 +49,12 @@ where it would have exited 1. `--offline` names the checks it skipped.
 all exit 0 in a directory with no `docs/features`, so a CI gate is green for a repo that
 has no docs at all. That is "could not run": exit 2.
 
+**A fix line that makes things worse is worse than no fix line.** `protocol-stale` reports
+"older than the installed kit" whichever way the difference runs, and offers `kit init .`.
+Where the repo is ahead of the binary — every time the protocol changes before `make
+install` — that command overwrites the newer protocol with the embedded older one. It did
+so here, silently, mid-edit.
+
 **A fix line that cannot work is a bug in the check.** A doc with no `## Tasks` section
 reports `done-not-shipped` — "every task is ticked" — whose fix, `kit ship`, refuses it;
 a zero-byte doc gets the same finding with `run: kit ship ` and no id. And `tech-drift`
@@ -57,11 +63,11 @@ unsilenceable while an unparseable one reports "no shipped: date" when there is 
 
 ## Tasks
 
-- [ ] `AGENTS.md` here is repaired, and `no-protocol` reports a file with no protocol section
+- [ ] `no-protocol` reports an `AGENTS.md` that carries no protocol section
 - [ ] An unreadable feature doc is a HIGH finding and still reserves its id
 - [ ] Paths are read `-z`, and a non-ASCII filename no longer disables the plan checks
 - [ ] `--offline` names what it skipped; a project with no `docs/features` exits 2
 - [ ] `done-not-shipped` needs a `## Tasks` section; `shipped:` is validated as a real date
-- [ ] The two safety rules the last rewrite dropped are back in the protocol
+- [ ] `protocol-stale` says which side is behind, and never offers a fix that overwrites the newer one
 
 ## Log

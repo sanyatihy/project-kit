@@ -1,6 +1,6 @@
 ---
 id: 0051
-title: A status write is exact or it refuses
+title: A status the kit writes always means what it says
 status: Draft
 created: 2026-08-21
 shipped:
@@ -63,5 +63,6 @@ Reproduced:
 - [ ] A duplicate frontmatter key is a HIGH finding and a refusal in `ship`, `drop` and `block`
 - [ ] `ship`, `drop` and `block` refuse an id that names two docs, as `claim` already does
 - [ ] The frontmatter close is line-anchored
+- [ ] A value containing `#` keeps its text — `title: Fix #123 crash` is not `Fix`
 
 ## Log

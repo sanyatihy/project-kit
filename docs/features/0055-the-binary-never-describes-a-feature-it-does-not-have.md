@@ -1,6 +1,6 @@
 ---
 id: 0055
-title: The binary's claims about itself are enforced
+title: The binary never describes a feature it does not have
 status: Draft
 created: 2026-08-21
 shipped:

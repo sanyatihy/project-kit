@@ -154,10 +154,12 @@ Draft -> Shipped     (exit: Dropped)
 - **Every fact has one home, and the routing is decided at ship.** Still true afterwards and
   it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,
   naming the change; neither and it belongs in the pull request.
-- **A feature records one decision, and that is the test.** Size is the sanity check on
-  top: too big is one nobody reviews in a sitting, too small changes nothing observable.
-  "One pull request" alone is circular — a pull request is whatever you put in one — and
-  reading it as the rule split one decision across eight docs by layer.
+- **A feature is one shipped increase in what the project can do, or can be trusted to do.**
+  Named in one sentence an operator would recognise, or it is a task box or a chore commit;
+  a sentence needing an "and" is two features. This replaced "records one decision", which
+  measured the document rather than the value and admitted a pure refactor while excluding
+  an increment nobody had to decide anything about. Size stays the sanity check: too big is
+  one nobody reviews in a sitting, and the split is by value, never by layer.
 - **Every run of `next` ends with an instruction**, in every state. The newest was a doc
   straight out of `kit new`: it lands in `blocked`, and the closing line said stopping was
   the right outcome when the work was to write the plan just created.

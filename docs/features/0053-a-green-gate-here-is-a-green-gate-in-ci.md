@@ -1,6 +1,6 @@
 ---
 id: 0053
-title: One gate everywhere
+title: A green gate here is a green gate in CI
 status: Draft
 created: 2026-08-21
 shipped:
