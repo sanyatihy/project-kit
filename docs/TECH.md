@@ -71,9 +71,14 @@ Draft -> Shipped     (exit: Dropped)
   before the push and deleted if it loses: a claim is held in both places or in neither.
   A name is read **whole**, namespace included, and from `for-each-ref` — `git branch`
   writes a page for a reader, and `(no branch, rebasing 0002-x)` read as a rival claim.
-- **A claim carries the plan, and branches from the trunk.** The doc must be in `HEAD`'s
-  tree and in `trunkRef()`'s, or the claim is a child of the plan branch and only its own
-  author can integrate it.
+- **A claim carries the plan, branches from the trunk, and carries nothing else.** The doc
+  must be in `HEAD`'s tree and in `trunkRef()`'s, or the claim is a child of the plan
+  branch and only its own author can integrate it. The push is of `HEAD`, so a checkout
+  the trunk does not contain sends another feature's commits under the new name: from the
+  worktree that had just shipped 0001, `kit claim 0002` pushed 0001's work at exit 0.
+- **The board offers only what a claim would accept.** `next` reported a feature as ready
+  and `claim` exited 2 on it — where every new project stood at step 9. One condition read
+  by both, `PlanLanded`, is what stops the two answers drifting apart again.
 - **The checkout is the unit of isolation, and ownership is branch equality.** A worktree
   holds one feature, and its claim reads as *yours* while HEAD *is* the branch named after
   the doc — `notes-0001-alpha` mentions the id and confers nothing. A rebase detaches HEAD,
@@ -103,7 +108,8 @@ Draft -> Shipped     (exit: Dropped)
   is read *from the branch* — the only place it exists, since a coordinator stands on the
   trunk where the doc still says what it said when the round landed. **Status, never
   presence** — a doc reaches the trunk when it is *drafted*, so testing presence silences
-  the check for every feature.
+  the check for every feature. It leaves the groups above while it waits, or one finished
+  feature reads as two.
 - **You never merge your own work: legibility here, enforcement on the remote.** The board
   marks what the reader built — the claim it stands on, or the branch's authorship. The
   second half is worth exactly as much as the identities are distinct, and on this repo
@@ -111,8 +117,8 @@ Draft -> Shipped     (exit: Dropped)
   the only real enforcement while that is true.
 - **An answer that cannot change inside one command is asked once** — the trunk, this
   checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`), and
-  every feature doc's status on the trunk. Per feature instead, a 30-feature board read
-  cost 116 git processes against 29 now, and 11 online. A memo whose answer can be empty
+  every feature doc's status on the trunk, and `HEAD`'s tree and the trunk's. Per feature
+  instead, a 30-feature board read cost 116 git processes against 30 now, and 12 online. A memo whose answer can be empty
   needs a flag of its own: the trunk's used `""` for *not asked yet*, so a checkout where
   none resolves re-ran the ladder per caller — 747 processes against 28. Each is a ceiling
   the gate fails on, and each is measured, because a regression can leave the others
@@ -215,6 +221,11 @@ Draft -> Shipped     (exit: Dropped)
   calls a doc finished, and names the edit where there is no `id:` for `kit ship` to take.
   `shipped:` is validated — unparseable or not yet arrived is `shipped-bad-date` — and
   `tech-drift` ignores a day that has not happened, which nothing could be newer than.
+- **`exec.CommandContext` kills git and nothing git started.** `git-remote-https` outlives
+  it holding the stdout pipe, so `cmd.Output()` blocks for ever: `next` against a
+  black-holed remote came back in 75s against the 15s its help promises, and in 15.05s
+  once every git command set `cmd.WaitDelay`. The delay comes out of the bound, not on
+  top of it.
 - **The kit owns the work, not the runtime.** Where agents run — panes, restarts, noticing
   one is blocked — belongs to a runtime like `herdr`; an agent composes the two.
 

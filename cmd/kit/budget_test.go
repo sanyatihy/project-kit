@@ -75,7 +75,11 @@ const (
 	// 344 on merging 0054: five lines for the half of shipping nothing here described —
 	// what a release is, what refuses one, and the command that cuts it, which belongs
 	// beside the other two a developer runs.
-	techBudget = 344
+	// 355 on merging 0059: the board and the commands answering one question from one
+	// place, what a claim carries out of the checkout it is made from, and the Go gotcha
+	// under a bound that could not be enforced. Eleven lines for four states an agent was
+	// sent into, each of which a later change can restore without any output looking wrong.
+	techBudget = 355
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

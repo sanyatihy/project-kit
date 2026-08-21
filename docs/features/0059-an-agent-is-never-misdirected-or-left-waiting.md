@@ -1,9 +1,9 @@
 ---
 id: 0059
 title: An agent is never misdirected or left waiting
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -66,3 +66,12 @@ finished and the claim is only waiting for a merge.
 - [x] A shipped-but-unmerged feature appears once on the board
 
 ## Log
+
+- The blocked entry alone was not enough. A board where the round has not landed is a
+  board with nothing free, and the closing line then told the agent to stop and wait for
+  work only it could unblock. Landing the round is the reader's own next action, which is
+  the shape `unplanned` already had, so it gets an arm of its own.
+- `cmd.WaitDelay` is set at every call site with a deadline, not only at the remote
+  question this box measured. `claim` pushes over the network under the same
+  `exec.CommandContext`, so its deadline was equally unenforceable, and fixing the
+  measured instance rather than the defect would leave that hang in place.

@@ -124,6 +124,22 @@ pushes what it cuts, so the flow the kit defines does not produce this; a hand-c
 **Promote when:** a tag is cut and left unpushed, or `audit` calls a project current that
 `go install` disagrees with.
 
+## `next` prints a claim a checkout ahead of the trunk cannot make
+
+Since 0059 `kit claim` refuses when HEAD carries commits the trunk does not have, and
+`next` does not ask that question. Standing in the worktree that claims 0001, with 0002
+free, the board prints `kit claim 0002` under **free, but not in this checkout**, and
+running it there exits 2. The prose beside it already says to take the work in a worktree
+of its own and never here, so the command is addressed elsewhere — which is why this is a
+line rather than a box: the board is literal, not wrong.
+
+The fix is the shape 0059 gave the trunk question: one condition read by `Survey` and by
+`ClaimFeature`, and the worktree step printed ahead of the claim in that state.
+
+**Value:** every command the board prints runs where it is printed.
+**Promote when:** an agent is seen running it there, or a third claim refusal the board
+cannot see is added.
+
 ## Cut from this backlog
 
 Five entries were deleted rather than carried. `needs: none` would have put every shipped
