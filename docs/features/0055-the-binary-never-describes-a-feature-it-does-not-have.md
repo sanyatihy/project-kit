@@ -58,6 +58,6 @@ as the one that enforces the registry.
 - [x] The refusal lists for `ship`, `release` and `claim` match the code, with a test
 - [x] `--json` shapes are pinned, `moved` stops emitting a zero time, empty groups are `[]`
 - [x] `-h` writes to stdout for every command
-- [ ] The eleven false statements are corrected and the orphaned comments deleted
+- [x] The eleven false statements are corrected and the orphaned comments deleted
 
 ## Log

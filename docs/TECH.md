@@ -112,7 +112,7 @@ Draft -> Shipped     (exit: Dropped)
 - **An answer that cannot change inside one command is asked once** — the trunk, this
   checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`), and
   every feature doc's status on the trunk. Per feature instead, a 30-feature board read
-  cost 116 git processes against 29 now, and 10 online. A memo whose answer can be empty
+  cost 116 git processes against 29 now, and 11 online. A memo whose answer can be empty
   needs a flag of its own: the trunk's used `""` for *not asked yet*, so a checkout where
   none resolves re-ran the ladder per caller — 747 processes against 28. Each is a ceiling
   the gate fails on, and each is measured, because a regression can leave the others
@@ -186,7 +186,7 @@ Draft -> Shipped     (exit: Dropped)
   **Rules are cited by name, never by number**, in every shipped string as well as in the
   protocol. A number is valid only inside the one list that carries it, and a refusal that
   cited one sent the reader to a list they were not holding.
-- **`secret-in-doc` matches shapes, not entropy** — seven formats whose issuer publishes a
+- **`secret-in-doc` matches shapes, not entropy** — eleven formats whose issuer publishes a
   fixed prefix. HIGH, because a published credential is the one finding late discovery
   cannot fix. The patterns live in `audit.go` only; in a template they would trip the check.
 - **Checks are a table, not a function.** `featureChecks` runs per feature and `repoChecks`
@@ -258,9 +258,9 @@ Draft -> Shipped     (exit: Dropped)
   would be drift with nothing to notice it. It must never use `- [ ]`, which in a kit
   project means a PR-sized unit of work; a test pins that.
 - **Shipped text has line ceilings** (`cmd/kit/budget_test.go`), because nothing else stops
-  a doc growing and no reviewer counts lines. Tiered by how often it is read: the protocol
-  tightest, then command help, then topics, and now the README. Ceilings only — a floor
-  rewards padding.
+  a doc growing and no reviewer counts lines. Tiered by how long the reader is expected to
+  sit with it: command help tightest, then the protocol, then topics, then the two whole
+  documents. Ceilings only — a floor rewards padding.
 
 ## Gotchas
 

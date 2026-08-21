@@ -78,9 +78,9 @@ Which CI file depends on where the project is hosted, from the first thing that 
 A hostname cannot tell a self-hosted GitLab from a Gitea, so a file the project already
 carries outranks it. `--forge github|gitlab` settles it outright.
 
-Re-running is how a project catches up after the kit is upgraded. Three files are
-refreshed: the `## Work protocol` section of `AGENTS.md`, `docs/features/TEMPLATE.md`, and
-the docs the kit owns outright. Everything you fill in — `VISION.md`, `INBOX.md`,
+Re-running is how a project catches up after the kit is upgraded. Two kit-owned things are
+refreshed: the `## Work protocol` section of `AGENTS.md`, and `docs/features/TEMPLATE.md`.
+Everything you fill in — `VISION.md`, `INBOX.md`,
 `BACKLOG.md` and every stack file — is never touched, and house rules live above the
 marker comment in `AGENTS.md`. `docs/TECH.md` is not written at all: it describes what
 exists, so it waits until something ships, and `kit help as-built` prints its shape.
@@ -264,7 +264,7 @@ templates/        what `kit init` writes, embedded into the binary
 ## Changing the kit
 
 ```sh
-make check     # fmt-check, vet, unit tests, conformance suite
+make check     # fmt-check, vet, lint, unit tests, conformance suite
 make install   # after anything lands on main
 ```
 

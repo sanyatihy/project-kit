@@ -45,9 +45,12 @@ PARALLEL ?= 4
 # What a board read costs in subprocesses, on a generated fixture. The ceilings are pinned
 # in the test itself and `make check` fails on them; this target is for reading the numbers
 # and the breakdown behind them when something has to be fixed.
+#
+# Every budget test, not one of them: 0056 added the board with no trunk, and a target that
+# named a single test by hand printed three ceilings of four while claiming to print them all.
 .PHONY: gitcount
 gitcount:
-	@$(GO) test -count=1 -v -run TestABoardReadStaysWithinItsGitBudget ./cmd/kit
+	@$(GO) test -count=1 -v -run 'TestABoard.*GitBudget' ./cmd/kit
 
 # No -cover. The conformance suite drives a separately built binary, so the number
 # counted the test process and not the kit: 2.9% for the package the suite exercises

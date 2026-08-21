@@ -159,12 +159,12 @@ func runInit(args []string) int {
 
 	// Singular here is what produced a plan with one feature covering a whole
 	// project: the tool asked for a feature and the agent wrote a feature. Bootstrap
-	// means the whole set, and accepting them is not the agent's to do.
+	// means the whole set, and which of them go ahead is not the agent's to decide.
 	fmt.Printf("\nnext:\n")
 	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
 	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
 	fmt.Printf("  each one a change a human can review in one sitting\n")
-	fmt.Printf("  leave them Draft — accepting them is the human's call\n")
+	fmt.Printf("  leave them Draft — kit ship and kit drop write a status, nothing else\n")
 	// Said here because this is where a bootstrap run reads what to do next, and the
 	// omission is what let `kit claim` win a branch carrying no plan: a claim pushes
 	// HEAD, so a plan that is only in the working tree does not travel with it.
@@ -207,8 +207,10 @@ func runNew(args []string) int {
 	fmt.Printf("\n  fill in Problem, Non-goals, Design, and Tasks.\n")
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
-	fmt.Printf("  leave status: Draft — accepting it is the human's call, and\n")
-	fmt.Printf("  kit next will offer it once they have.\n\n")
+	// The gate this described is gone: `Accepted` was removed after 82 docs reached it
+	// zero times, and `next` offers a written Draft the moment its round lands.
+	fmt.Printf("  kit next offers it as soon as the plan is written, and kit ship\n")
+	fmt.Printf("  and kit drop are the only things that write a status.\n\n")
 	return 0
 }
 

@@ -17,10 +17,6 @@ kit init /path/to/project              # docs only
 kit init /path/to/project --stack go   # also Makefile, go.mod, cmd/, CI
 ```
 
- `kit init` creates what is missing
-and overwrites nothing you wrote, so it is safe on a directory that already has files and
-safe to re-run. Emptying a target to "start clean" destroys work and is never required.
-
 **Never delete or clear the target directory first.** `kit init` creates what is missing
 and overwrites nothing you wrote, so it is safe on a directory that already has files and
 safe to re-run. Emptying a target to "start clean" destroys work and is never required.
