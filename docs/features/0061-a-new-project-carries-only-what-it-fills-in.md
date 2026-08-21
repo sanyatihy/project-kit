@@ -1,9 +1,9 @@
 ---
 id: 0061
 title: A new project carries only what it fills in
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 needs:
 ---
 
@@ -109,48 +109,39 @@ The ceilings in `budget_test.go` fall with the files rather than being left wher
 
 ## Log
 
-- 2026-08-21 — `templates/BACKLOG.md` goes with the checklist. The first box orphaned it:
-  nothing read it once `init` stopped writing it, and a dead template in the binary is what
-  this feature is about.
-- 2026-08-21 — `techBudget` is the one ceiling that does not move. This round rewrote four
-  facts in `docs/TECH.md` and added one inside the lines the rewrites gave back, so the
-  file did not shorten and lowering the number would have been a claim the text does not
-  support. Every other ceiling falls to what its file now needs.
-
-- 2026-08-21 — the replacement position is folded into rule 2 rather than left as a
-  paragraph of its own: a chore commit rides on a pull request under a branch name carrying
-  no id. The rule that decides what is a feature is where the alternative belongs, and the
-  id constraint is the load-bearing half of the sentence that went.
-
-- 2026-08-21 — seven rules go, not the five this doc named: 8, 10, 13, 23, 24, 26, 27.
-  Each of 8, 13, 23, 24 and 26 is printed by a command at the moment it matters —
-  `kit claim` says "Land the round, then claim", `next` closes every run with an
-  instruction including "say so and wait", each `ship` refusal names its own fix, `ship`
-  prints "move durable facts into docs/TECH.md, one line each", and `next` prints
-  "your own is never yours to merge" itself. 24 was also said twice inside the protocol,
-  by **Every fact has one home**.
-- 2026-08-21 — rule 22 is kept and corrected rather than cut. Dropping it would leave
-  nothing saying to run `kit audit --strict` before `kit ship`, which no refusal makes;
-  what was wrong with it was naming `make check`, so it now names the project's own gate.
-  A test holds the protocol against naming `make check`, `make install` or `make release`.
-- 2026-08-21 — rules 11 and 12 stay. The refusal they collapse into is 0062's and has not
-  shipped, and 0062's own `## Design` says it turns them into a refusal and one line of
-  prose — so it is that feature's cut. Removing them first would leave the protocol silent
-  about the failure `split-claim` is HIGH for.
-- 2026-08-21 — rule 27's fact is true of this repo and not of a project the kit scaffolds,
-  so it moved above the marker in this repo's own `AGENTS.md` rather than being deleted.
-
-- 2026-08-21 — the open question is settled the way it leaned: no `VISION.md` at all, not
-  an empty heading. `no-protocol` gained a second fix line for it, because `kit init .`
-  no longer writes the file the finding asks for and offering that command would be false.
-- 2026-08-21 — `unfilled-vision` stays. Nothing scaffolds a stub now, but
-  `kit help vision > docs/VISION.md` still produces one and leaving it unanswered is the
-  same defect it always reported.
-
 - 2026-08-21 — `init` still writes one thing into `docs/features/`: a `.gitkeep`. The board
   is a directory listing, so `next`, `audit` and `new` all exit 2 without the directory,
   and git drops an empty one — a clone of a project that has planned nothing would arrive
   unable to plan. Same rule the stack already uses for `internal/`.
-- 2026-08-21 — `no-protocol` stops reporting a missing `docs/INBOX.md`. The check named
-  the documents `kit init` writes; the inbox is no longer one of them, and reporting it
-  would nag every project that has never been stuck.
+- 2026-08-21 — `no-protocol` stops reporting a missing `docs/INBOX.md`, which this doc did
+  not name. The check listed the documents `kit init` writes; the inbox is no longer one of
+  them, and reporting it would nag every project that has never been stuck.
+- 2026-08-21 — the open question is settled the way it leaned: no `docs/VISION.md` at all,
+  not an empty heading. `no-protocol` gained a second fix line for it, because `kit init .`
+  no longer writes the file the finding asks for and offering that command would be false.
+- 2026-08-21 — seven rules go, not the five named here: 8, 10, 13, 23, 24, 26, 27. Each of
+  8, 13, 23, 24 and 26 is printed by a command at the moment it matters — `kit claim` says
+  "Land the round, then claim", `next` closes every run with an instruction, each `ship`
+  refusal names its own fix, `ship` prints "move durable facts into docs/TECH.md, one line
+  each", and `next` prints "your own is never yours to merge". 24 was also said twice
+  inside the protocol, by **Every fact has one home**.
+- 2026-08-21 — rule 22 is corrected rather than cut. Dropping it would leave nothing saying
+  to run `kit audit --strict` before `kit ship`, which no refusal makes; what was wrong
+  with it was naming `make check`, so it now names the project's own gate. A test holds the
+  protocol against naming any `make` target, and a second against restating a refusal.
+- 2026-08-21 — rules 11 and 12 stay. The refusal they collapse into is 0062's and has not
+  shipped, and 0062's own `## Design` says it turns them into a refusal and one line of
+  prose — so it is that feature's cut. Removing them first would leave the protocol silent
+  about the failure `split-claim` is HIGH for.
+- 2026-08-21 — rule 27's fact is true of this repo and of no project the kit scaffolds, so
+  it moved above the marker in this repo's own `AGENTS.md` rather than being deleted.
+- 2026-08-21 — the replacement position is folded into rule 2 rather than left as a
+  paragraph of its own: a chore commit rides on a pull request under a branch name carrying
+  no id. The rule that decides what is a feature is where the alternative belongs, and the
+  id constraint is the load-bearing half of the sentence that went.
+- 2026-08-21 — `templates/BACKLOG.md` leaves with the checklist. The first box orphaned it:
+  nothing read it once `init` stopped writing it, and a dead template in the binary is what
+  this feature is about.
+- 2026-08-21 — `techBudget` is the one ceiling that does not move. This round rewrote four
+  facts in `docs/TECH.md` and added one inside the lines the rewrites gave back, so the
+  file did not shorten and lowering the number would claim what the text does not support.
