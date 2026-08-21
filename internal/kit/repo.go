@@ -172,31 +172,34 @@ func (r *Repo) loadFeatures() {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		if f := r.readFeature(filepath.Join(r.FeaturesDir, name)); f != nil {
-			r.Features = append(r.Features, f)
-		}
+		r.Features = append(r.Features, r.readFeature(filepath.Join(r.FeaturesDir, name)))
 	}
 }
 
+// readFeature never returns nil. Skipping a doc it could not open made the file invisible
+// to every command — absent from the board, unknown to `claim`, and, if it held the
+// highest id, a number `kit new` handed out a second time. The filename is still readable,
+// so the id stays reserved and `audit` has a file to name.
 func (r *Repo) readFeature(path string) *Feature {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil // an unreadable file is a filesystem problem, not a doc problem
-	}
-	fields, body := ParseFrontmatter(Normalise(string(raw)))
 	rel, err := filepath.Rel(r.Root, path)
 	if err != nil {
 		rel = path
 	}
-	f := &Feature{
-		Path:     path,
-		Rel:      filepath.ToSlash(rel),
-		ID:       fields["id"],
-		Title:    fields["title"],
-		Status:   fields["status"],
-		Needs:    ParseIDList(fields["needs"]),
-		Shipped:  ParseDate(fields["shipped"]),
-		sections: ParseSections(body),
+	f := &Feature{Path: path, Rel: filepath.ToSlash(rel)}
+
+	raw, readErr := os.ReadFile(path)
+	if readErr != nil {
+		f.Unreadable = true
+		f.ID = f.FilenamePrefix()
+	} else {
+		fields, body := ParseFrontmatter(Normalise(string(raw)))
+		f.ID = fields["id"]
+		f.Title = fields["title"]
+		f.Status = fields["status"]
+		f.Needs = ParseIDList(fields["needs"])
+		f.Shipped = ParseDate(fields["shipped"])
+		f.shippedText = strings.TrimSpace(fields["shipped"])
+		f.sections = ParseSections(body)
 	}
 	if f.Title == "" {
 		f.Title = strings.TrimSuffix(filepath.Base(path), ".md")

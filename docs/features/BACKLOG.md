@@ -69,6 +69,20 @@ learns a path that does not require a claim branch.
 **Value:** the common single-operator session stops ending in a state the tool reports as wrong.
 **Promote when:** it happens a third time, or a second operator hits it.
 
+## A doc with no `id:` is invisible to every command that takes one
+
+Nothing checks for a missing `id:`. `id-mismatch` needs both halves present, so a doc whose
+frontmatter has no id at all is reported by nothing, appears on the board as `????`, and
+`kit claim` cannot be pointed at it — the id is the argument. Found while fixing the fix
+line `done-not-shipped` printed for one; that line now names the edit, but the doc is still
+unclaimable and nothing says so.
+
+The fix is a check, at the severity `id-mismatch` already carries: the same guarantee is
+broken, and by the same amount.
+
+**Value:** a doc nobody can claim says so, instead of sitting on the board being skipped.
+**Promote when:** a second doc reaches this state, or an agent is seen unable to claim one.
+
 ## A scaffolded project's CI has the flaws 0053 fixed here
 
 `templates/stacks/go/check.yml` is where the kit's own workflow came from, so it carries

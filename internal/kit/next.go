@@ -77,10 +77,15 @@ type Plan struct {
 	// awaiting review is missing rather than absent.
 	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
 
-	// ProtocolStale says the project's AGENTS.md is older than the binary reading it, so
+	// ProtocolStale says the project's AGENTS.md and the binary reading it disagree, so
 	// the rules the agent is about to follow are not the rules this kit expects. Set by
 	// the caller, which is the only layer that can see the embedded protocol.
 	ProtocolStale bool `json:"protocol_stale,omitempty"`
+
+	// ProtocolAhead says the newer of the two is the project's, which is the one
+	// direction where the usual repair — `kit init .` — writes the older protocol over
+	// the newer one instead of fixing anything.
+	ProtocolAhead bool `json:"protocol_ahead,omitempty"`
 
 	// Error says this path could not be surveyed at all — missing, or not a directory —
 	// so everything above it is empty because nothing was read, not because there is

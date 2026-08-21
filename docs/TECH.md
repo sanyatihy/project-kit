@@ -165,6 +165,10 @@ Draft -> Shipped     (exit: Dropped)
   the right outcome when the work was to write the plan just created.
 - **`protocol-stale` compares the project's protocol section with the kit's**, because
   shipping a protocol change does not deliver one — `AGENTS.md` is rewritten only by `init`.
+  It reports which side is behind: `kit init .` writes the binary's copy over the section,
+  so offered to the newer side it reverts it, and the only project that can be the newer
+  side is the one carrying `templates/AGENTS-section.md`. `no-protocol` covers a file whose
+  `## Work protocol` heading is gone as well as a missing file; nothing else looks for it.
   **Rules are cited by name, never by number**, in every shipped string as well as in the
   protocol. A number is valid only inside the one list that carries it, and a refusal that
   cited one sent the reader to a list they were not holding.
@@ -184,6 +188,19 @@ Draft -> Shipped     (exit: Dropped)
   skipped Shipped, which was 13 of the 18 docs in the only corpus written under the rule;
   `long-sentence` cost a 130-line sentence parser for one LOW finding on frozen docs. All
   five are gone, and `needs-unknown` now skips a doc that is itself terminal.
+- **`audit` is silent only about what it checked.** A doc it cannot open is
+  `unreadable-doc` at HIGH, carrying its filename and its still-reserved id, and no other
+  feature check runs on it — they all fire on the empty struct. `--offline` names the
+  checks it dropped, from `OfflineChecks`. A directory with no `docs/features` exits 2 from
+  `next` and from `audit`: nothing was read, so there is no clean bill to give either.
+- **Every git read that yields a path asks for `-z`.** git C-quotes anything outside
+  printable ASCII, and each reader compares the result against a name `os.ReadDir`
+  produced: one accented character disabled the plan checks on that doc, reported pushed
+  work as unpushed, and named `ship`'s debris under a name nothing on disk has.
+- **A fix line has to be one the reader can run.** `done-not-shipped` wants boxes before it
+  calls a doc finished, and names the edit where there is no `id:` for `kit ship` to take.
+  `shipped:` is validated — unparseable or not yet arrived is `shipped-bad-date` — and
+  `tech-drift` ignores a day that has not happened, which nothing could be newer than.
 - **The kit owns the work, not the runtime.** Where agents run — panes, restarts, noticing
   one is blocked — belongs to a runtime like `herdr`; an agent composes the two.
 
