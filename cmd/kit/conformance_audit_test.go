@@ -937,6 +937,26 @@ func TestIDMismatchFailsStrict(t *testing.T) {
 	agreed.run("audit", "--strict").ok().lacks("id-mismatch")
 }
 
+func TestSplitClaimFailsStrict(t *testing.T) {
+	t.Parallel()
+	// Raised from MEDIUM. Two branches on one feature is the worst failure the kit has —
+	// two agents building it, each about to open a pull request the other's branch cannot
+	// merge beside — and at MEDIUM it gated nothing, while a missing shipped: date could
+	// not fail --strict either. What it costs is real and intended: nothing ships out of a
+	// project holding a stray claim until `kit release` takes it back.
+	contested := cleanProject(t)
+	contested.commitAll("the doc")
+	contested.git("branch", "0001-thing")
+	contested.git("branch", "0001-thing-again")
+	contested.run("audit", "--strict").fails(1).has("split-claim")
+
+	// The quiet half: one claim, however it is spelled, is how every feature is worked.
+	one := cleanProject(t)
+	one.commitAll("the doc")
+	one.git("branch", "0001-thing")
+	one.run("audit", "--strict").ok().lacks("split-claim")
+}
+
 func TestStalledIsVisibleFromTheTrunkCheckout(t *testing.T) {
 	t.Parallel()
 	// The failure this closes: a status set on the feature branch never reaches the trunk

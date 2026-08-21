@@ -74,7 +74,7 @@ unrelated doc to refuse every agent's ship.
 - [x] `unticked-shipped` and `shipped-early` are deleted, with their tests
 - [x] `needs-cycle`, `no-plan`, `dead-link` and `fyi-stale` are deleted; `--fyi` stays
 - [x] The seven duplicate findings are merged into one name each
-- [ ] `kit help checks` and `docs/TECH.md` describe the vocabulary that remains
+- [x] `split-claim` is HIGH, and `kit help checks` and `docs/TECH.md` describe what remains
 
 ## Open questions
 
@@ -99,3 +99,10 @@ unrelated doc to refuse every agent's ship.
 - 2026-08-21 — the merges empty the LOW tier. `no-tech`, `no-inbox` and `no-vision` were
   its last members and all three now report at MEDIUM, which refuses nothing new because
   `--strict` reads HIGH.
+- 2026-08-21 — `split-claim` is HIGH, taking the open question's leaning. A project
+  holding a stray claim branch now cannot ship until `kit release` takes it back, which is
+  the point: the alternative was a `--strict` that refused work over a missing date and
+  said nothing about two agents building one feature. HIGH is 10 rather than the design's
+  9 because of it.
+- 2026-08-21 — the box carrying the vocabulary was rewritten to carry that decision, since
+  severity is part of what `kit help checks` prints.

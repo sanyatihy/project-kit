@@ -147,7 +147,12 @@ var (
 		"an INBOX.md line the kit cannot resolve to a feature: out of format, or naming an id nobody wrote"}
 	checkNeedsUnknown = Check{"needs-unknown", Medium,
 		"a needs: names a feature that does not exist or can never ship, so the wait never ends"}
-	checkSplitClaim = Check{"split-claim", Medium,
+	// HIGH: it names the worst failure the kit has — two agents building one feature,
+	// each about to open a pull request the other's branch cannot be merged beside — and
+	// at MEDIUM it gated nothing while `--strict` refused work over a missing date. The
+	// cost is that a project with a stray claim branch cannot ship until it is deleted,
+	// which is the intent: `release` is one command and the branch is the whole claim.
+	checkSplitClaim = Check{"split-claim", High,
 		"two branches claim one feature — two agents believe they own it"}
 	checkOrphanClaim = Check{"orphan-claim", Medium,
 		"a branch is named after a feature doc that does not exist"}
@@ -182,11 +187,12 @@ func CheckCodes(checks []Check) []string {
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
-	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkStalled, checkInboxStale,
+	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkSplitClaim, checkStalled,
+	checkInboxStale,
 	checkShippedNotPushed,
 	checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkInboxUnparsed,
-	checkNeedsUnknown, checkSplitClaim, checkOrphanClaim,
+	checkNeedsUnknown, checkOrphanClaim,
 	checkNoStatus, checkNoProtocol, checkProtocolStale,
 }
 

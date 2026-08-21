@@ -330,8 +330,8 @@ Reads only. Uses the repo you are in, from any subdirectory. For several project
 Where do the docs disagree with the repo? Names the file, the problem, and the fix.
 
 Findings are ranked HIGH (a doc says something untrue, or work is stuck and nobody
-noticed), MEDIUM (incomplete or drifting), LOW (hygiene). See "kit help checks"
-for every finding and what it means.
+noticed) and MEDIUM (incomplete or drifting). See "kit help checks" for every
+finding and what it means.
 
 --offline names the checks it did not run, because a check that was skipped and one
 that passed otherwise print the same page. A directory with no docs/features exits 2:
@@ -378,13 +378,23 @@ func runHelp(templates fs.FS, args []string) int {
 func printChecks() {
 	fmt.Print("Every finding kit audit can report.\n\n")
 	for _, severity := range kit.Severities {
-		fmt.Printf("%s\n", severity)
+		// A level with nothing in it is not printed. Every check that was hygiene has
+		// been deleted or merged into one that is not, so LOW has no members — and a
+		// heading over an empty list advertises findings the tool cannot report.
+		printed := false
 		for _, c := range kit.Checks {
-			if c.Severity == severity {
-				fmt.Printf("  %-18s %s\n", c.Code, c.Means)
+			if c.Severity != severity {
+				continue
 			}
+			if !printed {
+				fmt.Printf("%s\n", severity)
+				printed = true
+			}
+			fmt.Printf("  %-18s %s\n", c.Code, c.Means)
 		}
-		fmt.Println()
+		if printed {
+			fmt.Println()
+		}
 	}
 	// The thresholds used to be restated here and drifted from the constants the
 	// moment they were retuned. Each check now carries its own in the line above.

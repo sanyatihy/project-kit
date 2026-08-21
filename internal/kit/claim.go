@@ -90,8 +90,11 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	// this, `claim` hands an agent a doc straight out of `kit new` with three empty
 	// sections and every command still exits 0.
 	if unwritten := target.Unwritten(); len(unwritten) > 0 {
+		// Not "never written": a `## Tasks` carrying prose and no boxes counts here too,
+		// and it plainly was written. What is true of every case is that there is nothing
+		// under the heading an agent could build.
 		return nil, &NotYours{
-			fmt.Sprintf("%s has no plan to build: ## %s never written",
+			fmt.Sprintf("%s has no plan to build: ## %s",
 				target.Name(), strings.Join(unwritten, ", ## ")),
 			"write it first — a claim on an unwritten doc sends an agent to build nothing"}
 	}
