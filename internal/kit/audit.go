@@ -95,6 +95,11 @@ var (
 	// empty section means the section was never written.
 	checkUnfilledTemplate = Check{"unfilled-template", High,
 		"a committed doc has an empty ## Problem, ## Design, or ## Tasks — nobody wrote the plan"}
+	// HIGH for shipped-not-pushed's reason: it was silent by construction. A doc the kit
+	// could not open was dropped on the floor, so no command ever mentioned it again —
+	// and every plan check it should have failed simply did not run.
+	checkUnreadableDoc = Check{"unreadable-doc", High,
+		"a feature doc could not be read, so nothing it says is being checked"}
 
 	// MEDIUM — incomplete or drifting.
 	checkNoPlan = Check{"no-plan", Medium,
@@ -154,7 +159,7 @@ var (
 
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
-	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate,
+	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate, checkUnreadableDoc,
 	checkDuplicateID, checkIDMismatch, checkStalled, checkUntickedShipped, checkInboxStale,
 	checkShippedNotPushed,
 	checkNoPlan, checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkShippedNoDate,
@@ -286,6 +291,7 @@ func finding(c Check, where, problem, fix string) Finding {
 
 // featureChecks run in this order, and the order is the report's order.
 var featureChecks = []featureCheck{
+	{[]Check{checkUnreadableDoc}, unreadableDoc},
 	{[]Check{checkUntickedShipped}, untickedShipped},
 	{[]Check{checkShippedNoDate}, shippedNoDate},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
@@ -329,6 +335,13 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		ds := &docState{r: r, f: f, at: f.Rel, today: today, statuses: statuses,
 			claims: r.Claims(f.ID), tracked: r.TrackedAtHEAD(f.Rel)}
 		for _, c := range featureChecks {
+			// A doc nobody could read gets that one finding and no other. Every check
+			// below reads content, and on the empty struct they all fire — no-status,
+			// three unfilled-templates, done-not-shipped — none of which is a fact
+			// about the file.
+			if f.Unreadable != (c.Codes[0] == checkUnreadableDoc) {
+				continue
+			}
 			found = append(found, c.Run(ds)...)
 		}
 	}
@@ -359,6 +372,14 @@ func duplicateID(s *repoState) []Finding {
 				"branch that claims them"))
 	}
 	return out
+}
+
+// Everything reported comes from the filename, because the filename is all there is. The
+// fix is a restore or a permission — the kit guesses at neither.
+func unreadableDoc(s *docState) []Finding {
+	return []Finding{finding(checkUnreadableDoc, s.at,
+		s.f.Name()+": could not be read, so its status, plan and tasks go unchecked",
+		"restore it or fix its permissions — the id stays reserved either way")}
 }
 
 func untickedShipped(s *docState) []Finding {

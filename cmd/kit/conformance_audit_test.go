@@ -195,6 +195,14 @@ var auditCases = []struct {
 				"## Tasks\nWe will figure the boxes out later.\n\n## Log\n- 2026-01-01 — started.\n")
 		p.commitAll("a plan with no boxes in it")
 	}},
+	{"unreadable-doc", func(p *project) {
+		// A doc the kit cannot open. It used to be dropped on the floor by readFeature,
+		// so no command mentioned it again and every check it should have failed was
+		// skipped rather than reported.
+		p.write("docs/features/0002-locked.md",
+			doc("0002", "Locked", "Draft", "", "- [ ] Do it"))
+		makeUnreadable(p, "docs/features/0002-locked.md")
+	}},
 	{"unfilled-template", func(p *project) {
 		// `kit new` and then nothing, committed. The template's guidance is all comments,
 		// so every section it did not write reads as empty; committing it is what turns a
@@ -481,6 +489,46 @@ func TestUnfilledVisionStaysQuietWhenThereIsNoVisionAtAll(t *testing.T) {
 	}
 	if !slices.Contains(codes, "no-vision") {
 		t.Errorf("no-vision stopped firing on a missing VISION.md: %v", codes)
+	}
+}
+
+// makeUnreadable takes a file's permissions away, and gives up rather than asserting
+// when the user running the suite can read it anyway — root ignores the mode bits, so on
+// such a machine the state under test cannot be built at all.
+func makeUnreadable(p *project, rel string) {
+	p.t.Helper()
+	if err := os.Chmod(p.path(rel), 0); err != nil {
+		p.t.Fatalf("chmod %s: %v", rel, err)
+	}
+	if _, err := os.ReadFile(p.path(rel)); err == nil {
+		p.t.Skip("this user reads a mode-000 file, so an unreadable doc cannot be set up")
+	}
+}
+
+func TestAnUnreadableDocIsReportedOnceAndKeepsItsID(t *testing.T) {
+	t.Parallel()
+	p := cleanProject(t)
+	p.write("docs/features/0002-locked.md", doc("0002", "Locked", "Draft", "", "- [ ] Do it"))
+	p.commitAll("a doc that stops being readable")
+	makeUnreadable(p, "docs/features/0002-locked.md")
+
+	codes := p.auditCodes()
+	if !slices.Contains(codes, "unreadable-doc") {
+		t.Errorf("a doc nobody could read went unreported: %v", codes)
+	}
+	// Nothing else may speak for it. Every content check fires on the empty struct, and
+	// not one of those findings is a fact about the file.
+	for _, guess := range []string{"no-status", "unfilled-template", "done-not-shipped", "no-tasks"} {
+		if slices.Contains(codes, guess) {
+			t.Errorf("%s was reported on a doc whose content nobody has: %v", guess, codes)
+		}
+	}
+
+	// The id stays taken. `kit new` reads the highest id from disk, so a doc it skipped
+	// handed its number out a second time — the duplicate-id that audit reports at HIGH.
+	p.run("new", "Something else").ok()
+	if p.exists("docs/features/0002-something-else.md") {
+		t.Error("kit new re-minted the id of a doc it could not read")
 	}
 }
 

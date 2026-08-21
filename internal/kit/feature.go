@@ -39,6 +39,11 @@ type Feature struct {
 	Needs   []string // feature ids that must ship before this can start
 	Shipped time.Time
 
+	// Unreadable marks a doc the kit could not open. Everything above it then comes from
+	// the filename, and nothing below it exists — so `audit` reports the file and asks no
+	// other question of it, because the answers would all be about an empty struct.
+	Unreadable bool
+
 	sections map[string]string
 }
 
