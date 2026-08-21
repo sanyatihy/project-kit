@@ -272,8 +272,9 @@ func TestHarness(t *testing.T) {
 		t.Error("the error reached stdout; stdout is data and stderr is diagnostics")
 	}
 
-	// A fresh project is empty, and the binary sees it that way.
-	p.run("next").ok().has("not set up yet")
+	// A fresh project is empty, and the binary sees it that way — and says so with the
+	// exit code for "could not run", not the one for "nothing to do".
+	p.run("next").fails(2).has("not set up yet")
 
 	// File helpers reach the same directory the binary runs in.
 	p.write("docs/INBOX.md", "# Inbox\n")

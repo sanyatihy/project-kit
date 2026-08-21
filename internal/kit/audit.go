@@ -157,6 +157,21 @@ var (
 		"an FYI note in INBOX.md has gone undrained for " + countDays(FYIStaleDays)}
 )
 
+// OfflineChecks are the checks that cannot run without an answer from the remote: under
+// `--offline`, or when the remote is asked and does not answer, they are not evaluated at
+// all. Named here rather than written into the command, so a check that grows a network
+// question cannot fall out of the notice that says what did not run.
+var OfflineChecks = []Check{checkShippedNotPushed}
+
+// CheckCodes is a check list as codes, for a message that names what did not run.
+func CheckCodes(checks []Check) []string {
+	codes := make([]string, len(checks))
+	for i, c := range checks {
+		codes[i] = c.Code
+	}
+	return codes
+}
+
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkNeedsCycle, checkUnfilledTemplate, checkUnreadableDoc,

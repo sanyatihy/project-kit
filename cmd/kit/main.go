@@ -481,14 +481,23 @@ func runNext(args []string) int {
 		plan.ProtocolStale = kit.ProtocolIsStale(repo, currentProtocol())
 	}
 
+	// Surveyed nothing, so the empty board is not a claim that there is nothing to do.
+	// Exit 2 — could not run — the same answer `audit` gives the same directory.
+	code := 0
+	if notSetUp != "" {
+		code = 2
+	}
 	if *asJSON {
-		return emit(plan)
+		if failed := emit(plan); failed != 0 {
+			return failed
+		}
+		return code
 	}
 	color := isTTY()
 	fmt.Print(paint("\n"+repo.Name+"\n", "1", color))
 	if notSetUp != "" {
 		fmt.Printf("  not set up yet — run:  kit init %s\n\n", repo.Root)
-		return 0
+		return code
 	}
 	printPlan(plan, color)
 	return 0
@@ -685,6 +694,11 @@ func runAudit(args []string) int {
 		}
 		// After the audit, so it reports what actually went unanswered.
 		result.RemoteUnanswered = repo.RemoteUnanswered()
+		// --offline drops the same checks an unreachable remote does, and used to drop
+		// them without a word: a HIGH check simply did not run and --strict exited 0.
+		if *offline {
+			result.Skipped = kit.CheckCodes(kit.OfflineChecks)
+		}
 	}
 
 	if *asJSON {
@@ -695,6 +709,12 @@ func runAudit(args []string) int {
 		printFindings(repo, result, isTTY())
 	}
 
+	// A directory with no docs/features was not audited: nothing was read, so "no
+	// findings" is not a statement about it. Exit 2 — could not run — before --strict is
+	// consulted, so a CI gate cannot go green on a repo that has no plan at all.
+	if result.Error != "" {
+		return 2
+	}
 	if *strict {
 		for _, f := range result.Findings {
 			if f.Severity == kit.High {
@@ -720,6 +740,10 @@ type audited struct {
 	// claim checks read the last fetch. Without it a clean bill and an unreachable
 	// remote print the same page.
 	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
+
+	// Skipped names the checks --offline asked for and did not run. Same weakening as
+	// above, chosen rather than suffered, and it has to be said for the same reason.
+	Skipped []string `json:"skipped,omitempty"`
 }
 
 func printFindings(repo *kit.Repo, result audited, color bool) {
@@ -730,9 +754,14 @@ func printFindings(repo *kit.Repo, result audited, color bool) {
 		fmt.Printf("  not set up yet — run:  kit init %s\n\n", repo.Root)
 		return
 	}
+	skipped := strings.Join(kit.CheckCodes(kit.OfflineChecks), ", ")
 	if result.RemoteUnanswered {
-		fmt.Printf("  %s\n", paint("! the remote did not answer: shipped-not-pushed "+
-			"did not run, and the claim\n    checks read the last fetch", "33", color))
+		fmt.Printf("  %s\n", paint("! the remote did not answer: "+skipped+
+			"\n    did not run, and the claim checks read the last fetch", "33", color))
+	}
+	if len(result.Skipped) > 0 {
+		fmt.Printf("  %s\n", paint("! --offline: "+strings.Join(result.Skipped, ", ")+
+			"\n    did not run, and the claim checks read the last fetch", "33", color))
 	}
 	if len(result.Findings) == 0 {
 		fmt.Printf("  docs and repo agree\n\n")

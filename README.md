@@ -164,8 +164,9 @@ standing on the trunk sees the whole queue in the command everyone else already 
 Both that and `shipped-not-pushed` ask the remote which branches exist, bounded at 15
 seconds, and **both say so when it does not answer** rather than printing a page with
 nothing on it. An unreachable remote and a project with nothing waiting look identical
-otherwise, and the board is read as good news. `--offline` skips the question and stays
-quiet, because that is an instruction rather than a failure.
+otherwise, and the board is read as good news. `--offline` is an instruction rather than
+a failure, so `next` stays quiet about it; `audit` names the checks it dropped, since a
+skipped check and a passing one print the same page.
 
 Branch protection on the trunk is the only thing an agent cannot route around. What the
 kit does is make the invariant legible; agents also need git identities of their own,
@@ -188,6 +189,7 @@ kit ship  <id>                           verify every box, stamp the date, freez
 kit drop  <id> "<why>"                   retire a feature that will not be built
 kit next  [--json] [--offline]           warns above 2 features in progress
 kit audit [--json] [--strict] [--offline]  --strict exits 1 on HIGH, for CI
+                                         both exit 2 where there is no docs/features
 kit init  [PATH] [--stack S] [--forge F]
 kit help  [protocol|template|checks|inbox|vision|as-built|go-checklist]
 kit version

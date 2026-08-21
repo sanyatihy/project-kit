@@ -679,6 +679,33 @@ func TestAuditNeverWrites(t *testing.T) {
 	}
 }
 
+func TestAuditOnAnUnsetUpProjectExitsTwo(t *testing.T) {
+	t.Parallel()
+	// Nothing was read, so "no findings" is not a statement about this directory. Both
+	// forms exited 0, which made `kit audit --strict` a green CI gate for a repository
+	// carrying no docs at all — the one repository it most needed to fail.
+	p := newProject(t)
+	p.run("audit").fails(2).has("not set up yet", "kit init")
+	p.run("audit", "--strict").fails(2)
+	p.run("audit", "--json").fails(2).outHas("not set up yet")
+}
+
+func TestOfflineNamesTheCheckItDidNotRun(t *testing.T) {
+	t.Parallel()
+	// --offline drops the same HIGH check an unreachable remote does. The unreachable
+	// path prints a notice and this one printed nothing, so --strict exited 0 where it
+	// would have exited 1 with no line on the page to say a check had been skipped
+	// rather than passed.
+	p := cleanProject(t)
+	r := p.run("audit", "--offline").ok()
+	r.outHas("--offline", "shipped-not-pushed", "did not run")
+	p.run("audit", "--json", "--offline").ok().outHas(`"skipped"`, "shipped-not-pushed")
+
+	// And nothing of the sort when the kit was allowed to ask.
+	p.run("audit").ok().lacks("--offline")
+	p.run("audit", "--json").ok().lacks("skipped")
+}
+
 func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 	t.Parallel()
 	// --strict is the CI gate, so the boundary between severities is a contract.

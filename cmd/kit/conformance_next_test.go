@@ -450,10 +450,15 @@ func TestAClaimedCheckoutIsNotOfferedOtherWorkEvenWhenItsOwnIsBlocked(t *testing
 	}
 }
 
-func TestNextOnAnUnsetUpProjectSaysHowToFixIt(t *testing.T) {
+func TestNextOnAnUnsetUpProjectSaysHowToFixItAndExitsTwo(t *testing.T) {
 	t.Parallel()
+	// Nothing was surveyed, so an empty board is not a report that there is nothing to
+	// do. It exited 0, which is the same answer a project with every feature shipped
+	// gets — and the one a script cannot tell apart from it.
 	p := newProject(t)
-	p.run("next").ok().has("not set up yet", "kit init")
+	p.run("next").fails(2).has("not set up yet", "kit init")
+	// --json is the format agents read, and it carries the same conclusion.
+	p.run("next", "--json").fails(2).outHas("not set up yet")
 }
 
 func TestNextIsNotBlockedByAQuestionAboutAnotherFeature(t *testing.T) {
