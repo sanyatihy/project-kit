@@ -19,8 +19,8 @@ type Released struct {
 // leaves the feature taken for good, which prose could only warn about.
 //
 // It refuses while the branch carries work, and that refusal is the reason this exists.
-// Rule 8 named `git push --delete` for every kind of stopping, so an agent pausing with
-// reviewed commits on the branch followed the protocol and discarded them.
+// The protocol named `git push --delete` for every kind of stopping, so an agent pausing
+// with reviewed commits on the branch followed it and discarded them.
 // `BranchBuildsOn` already separates a claim nobody has built on from work in flight, and
 // `--force` is the way past it for commits that are genuinely worth nothing.
 func Release(r *Repo, id string, force bool) (*Released, error) {

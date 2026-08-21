@@ -231,7 +231,7 @@ var secretShapes = []struct {
 	// shape rather than an issued one, so it matched any doc explaining that such
 	// URLs are rejected — which is a doc doing the right thing, failed at HIGH. The
 	// cost of removing it: a real password inside a connection string is no longer
-	// caught. Rule 10 already says this check is a backstop and not the rule.
+	// caught. *Never put a real secret in a doc* already says this is a backstop.
 }
 
 // secretsIn reports the credential shapes found in a file, by name and line.
@@ -262,13 +262,6 @@ type Finding struct {
 	Fix      string `json:"fix"`
 }
 
-// Audit reports every place a project's written state and real state have come
-// apart. It never writes.
-//
-// `protocol` is the work-protocol section the installed kit would write. It is
-// passed in because internal/kit cannot embed a parent directory, and a project
-// running superseded rules is invisible from inside that project — which is how two
-// agents followed a protocol that had already been fixed.
 // docState is what every per-feature check is handed: the feature, where to report it,
 // and the work the loop does once so no check repeats it.
 type docState struct {
@@ -356,6 +349,11 @@ var repoChecks = []repoCheck{
 //
 // duplicateID is reported first even though it is a repo check, because every check after
 // it assumes an ID names one feature.
+//
+// `protocol` is the work-protocol section the installed kit would write. It is passed in
+// because internal/kit cannot embed a parent directory, and a project running superseded
+// rules is invisible from inside that project — which is how two agents followed a
+// protocol that had already been fixed.
 func Audit(r *Repo, today time.Time, protocol string) []Finding {
 	rs := &repoState{r: r, today: today, protocol: protocol}
 	found := duplicateID(rs)

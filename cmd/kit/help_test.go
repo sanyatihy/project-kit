@@ -12,17 +12,58 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/sanyatihy/project-kit/internal/kit"
 )
 
-// subcommands must stay in step with the dispatcher in main.go.
-var subcommands = []string{"init", "new", "claim", "release", "block", "ship",
-	"drop", "next", "audit"}
+// subcommands is the dispatcher in main.go, read from the source. It used to be a
+// hand-kept copy of that switch, so a command added to one and not the other was
+// invisible: the list that was supposed to catch the drift drifted with it. `help`
+// and `version` are dropped — neither takes a `--help` of its own.
+func subcommands(t *testing.T) []string {
+	t.Helper()
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "main.go", nil, 0)
+	if err != nil {
+		t.Fatalf("parsing main.go: %v", err)
+	}
+	var names []string
+	ast.Inspect(file, func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok || fn.Name.Name != "run" {
+			return true
+		}
+		ast.Inspect(fn.Body, func(n ast.Node) bool {
+			clause, ok := n.(*ast.CaseClause)
+			if !ok {
+				return true
+			}
+			for _, expr := range clause.List {
+				lit, ok := expr.(*ast.BasicLit)
+				if !ok || lit.Kind != token.STRING {
+					continue
+				}
+				name := strings.Trim(lit.Value, `"`)
+				if strings.HasPrefix(name, "-") || name == "help" || name == "version" {
+					continue
+				}
+				names = append(names, name)
+			}
+			return true
+		})
+		return false
+	})
+	if len(names) == 0 {
+		t.Fatal("found no commands in main.go's dispatcher")
+	}
+	return names
+}
 
 func TestEveryCommandHasHelp(t *testing.T) {
 	t.Parallel()
-	for _, name := range subcommands {
+	dispatched := subcommands(t)
+	for _, name := range dispatched {
 		text, ok := commandHelp[name]
 		if !ok {
 			t.Errorf("no commandHelp for %q — `kit %s --help` would print bare flags", name, name)
@@ -33,15 +74,15 @@ func TestEveryCommandHasHelp(t *testing.T) {
 		}
 	}
 	for name := range commandHelp {
-		if !slices.Contains(subcommands, name) {
-			t.Errorf("commandHelp has %q, which is not a subcommand", name)
+		if !slices.Contains(dispatched, name) {
+			t.Errorf("commandHelp has %q, which main.go's dispatcher does not accept", name)
 		}
 	}
 }
 
 func TestOverviewListsEveryCommand(t *testing.T) {
 	t.Parallel()
-	for _, name := range append(subcommands, "help", "version") {
+	for _, name := range append(subcommands(t), "help", "version") {
 		if !strings.Contains(overview, "kit "+name) {
 			t.Errorf("overview never mentions %q; an agent reading only the binary would miss it", name)
 		}
@@ -138,6 +179,84 @@ func TestOverviewListsEveryTopic(t *testing.T) {
 			t.Errorf("topic %q is not advertised in the overview", topic)
 		}
 	}
+}
+
+// helpTopicRe finds a topic as the overview advertises it. `[TOPIC]` in the usage
+// line does not match, which is the point: only a named one is a promise.
+var helpTopicRe = regexp.MustCompile(`kit help ([a-z][a-z-]*)`)
+
+func TestEveryTopicTheOverviewNamesResolves(t *testing.T) {
+	t.Parallel()
+	// TestOverviewListsEveryTopic holds the other direction. This one catches a topic
+	// the overview offers and the binary cannot print — the same class as a check code
+	// advertised after the check was deleted, and it exits 2 in the reader's face.
+	for _, m := range helpTopicRe.FindAllStringSubmatch(overview, -1) {
+		if !slices.Contains(topicNames(), m[1]) {
+			t.Errorf("the overview offers %q, which resolves to no topic", "kit help "+m[1])
+		}
+	}
+}
+
+// identRe is a hyphenated lower-case token: the shape every check code has, and the
+// shape a few ordinary words in the help text share.
+var identRe = regexp.MustCompile(`[a-z][a-z0-9]*(?:-[a-z0-9]+)+`)
+
+// proseWords are the hyphenated English words the help text uses. Anything else of that
+// shape has to name something the binary has, because `kit ship --help` went on
+// advertising `doc-bloat` for a release after the check was deleted and nothing in the
+// build compared what the help says with what `audit` can report.
+var proseWords = map[string]bool{
+	"four-digit": true, "kit-owned": true, "mid-flight": true,
+	"re-run": true, "ticked-over-total": true,
+}
+
+func TestEveryCheckCodeInHelpIsRegistered(t *testing.T) {
+	t.Parallel()
+	known := map[string]bool{}
+	for _, c := range kit.Checks {
+		known[c.Code] = true
+	}
+	for _, name := range topicNames() {
+		known[name] = true
+	}
+
+	// String literals only, for TestNothingUserFacingCitesARuleByNumber's reason: a
+	// comment naming a dead check misleads the next reader of the source, not a user.
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "help.go", nil, 0)
+	if err != nil {
+		t.Fatalf("parsing help.go: %v", err)
+	}
+	ast.Inspect(file, func(n ast.Node) bool {
+		lit, ok := n.(*ast.BasicLit)
+		if !ok || lit.Kind != token.STRING {
+			return true
+		}
+		for _, at := range identRe.FindAllStringIndex(lit.Value, -1) {
+			word := lit.Value[at[0]:at[1]]
+			if known[word] || proseWords[word] || insideALongerToken(lit.Value, at) {
+				continue
+			}
+			t.Errorf("%s prints %q, which is not a check in the registry.\n"+
+				"Delete it, or add the check. If it is an ordinary hyphenated word, "+
+				"add it to proseWords.", fset.Position(lit.Pos()), word)
+		}
+		return true
+	})
+}
+
+// insideALongerToken reports whether a match is only the tail of something bigger: a
+// filename (`0001-shorten-urls.md`), a path (`.gitlab-ci.yml`), or a capitalised word
+// the pattern cannot start at (`Non-goals`, `Re-running`).
+func insideALongerToken(s string, at []int) bool {
+	edge := func(i int) bool {
+		if i < 0 || i >= len(s) {
+			return false
+		}
+		c := rune(s[i])
+		return strings.ContainsRune("./-", c) || unicode.IsLetter(c) || unicode.IsDigit(c)
+	}
+	return edge(at[0]-1) || edge(at[1])
 }
 
 func TestEveryTopicResolvesInTheBinary(t *testing.T) {
