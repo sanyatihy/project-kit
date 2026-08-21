@@ -1,9 +1,9 @@
 ---
 id: 0049
 title: Print nothing that is unfixable or untrue
-status: Draft
+status: Shipped
 created: 2026-08-21
-shipped:
+shipped: 2026-08-21
 check:
 checked:
 review:
