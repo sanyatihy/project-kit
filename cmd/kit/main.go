@@ -147,6 +147,21 @@ func runInit(args []string) int {
 		fmt.Printf("  kept       %s\n", p)
 	}
 
+	// The ids the docs already hold, reserved once. A doc written before `kit new`
+	// reserved anything holds a number nothing recorded, so deleting it would hand that
+	// number out again — and re-running init is the one moment every existing project
+	// passes through. Best effort: a remote that cannot be reached is a warning and not
+	// a reason to fail a scaffold that has already written the files.
+	if repo, err := kit.Open(root); err == nil {
+		switch n, err := kit.BackfillIDs(repo); {
+		case err != nil:
+			fmt.Fprintf(os.Stderr, "kit init: warning — could not reserve the ids "+
+				"already in use: %v\n", err)
+		case n > 0:
+			fmt.Printf("  reserved   %s already in use\n", plural(n, "id"))
+		}
+	}
+
 	// Both routes out are the agent's own, because the forge is a discoverable fact and
 	// not a decision only a human can make. Saying nothing here is what would leave a
 	// project with no pipeline and no way to know it.
@@ -198,12 +213,24 @@ func runNew(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit new: %v\n", err)
 		return 2
 	}
-	path, err := kit.NewFeature(templates, repo, title, time.Now().UTC())
+	drafted, err := kit.NewFeature(templates, repo, title, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit new: %v\n", err)
 		return 2
 	}
-	fmt.Printf("\n  created  %s\n", repo.Rel(path))
+	fmt.Printf("\n  created   %s\n", repo.Rel(drafted.Path))
+	if drafted.Remote != "" {
+		fmt.Printf("  reserved  %s on %s — no other agent can be handed it\n",
+			drafted.ID, drafted.Remote)
+	} else {
+		// Said out loud rather than degraded quietly. The reservation is the whole of
+		// what stops two agents being handed one number, and a project with no remote
+		// has nothing to make it against — which is the state the old behaviour was in
+		// everywhere, and the reason it stayed invisible for 57 features.
+		fmt.Printf("\n  no remote, so nothing reserved %s — another agent drafting off\n",
+			drafted.ID)
+		fmt.Printf("  this trunk right now can be handed the same id\n")
+	}
 	fmt.Printf("\n  fill in Problem, Non-goals, Design, and Tasks.\n")
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")

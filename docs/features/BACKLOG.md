@@ -29,22 +29,6 @@ any machine. It has to degrade for `--offline` and for projects with no remote.
 **Value:** a board that means the same thing on every machine.
 **Promote when:** a second machine joins, or a claim's work is lost with the machine holding it.
 
-## Reserve feature IDs over the network
-
-`NextID` reads the highest ID on disk and never asks the remote, so two agents drafting off
-the same trunk both allocate the same number. Reproduced under concurrency: six `kit new`
-runs at once produced four docs claiming `0001`. `kit claim 0001` is then exit 2 until a
-human renumbers.
-
-The mechanism exists: push `refs/kit/ids/<id>` as a reservation and read the winner from the
-ref update, the compare-and-swap `kit claim` already uses. What stops it being obvious is
-that `kit new` touches no network at all, so this decides whether drafting offline stops
-working or silently loses the guarantee.
-
-**Value:** several agents can draft a round at once without a human renumbering afterwards.
-**Promote when:** a duplicate ID costs a real merge, or a second agent starts drafting in
-parallel for real.
-
 ## A merged claim holds its slot until the trunk ref catches up
 
 `AwaitingReview` skips a branch the trunk contains, comparing against `trunkRef`, which
@@ -123,6 +107,31 @@ pushes what it cuts, so the flow the kit defines does not produce this; a hand-c
 **Value:** the check about what `@latest` resolves to reads what `@latest` reads.
 **Promote when:** a tag is cut and left unpushed, or `audit` calls a project current that
 `go install` disagrees with.
+
+## `kit new` cannot draft while its remote is unreachable
+
+The id is reserved by a push, so a project that has a remote and cannot reach it gets exit 2
+after the push times out — where before 0058 `kit new` touched no network at all and always
+worked. A project with *no* remote still drafts and says what it lost, which is the case the
+design covers; an unreachable one is the case it does not. `next` and `audit` both take
+`--offline`, and `Repo.Offline` already exists for it.
+
+**Value:** drafting works on a plane, at the cost the operator asked for.
+**Promote when:** an agent is seen unable to draft, or a round is delayed by a remote that
+was down.
+
+## `kit new`'s refusals are named nowhere
+
+`refusals` in `cmd/kit/refusals_test.go` holds `ship`, `release` and `claim`, so the list
+0055 made whole does not cover `new`. It turns work away for six reasons — an empty title, a
+title that slugs to nothing, a project not set up, several remotes and no origin, a push
+that answered nothing, and an id range the remote has exhausted — and `kit new --help` names
+none of them. The last two arrived with 0058.
+
+**Value:** an agent that meets a `kit new` refusal is not told the command could not have
+made it.
+**Promote when:** an agent retries a `kit new` that refused, or a fourth command joins the
+list.
 
 ## Cut from this backlog
 
