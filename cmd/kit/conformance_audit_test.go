@@ -84,6 +84,18 @@ func abandonedClaim(p *project, id, slug string, daysOld int) {
 	p.git("checkout", "-q", trunk)
 }
 
+// tagThenCommits releases the trunk and moves it on, which is what the distance between
+// a tag and the trunk is made of. Empty commits: what the commits carry is not the
+// measurement, and a doc in each of them would fire every other check as well.
+func tagThenCommits(p *project, tag string, n int) {
+	p.t.Helper()
+	p.commitAll("the plan")
+	p.git("tag", "-a", tag, "-m", tag)
+	for i := 0; i < n; i++ {
+		p.git("commit", "-q", "--allow-empty", "-m", fmt.Sprintf("work %d", i))
+	}
+}
+
 func (p *project) commitAllAt(message, isoDate string) {
 	p.t.Helper()
 	p.git("add", "-A")
@@ -177,6 +189,11 @@ var auditCases = []struct {
 		p.commitAllAt("describe the system", daysAgo(60))
 		p.write("docs/features/0002-newer.md", doc("0002", "Newer", "Shipped",
 			"shipped: "+daysAgo(2), "- [x] Done"))
+	}},
+	{"tag-stale", func(p *project) {
+		// Released once and kept merging. An install still resolves to the tag, so the
+		// distance is exactly the work it does not carry.
+		tagThenCommits(p, "v0.1.0", kit.TagStaleCommits+1)
 	}},
 	{"shipped-no-date", func(p *project) {
 		feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
@@ -562,6 +579,27 @@ func TestANonASCIIFilenameDoesNotDisableThePlanChecks(t *testing.T) {
 			p.commitAll("a plan nobody wrote")
 			p.run("audit", "--strict").fails(1).has("unfilled-template")
 		})
+	}
+}
+
+func TestTagStaleIsQuietUntilTheDistanceCouldMislead(t *testing.T) {
+	t.Parallel()
+	// The half that matters, and it is where the constant is decided: at the threshold an
+	// install is a round behind at most, which is the ordinary state of a project between
+	// releases. A check that fires there is one people learn to skip past.
+	p := cleanProject(t)
+	tagThenCommits(p, "v0.1.0", kit.TagStaleCommits)
+	if codes := p.auditCodes(); slices.Contains(codes, "tag-stale") {
+		t.Errorf("tag-stale fired %d commits past the tag, which is its own threshold: %v",
+			kit.TagStaleCommits, codes)
+	}
+
+	// And a project that has never tagged. An install resolves to the trunk itself there,
+	// so there is nothing for a tag to be behind and nothing to report.
+	fresh := cleanProject(t)
+	fresh.commitAll("the plan")
+	if codes := fresh.auditCodes(); slices.Contains(codes, "tag-stale") {
+		t.Errorf("tag-stale fired on a project that has never cut a tag: %v", codes)
 	}
 }
 

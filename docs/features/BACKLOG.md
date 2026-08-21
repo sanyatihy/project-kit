@@ -111,6 +111,19 @@ about the numbered list can no longer name a number.
 **Value:** the reasoning in the source stops pointing at rules that have moved.
 **Promote when:** a third citation is found wrong, or one sends a reader to the wrong rule.
 
+## `tag-stale` reads this machine's tags, and `@latest` reads the remote's
+
+`TagDistance` describes against the local refs, so a tag cut and never pushed silences the
+check while an install still resolves to the one before it. It is `shipped-not-pushed` for
+tags, and that check exists because the branch version of it happened. `make release`
+pushes what it cuts, so the flow the kit defines does not produce this; a hand-cut
+`git tag -a` does. The remote's tags would cost no extra process — `audit` already makes an
+`ls-remote` round trip and asks it for `--heads` alone.
+
+**Value:** the check about what `@latest` resolves to reads what `@latest` reads.
+**Promote when:** a tag is cut and left unpushed, or `audit` calls a project current that
+`go install` disagrees with.
+
 ## Cut from this backlog
 
 Five entries were deleted rather than carried. `needs: none` would have put every shipped

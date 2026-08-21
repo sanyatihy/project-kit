@@ -82,6 +82,8 @@ feature gets one.
     on the branch.
 26. **Merging somebody else's finished work is real work.** `kit next` lists it under
     `awaiting review`.
+27. **Cut a release tag when a round lands on the trunk.** An install resolves to the
+    newest tag, so a round that merged and was never tagged reaches nobody.
 
 ### Where two agents can still collide
 

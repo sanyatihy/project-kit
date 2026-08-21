@@ -49,7 +49,11 @@ const (
 	// question and so costs a process — one `ls-tree` for the whole tree. It was 40 for a
 	// day, one `cat-file` per feature, which is exactly the shape this ceiling exists to
 	// catch, and it caught it.
-	onlineBudget = 11
+	//
+	// 12 since 0054: how far the newest tag is behind the trunk is a new question, and one
+	// `describe --long` answers all of it. Fixed, not per feature — the distance is a fact
+	// about the project and is asked once.
+	onlineBudget = 12
 
 	// The same board where no trunk resolves. `Trunk()` answered "" there, and "" was
 	// also its "not asked yet" sentinel, so `findTrunk` ran the whole ladder again for

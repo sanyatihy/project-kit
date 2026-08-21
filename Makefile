@@ -96,11 +96,41 @@ install:
 	$(BUILDENV) $(GO) install $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/kit
 	@echo "installed $(BIN) into $$($(GO) env GOBIN); if empty, $$($(GO) env GOPATH)/bin"
 
+# release cuts the tag `go install ...@latest` resolves to, which is the only thing that
+# changes what a fresh install gets. Annotated, not lightweight: the tag then carries who
+# cut it and when, `git describe` reports it without --tags, and the message names the
+# range rather than restating it — the feature docs are the changelog.
+#
+# The refusals come before the gate rather than after it, because each is instant and the
+# gate is half a minute. Uncommitted work means the gate tested something the tag would not
+# point at; a HEAD that is not what origin publishes means tagging unreviewed work as a
+# release.
+#
+# The push is part of the target. `@latest` reads the remote, so a tag on one machine is
+# not a release — the same state `audit` reports at HIGH for work that shipped and was
+# never pushed.
+.PHONY: release
+release:
+	@test -n "$(TAG)" || (echo "name the version: make release TAG=v0.3.0" && exit 1)
+	@test -z "$$(git status --porcelain)" \
+		|| (echo "uncommitted work: the gate would test what $(TAG) does not point at" && exit 1)
+	@tip=$$(git ls-remote origin HEAD | cut -f1); \
+		if [ -z "$$tip" ]; then echo "origin did not answer, so its trunk is unknown"; exit 1; fi; \
+		if [ "$$(git rev-parse HEAD)" != "$$tip" ]; then \
+			echo "HEAD is not the tip of origin's default branch: release from the trunk"; \
+			exit 1; fi
+	$(MAKE) check
+	@prev=$$(git describe --tags --abbrev=0 2>/dev/null); \
+		git tag -a $(TAG) -m "$(TAG)$${prev:+ — $$prev..$(TAG)}"
+	git push origin refs/tags/$(TAG)
+	@echo "released $(TAG): go install github.com/sanyatihy/project-kit/cmd/kit@$(TAG)"
+
 .PHONY: help
 help:
 	@echo "Targets:"
 	@echo "  build       - compile ./$(BIN)"
 	@echo "  install     - go install onto your PATH"
+	@echo "  release     - gate, tag and push a version: make release TAG=v0.3.0"
 	@echo "  check       - fmt-check + vet + lint + test (the gate)"
 	@echo "  test        - unit tests + the conformance suite"
 	@echo "  fmt         - gofmt -s -w ."

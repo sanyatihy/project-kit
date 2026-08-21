@@ -35,7 +35,9 @@ const (
 	// 111 since the feature rule was reframed: naming the value a feature ships, and the
 	// three ways to tell it is not one, costs a line over asserting that it records a
 	// decision. Decomposition is what the protocol is for.
-	protocolBudget = 111
+	// 113 since 0054: nothing named the step after a merge, and an install resolves to the
+	// newest tag, so every round after the last one reached no project that installed it.
+	protocolBudget = 113
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -70,11 +72,17 @@ const (
 	// binary may name, that a refusal list is whole, and the shape of `--json`. Each is a
 	// contract a later change can break silently, so each states what holds and what
 	// broke — and the twelfth line is the `flag` gotcha growing a second half.
-	techBudget = 339
+	// 344 on merging 0054: five lines for the half of shipping nothing here described —
+	// what a release is, what refuses one, and the command that cuts it, which belongs
+	// beside the other two a developer runs.
+	techBudget = 344
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
-	agentsBudget = 168
+	// 169 on 0054: the protocol's tagging rule arrives here with it, and the line above it
+	// names the command that cuts one — the generated section cannot, because the Go stack
+	// it scaffolds already ships a `make release` that builds a binary.
+	agentsBudget = 169
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary
