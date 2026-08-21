@@ -34,6 +34,7 @@ invent product decisions on the human's behalf — ask in `docs/INBOX.md`.
 ```sh
 make check     # fmt-check, vet, lint, unit tests, conformance suite — the whole gate
 make install   # go install ./cmd/kit
+make release TAG=v0.3.0   # gate, then cut and push the tag `@latest` resolves to
 ```
 
 **Run `make install` after anything lands on `main`.** `kit` on `$PATH` is one binary
@@ -137,6 +138,8 @@ feature gets one.
     on the branch.
 26. **Merging somebody else's finished work is real work.** `kit next` lists it under
     `awaiting review`.
+27. **Cut a release tag when a round lands on the trunk.** An install resolves to the
+    newest tag, so a round that merged and was never tagged reaches nobody.
 
 ### Where two agents can still collide
 

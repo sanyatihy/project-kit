@@ -43,8 +43,12 @@ README advertises.
 ## Tasks
 
 - [x] `make release` runs the gate and cuts an annotated tag
-- [ ] The protocol names tagging as what follows a round landing
+- [x] The protocol names tagging as what follows a round landing
 - [ ] `audit` reports a tag far enough behind the trunk to mislead `@latest`
 - [ ] A release is cut for the current trunk, and `go install @latest` is verified against it
 
 ## Log
+- 2026-08-21 — the protocol names the act and not `make release`. The Go stack `kit init`
+  scaffolds already ships a `release` target that builds a static binary, so a generated
+  rule naming the command would mean the wrong thing in every project the kit writes. The
+  command is named in this repo's own `## Changing the kit`, beside `make check`.
