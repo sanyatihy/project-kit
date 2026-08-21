@@ -1,0 +1,13 @@
+# The linter set, written down. Without this file the enabled set is whatever the
+# installed version defaults to, so a release that adds a linter turns the gate red
+# with no commit behind it. These five are golangci-lint's standard set at v2.
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused

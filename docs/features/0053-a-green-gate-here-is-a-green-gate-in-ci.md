@@ -49,7 +49,7 @@ numbers — introduced by the round that added it, and invisible to `make check`
 ## Tasks
 
 - [x] `make check` runs the lint, and the deprecation that has `main` red is fixed
-- [ ] `.golangci.yml` is committed and the action pins a version
+- [x] `.golangci.yml` is committed and the action pins a version
 - [ ] CI is `make check` plus the network steps, and a test compares the two lists
 - [ ] The workflow sets `timeout-minutes`
 - [ ] Coverage is either instrumented through the conformance binary or no longer reported

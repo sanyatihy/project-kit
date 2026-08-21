@@ -34,9 +34,11 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # Pinned: `latest` turns main red on a linter release with no commit behind
+      # it. The enabled set is pinned too, in .golangci.yml.
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: v2.12.2
 
       - run: make check
 
