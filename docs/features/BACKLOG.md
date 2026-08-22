@@ -162,6 +162,25 @@ says at the moment it matters.
 **Promote when:** the next round touches the protocol, or a third rule is found restating a
 refusal.
 
+## Nothing tells an agent which language a project's docs are written in
+
+Kit generates no prose: the templates and what you typed are its only sources. The language
+of a doc body is therefore the agent's choice, remade each session. A project that wants
+Russian gets English unless its own house rules say otherwise, and that sentence is written
+by hand in every project that wants one.
+
+`kit init --lang ru` would seed it above the marker in `AGENTS.md`, which `init` never
+rewrites and the project owns afterwards — any language, with no translated templates and
+no model in the binary. The seeded line has to name what stays English whatever the
+language: the headings the parsers read, the frontmatter keys, and `Draft | Shipped |
+Dropped`. Without that an agent translates `## Tasks` and the board sees no tasks at all. A
+re-run under a different language would not update the line, and `kit new` still takes an
+ASCII title — `Slug` strips to `[a-z0-9]`.
+
+**Value:** a project says what language its docs are written in once, and every agent is told.
+**Promote when:** a second project needs non-English docs, or an agent writes English into
+one that asked for Russian.
+
 ## Cut from this backlog
 
 Five entries were deleted rather than carried. `needs: none` would have put every shipped
