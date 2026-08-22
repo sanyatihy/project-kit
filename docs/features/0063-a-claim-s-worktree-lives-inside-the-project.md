@@ -1,5 +1,5 @@
 ---
-id: 0067
+id: 0063
 title: A claim's worktree lives inside the project
 status: Draft        # Draft | Shipped | Dropped — kit ship and kit drop write it
 created: 2026-08-22
@@ -62,3 +62,6 @@ uncovered, and names the file it wrote in its output.
       is written once per clone
 
 ## Log
+
+- 2026-08-22 — renumbered from 0067, into the id freed by releasing the unused
+  reservations. `9db63b6` and the merge above it cite the old number.
