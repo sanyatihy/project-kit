@@ -57,7 +57,7 @@ doc. It takes `needsState`'s terminal gate for the reason that function gives.
 
 ## Tasks
 
-- [ ] The template's frontmatter carries no comment, and a test holds it to that
+- [x] The template's frontmatter carries no comment, and a test holds it to that
 - [ ] `audit` reports a `needs:` carrying text that is not an id list, skipping terminal
       docs, with a conformance case
 - [ ] The docs on the trunk pass it
