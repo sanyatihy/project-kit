@@ -56,6 +56,94 @@ type Drafted struct {
 // go on reading the docs — a stale reservation cannot make the board wrong.
 func idRef(id string) string { return "refs/kit/ids/" + id }
 
+// Reservation is an id the remote has handed out, and what its record says it was for.
+type Reservation struct {
+	ID    string
+	Title string    // "" for one made before a reservation recorded anything
+	When  time.Time // zero for the same reason
+}
+
+// Reservations lists every id the remote has handed out, and whether that list came from
+// the remote rather than from a past fetch.
+//
+// One fetch mirrors refs/kit/ids/* into the same namespace here, because `ls-remote`
+// answers with SHAs and the title and date are in the object. Every read after it is
+// local. `--prune` is what makes an id released elsewhere disappear here too, rather than
+// linger as a reservation the remote no longer has.
+func (r *Repo) Reservations() ([]Reservation, bool) {
+	if !r.reservationsAsked {
+		r.reservationsAsked = true
+		r.reservationsFresh = r.fetchReservations()
+		r.reservations = r.readReservations()
+	}
+	return r.reservations, r.reservationsFresh
+}
+
+// fetchReservations brings the namespace up to date, reporting whether it managed to.
+// Nothing to ask means false rather than an error: no remote, `--offline`, and a remote
+// that did not answer are all "this list may be stale", which is the caller's decision
+// to make.
+func (r *Repo) fetchReservations() bool {
+	remote, err := pickRemote(r)
+	if r.Offline || err != nil || remote == "" {
+		return false
+	}
+	_, fetchErr := r.gitRun("fetch", "--prune", remote, "+"+idRef("*")+":"+idRef("*"))
+	return fetchErr == nil
+}
+
+// readReservations reads the mirrored namespace. A ref pointing at the empty tree — every
+// reservation made before they recorded anything, and every one BackfillIDs writes —
+// carries no date and no subject, and answers the zero value for both.
+func (r *Repo) readReservations() []Reservation {
+	const sep = "\x1f"
+	format := "%(refname)" + sep + "%(committerdate:unix)" + sep + "%(contents:subject)"
+	var out []Reservation
+	for _, line := range strings.Split(r.git("for-each-ref", "--format="+format, idRef("")), "\n") {
+		fields := strings.Split(strings.TrimSpace(line), sep)
+		if len(fields) != 3 {
+			continue
+		}
+		id := strings.TrimPrefix(fields[0], idRef(""))
+		if id == "" {
+			continue
+		}
+		held := Reservation{ID: id,
+			Title: strings.TrimSpace(strings.TrimPrefix(fields[2], id+" "))}
+		if secs, err := strconv.ParseInt(fields[1], 10, 64); err == nil && secs > 0 {
+			held.When = time.Unix(secs, 0).UTC()
+		}
+		out = append(out, held)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
+}
+
+// reserveCommit is what a reservation points at: an empty tree under a message naming
+// the id and the title it was handed out for.
+//
+// The ref used to point at the empty tree itself, which recorded nothing — so a number
+// handed out for a draft that was then cut left a reservation nobody could account for,
+// and four went that way before anything noticed. A commit carries the title, the date
+// and the drafter at no cost to the compare-and-swap: two reservations of one id differ
+// now where they used to be identical, so a loser reads `!` where it read `=`, and both
+// are the same answer — the number is gone.
+//
+// One line, because `git log` shows a reservation as a subject and nothing here has a
+// second thing to say.
+func (r *Repo) reserveCommit(tree, id, title string) (string, error) {
+	out, err := r.gitRun("commit-tree", tree, "-m", id+" "+title)
+	if err != nil {
+		return "", fmt.Errorf("%w\nA reservation records who drafted it, so this needs "+
+			"user.name and user.email set", err)
+	}
+	sha := strings.TrimSpace(out)
+	if sha == "" {
+		return "", fmt.Errorf("git commit-tree named no object for the reservation")
+	}
+	return sha, nil
+}
+
 // reserveAttempts bounds the walk up the range when the pushes keep losing. Each loss
 // is another drafter holding that number, so a run of them is contention and not a
 // fault — but a remote refusing every ref under refs/kit/ for a reason of its own loses
@@ -69,11 +157,9 @@ const reserveAttempts = 20
 // of simultaneous drafters exactly one creates a given ref. NextID only says where to
 // start; every number it offers is tried on the remote until one is free.
 //
-// Every reservation points at the empty tree, so all of them carry the same nothing and
-// a ref already there is always "up to date" rather than a value in conflict with ours.
-// The flag is read rather than the exit code because those two disagree in exactly that
-// case, which is what pushFlag exists for.
-func reserveID(r *Repo, remote string) (string, error) {
+// The flag is read rather than the exit code, because the two disagree over a ref that
+// is already there — which is what pushFlag exists for.
+func reserveID(r *Repo, remote, title string) (string, error) {
 	tree, err := r.emptyTree()
 	if err != nil {
 		return "", err
@@ -85,14 +171,19 @@ func reserveID(r *Repo, remote string) (string, error) {
 	for n := start; n < start+reserveAttempts; n++ {
 		id := fmt.Sprintf("%04d", n)
 		ref := idRef(id)
+		object, err := r.reserveCommit(tree, id, title)
+		if err != nil {
+			return "", err
+		}
 		out, pushErr := r.gitRun("push", "--porcelain",
-			"--force-with-lease="+ref+":", remote, tree+":"+ref)
+			"--force-with-lease="+ref+":", remote, object+":"+ref)
 		switch flag := pushFlag(out, ref); {
 		case flag == pushCreated:
 			return id, nil
-		// Anything else the remote said about this ref means the ID is gone: "=" for a
-		// reservation identical to ours, "!" for a ref holding something else. Both are
-		// somebody's number, and the next one is tried.
+		// Anything else the remote said about this ref means the ID is gone: "!" for a
+		// ref holding something else, "=" for the empty tree a reservation pointed at
+		// before this recorded anything. Both are somebody's number, and the next one
+		// is tried.
 		case flag != "":
 			continue
 		// The push said nothing about our ref, so nothing is known about who holds it.
@@ -233,7 +324,7 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 	}
 	id := NextID(r)
 	if remote != "" {
-		if id, err = reserveID(r, remote); err != nil {
+		if id, err = reserveID(r, remote, title); err != nil {
 			return nil, err
 		}
 	}

@@ -132,6 +132,13 @@ type Repo struct {
 	trunkPaths      map[string]bool
 	trunkPathsAsked bool
 
+	// The ids the remote has handed out, mirrored in one fetch and read once. The fetch
+	// is the only network cost, and whether it succeeded is what separates a reservation
+	// that is gone from one this checkout has not heard about.
+	reservations      []Reservation
+	reservationsFresh bool
+	reservationsAsked bool
+
 	// Every ref this repository has, read in one `git show-ref`. The alternative is one
 	// `rev-parse` per candidate per feature, which is where 32 of a board read's 58
 	// processes went.

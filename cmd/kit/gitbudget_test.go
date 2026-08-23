@@ -58,7 +58,12 @@ const (
 	// 12 since 0054: how far the newest tag is behind the trunk is a new question, and one
 	// `describe --long` answers all of it. Fixed, not per feature — the distance is a fact
 	// about the project and is asked once.
-	onlineBudget = 12
+	// 14 since 0064: an id the remote has handed out is a new question, and it has to be
+	// asked of the remote or the check reports numbers that may already be free. One
+	// `fetch` mirrors the whole namespace and one `for-each-ref` reads it, both fixed —
+	// the `ls-tree` per branch that follows is spent only on a candidate that survives
+	// the docs on disk, and on a project where nothing has drifted there is none.
+	onlineBudget = 14
 
 	// The same board where no trunk resolves. `Trunk()` answered "" there, and "" was
 	// also its "not asked yet" sentinel, so `findTrunk` ran the whole ladder again for

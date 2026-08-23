@@ -1,9 +1,9 @@
 ---
 id: 0064
 title: Every id the kit hands out can be accounted for
-status: Draft        # Draft | Shipped | Dropped — kit ship and kit drop write it
+status: Shipped
 created: 2026-08-22
-shipped:             # written by kit ship, never by hand
+shipped: 2026-08-23
 needs:               # feature ids that must ship first, e.g. 0002, 0003. Empty = can start now
 ---
 
@@ -56,11 +56,11 @@ already makes, and every read after it is offline.
 
 ## Tasks
 
-- [ ] `kit new` points a reservation at a commit naming the title, and one id still reaches
+- [x] `kit new` points a reservation at a commit naming the title, and one id still reaches
       exactly one drafter
-- [ ] `kit drop <id> "<why>"` releases a reservation no doc holds, and refuses while a
+- [x] `kit drop <id> "<why>"` releases a reservation no doc holds, and refuses while a
       branch carries one or the horizon has not passed
-- [ ] `audit` reports a reservation past the horizon that no doc describes, and names
+- [x] `audit` reports a reservation past the horizon that no doc describes, and names
       `kit drop` as the fix
 
 ## Open questions
@@ -76,6 +76,9 @@ already makes, and every read after it is offline.
 - 2026-08-22 — renumbered from 0068, and 0063's doc from 0067, after the four unused
   reservations were released rather than left as gaps. `370f20d` and the merges above it
   cite the old numbers.
+- 2026-08-23 — the horizon, not position in the sequence: `stalled` and `inbox-stale`
+  already measure from one, and a reservation carrying no date predates the record and so
+  counts as past it.
 - 2026-08-22 — `drop` releases the reservation where it recorded a retirement, and the
   fourth box went with the change: the four ids this was drafted for are already free, so
   the design is what stops the next four.

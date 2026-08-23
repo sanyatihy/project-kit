@@ -5,8 +5,11 @@ package main
 // sits on the board for ever and every agent reads it as work nobody has started.
 
 import (
+	"os/exec"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDropRetiresAFeatureAndRecordsWhy(t *testing.T) {
@@ -149,4 +152,92 @@ func TestDropReportsALeftoverClaimRatherThanDeletingIt(t *testing.T) {
 	if !p.resolves("refs/heads/0001-shorten") {
 		t.Error("drop deleted a branch, which is not its to delete")
 	}
+}
+
+// reserve makes a reservation by hand, dated, so a test can put one on either side of the
+// horizon. `kit new` makes one too, and can only ever date it now.
+func (p *project) reserve(id, title string, daysAgo int) {
+	p.t.Helper()
+	// RFC 3339: git rejects "30 days ago" here, where it accepts it on the command line.
+	when := time.Now().AddDate(0, 0, -daysAgo).Format(time.RFC3339)
+	tree := p.gitOut(nil, "hash-object", "-t", "tree", "--stdin")
+	sha := p.gitOut([]string{"GIT_AUTHOR_DATE=" + when, "GIT_COMMITTER_DATE=" + when},
+		"commit-tree", tree, "-m", id+" "+title)
+	p.git("push", "-q", "origin", sha+":refs/kit/ids/"+id)
+}
+
+// gitOut is git read for its answer rather than its effect, with extra environment for
+// the one caller that has to control a commit's date.
+func (p *project) gitOut(extra []string, args ...string) string {
+	p.t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir, cmd.Env = p.Root, gitEnv(extra...)
+	out, err := cmd.Output()
+	if err != nil {
+		p.t.Fatalf("git %s: %v", strings.Join(args, " "), err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func TestDropReleasesAReservationNoDocHolds(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	// The state four ids reached: a number handed out for a round that was then cut, held
+	// by no doc anywhere, and reachable by no command — `drop` needs a doc to write into.
+	a.reserve("0009", "Ninth", 30)
+
+	a.run("drop", "0009", "the round was cut and pivoted into 0007").
+		ok().has("released", "0009", "Ninth")
+
+	if got := a.reservedIDs(); slices.Contains(got, "0009") {
+		t.Errorf("the remote still reserves %v — the number is out of circulation with "+
+			"nothing describing it", got)
+	}
+	// Free means back in circulation: 0008 is the next number on disk, and 0009 is the
+	// one after it only because nothing reserves it any more.
+	a.run("new", "Eighth").ok().has("0008-eighth.md")
+	a.run("new", "Ninth").ok().has("0009-ninth.md")
+}
+
+func TestDropRefusesAReservationYoungerThanTheHorizon(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.reserve("0009", "Ninth", 1)
+
+	// A reservation made a moment ago is an ordinary draft being written somewhere else,
+	// and a release that fires on those hands out a number two people are using.
+	a.run("drop", "0009", "looks unused").fails(2).errHas("draft in flight")
+
+	if got := a.reservedIDs(); !slices.Contains(got, "0009") {
+		t.Errorf("the remote holds %v — the reservation was released anyway", got)
+	}
+}
+
+func TestDropRefusesToReleaseAnIDADraftStillHolds(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.reserve("0009", "Ninth", 30)
+
+	// A round in flight: the doc is on its own branch and nowhere else, so from the trunk
+	// the id looks exactly like one nobody used.
+	trunk := a.headBranch()
+	a.git("switch", "-q", "-c", "plan/round")
+	feature(a, "0009", "ninth", "Ninth", "Draft", "- [ ] Build it")
+	a.commitAll("the round")
+	a.git("switch", "-q", trunk)
+
+	a.run("drop", "0009", "looks unused").fails(2).errHas("plan/round")
+
+	if got := a.reservedIDs(); !slices.Contains(got, "0009") {
+		t.Errorf("the remote holds %v — the draft's number was released under it", got)
+	}
+}
+
+func TestDropSaysWhenAnIDIsFreeAlready(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+
+	// No doc and no reservation. The old answer was "no feature 0009", which reads as a
+	// typo rather than as the number already being available.
+	a.run("drop", "0009", "tidying").fails(2).errHas("free already")
 }

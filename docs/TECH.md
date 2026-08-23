@@ -76,9 +76,17 @@ Draft -> Shipped     (exit: Dropped)
   disk scan says where to start rather than what is free. The ref outlives the file, so
   deleting a doc no longer frees its id, and `kit init` reserves the ids a project already
   holds — nothing reports an unreserved one, because until that ran every doc on every
-  board was one. The refs point at the empty tree, asked of git because that value differs
-  under SHA-256, so a project with no commits can still reserve. No remote means no
+  board was one. The ref points at a commit naming the id and the title, over the empty
+  tree asked of git because that value differs under SHA-256 — a backfilled one is the bare
+  tree and records nothing. A project with no commits can still reserve; no remote means no
   reservation, and `kit new` says which guarantee it could not give.
+- **A reservation is accounted for, or released.** `kit drop` on an id no doc holds deletes
+  the ref instead of writing a status, and `audit` reports `orphan-reservation` at MEDIUM
+  for one past the stalled horizon. Whether a doc holds it is asked of every branch's
+  *tree*: a round that was drafted and reverted keeps its docs in `git log` for ever, and
+  those are the ids there is anything to free. One `fetch` mirrors `refs/kit/ids/*` here,
+  because `ls-remote` answers with SHAs and the record is in the object — a list that could
+  not be refreshed reports nothing and releases nothing.
 - **A claim carries the plan, branches from the trunk, and carries nothing else.** The doc
   must be in `HEAD`'s tree and in `trunkRef()`'s, or the claim is a child of the plan
   branch and only its own author can integrate it. The push is of `HEAD`, so a checkout

@@ -255,12 +255,14 @@ func runDrop(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit drop: %v\n", err)
 		return 2
 	}
+	why := strings.TrimSpace(strings.Join(rest[1:], " "))
 	id, err := kit.ResolveID(repo, rest[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit drop: %v\n", err)
-		return 2
+		// No doc holds the number, which used to end here. A reservation may hold it, and
+		// returning that to circulation is the disposal nothing else has: an id handed out
+		// for a draft that was then cut could be reached by no command at all.
+		return releaseReservation(repo, rest[0], why)
 	}
-	why := strings.TrimSpace(strings.Join(rest[1:], " "))
 	res, err := kit.Drop(repo, id, why, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit drop: %v\n", err)
@@ -286,6 +288,27 @@ func runDrop(args []string) int {
 		fmt.Printf("\n  still claimed by %s — delete it, or the board shows work\n",
 			strings.Join(res.Claims, " and "))
 		fmt.Printf("  nobody is doing\n")
+	}
+	fmt.Printf("\nnext:\n  kit next\n\n")
+	return 0
+}
+
+// releaseReservation is `kit drop` on an id no doc holds: the reservation goes back, and
+// the reason goes nowhere durable, because there is no doc to write a ## Log entry in.
+func releaseReservation(repo *kit.Repo, typed, why string) int {
+	released, err := kit.ReleaseID(repo, typed, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit drop: %v\n", err)
+		return 2
+	}
+	fmt.Printf("\n  released %s on %s", released.ID, released.Remote)
+	if released.Title != "" {
+		fmt.Printf("  (was reserved for %q)", released.Title)
+	}
+	fmt.Printf("\n  the number is free — the next kit new may be handed it\n")
+	if why == "" {
+		fmt.Printf("\n  no reason recorded, and there is no doc to record one in —\n")
+		fmt.Printf("  say why in the pull request that carries this\n")
 	}
 	fmt.Printf("\nnext:\n  kit next\n\n")
 	return 0

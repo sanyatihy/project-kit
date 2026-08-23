@@ -565,6 +565,46 @@ func (r *Repo) OrphanClaims() []string {
 	return out
 }
 
+// DocBranches names the branches whose tree holds a feature doc for an id, this
+// checkout's own included.
+//
+// The tree and not the history. A round that was drafted, reverted and pivoted has its
+// docs in `git log` for ever, and a number handed out for one of those is exactly what
+// there is to release — asking the log would refuse every id this exists to free. What
+// the question has to be is whether anybody is still carrying the doc.
+//
+// One `ls-tree` per branch, which no board read makes: this answers a refusal in `drop`,
+// where the alternative is handing out a number a draft in flight already holds.
+func (r *Repo) DocBranches(id string) []string {
+	r.loadGit()
+	dir := "docs/features"
+	if r.FeaturesDir != "" {
+		dir = r.Rel(r.FeaturesDir)
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, ref := range r.refs {
+		name := r.branchName(ref)
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		rev := r.resolveBranch(name)
+		if rev == "" {
+			continue
+		}
+		for _, path := range gitPaths(
+			r.git("ls-tree", "-r", "-z", "--name-only", rev, "--", dir+"/")) {
+			if strings.HasPrefix(filepath.Base(path), id+"-") {
+				out = append(out, name)
+				break
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 // BranchCarriesItsDoc reports whether a branch holds the feature doc it is named after.
 // The doc names the branch and the branch cites the doc, so the filename is derivable and
 // no mapping has to be kept.
