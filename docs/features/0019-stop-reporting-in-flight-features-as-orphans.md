@@ -4,8 +4,6 @@ title: Stop reporting in-flight features as orphans
 status: Shipped
 created: 2026-08-14
 shipped: 2026-08-14
-check:
-checked:
 needs: 0018
 related: 0017-read-the-board-from-real-git-state.md
 ---

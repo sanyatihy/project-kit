@@ -4,8 +4,6 @@ title: Report every project the board was asked about
 status: Shipped
 created: 2026-08-16
 shipped: 2026-08-16
-check:
-checked:
 needs:
 related: 0013-never-leave-an-agent-without-an-instruction.md
 ---

@@ -4,8 +4,6 @@ title: Make the board honest under several agents
 status: Shipped
 created: 2026-08-12
 shipped: 2026-08-12
-check:
-checked:
 related: 0006-make-the-kit-safe-for-concurrent-agents.md
 ---
 

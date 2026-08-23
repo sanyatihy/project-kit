@@ -4,8 +4,6 @@ title: Work on the forge the project is actually on
 status: Shipped
 created: 2026-08-15
 shipped: 2026-08-16
-check:
-checked:
 needs:
 related: 0012-kit-init-refreshes-the-docs-it-owns.md
 ---

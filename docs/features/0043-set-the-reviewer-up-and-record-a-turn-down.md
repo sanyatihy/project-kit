@@ -4,9 +4,6 @@ title: Set the reviewer up and record a turn-down
 status: Dropped
 created: 2026-08-18
 shipped:
-check:
-checked:
-review:
 needs:
 related: docs/features/0013-never-leave-an-agent-without-an-instruction.md
 ---

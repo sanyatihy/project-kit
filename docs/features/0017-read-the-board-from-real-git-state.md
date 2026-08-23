@@ -4,8 +4,6 @@ title: Read the board from real git state
 status: Shipped
 created: 2026-08-14
 shipped: 2026-08-14
-check:
-checked:
 needs: 0016
 related: 0010-make-the-board-honest-under-several-agents.md
 ---

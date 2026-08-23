@@ -4,8 +4,6 @@ title: Say when the remote did not answer
 status: Shipped
 created: 2026-08-17
 shipped: 2026-08-17
-check:
-checked:
 needs: 0029
 related: 0028-see-what-is-waiting-for-review.md
 ---

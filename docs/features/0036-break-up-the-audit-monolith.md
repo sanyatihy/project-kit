@@ -4,8 +4,6 @@ title: Break up the audit monolith
 status: Shipped
 created: 2026-08-17
 shipped: 2026-08-18
-check:
-checked:
 needs:
 related: 0016-make-an-unfinished-doc-fail-the-audit.md
 ---

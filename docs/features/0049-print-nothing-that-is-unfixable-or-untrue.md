@@ -4,11 +4,7 @@ title: Print nothing that is unfixable or untrue
 status: Shipped
 created: 2026-08-21
 shipped: 2026-08-21
-check:
-checked:
-review:
 needs: 0048
-related:
 ---
 
 ## Problem

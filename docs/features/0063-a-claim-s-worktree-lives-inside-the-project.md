@@ -4,7 +4,7 @@ title: A claim's worktree lives inside the project
 status: Shipped
 created: 2026-08-22
 shipped: 2026-08-23
-needs:               # feature ids that must ship first, e.g. 0002, 0003. Empty = can start now
+needs:
 ---
 
 ## Problem

@@ -4,8 +4,6 @@ title: Ship standing engineering guidance in the binary
 status: Shipped
 created: 2026-08-11
 shipped: 2026-08-11
-check:
-checked:
 related: ../../cmd/kit/help.go
 ---
 

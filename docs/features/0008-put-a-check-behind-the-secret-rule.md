@@ -4,8 +4,6 @@ title: Put a check behind the secret rule
 status: Shipped
 created: 2026-08-12
 shipped: 2026-08-12
-check:
-checked:
 related: 0005-make-claims-and-blocking-mean-what-the-docs-say.md
 ---
 

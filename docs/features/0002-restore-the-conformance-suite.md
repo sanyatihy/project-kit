@@ -4,8 +4,6 @@ title: Restore the conformance suite
 status: Shipped
 created: 2026-08-11
 shipped: 2026-08-11
-check:
-checked:
 related: ../../AGENTS.md
 ---
 

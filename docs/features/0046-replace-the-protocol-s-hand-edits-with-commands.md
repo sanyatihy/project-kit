@@ -4,9 +4,6 @@ title: Replace the protocol's hand-edits with commands
 status: Shipped
 created: 2026-08-20
 shipped: 2026-08-20
-check:
-checked:
-review:
 needs: 0045
 related: 0018-give-the-human-an-accept-command.md, 0044-route-each-fact-to-one-home.md
 ---

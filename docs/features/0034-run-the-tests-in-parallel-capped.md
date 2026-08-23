@@ -4,8 +4,6 @@ title: Run the tests in parallel, capped
 status: Shipped
 created: 2026-08-17
 shipped: 2026-08-17
-check:
-checked:
 needs:
 related: 0002-restore-the-conformance-suite.md
 ---

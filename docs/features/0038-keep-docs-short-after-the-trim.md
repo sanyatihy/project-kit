@@ -4,8 +4,6 @@ title: Keep docs short after the trim
 status: Shipped
 created: 2026-08-17
 shipped: 2026-08-18
-check:
-checked:
 needs: 0037
 related: 0037-rules-that-produce-concise-docs.md
 ---

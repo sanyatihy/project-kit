@@ -4,9 +4,6 @@ title: Write for the smallest agent that reads it
 status: Shipped
 created: 2026-08-20
 shipped: 2026-08-20
-check:
-checked:
-review:
 needs:
 related: 0041-write-about-the-system-not-the-session.md, 0044-route-each-fact-to-one-home.md, 0022-say-how-much-to-write-and-hold-the-kit-s-own-docs-to-it.md
 ---

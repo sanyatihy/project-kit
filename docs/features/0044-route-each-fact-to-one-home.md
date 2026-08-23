@@ -4,9 +4,6 @@ title: Route each fact to one home
 status: Shipped
 created: 2026-08-18
 shipped: 2026-08-18
-check:
-checked:
-review:
 needs:
 related: 0041-write-about-the-system-not-the-session.md, 0037-rules-that-produce-concise-docs.md
 ---

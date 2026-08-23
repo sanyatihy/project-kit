@@ -4,8 +4,6 @@ title: Let agents work from drafts, and make accepting a signal
 status: Shipped
 created: 2026-08-15
 shipped: 2026-08-16
-check:
-checked:
 needs:
 related: 0018-give-the-human-an-accept-command.md, 0014-reach-the-agent-not-just-the-reader.md
 ---

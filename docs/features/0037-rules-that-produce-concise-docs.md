@@ -4,8 +4,6 @@ title: Trim the feature docs to their durable core
 status: Shipped
 created: 2026-08-17
 shipped: 2026-08-17
-check:
-checked:
 needs:
 related: 0031-cut-the-kit-s-own-docs-to-what-gets-read.md
 ---

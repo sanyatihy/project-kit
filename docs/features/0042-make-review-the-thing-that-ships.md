@@ -4,9 +4,6 @@ title: Make review the thing that ships a feature
 status: Dropped
 created: 2026-08-18
 shipped:
-check:
-checked:
-review:
 needs:
 related: docs/features/0028-see-what-is-waiting-for-review.md, docs/features/0032-drop-the-in-progress-status.md
 ---

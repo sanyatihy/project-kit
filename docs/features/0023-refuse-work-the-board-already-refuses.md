@@ -4,8 +4,6 @@ title: Stop the commands doing quietly what the board forbids
 status: Shipped
 created: 2026-08-16
 shipped: 2026-08-16
-check:
-checked:
 needs:
 related: 0021-let-agents-work-from-drafts-and-make-accepting-a-signal.md
 ---

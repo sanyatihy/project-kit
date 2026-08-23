@@ -4,8 +4,6 @@ title: kit init refreshes the docs it owns
 status: Shipped
 created: 2026-08-14
 shipped: 2026-08-14
-check:
-checked:
 related: 0011-features-declare-what-they-need.md
 ---
 

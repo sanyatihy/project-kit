@@ -4,8 +4,6 @@ title: Say how much to write, and hold the kit's own docs to it
 status: Shipped
 created: 2026-08-15
 shipped: 2026-08-16
-check:
-checked:
 needs: 0021
 related: 0003-ship-standing-engineering-guidance-in-the-binary.md
 ---

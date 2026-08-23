@@ -4,8 +4,6 @@ title: Make an unfinished doc fail the audit
 status: Shipped
 created: 2026-08-14
 shipped: 2026-08-14
-check:
-checked:
 needs:
 related: 0009-fix-what-the-first-real-run-found.md
 ---

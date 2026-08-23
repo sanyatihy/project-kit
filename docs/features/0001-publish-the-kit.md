@@ -4,8 +4,6 @@ title: Publish the kit so go install works
 status: Shipped
 created: 2026-08-11
 shipped: 2026-08-11
-check:
-checked:
 related: ../../README.md
 ---
 
