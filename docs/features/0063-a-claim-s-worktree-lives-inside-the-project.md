@@ -54,7 +54,7 @@ uncovered, and names the file it wrote in its output.
 
 ## Tasks
 
-- [ ] `kit claim` prints an absolute `<main worktree>/.worktrees/<branch>`, correct from
+- [x] `kit claim` prints an absolute `<main worktree>/.worktrees/<branch>`, correct from
       any checkout
 - [ ] `kit claim` writes `.worktrees/` to `.git/info/exclude` when `check-ignore` reports
       it uncovered, and says which file it wrote

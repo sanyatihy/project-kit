@@ -2,6 +2,7 @@ package kit
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -319,4 +320,31 @@ func (r *Repo) remotes() []string {
 	}
 	r.remoteNames = out
 	return out
+}
+
+// worktreesDir is where a claim's worktree goes: inside the project, so the parent stays
+// a list of repositories and each live claim opens in the editor as its own repository
+// with its own branch and diff. The leading dot is load-bearing — ripgrep and the Go
+// toolchain both skip a dot directory on the name alone, so the second copy of the source
+// stays out of every recursive read.
+const worktreesDir = ".worktrees"
+
+// MainWorktree is the checkout that owns the repository, which `git worktree list
+// --porcelain` names in its first record. Answers the project root when git names
+// nothing, which is a directory that is not a repository at all.
+func (r *Repo) MainWorktree() string {
+	for _, line := range strings.Split(r.git("worktree", "list", "--porcelain"), "\n") {
+		if rest, found := strings.CutPrefix(strings.TrimSpace(line), "worktree "); found {
+			return rest
+		}
+	}
+	return r.Root
+}
+
+// WorktreePath is where the worktree for a branch goes. Absolute and anchored at the main
+// worktree, because the path `claim` printed was relative to the current directory: right
+// from the trunk, and a sibling of whatever worktree the agent happened to stand in
+// otherwise. Named for the branch, so the listing reads as the board.
+func (r *Repo) WorktreePath(branch string) string {
+	return filepath.Join(r.MainWorktree(), worktreesDir, branch)
 }

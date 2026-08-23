@@ -783,3 +783,18 @@ func TestARebaseLeavesTheFeatureWithTheAgentRebasing(t *testing.T) {
 	}
 	a.run("ship", "0007").ok().has("shipped")
 }
+
+func TestClaimNamesAWorktreeInsideTheProject(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+
+	// A detached checkout of the trunk, which is where an agent that has just shipped
+	// stands: the path used to be relative to here, so it named a sibling of this
+	// directory rather than anything under the project.
+	side := filepath.Join(a.Root, "..", "side")
+	a.git("worktree", "add", "--detach", "-q", side, "HEAD")
+	from := projectAt(t, side)
+
+	want := filepath.Join(a.Root, ".worktrees", "0007-widget")
+	from.run("claim", "0007").ok().has("git worktree add " + want)
+}
