@@ -60,7 +60,7 @@ already makes, and every read after it is offline.
       exactly one drafter
 - [x] `kit drop <id> "<why>"` releases a reservation no doc holds, and refuses while a
       branch carries one or the horizon has not passed
-- [ ] `audit` reports a reservation past the horizon that no doc describes, and names
+- [x] `audit` reports a reservation past the horizon that no doc describes, and names
       `kit drop` as the fix
 
 ## Open questions

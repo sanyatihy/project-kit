@@ -207,6 +207,16 @@ var auditCases = []struct {
 		p.git("branch", "0002-contested")
 		p.git("branch", "0002-contested-again")
 	}},
+	{"orphan-reservation", func(p *project) {
+		// A number handed out for a round that was then cut. The ref outlives the doc by
+		// design, so nothing could see one no doc ever landed against — and four went out
+		// of circulation that way. A remote has to exist for the question to have an
+		// answer, and the list has to come from it rather than from the last fetch.
+		origin := p.t.TempDir()
+		gitIn(p.t, origin, "init", "-q", "--bare", ".")
+		p.git("remote", "add", "origin", origin)
+		p.reserve("0099", "A round that was cut", 30)
+	}},
 	{"orphan-claim", func(p *project) {
 		p.commitAll("something")
 		p.git("branch", "0099-long-gone")
@@ -411,6 +421,37 @@ func TestAuditEveryCheckFires(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOrphanReservationStaysQuietOnADraftInFlight(t *testing.T) {
+	t.Parallel()
+	// Both halves of an ordinary drafting round, which from the trunk look exactly like
+	// a number nobody used: one just handed out, and one whose doc is on a branch that
+	// has not merged. A check that fired on either would tell an agent to release an id
+	// somebody is writing under.
+	a, _ := twoAgents(t)
+	a.reserve("0009", "Being written right now", 0)
+	a.reserve("0010", "On a plan branch", 30)
+
+	trunk := a.headBranch()
+	a.git("switch", "-q", "-c", "plan/round")
+	feature(a, "0010", "on-a-plan-branch", "On a plan branch", "Draft", "- [ ] Build it")
+	a.commitAll("the round")
+	a.git("switch", "-q", trunk)
+
+	if codes := a.auditCodes(); slices.Contains(codes, "orphan-reservation") {
+		t.Errorf("a round in flight was reported as an orphan reservation; audit said %v", codes)
+	}
+}
+
+func TestOrphanReservationNamesTheCommandThatFreesIt(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.reserve("0009", "A round that was cut", 30)
+
+	// The fix line has to be a command somebody can run: `orphan-claim` earned its place
+	// by naming one, and a finding about a ref nobody can see is otherwise unactionable.
+	a.run("audit").ok().has("orphan-reservation", "A round that was cut", `kit drop 0009`)
 }
 
 func TestAuditIsQuietOnACleanProject(t *testing.T) {

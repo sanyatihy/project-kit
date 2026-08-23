@@ -156,6 +156,12 @@ var (
 		"two branches claim one feature — two agents believe they own it"}
 	checkOrphanClaim = Check{"orphan-claim", Medium,
 		"a branch is named after a feature doc that does not exist"}
+	// The mirror of orphan-claim, at the same severity and for the same reason: a branch
+	// naming a doc nobody wrote, against a number handed out for a doc nobody kept. It is
+	// not untrue and misleads no agent about state — the cost is a number nothing can
+	// reuse, which is why `kit new` walked past four of them.
+	checkOrphanReservation = Check{"orphan-reservation", Medium,
+		"an id was handed out and no doc anywhere holds it, so the number is out of circulation for nothing"}
 	// Absent and unrecognised are one question — is there a status any command can act
 	// on — and the answer to both is the same three words.
 	checkNoStatus = Check{"no-status", Medium,
@@ -192,7 +198,7 @@ var Checks = []Check{
 	checkShippedNotPushed,
 	checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkInboxUnparsed,
-	checkNeedsUnknown, checkOrphanClaim,
+	checkNeedsUnknown, checkOrphanClaim, checkOrphanReservation,
 	checkNoStatus, checkNoProtocol, checkProtocolStale,
 }
 
@@ -323,6 +329,7 @@ var featureChecks = []featureCheck{
 // repoChecks run after every feature has been through the list above.
 var repoChecks = []repoCheck{
 	{[]Check{checkOrphanClaim}, orphanClaims},
+	{[]Check{checkOrphanReservation}, orphanReservations},
 	{[]Check{checkInboxUnparsed, checkInboxStale}, inboxState},
 	{[]Check{checkTechDrift}, techState},
 	{[]Check{checkTagStale}, tagStale},
@@ -602,6 +609,57 @@ func orphanClaims(s *repoState) []Finding {
 			"delete the branch, or create the doc it claims with kit new"))
 	}
 	return out
+}
+
+// orphanReservations reports a number the remote has handed out that no doc holds.
+//
+// Silent where the list could not be read from the remote. A list from the last fetch
+// names ids that may already be free and misses one made a minute ago, and a finding
+// invented from a stale read is the one thing this must not produce — it is the kit's
+// standing answer to a fact it cannot get.
+//
+// It waits out the stalled horizon, because a reservation younger than that is an
+// ordinary draft being written somewhere else. A reservation carrying no date predates
+// the record and so is older than any horizon measured from now; every one BackfillIDs
+// writes is like that, and each of those is filtered by the doc it was backfilled from.
+//
+// The docs on disk answer first because they cost nothing. `DocBranches` is one `ls-tree`
+// per branch, and on a project where nothing has drifted there is no candidate left to
+// spend it on.
+func orphanReservations(s *repoState) []Finding {
+	reservations, fresh := s.r.Reservations()
+	if !fresh {
+		return nil
+	}
+	onDisk := map[string]bool{}
+	for _, id := range heldIDs(s.r) {
+		onDisk[id] = true
+	}
+	var out []Finding
+	for _, held := range reservations {
+		if onDisk[held.ID] {
+			continue
+		}
+		if !held.When.IsZero() && Days(held.When, s.today) < StalledDays {
+			continue
+		}
+		if len(s.r.DocBranches(held.ID)) > 0 {
+			continue
+		}
+		out = append(out, finding(checkOrphanReservation, s.r.Name,
+			describeReservation(held), `kit drop `+held.ID+` "<why>"`))
+	}
+	return out
+}
+
+// describeReservation says what the record holds, and says so when it holds nothing —
+// which is what every reservation made before 0064 does.
+func describeReservation(held Reservation) string {
+	if held.Title == "" {
+		return fmt.Sprintf("id %s is reserved and no doc holds it; the reservation "+
+			"records nothing about what it was for", held.ID)
+	}
+	return fmt.Sprintf("id %s was reserved for %q and no doc holds it", held.ID, held.Title)
 }
 
 // An FYI line is asked nothing about its age. `kit block --fyi` promises work continues
