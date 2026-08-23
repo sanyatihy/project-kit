@@ -208,16 +208,16 @@ var auditCases = []struct {
 		p.git("branch", "0002-contested-again")
 	}},
 	{"needs-unparsed", func(p *project) {
-		// The state the template put every doc in: nobody edited the line, so the value is
-		// the guidance and "e.g. 0002, 0003" scans as two ids. Both exist here and both
-		// have shipped, so `needs-unknown` sees a wait already satisfied and says nothing.
+		// One space where the template pads with many, so `trailingRe` leaves the comment
+		// as the value and "e.g. 0002, 0003" scans as two ids. Both exist here and both
+		// have shipped, so `needs-unknown` sees a wait already satisfied and says nothing —
+		// which is the blind spot, not an oversight: it can only ask about ids that parsed.
 		p.write("docs/features/0002-first.md",
 			doc("0002", "First", "Shipped", "shipped: "+daysAgo(9), "- [x] Done"))
 		p.write("docs/features/0003-second.md",
 			doc("0003", "Second", "Shipped", "shipped: "+daysAgo(8), "- [x] Done"))
 		p.write("docs/features/0004-untouched.md", doc("0004", "Untouched", "Draft",
-			"needs:               # feature ids that must ship first, e.g. 0002, 0003",
-			"- [ ] Do it"))
+			"needs: # feature ids that must ship first, e.g. 0002, 0003", "- [ ] Do it"))
 	}},
 	{"orphan-reservation", func(p *project) {
 		// A number handed out for a round that was then cut. The ref outlives the doc by
@@ -464,6 +464,31 @@ func TestOrphanReservationNamesTheCommandThatFreesIt(t *testing.T) {
 	// The fix line has to be a command somebody can run: `orphan-claim` earned its place
 	// by naming one, and a finding about a ref nobody can see is otherwise unactionable.
 	a.run("audit").ok().has("orphan-reservation", "A round that was cut", `kit drop 0009`)
+}
+
+func TestNeedsUnparsedStaysQuietOnAValueSomebodyWrote(t *testing.T) {
+	t.Parallel()
+	// Ids, commas, spaces and empty are the whole of what a needs: may hold, and every
+	// doc that ever used the field holds one of them. A check firing here would report
+	// almost every project that declared a dependency at all.
+	p := cleanProject(t)
+	p.write("docs/features/0002-done.md",
+		doc("0002", "Done", "Shipped", "shipped: "+daysAgo(4), "- [x] Done"))
+	p.write("docs/features/0003-commas.md",
+		doc("0003", "Commas", "Draft", "needs: 0001, 0002", "- [ ] Do it"))
+	p.write("docs/features/0004-spaces.md",
+		doc("0004", "Spaces", "Draft", "needs: 0002 0003", "- [ ] Do it"))
+	p.write("docs/features/0005-padded.md", doc("0005", "Padded", "Draft",
+		"needs:               # feature ids that must ship first, e.g. 0002, 0003",
+		"- [ ] Do it"))
+	// Terminal, and carrying the worst value there is. The only fix would be an edit to
+	// frozen history, which is why needsState skips these at all.
+	p.write("docs/features/0006-retired.md",
+		doc("0006", "Retired", "Dropped", "needs: TBD", "- [ ] Never built"))
+
+	if codes := p.auditCodes(); slices.Contains(codes, "needs-unparsed") {
+		t.Errorf("a needs: somebody wrote was reported as unparsed; audit said %v", codes)
+	}
 }
 
 func TestAuditIsQuietOnACleanProject(t *testing.T) {
