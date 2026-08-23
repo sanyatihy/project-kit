@@ -46,6 +46,20 @@ func (p *project) reservedIDs() []string {
 	return ids
 }
 
+// reservationFor is the subject of the commit a reservation points at, fetched from the
+// remote rather than read locally, so the test sees what another clone would.
+func (p *project) reservationFor(id string) string {
+	p.t.Helper()
+	p.git("fetch", "-q", "origin", "refs/kit/ids/"+id)
+	cmd := exec.Command("git", "log", "-1", "--format=%s", "FETCH_HEAD")
+	cmd.Dir, cmd.Env = p.Root, gitEnv()
+	out, err := cmd.Output()
+	if err != nil {
+		p.t.Fatalf("reading the reservation for %s: %v", id, err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
 // The two agents fixture is a bare remote and two clones of it, both carrying the doc
 // for 0007 — so the next free id on disk is 0008 in each of them.
 
@@ -335,4 +349,18 @@ func TestNewOnAnUnsetUpProjectSaysHowToFixIt(t *testing.T) {
 	p := newProject(t)
 	r := p.run("new", "Anything").fails(2)
 	r.errHas("kit init")
+}
+
+func TestAReservationSaysWhatItWasHandedOutFor(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+
+	a.run("new", "Eighth").ok()
+
+	// The ref pointed at the shared empty tree, so a number handed out for a draft that
+	// was then cut recorded nothing — no title, no date, no author — and nobody could
+	// tell it from one still being written.
+	if got, want := a.reservationFor("0008"), "0008 Eighth"; got != want {
+		t.Errorf("the reservation reads %q, want %q", got, want)
+	}
 }

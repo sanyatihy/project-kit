@@ -56,6 +56,31 @@ type Drafted struct {
 // go on reading the docs — a stale reservation cannot make the board wrong.
 func idRef(id string) string { return "refs/kit/ids/" + id }
 
+// reserveCommit is what a reservation points at: an empty tree under a message naming
+// the id and the title it was handed out for.
+//
+// The ref used to point at the empty tree itself, which recorded nothing — so a number
+// handed out for a draft that was then cut left a reservation nobody could account for,
+// and four went that way before anything noticed. A commit carries the title, the date
+// and the drafter at no cost to the compare-and-swap: two reservations of one id differ
+// now where they used to be identical, so a loser reads `!` where it read `=`, and both
+// are the same answer — the number is gone.
+//
+// One line, because `git log` shows a reservation as a subject and nothing here has a
+// second thing to say.
+func (r *Repo) reserveCommit(tree, id, title string) (string, error) {
+	out, err := r.gitRun("commit-tree", tree, "-m", id+" "+title)
+	if err != nil {
+		return "", fmt.Errorf("%w\nA reservation records who drafted it, so this needs "+
+			"user.name and user.email set", err)
+	}
+	sha := strings.TrimSpace(out)
+	if sha == "" {
+		return "", fmt.Errorf("git commit-tree named no object for the reservation")
+	}
+	return sha, nil
+}
+
 // reserveAttempts bounds the walk up the range when the pushes keep losing. Each loss
 // is another drafter holding that number, so a run of them is contention and not a
 // fault — but a remote refusing every ref under refs/kit/ for a reason of its own loses
@@ -69,11 +94,9 @@ const reserveAttempts = 20
 // of simultaneous drafters exactly one creates a given ref. NextID only says where to
 // start; every number it offers is tried on the remote until one is free.
 //
-// Every reservation points at the empty tree, so all of them carry the same nothing and
-// a ref already there is always "up to date" rather than a value in conflict with ours.
-// The flag is read rather than the exit code because those two disagree in exactly that
-// case, which is what pushFlag exists for.
-func reserveID(r *Repo, remote string) (string, error) {
+// The flag is read rather than the exit code, because the two disagree over a ref that
+// is already there — which is what pushFlag exists for.
+func reserveID(r *Repo, remote, title string) (string, error) {
 	tree, err := r.emptyTree()
 	if err != nil {
 		return "", err
@@ -85,14 +108,19 @@ func reserveID(r *Repo, remote string) (string, error) {
 	for n := start; n < start+reserveAttempts; n++ {
 		id := fmt.Sprintf("%04d", n)
 		ref := idRef(id)
+		object, err := r.reserveCommit(tree, id, title)
+		if err != nil {
+			return "", err
+		}
 		out, pushErr := r.gitRun("push", "--porcelain",
-			"--force-with-lease="+ref+":", remote, tree+":"+ref)
+			"--force-with-lease="+ref+":", remote, object+":"+ref)
 		switch flag := pushFlag(out, ref); {
 		case flag == pushCreated:
 			return id, nil
-		// Anything else the remote said about this ref means the ID is gone: "=" for a
-		// reservation identical to ours, "!" for a ref holding something else. Both are
-		// somebody's number, and the next one is tried.
+		// Anything else the remote said about this ref means the ID is gone: "!" for a
+		// ref holding something else, "=" for the empty tree a reservation pointed at
+		// before this recorded anything. Both are somebody's number, and the next one
+		// is tried.
 		case flag != "":
 			continue
 		// The push said nothing about our ref, so nothing is known about who holds it.
@@ -233,7 +261,7 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 	}
 	id := NextID(r)
 	if remote != "" {
-		if id, err = reserveID(r, remote); err != nil {
+		if id, err = reserveID(r, remote, title); err != nil {
 			return nil, err
 		}
 	}
