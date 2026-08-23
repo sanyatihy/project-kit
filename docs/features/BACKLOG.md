@@ -198,6 +198,18 @@ it has.
 **Promote when:** a third project needs the link made by hand, or an agent is seen working
 without the protocol because the name it read was not there.
 
+## `claim`'s two refusals still send an agent to a sibling directory
+
+0063 moved a claim's worktree to `.worktrees/<branch>` inside the project, but the two
+refusals in `ClaimFeature` that tell an agent to stand somewhere else still print
+`git worktree add --detach ../<repo>-trunk <trunk>`. It is a detached checkout rather than
+a claim, so it has no branch to be named for, and the sibling path is the layout 0063
+argued against.
+
+**Value:** one layout for every checkout the kit tells an agent to make.
+**Promote when:** an operator's parent directory collects trunk checkouts, or a third
+message needs a path and there is still no one answer to give it.
+
 ## Cut from this backlog
 
 Five entries were deleted rather than carried. `needs: none` would have put every shipped
