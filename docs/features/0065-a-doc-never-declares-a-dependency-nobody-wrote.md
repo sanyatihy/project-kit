@@ -1,9 +1,9 @@
 ---
 id: 0065
 title: A doc never declares a dependency nobody wrote
-status: Draft
+status: Shipped
 created: 2026-08-23
-shipped:
+shipped: 2026-08-23
 needs: 0064
 ---
 
