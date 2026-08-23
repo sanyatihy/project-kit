@@ -58,7 +58,7 @@ doc. It takes `needsState`'s terminal gate for the reason that function gives.
 - [x] The template's frontmatter carries no comment, and a test holds it to that
 - [x] `audit` reports a `needs:` carrying text that is not an id list, skipping terminal
       docs, with a conformance case
-- [ ] The docs on the trunk pass it
+- [x] The docs on the trunk pass it
 
 ## Log
 
@@ -67,3 +67,6 @@ doc. It takes `needsState`'s terminal gate for the reason that function gives.
   `needs:` to what its author wrote, 0063 and 0064 included. What is true is that one
   space instead of two makes the comment the value, which is what the deletion in box 1
   and the check in box 2 close.
+- 2026-08-23 — no doc on the trunk fires `needs-unparsed`, which the corrected premise
+  predicts. What box 3 left is `docs/features/TEMPLATE.md`, a copy nothing reads: its
+  frontmatter comes into line here, and whether the file should exist is a backlog line.

@@ -210,6 +210,19 @@ argued against.
 **Promote when:** an operator's parent directory collects trunk checkouts, or a third
 message needs a path and there is still no one answer to give it.
 
+## `docs/features/TEMPLATE.md` is a copy nothing reads
+
+`kit init` stopped writing it and a conformance case pins that it must not, `notAFeature`
+keeps it off the board, and `kit help template` prints the embedded copy. So the file is
+read by nothing and has already drifted: it lost a paragraph two rounds before 0065
+brought its frontmatter back in line. What it still does is sit in the features directory
+looking like the template, where the next person to copy from it gets whatever it has
+drifted to.
+
+**Value:** one template, so a doc copied by hand is the doc `kit new` writes.
+**Promote when:** it drifts again, or a doc is found carrying frontmatter only this copy
+has.
+
 ## Cut from this backlog
 
 Five entries were deleted rather than carried. `needs: none` would have put every shipped
