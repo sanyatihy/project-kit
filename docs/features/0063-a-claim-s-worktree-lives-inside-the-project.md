@@ -58,7 +58,7 @@ uncovered, and names the file it wrote in its output.
       any checkout
 - [x] `kit claim` writes `.worktrees/` to `.git/info/exclude` when `check-ignore` reports
       it uncovered, and says which file it wrote
-- [ ] `kit help claim` and `docs/TECH.md` name where a worktree goes, and why the exclude
+- [x] `kit help claim` and `docs/TECH.md` name where a worktree goes, and why the exclude
       is written once per clone
 
 ## Log

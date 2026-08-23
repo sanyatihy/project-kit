@@ -310,6 +310,12 @@ Draft -> Shipped     (exit: Dropped)
 - **`--json` is a contract and its shape is pinned.** The board's four groups are `[]` when
   empty, `moved` is absent rather than a year-1 timestamp — `omitempty` does nothing for a
   struct — and a directory nothing surveyed reports through `error` at exit 2.
+- **A claim's worktree lives in the project, at `.worktrees/<branch>`.** The parent stays a
+  list of repositories, and a dot directory is skipped by ripgrep and the Go toolchain on the
+  name alone. The printed path is absolute, anchored at the main worktree, so it is right
+  from a worktree as well as from the trunk. `claim` writes `.worktrees/` to
+  `.git/info/exclude` rather than asking, because declining the exclude is not legitimate and
+  `git clone` carries none — which puts the write in the command that runs in every clone.
 - **A release is part of shipping, because `@latest` is whatever the newest tag says.**
   `make release TAG=…` gates, cuts an annotated tag and pushes it, refusing a dirty tree or
   a HEAD that is not `origin`'s default-branch tip; `audit` reports `tag-stale` when the
