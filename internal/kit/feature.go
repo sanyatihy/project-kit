@@ -49,6 +49,11 @@ type Feature struct {
 	// reported the second as the first — on a doc that plainly had one.
 	shippedText string
 
+	// needsText is the same, for the same reason: Needs holds what parsed, and prose
+	// scans for four-digit runs like any other string. A doc nobody edited declared
+	// `needs: 0002, 0003` out of the template's own "e.g. 0002, 0003".
+	needsText string
+
 	// Unreadable marks a doc the kit could not open. Everything above it then comes from
 	// the filename, and nothing below it exists — so `audit` reports the file and asks no
 	// other question of it, because the answers would all be about an empty struct.

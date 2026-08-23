@@ -207,6 +207,18 @@ var auditCases = []struct {
 		p.git("branch", "0002-contested")
 		p.git("branch", "0002-contested-again")
 	}},
+	{"needs-unparsed", func(p *project) {
+		// The state the template put every doc in: nobody edited the line, so the value is
+		// the guidance and "e.g. 0002, 0003" scans as two ids. Both exist here and both
+		// have shipped, so `needs-unknown` sees a wait already satisfied and says nothing.
+		p.write("docs/features/0002-first.md",
+			doc("0002", "First", "Shipped", "shipped: "+daysAgo(9), "- [x] Done"))
+		p.write("docs/features/0003-second.md",
+			doc("0003", "Second", "Shipped", "shipped: "+daysAgo(8), "- [x] Done"))
+		p.write("docs/features/0004-untouched.md", doc("0004", "Untouched", "Draft",
+			"needs:               # feature ids that must ship first, e.g. 0002, 0003",
+			"- [ ] Do it"))
+	}},
 	{"orphan-reservation", func(p *project) {
 		// A number handed out for a round that was then cut. The ref outlives the doc by
 		// design, so nothing could see one no doc ever landed against — and four went out
