@@ -58,7 +58,11 @@ Draft -> Shipped     (exit: Dropped)
   refusing to render would help nobody.
 - **Six frontmatter fields.** `id`, `title`, `status`, `created`, `shipped`, `needs`.
   `check:`, `checked:` and `review:` went with the commands that wrote them. `related:`
-  went because 77 docs filled it in and no line of Go ever read it.
+  went because 77 docs filled it in and no line of Go ever read it. The template writes no
+  prose on any of them, and a test holds it to that: two spaces is all that separates a
+  comment from a value, so guidance there is one keystroke from data. `needs-unparsed`
+  reports what leaks anyway — a `needs:` is ids, commas and spaces, and anything else in
+  it is not a dependency `needs-unknown` could ever have asked about.
 - **What refuses a claim is a list, and it is stated in full wherever it is stated at
   all:** an unmet `needs:`, a BLOCKING inbox line, an unwritten `## Problem`, `## Design`
   or `## Tasks`, an `id:` disagreeing with the filename, a duplicate id, and a plan that
