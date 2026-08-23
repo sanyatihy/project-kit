@@ -798,3 +798,24 @@ func TestClaimNamesAWorktreeInsideTheProject(t *testing.T) {
 	want := filepath.Join(a.Root, ".worktrees", "0007-widget")
 	from.run("claim", "0007").ok().has("git worktree add " + want)
 }
+
+func TestClaimExcludesTheWorktreeDirectoryOncePerClone(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	feature(a, "0008", "gadget", "A gadget", "Draft", "- [ ] Build it")
+	a.commitAll("another plan")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/"+a.headBranch())
+
+	exclude := filepath.Join(a.Root, ".git", "info", "exclude")
+	a.run("claim", "0007").ok().has("wrote", ".worktrees/", exclude)
+	if got := a.read(".git/info/exclude"); !strings.Contains(got, ".worktrees/\n") {
+		t.Fatalf("the exclude does not cover the worktree directory:\n%s", got)
+	}
+
+	// Declining a worktree is legitimate, so the second claim in this clone finds the
+	// path already covered and has nothing to write — and must not say it wrote one.
+	a.run("claim", "0008").ok().lacks("wrote")
+	if got := a.read(".git/info/exclude"); strings.Count(got, ".worktrees/") != 1 {
+		t.Fatalf("the pattern was written twice:\n%s", got)
+	}
+}
