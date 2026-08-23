@@ -102,7 +102,11 @@ const (
 	// test holds the protocol's own list against it. The reversal is the fact worth the
 	// room — splitting creation across three commands was tried, and what it bought was a
 	// check gate.
-	techBudget = 381
+	// 387 on 0063. Six lines for where a claim's worktree goes and who writes the exclude:
+	// the location is a trade the next reader would otherwise reverse, and the exclude is in
+	// `claim` rather than `init` for a reason — `git clone` carries none — that nothing else
+	// records.
+	techBudget = 387
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

@@ -333,8 +333,19 @@ func runClaim(args []string) int {
 		fmt.Printf("  pushed   %s/%s — the push is the claim, and you won it\n",
 			claimed.Remote, claimed.Branch)
 	}
+	if claimed.Excluded != "" {
+		fmt.Printf("  wrote    %s/ to %s — this clone only, so git and grep skip it\n",
+			kit.WorktreesDir, claimed.Excluded)
+	}
+	// The claim is already won, so this cannot fail the command — but an operator who
+	// is not told will `git add -A` in the trunk and commit a second copy of the source.
+	if claimed.ExcludeErr != nil {
+		fmt.Fprintf(os.Stderr, "  warning  could not exclude %s/: %v\n"+
+			"           add the line yourself before creating the worktree\n",
+			kit.WorktreesDir, claimed.ExcludeErr)
+	}
 	fmt.Printf("\nnext:\n")
-	fmt.Printf("  git worktree add ../%s-%s %s\n", repo.Name, id, claimed.Branch)
+	fmt.Printf("  git worktree add %s %s\n", repo.WorktreePath(claimed.Branch), claimed.Branch)
 	// No status edit to instruct: the branch just pushed is what says this is started,
 	// and asking for a second copy of that in the doc is what the model forbade all along.
 	fmt.Printf("  work there, not here — the branch is the claim, so nothing else to set\n\n")

@@ -173,9 +173,8 @@ so of any number of agents claiming at once exactly one wins.
      whatever the status
   2  it could not run: no such feature, two docs share the id, no commits yet,
      the plan not committed here, the plan not landed on the default branch,
-     this checkout already claims something,
-     this checkout ahead of the default branch, several remotes and no origin,
-     or the push said nothing about the ref
+     this checkout already claims something or is ahead of the default branch,
+     several remotes and no origin, or the push said nothing about the ref
 
 Every exit 1 refusal is one "kit next" already makes, bar the race it cannot see: the
 board and the commands read the same facts, so claiming by id without consulting it
@@ -194,6 +193,10 @@ Losing is normal. Run "kit next" and take something else.
 Nothing local is written unless the push wins, so a lost race leaves no branch
 behind. On a project with no remote the branch is still created and the command
 says so — that claim is invisible to everyone else.
+
+The worktree goes at .worktrees/<branch> in the project, so the parent stays a list of
+repositories. Declining one is fine; declining the exclude is not, so a won claim writes
+.worktrees/ to this clone's .git/info/exclude — git clone does not carry it.
 
 This does not fetch first and does not edit the doc. A stale view only ever costs you
 a clearer error, because the remote decides. Nothing to set afterwards either: the

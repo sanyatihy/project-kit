@@ -783,3 +783,39 @@ func TestARebaseLeavesTheFeatureWithTheAgentRebasing(t *testing.T) {
 	}
 	a.run("ship", "0007").ok().has("shipped")
 }
+
+func TestClaimNamesAWorktreeInsideTheProject(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+
+	// A detached checkout of the trunk, which is where an agent that has just shipped
+	// stands: the path used to be relative to here, so it named a sibling of this
+	// directory rather than anything under the project.
+	side := filepath.Join(a.Root, "..", "side")
+	a.git("worktree", "add", "--detach", "-q", side, "HEAD")
+	from := projectAt(t, side)
+
+	want := filepath.Join(a.Root, ".worktrees", "0007-widget")
+	from.run("claim", "0007").ok().has("git worktree add " + want)
+}
+
+func TestClaimExcludesTheWorktreeDirectoryOncePerClone(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	feature(a, "0008", "gadget", "A gadget", "Draft", "- [ ] Build it")
+	a.commitAll("another plan")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/"+a.headBranch())
+
+	exclude := filepath.Join(a.Root, ".git", "info", "exclude")
+	a.run("claim", "0007").ok().has("wrote", ".worktrees/", exclude)
+	if got := a.read(".git/info/exclude"); !strings.Contains(got, ".worktrees/\n") {
+		t.Fatalf("the exclude does not cover the worktree directory:\n%s", got)
+	}
+
+	// Declining a worktree is legitimate, so the second claim in this clone finds the
+	// path already covered and has nothing to write — and must not say it wrote one.
+	a.run("claim", "0008").ok().lacks("wrote")
+	if got := a.read(".git/info/exclude"); strings.Count(got, ".worktrees/") != 1 {
+		t.Fatalf("the pattern was written twice:\n%s", got)
+	}
+}

@@ -2,6 +2,8 @@ package kit
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -24,6 +26,11 @@ func (e *NotYours) Error() string { return e.Why }
 type Claimed struct {
 	Branch string
 	Remote string // "" when the project has no remote and the claim is local only
+
+	// The exclude file the claim wrote, and why it could not. Both empty when git
+	// already ignored the worktree directory and there was nothing to write.
+	Excluded   string
+	ExcludeErr error
 }
 
 // ClaimFeature takes a feature by creating the branch that claims it and pushing
@@ -237,7 +244,59 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 		// missing upstream is a convenience this should not fail a claim over.
 		_, _ = r.gitRun("branch", "--set-upstream-to="+remote+"/"+branch, branch)
 	}
-	return &Claimed{Branch: branch, Remote: remote}, nil
+	claimed := &Claimed{Branch: branch, Remote: remote}
+	claimed.Excluded, claimed.ExcludeErr = r.excludeWorktrees()
+	return claimed, nil
+}
+
+// excludeWorktrees puts the worktree directory out of git's reach in this clone, and
+// names the file it wrote. Both answers empty when `git check-ignore` reports the path
+// already covered, which is the second claim in any clone.
+//
+// It runs after the push, because the claim is won by then and nothing here may undo it:
+// a write that fails is reported beside the claim rather than instead of it.
+//
+// `.git/info/exclude` and not a committed `.gitignore`: where an operator keeps worktrees
+// is a fact about a machine, and a tracked line carries one operator's layout to every
+// clone. `git clone` does not carry the exclude, which is why this belongs in `claim` —
+// it runs in every clone, where `init` runs in one.
+func (r *Repo) excludeWorktrees() (string, error) {
+	// Non-empty output is git naming the pattern that covers the path. An empty answer
+	// is "nothing ignores this", which is also what a failed call looks like — and
+	// writing the line twice is cheaper to live with than not writing it at all.
+	if strings.TrimSpace(r.git("check-ignore", WorktreesDir+"/")) != "" {
+		return "", nil
+	}
+	common := strings.TrimSpace(r.git("rev-parse", "--git-common-dir"))
+	if common == "" {
+		return "", fmt.Errorf("git named no repository directory to write the exclude in")
+	}
+	// The common dir, not this worktree's own: `info/exclude` is shared by every
+	// worktree of one clone, and a linked worktree's `.git` holds no `info` at all.
+	if !filepath.IsAbs(common) {
+		common = filepath.Join(r.Root, common)
+	}
+	path := filepath.Join(common, "info", "exclude")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return "", err
+	}
+	// A last line with no newline on it would otherwise swallow the pattern into itself.
+	lead := ""
+	if old, err := os.ReadFile(path); err == nil && len(old) > 0 && !strings.HasSuffix(string(old), "\n") {
+		lead = "\n"
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return "", err
+	}
+	_, err = f.WriteString(lead + WorktreesDir + "/\n")
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 // unclaim deletes the branch a claim created and hands back the reason it is stopping,
@@ -319,4 +378,31 @@ func (r *Repo) remotes() []string {
 	}
 	r.remoteNames = out
 	return out
+}
+
+// WorktreesDir is where a claim's worktree goes: inside the project, so the parent stays
+// a list of repositories and each live claim opens in the editor as its own repository
+// with its own branch and diff. The leading dot is load-bearing — ripgrep and the Go
+// toolchain both skip a dot directory on the name alone, so the second copy of the source
+// stays out of every recursive read.
+const WorktreesDir = ".worktrees"
+
+// MainWorktree is the checkout that owns the repository, which `git worktree list
+// --porcelain` names in its first record. Answers the project root when git names
+// nothing, which is a directory that is not a repository at all.
+func (r *Repo) MainWorktree() string {
+	for _, line := range strings.Split(r.git("worktree", "list", "--porcelain"), "\n") {
+		if rest, found := strings.CutPrefix(strings.TrimSpace(line), "worktree "); found {
+			return rest
+		}
+	}
+	return r.Root
+}
+
+// WorktreePath is where the worktree for a branch goes. Absolute and anchored at the main
+// worktree, because the path `claim` printed was relative to the current directory: right
+// from the trunk, and a sibling of whatever worktree the agent happened to stand in
+// otherwise. Named for the branch, so the listing reads as the board.
+func (r *Repo) WorktreePath(branch string) string {
+	return filepath.Join(r.MainWorktree(), WorktreesDir, branch)
 }

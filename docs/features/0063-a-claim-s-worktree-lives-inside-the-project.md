@@ -1,9 +1,9 @@
 ---
 id: 0063
 title: A claim's worktree lives inside the project
-status: Draft        # Draft | Shipped | Dropped — kit ship and kit drop write it
+status: Shipped
 created: 2026-08-22
-shipped:             # written by kit ship, never by hand
+shipped: 2026-08-23
 needs:               # feature ids that must ship first, e.g. 0002, 0003. Empty = can start now
 ---
 
@@ -54,11 +54,11 @@ uncovered, and names the file it wrote in its output.
 
 ## Tasks
 
-- [ ] `kit claim` prints an absolute `<main worktree>/.worktrees/<branch>`, correct from
+- [x] `kit claim` prints an absolute `<main worktree>/.worktrees/<branch>`, correct from
       any checkout
-- [ ] `kit claim` writes `.worktrees/` to `.git/info/exclude` when `check-ignore` reports
+- [x] `kit claim` writes `.worktrees/` to `.git/info/exclude` when `check-ignore` reports
       it uncovered, and says which file it wrote
-- [ ] `kit help claim` and `docs/TECH.md` name where a worktree goes, and why the exclude
+- [x] `kit help claim` and `docs/TECH.md` name where a worktree goes, and why the exclude
       is written once per clone
 
 ## Log
