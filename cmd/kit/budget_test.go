@@ -110,7 +110,10 @@ const (
 	// carries a record, a number no doc holds is released rather than left, and the
 	// question is asked of every branch's tree rather than of the log — the reversal is
 	// the fact worth the room, because the log answer refuses every id this frees.
-	techBudget = 395
+	// 399 on 0065. Four lines for why the frontmatter carries no prose and what catches
+	// the prose that gets there anyway: two spaces is the whole margin between a comment
+	// and a value, which is a constraint a later edit can spend without noticing.
+	techBudget = 399
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

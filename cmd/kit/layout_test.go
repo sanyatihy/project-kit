@@ -9,10 +9,14 @@ package main
 // mentions must be one `kit init` writes, or one `kit help <topic>` prints.
 
 import (
+	"io/fs"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
+
+	assets "github.com/sanyatihy/project-kit"
 )
 
 const protocolPath = "../../templates/AGENTS-section.md"
@@ -89,5 +93,42 @@ func TestEveryFileTheProtocolNamesIsWrittenOrDescribed(t *testing.T) {
 	}
 	if len(seen) == 0 {
 		t.Fatal("the protocol names no project file, which means this test reads nothing")
+	}
+}
+
+// The frontmatter is machine-read, so prose on it is one deletion away from being data.
+// `needs:` carried its guidance in a trailing comment, and once 0051 stopped the parser
+// truncating a value there the comment became the value: a doc nobody edited declared
+// `needs: 0002, 0003`, scanned straight out of "e.g. 0002, 0003". Nothing writes `needs:`,
+// so it survived into frozen history in two docs here and four in a sibling project.
+//
+// The guidance is not lost — the HTML block below the frontmatter spends ten lines on how
+// to judge `needs:`, and `kit help template` prints it.
+func TestTheTemplatesFrontmatterCarriesNoProse(t *testing.T) {
+	t.Parallel()
+	raw, err := fs.ReadFile(assets.FS, "templates/features-TEMPLATE.md")
+	if err != nil {
+		t.Fatalf("reading the template: %v", err)
+	}
+	front, _, found := strings.Cut(strings.TrimPrefix(string(raw), "---\n"), "\n---")
+	if !found {
+		t.Fatalf("the template has no frontmatter block:\n%s", raw)
+	}
+	want := []string{"id", "title", "status", "created", "shipped", "needs"}
+	var keys []string
+	for _, line := range strings.Split(front, "\n") {
+		key, value, isField := strings.Cut(line, ":")
+		if !isField {
+			t.Errorf("frontmatter line %q is not a key: value pair", line)
+			continue
+		}
+		keys = append(keys, key)
+		if strings.Contains(value, "#") {
+			t.Errorf("%s: carries a comment, which every value here is read as: %q",
+				key, strings.TrimSpace(value))
+		}
+	}
+	if !slices.Equal(keys, want) {
+		t.Errorf("the frontmatter declares %v, want %v", keys, want)
 	}
 }

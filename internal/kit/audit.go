@@ -154,6 +154,10 @@ var (
 	// which is the intent: `release` is one command and the branch is the whole claim.
 	checkSplitClaim = Check{"split-claim", High,
 		"two branches claim one feature — two agents believe they own it"}
+	// MEDIUM beside needs-unknown, whose blind spot it is: that check can only ask about
+	// ids that parsed, and prose scans for four-digit runs like any other string.
+	checkNeedsUnparsed = Check{"needs-unparsed", Medium,
+		"a needs: carries something that is not an id list, so the ids read out of it are not dependencies anybody declared"}
 	checkOrphanClaim = Check{"orphan-claim", Medium,
 		"a branch is named after a feature doc that does not exist"}
 	// The mirror of orphan-claim, at the same severity and for the same reason: a branch
@@ -198,7 +202,7 @@ var Checks = []Check{
 	checkShippedNotPushed,
 	checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkInboxUnparsed,
-	checkNeedsUnknown, checkOrphanClaim, checkOrphanReservation,
+	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
 	checkNoStatus, checkNoProtocol, checkProtocolStale,
 }
 
@@ -335,7 +339,7 @@ var repoChecks = []repoCheck{
 	{[]Check{checkTagStale}, tagStale},
 	{[]Check{checkNoProtocol}, noProtocol},
 	{[]Check{checkProtocolStale}, protocolStale},
-	{[]Check{checkNeedsUnknown}, needsState},
+	{[]Check{checkNeedsUnknown, checkNeedsUnparsed}, needsState},
 	{[]Check{checkSecretInDoc}, secretsInDocs},
 	{[]Check{checkUnfilledVision}, unfilledVision},
 	// Reported first by Audit, before any feature check, so it is skipped here.
@@ -799,6 +803,11 @@ func protocolStale(s *repoState) []Finding {
 	return nil
 }
 
+// idListOnlyRe matches a needs: that is nothing but four-digit ids, commas and spaces.
+// Anything else in the value was not written as a dependency, which is why this cannot
+// fire on a healthy doc. An empty value matches, because empty is the common case.
+var idListOnlyRe = regexp.MustCompile(`^[\s,]*(?:\d{4}[\s,]*)*$`)
+
 // The graph is only checked for the ways it can be *impossible*, never for whether the
 // declared needs are the right ones — that is a judgement call and no heuristic has it.
 func needsState(s *repoState) []Finding {
@@ -811,6 +820,16 @@ func needsState(s *repoState) []Finding {
 		// doc is not waiting for at all — and the only fix for a finding on one is an
 		// edit to frozen history, so it reported for ever.
 		if terminal(f.Status) {
+			continue
+		}
+		// A value that is not an id list has no dependencies in it to check, so this is
+		// reported instead of the ids scanned out of it rather than beside them. The
+		// template's own guidance was the case: "e.g. 0002, 0003" parsed as two ids that
+		// both exist and have shipped, so every check downstream agreed the wait was met.
+		if !idListOnlyRe.MatchString(f.needsText) {
+			out = append(out, finding(checkNeedsUnparsed, f.Rel,
+				fmt.Sprintf("%s: needs: %q is not an id list", f.Name(), clip(f.needsText, 40)),
+				"leave it empty, or list only the four-digit ids that must ship first"))
 			continue
 		}
 		for _, id := range f.Needs {
