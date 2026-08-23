@@ -76,6 +76,9 @@ already makes, and every read after it is offline.
 - 2026-08-22 — renumbered from 0068, and 0063's doc from 0067, after the four unused
   reservations were released rather than left as gaps. `370f20d` and the merges above it
   cite the old numbers.
+- 2026-08-23 — the horizon, not position in the sequence: `stalled` and `inbox-stale`
+  already measure from one, and a reservation carrying no date predates the record and so
+  counts as past it.
 - 2026-08-22 — `drop` releases the reservation where it recorded a retirement, and the
   fourth box went with the change: the four ids this was drafted for are already free, so
   the design is what stops the next four.
