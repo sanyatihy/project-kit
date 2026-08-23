@@ -58,7 +58,7 @@ already makes, and every read after it is offline.
 
 - [x] `kit new` points a reservation at a commit naming the title, and one id still reaches
       exactly one drafter
-- [ ] `kit drop <id> "<why>"` releases a reservation no doc holds, and refuses while a
+- [x] `kit drop <id> "<why>"` releases a reservation no doc holds, and refuses while a
       branch carries one or the horizon has not passed
 - [ ] `audit` reports a reservation past the horizon that no doc describes, and names
       `kit drop` as the fix

@@ -56,6 +56,69 @@ type Drafted struct {
 // go on reading the docs — a stale reservation cannot make the board wrong.
 func idRef(id string) string { return "refs/kit/ids/" + id }
 
+// Reservation is an id the remote has handed out, and what its record says it was for.
+type Reservation struct {
+	ID    string
+	Title string    // "" for one made before a reservation recorded anything
+	When  time.Time // zero for the same reason
+}
+
+// Reservations lists every id the remote has handed out, and whether that list came from
+// the remote rather than from a past fetch.
+//
+// One fetch mirrors refs/kit/ids/* into the same namespace here, because `ls-remote`
+// answers with SHAs and the title and date are in the object. Every read after it is
+// local. `--prune` is what makes an id released elsewhere disappear here too, rather than
+// linger as a reservation the remote no longer has.
+func (r *Repo) Reservations() ([]Reservation, bool) {
+	if !r.reservationsAsked {
+		r.reservationsAsked = true
+		r.reservationsFresh = r.fetchReservations()
+		r.reservations = r.readReservations()
+	}
+	return r.reservations, r.reservationsFresh
+}
+
+// fetchReservations brings the namespace up to date, reporting whether it managed to.
+// Nothing to ask means false rather than an error: no remote, `--offline`, and a remote
+// that did not answer are all "this list may be stale", which is the caller's decision
+// to make.
+func (r *Repo) fetchReservations() bool {
+	remote, err := pickRemote(r)
+	if r.Offline || err != nil || remote == "" {
+		return false
+	}
+	_, fetchErr := r.gitRun("fetch", "--prune", remote, "+"+idRef("*")+":"+idRef("*"))
+	return fetchErr == nil
+}
+
+// readReservations reads the mirrored namespace. A ref pointing at the empty tree — every
+// reservation made before they recorded anything, and every one BackfillIDs writes —
+// carries no date and no subject, and answers the zero value for both.
+func (r *Repo) readReservations() []Reservation {
+	const sep = "\x1f"
+	format := "%(refname)" + sep + "%(committerdate:unix)" + sep + "%(contents:subject)"
+	var out []Reservation
+	for _, line := range strings.Split(r.git("for-each-ref", "--format="+format, idRef("")), "\n") {
+		fields := strings.Split(strings.TrimSpace(line), sep)
+		if len(fields) != 3 {
+			continue
+		}
+		id := strings.TrimPrefix(fields[0], idRef(""))
+		if id == "" {
+			continue
+		}
+		held := Reservation{ID: id,
+			Title: strings.TrimSpace(strings.TrimPrefix(fields[2], id+" "))}
+		if secs, err := strconv.ParseInt(fields[1], 10, 64); err == nil && secs > 0 {
+			held.When = time.Unix(secs, 0).UTC()
+		}
+		out = append(out, held)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
+}
+
 // reserveCommit is what a reservation points at: an empty tree under a message naming
 // the id and the title it was handed out for.
 //
