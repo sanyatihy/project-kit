@@ -4,8 +4,6 @@ title: Stop re-asking git the same questions
 status: Shipped
 created: 2026-08-17
 shipped: 2026-08-17
-check:
-checked:
 needs:
 related: 0028-see-what-is-waiting-for-review.md
 ---

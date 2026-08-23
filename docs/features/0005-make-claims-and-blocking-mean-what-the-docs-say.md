@@ -4,8 +4,6 @@ title: Make claims and blocking mean what the docs say
 status: Shipped
 created: 2026-08-11
 shipped: 2026-08-12
-check:
-checked:
 related: ../../cmd/kit/help.go
 ---
 

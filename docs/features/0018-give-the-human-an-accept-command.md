@@ -4,8 +4,6 @@ title: Give the human an accept command
 status: Shipped
 created: 2026-08-14
 shipped: 2026-08-14
-check:
-checked:
 needs: 0016, 0017
 related: 0013-never-leave-an-agent-without-an-instruction.md
 ---

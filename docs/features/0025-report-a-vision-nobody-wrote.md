@@ -4,8 +4,6 @@ title: Report a vision nobody wrote
 status: Shipped
 created: 2026-08-16
 shipped: 2026-08-16
-check:
-checked:
 needs:
 related: 0016-make-an-unfinished-doc-fail-the-audit.md
 ---

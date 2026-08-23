@@ -4,9 +4,6 @@ title: Stop reading one branch as two claims
 status: Shipped
 created: 2026-08-18
 shipped: 2026-08-18
-check:
-checked:
-review:
 needs:
 related: docs/features/0010-make-the-board-honest-under-several-agents.md
 ---

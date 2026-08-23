@@ -4,11 +4,7 @@ title: Refuse to destroy a claim that is not yours
 status: Shipped
 created: 2026-08-21
 shipped: 2026-08-21
-check:
-checked:
-review:
 needs:
-related:
 ---
 
 ## Problem

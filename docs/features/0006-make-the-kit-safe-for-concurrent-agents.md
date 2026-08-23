@@ -4,8 +4,6 @@ title: Make the kit safe for concurrent agents
 status: Shipped
 created: 2026-08-12
 shipped: 2026-08-12
-check:
-checked:
 related: 0005-make-claims-and-blocking-mean-what-the-docs-say.md
 ---
 

@@ -4,8 +4,6 @@ title: Refuse a claim on a plan that has not landed
 status: Shipped
 created: 2026-08-16
 shipped: 2026-08-16
-check:
-checked:
 needs:
 related: 0021-let-agents-work-from-drafts-and-make-accepting-a-signal.md
 ---

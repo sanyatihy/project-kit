@@ -4,8 +4,6 @@ title: Mark the features whose implementation a human must see
 status: Shipped
 created: 2026-08-16
 shipped: 2026-08-17
-check:
-checked:
 needs: 0028
 related: 0018-give-the-human-an-accept-command.md
 ---

@@ -4,8 +4,6 @@ title: Drop the In progress status
 status: Shipped
 created: 2026-08-17
 shipped: 2026-08-17
-check:
-checked:
 needs: 0031
 related: 0021-let-agents-work-from-drafts-and-make-accepting-a-signal.md
 ---

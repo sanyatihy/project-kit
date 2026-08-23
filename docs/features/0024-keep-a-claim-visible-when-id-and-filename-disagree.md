@@ -4,8 +4,6 @@ title: Keep a claim visible when id and filename disagree
 status: Shipped
 created: 2026-08-16
 shipped: 2026-08-16
-check:
-checked:
 needs: 0023, 0025
 related: 0006-make-the-kit-safe-for-concurrent-agents.md
 ---

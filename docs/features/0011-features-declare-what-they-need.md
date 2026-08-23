@@ -4,8 +4,6 @@ title: Features declare what they need
 status: Shipped
 created: 2026-08-14
 shipped: 2026-08-14
-check:
-checked:
 related: 0010-make-the-board-honest-under-several-agents.md
 ---
 

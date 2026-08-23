@@ -4,9 +4,6 @@ title: Write about the system, not the session
 status: Shipped
 created: 2026-08-18
 shipped: 2026-08-18
-check:
-checked:
-review:
 needs:
 related: 0038-keep-docs-short-after-the-trim.md, 0037-rules-that-produce-concise-docs.md
 ---

@@ -4,9 +4,6 @@ title: Cut what a fleet board read costs
 status: Shipped
 created: 2026-08-18
 shipped: 2026-08-18
-check:
-checked:
-review:
 needs:
 related: docs/features/0028-see-what-is-waiting-for-review.md, docs/features/0035-stop-re-asking-git-the-same-questions.md
 ---
