@@ -1,9 +1,9 @@
 ---
 id: 0067
 title: A status the kit refuses has a command that clears it
-status: Draft
+status: Shipped
 created: 2026-08-24
-shipped:
+shipped: 2026-08-24
 needs: 0066
 ---
 
