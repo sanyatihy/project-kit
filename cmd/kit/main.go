@@ -181,7 +181,7 @@ func runInit(args []string) int {
 	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
 	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
 	fmt.Printf("  each one a change a human can review in one sitting\n")
-	fmt.Printf("  leave them Draft — kit ship and kit drop write a status, nothing else\n")
+	fmt.Printf("  leave them Draft — kit ship, kit drop and kit reset write a status\n")
 	// Said here because this is where a bootstrap run reads what to do next, and the
 	// omission is what let `kit claim` win a branch carrying no plan: a claim pushes
 	// HEAD, so a plan that is only in the working tree does not travel with it.
@@ -238,8 +238,8 @@ func runNew(args []string) int {
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
 	// The gate this described is gone: `Accepted` was removed after 82 docs reached it
 	// zero times, and `next` offers a written Draft the moment its round lands.
-	fmt.Printf("  kit next offers it as soon as the plan is written, and kit ship\n")
-	fmt.Printf("  and kit drop are the only things that write a status.\n\n")
+	fmt.Printf("  kit next offers it as soon as the plan is written, and kit ship,\n")
+	fmt.Printf("  kit drop and kit reset are the only things that write a status.\n\n")
 	return 0
 }
 

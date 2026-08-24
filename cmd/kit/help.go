@@ -36,8 +36,9 @@ How it works:
 
     Draft -> Shipped   (exits: Dropped)
 
-  Three statuses, and only "kit ship" and "kit drop" write them. Work starts when a
-  claim branch is pushed, so there is no status for it and nothing to set by hand.
+  Three statuses, and only "kit ship", "kit drop" and "kit reset" write them. Work
+  starts when a claim branch is pushed, so there is no status for it and nothing to
+  set by hand.
 
   "kit next" and "kit audit" read the project you are in. For several projects:
     for d in ~/code/*; do (cd $d && kit next); done
@@ -155,8 +156,8 @@ it has nothing to do with. Put the round on a "plan/" branch with no id in the n
 
 Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in
 ## Open questions; anything only a human can answer goes in docs/INBOX.md via
-"kit block". Never set status: or shipped: yourself — "kit ship" and "kit drop"
-are the only things that write them.
+"kit block". Never set status: or shipped: yourself — "kit ship", "kit drop" and
+"kit reset" are the only things that write them.
 
   kit new "Shorten URLs"         # -> docs/features/0001-shorten-urls.md`,
 

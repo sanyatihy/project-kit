@@ -234,9 +234,9 @@ the board. Frontmatter carries `id`, `title`, `status` (`Draft → Shipped`, exi
 `Dropped`), `created`, `shipped` and `needs`. Sections: `Problem`, `Non-goals`, `Design`,
 `Tasks`, `Open questions` (optional), `Log`.
 
-Only `kit ship` and `kit drop` write a status, and only `kit ship` writes a date. There is
-no status for work in flight — the claim branch says that, and a second copy in the doc
-could only disagree with it.
+Only `kit ship`, `kit drop` and `kit reset` write a status, and only `kit ship` writes a
+date. There is no status for work in flight — the claim branch says that, and a second
+copy in the doc could only disagree with it.
 
 `needs:` lists the feature ids that must ship before this one can start, and is the only
 field that changes what `kit next` offers. Empty means it can start now, which is the
