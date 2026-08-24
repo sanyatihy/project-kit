@@ -7,6 +7,9 @@ An entry earns its place by naming a value somebody would notice and a trigger t
 observed. An entry whose trigger has never fired, or whose fix costs more than the problem,
 is deleted rather than kept as an option.
 
+A **Promote when** line reading *fired* is waiting for a round rather than for a signal:
+the observation that justifies it has already been made, and it is written beside it.
+
 ## The work is only on the remote once, at the end
 
 `kit claim` pushes `HEAD`, so the branch that claims a feature carries the doc and no work,
@@ -62,6 +65,10 @@ frontmatter has no id at all is reported by nothing, appears on the board as `??
 line `done-not-shipped` printed for one; that line now names the edit, but the doc is still
 unclaimable and nothing says so.
 
+0067 made it worse in one place: `no-status` builds its fix from the doc's id, so a doc with
+neither prints `run: kit reset  "<why>"` — a command that cannot be typed. `unfilled-template`
+already carries the branch for an id-less doc that `no-status` does not.
+
 The fix is a check, at the severity `id-mismatch` already carries: the same guarantee is
 broken, and by the same amount.
 
@@ -92,8 +99,12 @@ both left behind when 0048 renumbered the protocol, and both found by reading ra
 by the build. Widening the test to comments is one line; the cost is that a note genuinely
 about the numbered list can no longer name a number.
 
+Two more are wrong now: `audit.go` and `conformance_audit_test.go` both cite rule 21, and the
+protocol ends at 20. 0067 added three citations of rule 6, one of them in `docs/TECH.md` —
+which is prose the guard cannot reach either way, because it reads Go string literals.
+
 **Value:** the reasoning in the source stops pointing at rules that have moved.
-**Promote when:** a third citation is found wrong, or one sends a reader to the wrong rule.
+**Promote when:** fired — two citations name a rule that does not exist.
 
 ## `tag-stale` reads this machine's tags, and `@latest` reads the remote's
 
@@ -122,16 +133,16 @@ was down.
 
 ## `kit new`'s refusals are named nowhere
 
-`refusals` in `cmd/kit/refusals_test.go` holds `ship`, `release` and `claim`, so the list
-0055 made whole does not cover `new`. It turns work away for six reasons — an empty title, a
-title that slugs to nothing, a project not set up, several remotes and no origin, a push
+`refusals` in `cmd/kit/refusals_test.go` holds `ship`, `release`, `claim` and, since 0067,
+`reset` — so the list 0055 made whole still does not cover `new`. It turns work away for six
+reasons — an empty title, a title that slugs to nothing, a project not set up, several
+remotes and no origin, a push
 that answered nothing, and an id range the remote has exhausted — and `kit new --help` names
 none of them. The last two arrived with 0058.
 
 **Value:** an agent that meets a `kit new` refusal is not told the command could not have
 made it.
-**Promote when:** an agent retries a `kit new` that refused, or a fourth command joins the
-list.
+**Promote when:** fired — `reset` was the fourth command to join the list.
 
 ## `next` prints a claim a checkout ahead of the trunk cannot make
 
@@ -153,14 +164,14 @@ cannot see is added.
 
 0062 shipped while 0061 was being built: `ClaimFeature` refuses a checkout that already
 claims something, and `kit new` refuses to draft on a branch citing an id that is not this
-checkout's claim. 0061 kept rules 11 and 12 because the refusal did not exist yet and cut
+checkout's claim. 0061 kept the two rules because the refusal did not exist yet and cut
 seven others on exactly that test; 0062's own `## Design` says the two collapse into it.
 Four lines read at the start of every session in every project, saying what the command now
-says at the moment it matters.
+says at the moment it matters. They were rules 11 and 12 when this was written and are 9 and
+10 now, which is the entry above happening to this one.
 
 **Value:** the protocol keeps only what no refusal can make.
-**Promote when:** the next round touches the protocol, or a third rule is found restating a
-refusal.
+**Promote when:** fired — 0067 rewrote rule 6, and these two were not looked at.
 
 ## Nothing tells an agent which language a project's docs are written in
 
@@ -202,9 +213,12 @@ brought its frontmatter back in line. What it still does is sit in the features 
 looking like the template, where the next person to copy from it gets whatever it has
 drifted to.
 
+It drifted again in 0068, and into the worst version of itself: the copy still carries the
+`needs:` guidance that round deleted for pre-answering its own question, so a doc copied from
+it is handed the advice that cost a chain a session.
+
 **Value:** one template, so a doc copied by hand is the doc `kit new` writes.
-**Promote when:** it drifts again, or a doc is found carrying frontmatter only this copy
-has.
+**Promote when:** fired — the drift is the misleading sentence 0068 removed.
 
 ## Nothing notices an agent merging its own work
 
