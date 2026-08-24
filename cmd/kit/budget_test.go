@@ -117,7 +117,11 @@ const (
 	// not: the commit belongs to the command that wrote the status, and the check behind it
 	// is the only one that reads HEAD, which is the fact a reader cannot recover from a
 	// registry entry.
-	techBudget = 405
+	// 410 on 0067. Five lines for the third status writer and what it reaches: a doc with
+	// an unrecognised status, and one with no status: line at all, were both repairable
+	// only by the edit rule 6 forbids — which is the fact a reader cannot recover from a
+	// command's help.
+	techBudget = 410
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

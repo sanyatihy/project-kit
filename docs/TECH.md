@@ -328,6 +328,11 @@ Draft -> Shipped     (exit: Dropped)
   from a worktree as well as from the trunk. `claim` writes `.worktrees/` to
   `.git/info/exclude` rather than asking, because declining the exclude is not legitimate and
   `git clone` carries none — which puts the write in the command that runs in every clone.
+- **`kit reset <id> "<why>"` is the one repair for a status the kit refuses.** It writes
+  `Draft` over any status but `Shipped`, and writes the field into a doc that carries no
+  `status:` line, so the three writers are `ship`, `drop` and `reset` and nothing is left
+  that only a hand-edit can clear. `no-status` and the board's blocked reason name it: a
+  `fix:` line that instructs an edit to `status:` is telling an agent to break rule 6.
 - **A status the kit writes is committed by the command that wrote it.** `ship`'s
   dirty-tree refusal makes that commit exactly the stamp; `drop` takes the doc's path
   alone, because a plan is often edited in the breath that retires it. `status-uncommitted`
