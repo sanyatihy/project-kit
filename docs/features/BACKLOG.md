@@ -223,6 +223,20 @@ drifted to.
 **Promote when:** it drifts again, or a doc is found carrying frontmatter only this copy
 has.
 
+## Nothing notices an agent merging its own work
+
+`kit claim` says a project with no remote is one no other agent can see, and `ship` says
+there is nowhere to hand the work off and that merging is not yours. An unattended chain
+read both and merged four of its own feature branches into the trunk anyway, because with no
+remote there is no pull request to stop at and no reviewer to wait for. `ship` knows the
+claim branch name and could say when the trunk already contains it, which reports the
+breach after the fact rather than preventing it.
+
+**Value:** an operator can tell whether a branch was reviewed or merged by the agent that
+wrote it.
+**Promote when:** a project with a remote is found doing it, or the report is wanted for a
+chain the operator intends to run unattended.
+
 ## Cut from this backlog
 
 Five entries were deleted rather than carried. `needs: none` would have put every shipped
