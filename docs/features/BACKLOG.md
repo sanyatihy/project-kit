@@ -233,12 +233,3 @@ breach after the fact rather than preventing it.
 wrote it.
 **Promote when:** a project with a remote is found doing it, or the report is wanted for a
 chain the operator intends to run unattended.
-
-## Cut from this backlog
-
-Five entries were deleted rather than carried. `needs: none` would have put every shipped
-doc in breach to catch a dependency nobody has yet failed to declare. `kit defer` proposed a
-command for a case seen twice. "Steps the operator still runs by hand" was a list of two
-conveniences, not a proposal. "A claim can carry a doc without its latest edits" described a
-failure milder than the one it replaced and has never been observed. Frontmatter truncation
-at ` #` stopped being a proposal when it was reproduced — it is a task box in 0051.
