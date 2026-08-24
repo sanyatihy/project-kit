@@ -22,6 +22,7 @@ Commands:
   kit block <id> "<question>"         park a decision only a human can make
   kit ship  <id>                      tick the last box: verify, stamp, freeze
   kit drop  <id> "<why>"              retire a feature that will not be built
+  kit reset <id> "<why>"              put a doc back to Draft: the one repair
   kit next  [--json] [--offline]      what should I work on?
   kit audit [--json] [--strict] [--offline]
                                       where do the docs disagree with the repo?
@@ -315,6 +316,27 @@ in, so say it in the pull request.
 
   kit drop 0007 "superseded by 0011's router"
   kit drop 7 "the metric it was chasing moved on its own"`,
+
+	"reset": `kit reset <id> "<why>"
+
+Put a doc back to status: Draft, and commit it. The one repair for a status the kit
+does not recognise, which wedges the doc that carries it: "kit claim" says it is not
+open work, "kit ship" refuses while a box is open, and every instruction left named an
+edit to status: — the thing that put the bad value there.
+
+Any status but Shipped is accepted, so this also revives a Dropped plan somebody wants
+back. The reason goes in "## Log" beside every other durable decision.
+
+Four refusals, all exit 2. The doc is Shipped: that is frozen history and the work is
+in the repo, so reopening it would make the record say it was never done. Or it is
+already Draft, so there is nothing to repair. Or it is claimed by a branch that is not
+this checkout's: reset it from that worktree, because a doc another agent holds is work
+in flight. Or it has no status: line for this to write. And if committing it failed —
+an index another process holds, no identity configured — the file is already back to
+Draft and the error says so.
+
+  kit reset 0007 "In Progress was never a status the kit writes"
+  kit reset 7 "revived: the constraint that retired it went away"`,
 
 	"next": `kit next [--json] [--offline]
 

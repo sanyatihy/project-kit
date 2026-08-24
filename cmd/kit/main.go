@@ -81,6 +81,8 @@ func run() int {
 		return runRelease(os.Args[2:])
 	case "drop":
 		return runDrop(os.Args[2:])
+	case "reset":
+		return runReset(os.Args[2:])
 	case "block":
 		return runBlock(os.Args[2:])
 	case "ship":
@@ -312,6 +314,47 @@ func releaseReservation(repo *kit.Repo, typed, why string) int {
 	if why == "" {
 		fmt.Printf("\n  no reason recorded, and there is no doc to record one in —\n")
 		fmt.Printf("  say why in the pull request that carries this\n")
+	}
+	fmt.Printf("\nnext:\n  kit next\n\n")
+	return 0
+}
+
+// ---------------------------------------------------------------- reset
+
+func runReset(args []string) int {
+	fs := newFlagSet("reset", args)
+	rest := parseArgs(fs, args)
+	if len(rest) < 1 {
+		fmt.Fprintf(os.Stderr, "kit reset: need one feature id\n\n%s\n", commandHelp["reset"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit reset: %v\n", err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit reset: %v\n", err)
+		return 2
+	}
+	why := strings.TrimSpace(strings.Join(rest[1:], " "))
+	res, err := kit.Reset(repo, id, why, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit reset: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  reset    %s  (was %s)\n", res.Doc, res.Was)
+	if res.Commit != "" {
+		fmt.Printf("  commit   %s — the status is committed, not left in the tree\n", res.Commit)
+	}
+	// `drop`'s nudge, for `drop`'s reason: refusing an empty reason only gets an empty
+	// string typed at it, and saying so is what makes the omission visible while the
+	// person who knows the answer is still here.
+	if why == "" {
+		fmt.Printf("\n  no reason recorded — say why in ## Log, or the next person\n")
+		fmt.Printf("  cannot tell a repaired doc from one somebody reopened\n")
 	}
 	fmt.Printf("\nnext:\n  kit next\n\n")
 	return 0

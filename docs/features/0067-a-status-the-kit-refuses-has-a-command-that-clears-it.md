@@ -47,7 +47,7 @@ time, and the one finding whose fix was prose is the one it botched.
 
 ## Tasks
 
-- [ ] `kit reset <id> "<why>"` sets any non-Shipped doc to `Draft`, logs the reason, and
+- [x] `kit reset <id> "<why>"` sets any non-Shipped doc to `Draft`, logs the reason, and
       refuses a `Shipped` doc and another checkout's claim, with a conformance case
 - [ ] `kit help` and the help topics list it beside `ship` and `drop`
 - [ ] `no-status`'s `fix:` line and `next`'s blocked reason name it instead of an edit
