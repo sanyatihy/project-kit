@@ -1,9 +1,9 @@
 ---
 id: 0068
 title: A doc declares the dependency its own prose names
-status: Draft
+status: Shipped
 created: 2026-08-24
-shipped:
+shipped: 2026-08-24
 needs: 0066
 ---
 
