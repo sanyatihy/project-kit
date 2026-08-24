@@ -14,6 +14,7 @@ type DropResult struct {
 	Was        string
 	Claims     []string // branches still named after the doc, which nothing here deletes
 	Dependants []string // features declaring this id in needs:, which nothing here edits
+	Commit     string   // the commit the status landed in, empty when there is no history to commit onto
 }
 
 // Drop retires a feature that will not be built.
@@ -65,12 +66,26 @@ func Drop(r *Repo, id, why string, today time.Time) (*DropResult, error) {
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err
 	}
-	return &DropResult{
+
+	// Committed here for `ship`'s reason: a status only the working tree carries is one
+	// session from being read as debris, and `audit` reads the tree, so nothing would say
+	// so. Only this doc's path, and `drop` makes no dirty-tree refusal — a retired plan is
+	// often edited in the same breath, and those edits are what is being retired.
+	res := &DropResult{
 		Doc:        target.Rel,
 		Was:        target.Status,
 		Claims:     r.Claims(id),
 		Dependants: dependants(r, id),
-	}, nil
+	}
+	if r.HasHistory() {
+		res.Commit = "Drop " + target.ID
+		if err := r.commitPaths(res.Commit, target.Path); err != nil {
+			return nil, fmt.Errorf("%s is stamped Dropped in %s, and committing it failed:\n%v\n"+
+				"commit that file yourself — the feature is retired only once the commit exists",
+				target.Name(), target.Rel, err)
+		}
+	}
+	return res, nil
 }
 
 // ReleasedID is a reservation returned to circulation. Distinct from Released, which is

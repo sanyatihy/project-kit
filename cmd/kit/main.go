@@ -270,6 +270,9 @@ func runDrop(args []string) int {
 	}
 
 	fmt.Printf("\n  dropped  %s  (was %s)\n", res.Doc, res.Was)
+	if res.Commit != "" {
+		fmt.Printf("  commit   %s — the status is committed, not left in the tree\n", res.Commit)
+	}
 	if why == "" {
 		fmt.Printf("\n  no reason recorded — say why in ## Log, or the next person\n")
 		fmt.Printf("  cannot tell a rejected plan from a forgotten one\n")
@@ -489,6 +492,9 @@ func runShip(args []string) int {
 	}
 
 	fmt.Printf("\n  shipped  %s  (was %s)\n", res.Doc, res.Was)
+	if res.Commit != "" {
+		fmt.Printf("  commit   %s — the stamp is committed, not left in the tree\n", res.Commit)
+	}
 	fmt.Printf("\nnext:\n")
 	if res.TechCreated {
 		fmt.Printf("  created %s — the as-built doc. See: kit help as-built\n", res.TechDoc)

@@ -1,9 +1,9 @@
 ---
 id: 0066
 title: A status the kit writes lands in a commit
-status: Draft
+status: Shipped
 created: 2026-08-24
-shipped:
+shipped: 2026-08-24
 needs:
 ---
 
@@ -49,10 +49,10 @@ the same loss.
 
 ## Tasks
 
-- [ ] `kit ship` commits the stamp it writes, names the commit in its output, and reports
+- [x] `kit ship` commits the stamp it writes, names the commit in its output, and reports
       rather than swallows a commit it could not make
-- [ ] `kit drop` commits the status and log line it writes, the same way
-- [ ] `audit` reports a doc whose terminal status is not the one in `HEAD`, with a
+- [x] `kit drop` commits the status and log line it writes, the same way
+- [x] `audit` reports a doc whose terminal status is not the one in `HEAD`, with a
       conformance case
 
 ## Log

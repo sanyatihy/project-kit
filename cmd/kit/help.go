@@ -255,9 +255,10 @@ State a leaning. It turns most questions into a yes/no.
 	"ship": `kit ship <id>
 
 Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
-status: Shipped, and stamps shipped: with today's date.
+status: Shipped, stamps shipped: with today's date, and commits that stamp — a
+status left in the working tree is one session from being read as debris.
 
-Seven more refusals, all exit 2. The doc is already Shipped, or it was Dropped and a
+Eight more refusals, all exit 2. The doc is already Shipped, or it was Dropped and a
 retired plan is not work to finish. Or it has no ## Tasks boxes at all, so there is
 nothing to have finished, or no status: line for this to write. Or something in its
 needs: has not shipped — the plan says this was built on a foundation that is not
@@ -265,7 +266,10 @@ there, so the plan is wrong and you have to look. Or it is claimed by a branch t
 is not this checkout's: ship it from that worktree, because "Shipped" is history
 nobody may edit and doing it from elsewhere freezes another agent's work mid-flight.
 Or this checkout has uncommitted or untracked files: the scratch a feature generated
-is yours to clean up, and what git ignores does not count.
+is yours to clean up, and what git ignores does not count. Or the stamp is written
+and committing it failed — an index another process holds, no identity configured, a
+rebase under way: the file carries status: Shipped and the doc is shipped only once
+that commit exists.
 
 Doing this by hand is where shipped-no-date comes from, so the command removes the
 mistake rather than reporting it afterwards.
@@ -282,8 +286,10 @@ measurement, and cut only what the code now says.
 
 	"drop": `kit drop <id> "<why>"
 
-Retire a feature that will not be built. Sets status: Dropped and records the
-reason in "## Log".
+Retire a feature that will not be built. Sets status: Dropped, records the reason in
+"## Log", and commits that doc — a status left in the working tree is one session
+from being read as debris. Only the doc: whatever else the tree carries is yours.
+Refuses at exit 2 when the commit fails, naming the file the status is already on.
 
 Feature docs live on the default branch at every status, so an unwanted one cannot
 be disposed of by deleting a branch — left alone it sits on the board for ever and

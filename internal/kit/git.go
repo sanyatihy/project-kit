@@ -439,6 +439,20 @@ func (r *Repo) DirtyFiles() []string {
 	return paths
 }
 
+// commitPaths commits exactly the paths named and nothing else.
+//
+// The pathspec is on both halves: `add` stages those paths, and `commit` takes them as
+// its own argument, so anything a concurrent process staged in between stays out of the
+// commit. Paths are absolute, because a project root and a git top-level are not always
+// the same directory.
+func (r *Repo) commitPaths(message string, paths ...string) error {
+	if _, err := r.gitRun(append([]string{"add", "--"}, paths...)...); err != nil {
+		return err
+	}
+	_, err := r.gitRun(append([]string{"commit", "--quiet", "-m", message, "--"}, paths...)...)
+	return err
+}
+
 // reaches reports whether a revision has landed on another — whether the branch's work
 // is already contained in the trunk.
 func (r *Repo) reaches(rev, trunk string) bool {

@@ -111,6 +111,8 @@ type Repo struct {
 	// cannot change while one command runs, and shipped-not-pushed needs it per doc.
 	trunkDocs      map[string]string
 	trunkDocsAsked bool
+	headDocs       map[string]string
+	headDocsAsked  bool
 
 	// The branch this checkout is on and the remotes it has, asked once each. Neither can
 	// change while one command runs, and both were being asked per feature: 62 of the 116

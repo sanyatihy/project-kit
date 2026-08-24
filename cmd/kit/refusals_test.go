@@ -46,6 +46,7 @@ var refusals = map[string]struct {
 		{"needs: has not", "an unmet needs:"},
 		{"is claimed by a branch", "a claim another checkout holds"},
 		{"uncommitted or untracked files", "a dirty working tree"},
+		{"committing it failed", "a stamp this checkout would not commit"},
 	}},
 	"release": {[]string{"Release", "pickRemote"}, []refusal{
 		{"no such feature", "an id nothing is named after"},

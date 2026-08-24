@@ -94,6 +94,40 @@ func TestShipStampsTheDate(t *testing.T) {
 	p.run("audit").ok().lacks("shipped-no-date")
 }
 
+func TestShipCommitsTheStampItWrites(t *testing.T) {
+	t.Parallel()
+	// A stamp left in the working tree is one session from being read as debris and
+	// discarded, and `audit` reads the tree rather than HEAD, so nothing would say so.
+	p := setUp(t)
+	feature(p, "0007", "done", "All done", "Draft", "- [x] One")
+
+	shipping(p, "0007").ok().has("Ship 0007")
+
+	if dirty := p.gitOut(nil, "status", "--porcelain"); strings.TrimSpace(dirty) != "" {
+		t.Errorf("ship left the tree dirty:\n%s", dirty)
+	}
+	if head := p.gitOut(nil, "show", "HEAD:docs/features/0007-done.md"); !strings.Contains(head, "status: Shipped") {
+		t.Errorf("the committed doc is not the shipped one:\n%s", head)
+	}
+}
+
+func TestShipReportsAStampItCouldNotCommit(t *testing.T) {
+	t.Parallel()
+	// The write has already happened when the commit fails, so silence here would
+	// leave exactly the loss this closes. An index another process holds is one way in;
+	// no identity configured and a rebase in progress are the others.
+	p := setUp(t)
+	feature(p, "0007", "done", "All done", "Draft", "- [x] One")
+	p.commitAll("the work")
+	p.write(".git/index.lock", "")
+
+	p.run("ship", "0007").fails(2).errHas("stamped Shipped", "docs/features/0007-done.md")
+
+	if doc := p.read("docs/features/0007-done.md"); !strings.Contains(doc, "status: Shipped") {
+		t.Errorf("the stamp the error names is not on disk:\n%s", doc)
+	}
+}
+
 func TestShipFillsAnExistingEmptyDateKey(t *testing.T) {
 	t.Parallel()
 	// The template ships a bare "shipped:" line, so this is the common path — and
@@ -180,11 +214,13 @@ func TestShipRefusesARetiredFeature(t *testing.T) {
 
 func TestShipRefusesTwice(t *testing.T) {
 	t.Parallel()
-	// The second run would rewrite frozen history and restamp the date.
+	// The second run would rewrite frozen history and restamp the date. It is run
+	// directly rather than through `shipping`: the first ship committed its own stamp,
+	// so there is nothing left for a second commit to make.
 	p := setUp(t)
 	feature(p, "0007", "done", "Done", "Draft", "- [x] One")
 	shipping(p, "0007").ok()
-	shipping(p, "0007").fails(2).errHas("already Shipped")
+	p.run("ship", "0007").fails(2).errHas("already Shipped")
 }
 
 func TestShipRefusesWhileItsNeedsHaveNotShipped(t *testing.T) {

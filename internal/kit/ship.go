@@ -17,6 +17,7 @@ type ShipResult struct {
 	TechCreated bool   // whether shipping is what created it
 	OpenLogs    bool   // whether ## Log looks like it was left untouched
 	HasRemote   bool   // whether there is anywhere to hand the work off to
+	Commit      string // the commit the stamp landed in, empty when there is no history to commit onto
 }
 
 // Ship marks a feature shipped: it verifies every box is ticked, sets the status
@@ -118,6 +119,28 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 			res.TechDoc, res.TechCreated = created, true
 		}
 	}
+
+	// The stamp is committed here rather than left for whoever ships to notice. A doc
+	// carrying `status: Shipped` only in the working tree is one session away from being
+	// read as debris and discarded, and `audit` reads the tree, so it reports agreement
+	// while `HEAD` still says Draft. The dirty-tree refusal above is what makes this
+	// safe: nothing else is in the tree, so the commit is the stamp and the as-built doc
+	// in the one case where shipping created it.
+	paths := []string{target.Path}
+	if res.TechCreated {
+		paths = append(paths, filepath.Join(r.Root, res.TechDoc))
+	}
+	if r.HasHistory() {
+		res.Commit = "Ship " + target.ID
+		if err := r.commitPaths(res.Commit, paths...); err != nil {
+			// The write already happened, so the error says where the stamp is. Silence
+			// here would leave the loss this closes, one layer down.
+			return nil, fmt.Errorf("%s is stamped Shipped in %s, and committing it failed:\n%v\n"+
+				"commit that file yourself — the doc is shipped only once the commit exists",
+				target.Name(), target.Rel, err)
+		}
+	}
+
 	res.OpenLogs = strings.TrimSpace(target.Section("Log")) == ""
 	return res, nil
 }

@@ -96,6 +96,13 @@ var (
 	// were shipped and never pushed with `audit --strict` green throughout.
 	checkShippedNotPushed = Check{"shipped-not-pushed", High,
 		"Shipped, but the work is on no remote — it exists on one machine"}
+	// HIGH for the same reasons one step earlier: a status the working tree alone carries
+	// is silent — every command exits 0 and the doc reads as finished — and the committed
+	// record says the feature was never finished at all. `ship` and `drop` commit what they
+	// write, so what this catches is a doc they stamped before they did, a stamp lost in a
+	// rebase, and a commit that failed and was never made by hand afterwards.
+	checkStatusUncommitted = Check{"status-uncommitted", High,
+		"a terminal status is only in the working tree — HEAD carries the doc as open work"}
 	// HIGH because `kit claim` does not consult `audit`: this has to fail --strict to
 	// stop an agent being handed a design nobody wrote. It cannot misfire — the
 	// template's guidance lives in comments, which every parser here strips, so an
@@ -199,7 +206,7 @@ var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
 	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkSplitClaim, checkStalled,
 	checkInboxStale,
-	checkShippedNotPushed,
+	checkStatusUncommitted, checkShippedNotPushed,
 	checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkInboxUnparsed,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
@@ -321,6 +328,7 @@ var featureChecks = []featureCheck{
 	// they read is not the field the author edits.
 	{[]Check{checkDuplicateKey}, duplicateKey},
 	{[]Check{checkShippedNoDate}, shippedDate},
+	{[]Check{checkStatusUncommitted}, statusUncommitted},
 	{[]Check{checkShippedNotPushed}, shippedNotPushed},
 	{[]Check{checkStalled}, stalled},
 	{[]Check{checkDoneNotShipped}, doneNotShipped},
@@ -453,6 +461,31 @@ func shippedDate(s *docState) []Finding {
 // Shipping is a handoff, and this is the far side of it: the doc says the builder is
 // finished and the work reached nobody. Silent by construction — the feature has left the
 // board, so nothing else would ever mention it again.
+// The one check that reads HEAD rather than the working tree. Everything else here asks
+// what the files say, which is why a stamp nobody committed read as agreement: the doc on
+// disk said Shipped and no check looked anywhere else. A doc HEAD does not carry at all
+// counts as absent — an uncommitted terminal doc is the same loss.
+func statusUncommitted(s *docState) []Finding {
+	if !terminal(s.f.Status) || !s.r.HasHistory() {
+		return nil
+	}
+	was := s.r.headStatuses()[s.f.Rel]
+	if was == s.f.Status {
+		return nil
+	}
+	carries := "carries it as " + was
+	if was == "" {
+		carries = "carries no copy of it"
+	}
+	verb := "Ship"
+	if s.f.Status == StatusDropped {
+		verb = "Drop"
+	}
+	return []Finding{finding(checkStatusUncommitted, s.at,
+		fmt.Sprintf("%s: %s in the file, and HEAD %s", s.f.Name(), s.f.Status, carries),
+		fmt.Sprintf("commit it: git commit %s -m %q", s.f.Rel, verb+" "+s.f.ID))}
+}
+
 func shippedNotPushed(s *docState) []Finding {
 	if s.f.Status != StatusShipped || !s.r.OnlyHere(s.f) {
 		return nil
