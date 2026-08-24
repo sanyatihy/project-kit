@@ -396,6 +396,18 @@ func (r *Repo) trunkStatuses() (map[string]string, bool) {
 	return found, found != nil
 }
 
+// headStatuses reads every feature doc's status from the commit HEAD points at — the one
+// question here the working tree cannot answer, and the reason a stamp nobody committed
+// read as agreement. Two processes for the whole board, memoised: the answer cannot change
+// inside one command, and asking per doc is the fan-out the git budget exists to catch.
+func (r *Repo) headStatuses() map[string]string {
+	if !r.headDocsAsked {
+		r.headDocsAsked = true
+		r.headDocs = r.statusesOn("HEAD")
+	}
+	return r.headDocs
+}
+
 // statusesOn reads every feature doc's status from one revision's tree, nil when it cannot
 // be read at all.
 func (r *Repo) statusesOn(ref string) map[string]string {

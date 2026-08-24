@@ -63,7 +63,11 @@ const (
 	// `fetch` mirrors the whole namespace and one `for-each-ref` reads it, both fixed —
 	// the `ls-tree` per branch that follows is spent only on a candidate that survives
 	// the docs on disk, and on a project where nothing has drifted there is none.
-	onlineBudget = 14
+	// 16 since 0066: what status HEAD carries is a new question, and the working tree
+	// cannot answer it — that is the whole reason a stamp nobody committed read as
+	// agreement. One `ls-tree` names the board's blobs and one `cat-file --batch` reads
+	// them, both fixed, which is the shape `trunkStatuses` already uses for the trunk.
+	onlineBudget = 16
 
 	// The same board where no trunk resolves. `Trunk()` answered "" there, and "" was
 	// also its "not asked yet" sentinel, so `findTrunk` ran the whole ladder again for

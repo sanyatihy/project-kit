@@ -149,6 +149,16 @@ var auditCases = []struct {
 			"shipped: "+daysAgo(1), "- [x] Built it"))
 		p.commitAll("ship 0002 and tell nobody")
 	}},
+	{"status-uncommitted", func(p *project) {
+		// The loss this closes: the stamp is in the file and HEAD still carries the doc
+		// as open work, which the session after this one reads as a stray edit and
+		// discards. `ship` commits its own stamp now, so this is what an older binary,
+		// a rebase, or a hand-edit leaves behind.
+		p.write("docs/features/0002-done.md", doc("0002", "Done", "Draft", "", "- [x] Built it"))
+		p.commitAll("the work, and the doc as it was")
+		p.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
+			"shipped: "+daysAgo(1), "- [x] Built it"))
+	}},
 	{"inbox-stale", func(p *project) {
 		p.write("docs/INBOX.md", fmt.Sprintf(
 			"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(10)))

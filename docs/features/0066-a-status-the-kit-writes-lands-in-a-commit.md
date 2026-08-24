@@ -52,7 +52,7 @@ the same loss.
 - [x] `kit ship` commits the stamp it writes, names the commit in its output, and reports
       rather than swallows a commit it could not make
 - [x] `kit drop` commits the status and log line it writes, the same way
-- [ ] `audit` reports a doc whose terminal status is not the one in `HEAD`, with a
+- [x] `audit` reports a doc whose terminal status is not the one in `HEAD`, with a
       conformance case
 
 ## Log
