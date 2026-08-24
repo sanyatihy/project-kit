@@ -566,13 +566,20 @@ func doneNotShipped(s *docState) []Finding {
 // Reported under one code because the fix is the same either way, and the doc is in one
 // state or the other, never both.
 func statusState(s *docState) []Finding {
+	// Both fixes name the command. "use one of: Draft, Dropped, Shipped" was an
+	// instruction to hand-edit `status:`, which is what put the unrecognised value there
+	// and what rule 6 forbids — the one finding a 27-session chain repaired by breaking
+	// the rule it was told to follow. `reset` writes the field, including into a doc that
+	// carries no `status:` line at all.
+	fix := `run: kit reset ` + s.f.ID + ` "<why>"`
 	switch {
 	case s.f.Status == "":
-		return []Finding{finding(checkNoStatus, s.at, s.f.Name()+": no status:", "add one of: "+s.statuses)}
+		return []Finding{finding(checkNoStatus, s.at, s.f.Name()+": no status:", fix)}
 	case !slices.Contains(AllStatuses, s.f.Status):
 		return []Finding{finding(checkNoStatus, s.at,
-			fmt.Sprintf("%s: unknown status %q", s.f.Name(), s.f.Status),
-			"use one of: "+s.statuses)}
+			fmt.Sprintf("%s: unknown status %q, and the kit writes %s",
+				s.f.Name(), s.f.Status, s.statuses),
+			fix)}
 	}
 	return nil
 }

@@ -44,6 +44,38 @@ func TestResetClearsAStatusNobodyCanShipOrClaim(t *testing.T) {
 	p.run("claim", "0007").ok()
 }
 
+func TestTheWayOutOfAWedgedStatusIsACommand(t *testing.T) {
+	t.Parallel()
+	// The finding a 27-session chain repaired by breaking the rule it was told to follow:
+	// `use one of: Draft, Dropped, Shipped` is an instruction to hand-edit the field the
+	// kit owns. Both messages an agent meets here now name the command instead.
+	p := setUp(t)
+	wedged(p, "0007", "stuck")
+	p.commitAll("a status the kit never wrote")
+
+	p.run("audit").ok().has("no-status", `kit reset 0007 "<why>"`)
+	p.run("next").ok().has("kit reset 0007")
+}
+
+func TestResetWritesAStatusLineADocNeverHad(t *testing.T) {
+	t.Parallel()
+	// The other half of no-status, and the same wedge: `claim` refuses a doc whose status
+	// is not Draft, and a doc with no status: line has none to be.
+	p := setUp(t)
+	p.write("docs/features/0007-old.md",
+		"---\nid: 0007\ntitle: From an older kit\ncreated: 2026-01-01\n---\n\n"+
+			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] Build it\n\n## Log\n- 2026-01-01 — x.\n")
+	p.commitAll("a doc from a kit that had no statuses")
+
+	p.run("reset", "0007", "it was written before the field existed").ok()
+
+	if got := p.read("docs/features/0007-old.md"); !strings.Contains(got, "status: Draft") {
+		t.Errorf("reset did not write the missing status line:\n%s", got)
+	}
+	p.run("audit").ok().lacks("no-status")
+	p.run("claim", "0007").ok()
+}
+
 func TestResetRevivesADroppedPlan(t *testing.T) {
 	t.Parallel()
 	// One rule for both: any status but Shipped is a plan, and a retired one somebody

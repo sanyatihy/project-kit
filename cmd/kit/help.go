@@ -332,7 +332,8 @@ Four refusals, all exit 2. The doc is Shipped: that is frozen history and the wo
 in the repo, so reopening it would make the record say it was never done. Or it is
 already Draft, so there is nothing to repair. Or it is claimed by a branch that is not
 this checkout's: reset it from that worktree, because a doc another agent holds is work
-in flight. Or it has no status: line for this to write. And if committing it failed —
+in flight. Or it has no frontmatter to write the field into — a doc missing only the
+status: line gets one. And if committing it failed —
 an index another process holds, no identity configured — the file is already back to
 Draft and the error says so.
 

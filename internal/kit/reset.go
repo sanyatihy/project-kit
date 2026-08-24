@@ -50,9 +50,13 @@ func Reset(r *Repo, id, why string, today time.Time) (*ResetResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	updated, ok := SetStatus(Normalise(string(raw)), StatusDraft)
+	// AddField and not SetStatus: a doc carrying no `status:` line at all is wedged the
+	// same way — `claim` refuses it and `next` blocks it — and refusing here would leave
+	// that one repairable only by the hand-edit this command exists to replace. A doc with
+	// no frontmatter is where that stops: there is nowhere to write the field.
+	updated, ok := AddField(Normalise(string(raw)), "status", StatusDraft)
 	if !ok {
-		return nil, fmt.Errorf("%s has no status: line in its frontmatter to set", target.Name())
+		return nil, fmt.Errorf("%s has no frontmatter to write a status into", target.Name())
 	}
 	// `drop`'s argument: a status change nobody explained reads later as a mistake, and
 	// the doc is where every other durable decision lives.

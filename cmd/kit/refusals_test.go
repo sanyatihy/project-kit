@@ -52,7 +52,7 @@ var refusals = map[string]struct {
 		{"reopening it", "a Shipped doc"},
 		{"already Draft", "a doc with nothing to repair"},
 		{"claimed by a branch", "a claim another checkout holds"},
-		{"no status: line", "a doc with no status: to write"},
+		{"no frontmatter", "a doc with nowhere to write the field"},
 		{"committing it failed", "a status this checkout would not commit"},
 	}},
 	"release": {[]string{"Release", "pickRemote"}, []refusal{
