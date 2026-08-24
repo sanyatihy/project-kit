@@ -50,7 +50,7 @@ is blocked by it.
 ## Tasks
 
 - [x] the template's `needs:` guidance states the test without pre-answering it
-- [ ] `audit` reports a non-terminal id named in `## Problem` or `## Design` that `needs:`
+- [x] `audit` reports a non-terminal id named in `## Problem` or `## Design` that `needs:`
       omits, skipping terminal docs, with a conformance case
 - [ ] the docs on the trunk pass it
 
