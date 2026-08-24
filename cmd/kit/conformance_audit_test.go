@@ -252,6 +252,16 @@ var auditCases = []struct {
 		p.write("docs/features/0002-hopeful.md",
 			doc("0002", "Hopeful", "Draft", "needs: 0099", "- [ ] Do it"))
 	}},
+	{"needs-unstated", func(p *project) {
+		// The state that cost a chain a session: the dependency is named in the sentence
+		// above the field that was left empty, and the feature was then claimed off a
+		// trunk that did not carry what it reads.
+		p.write("docs/features/0002-charts.md",
+			"---\nid: 0002\ntitle: Charts\nstatus: Draft\ncreated: 2026-01-01\nneeds:\n---\n\n"+
+				"## Problem\nWithout 0001 the charts have nothing to aggregate.\n\n"+
+				"## Design\nRead what it writes.\n\n## Tasks\n- [ ] Draw them\n\n"+
+				"## Log\n- 2026-01-01 — started.\n")
+	}},
 	{"secret-in-doc", func(p *project) {
 		// The realistic path: an agent writes up a failed deploy and pastes what it
 		// was holding into the Log.
@@ -338,6 +348,39 @@ func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
 			t.Errorf("%s fired on a valid graph: %v", code, codes)
 		}
 	}
+}
+
+func TestAPlanNamingSettledWorkIsNotADependency(t *testing.T) {
+	t.Parallel()
+	// The gate that keeps this check from being noise. A doc citing a shipped feature is
+	// giving the reader history, and 41 of this repo's 65 docs do it — an ungated version
+	// fires on two docs in three. The same doc is silent once the id is declared, and a
+	// citation in ## Log is never read at all.
+	p := cleanProject(t)
+	p.write("docs/features/0002-built-on.md",
+		"---\nid: 0002\ntitle: Built on\nstatus: Draft\ncreated: 2026-01-01\nneeds: 0001\n---\n\n"+
+			"## Problem\n0003 settled this, and 0001 is declared above.\n\n"+
+			"## Design\nSame as 0003's.\n\n## Tasks\n- [ ] Do it\n\n"+
+			"## Log\n- 2026-01-01 — unlike 0004, which is still open.\n")
+	p.write("docs/features/0003-settled.md",
+		doc("0003", "Settled", "Shipped", "shipped: 2026-01-02", "- [x] Done"))
+	p.write("docs/features/0004-open.md",
+		doc("0004", "Open", "Draft", "", "- [ ] Do it"))
+
+	if codes := p.auditCodes(); slices.Contains(codes, "needs-unstated") {
+		t.Errorf("needs-unstated fired on history and on a mention in ## Log: %v", codes)
+	}
+
+	// And the doc that does wait on open work, once its prose says so in ## Problem.
+	p.write("docs/features/0002-built-on.md",
+		"---\nid: 0002\ntitle: Built on\nstatus: Draft\ncreated: 2026-01-01\nneeds:\n---\n\n"+
+			"## Problem\nThe numbers exist after 0004.\n\n"+
+			"## Design\nRead them.\n\n## Tasks\n- [ ] Do it\n\n"+
+			"## Log\n- 2026-01-01 — started.\n")
+	p.run("audit").ok().has("needs-unstated", "add 0004 to needs:")
+	// LOW blocks nothing: --strict is the HIGH gate, and this cannot tell a dependency
+	// from a comparison.
+	p.run("audit", "--strict").ok()
 }
 
 func TestAFeatureThatNeedsItselfIsReported(t *testing.T) {

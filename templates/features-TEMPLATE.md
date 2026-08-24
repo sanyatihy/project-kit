@@ -8,11 +8,12 @@ needs:
 ---
 
 <!-- `needs:` is the only field that changes what `kit next` offers, so it earns care.
-     Leave it empty if this could be built today against what already exists — that is
-     the common case, and several empty ones is what lets agents work in parallel.
+     One question decides it, asked of every feature in the round: could this START
+     before that one ships? List the id of each whose answer is no, and leave it empty
+     when there is none — empty ones are what let agents work in parallel.
 
-     Judge it by whether the work could START now, not by what it touches. Clean
-     boundaries hide couplings that make a feature dependent anyway:
+     Ask it of the work, not of what it touches — clean boundaries hide couplings
+     that make a feature dependent anyway:
        - a shared composition root or wiring function both features must edit
        - a shared router, registry, or dispatch table both add an entry to
        - numbered files in one sequence — migrations above all. Two features each

@@ -181,23 +181,6 @@ ASCII title — `Slug` strips to `[a-z0-9]`.
 **Promote when:** a second project needs non-English docs, or an agent writes English into
 one that asked for Russian.
 
-## `kit init` leaves the CLAUDE.md link to be made by hand
-
-`repo.go` reads a protocol from `AGENTS.md` or from `CLAUDE.md`, and says why it keeps the
-second name: it is "a convention the kit does not own". `init` writes only the first. An
-agent that reads `CLAUDE.md` therefore finds nothing unless somebody types
-`ln -s AGENTS.md CLAUDE.md`, which this repo carries and so does a project it set up.
-
-A symlink is one git object, so the two names cannot disagree the way a copied file would.
-The cost is Windows: with `core.symlinks` off the checkout is a text file holding the
-string `AGENTS.md`, and an agent reading it finds no protocol and reports none. `init`
-overwrites nothing it did not write, so a project already carrying either name keeps what
-it has.
-
-**Value:** an agent that reads `CLAUDE.md` finds the protocol, with no second copy to drift.
-**Promote when:** a third project needs the link made by hand, or an agent is seen working
-without the protocol because the name it read was not there.
-
 ## `claim`'s two refusals still send an agent to a sibling directory
 
 0063 moved a claim's worktree to `.worktrees/<branch>` inside the project, but the two

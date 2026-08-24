@@ -49,6 +49,40 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 	}
 }
 
+func TestInitLinksClaudeMDToTheProtocol(t *testing.T) {
+	t.Parallel()
+	// The kit reads a protocol from either name and wrote only the first, so an agent
+	// that reads CLAUDE.md found nothing until somebody typed the link by hand.
+	p := newProject(t)
+	p.run("init").ok().has("CLAUDE.md")
+
+	target, err := os.Readlink(p.path("CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("CLAUDE.md is not a symlink: %v", err)
+	}
+	if target != "AGENTS.md" {
+		t.Errorf("CLAUDE.md points at %q, want AGENTS.md", target)
+	}
+	// A relative target, so the link survives the directory being moved or cloned.
+	if !strings.Contains(p.read("CLAUDE.md"), "## Work protocol") {
+		t.Error("reading CLAUDE.md does not reach the protocol")
+	}
+}
+
+func TestInitKeepsAClaudeFileTheProjectWrote(t *testing.T) {
+	t.Parallel()
+	// Nothing the project wrote is overwritten, and a repo carrying its own CLAUDE.md is
+	// the common case this must not touch.
+	p := newProject(t)
+	p.write("CLAUDE.md", "# House rules\n\nOurs, not the kit's.\n")
+
+	p.run("init").ok()
+
+	if got := p.read("CLAUDE.md"); !strings.Contains(got, "Ours, not the kit's.") {
+		t.Errorf("init overwrote the project's own CLAUDE.md:\n%s", got)
+	}
+}
+
 func TestInitWritesAGitignoreThatGuessesAtNoLanguage(t *testing.T) {
 	t.Parallel()
 	// A refusal expressed as a file: the first `git add -A` an agent runs commits

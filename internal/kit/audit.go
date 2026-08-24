@@ -179,6 +179,16 @@ var (
 		"no status: in the frontmatter, or one the kit does not recognise"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
 		"AGENTS.md and the installed kit disagree about the work protocol, so one side is superseded"}
+
+	// LOW — worth saying, and not worth stopping for.
+	// The first check at this level, and it is here because it cannot tell a dependency
+	// from a comparison: a draft that contrasts itself with a sibling draft trips it, and
+	// the repair there is a reworded sentence rather than a field. What keeps it from
+	// being noise is the terminal gate. Measured over the 65 docs on this trunk: 41 name
+	// an id their needs: omits and every one is a reference to settled work, so an
+	// ungated version fires on two docs in three; with the gate, none.
+	checkNeedsUnstated = Check{"needs-unstated", Low,
+		"a plan names a feature that has not shipped, and needs: does not list it"}
 	// One command writes all three of these files and overwrites none of them, so a
 	// project missing more than one is one defect with one fix. It was three findings
 	// telling the reader to run `kit init .` three times.
@@ -211,6 +221,7 @@ var Checks = []Check{
 	checkShippedNoDate, checkInboxUnparsed,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
 	checkNoStatus, checkNoProtocol, checkProtocolStale,
+	checkNeedsUnstated,
 }
 
 // secretShapes are credential formats whose issuer publishes a fixed prefix or
@@ -348,6 +359,7 @@ var repoChecks = []repoCheck{
 	{[]Check{checkNoProtocol}, noProtocol},
 	{[]Check{checkProtocolStale}, protocolStale},
 	{[]Check{checkNeedsUnknown, checkNeedsUnparsed}, needsState},
+	{[]Check{checkNeedsUnstated}, needsUnstated},
 	{[]Check{checkSecretInDoc}, secretsInDocs},
 	{[]Check{checkUnfilledVision}, unfilledVision},
 	// Reported first by Audit, before any feature check, so it is skipped here.
@@ -841,6 +853,54 @@ func protocolStale(s *repoState) []Finding {
 				ProtocolMarker)}
 	}
 	return nil
+}
+
+// idRunRe finds the feature ids a doc's prose names. A four-digit run that resolves to no
+// doc is a year, a port or a count, and is not looked at again.
+var idRunRe = regexp.MustCompile(`\b\d{4}\b`)
+
+// A doc that names another feature in its plan and leaves `needs:` empty is the state that
+// cost a chain a session: 0002's ## Problem said "without this, 0003's charts have nothing
+// to aggregate", and the feature was then claimed off a trunk that did not carry what it
+// read.
+//
+// Only ## Problem and ## Design, because those are where the plan is argued. ## Log and
+// ## Non-goals cite neighbouring features constantly and a citation there is history. Only
+// ids that are still open, for the same reason `needs-unknown` skips a terminal doc: a
+// mention of settled work is a reference rather than a wait, and 41 of this trunk's 65
+// docs carry one.
+func needsUnstated(s *repoState) []Finding {
+	var out []Finding
+	for _, f := range s.r.Features {
+		if f.ID == "" || terminal(f.Status) {
+			continue
+		}
+		declared := map[string]bool{}
+		for _, id := range f.Needs {
+			declared[id] = true
+		}
+		seen := map[string]bool{}
+		var unstated []string
+		for _, heading := range []string{"Problem", "Design"} {
+			for _, id := range idRunRe.FindAllString(f.Section(heading), -1) {
+				dep := s.r.FeatureByID(id)
+				if id == f.ID || declared[id] || seen[id] || dep == nil || terminal(dep.Status) {
+					continue
+				}
+				seen[id] = true
+				unstated = append(unstated, id)
+			}
+		}
+		if len(unstated) == 0 {
+			continue
+		}
+		named := strings.Join(unstated, " and ")
+		out = append(out, finding(checkNeedsUnstated, f.Rel,
+			fmt.Sprintf("%s: its plan names %s, which has not shipped and needs: does not list",
+				f.Name(), named),
+			"add "+named+" to needs: if this cannot start until it ships"))
+	}
+	return out
 }
 
 // idListOnlyRe matches a needs: that is nothing but four-digit ids, commas and spaces.

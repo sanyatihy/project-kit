@@ -917,13 +917,15 @@ func printFindings(repo *kit.Repo, result audited, color bool) {
 
 	// Counted by severity, and said only when there is something to say. The line used
 	// to read "N thing(s) to fix. HIGH first." whether or not any finding was HIGH.
-	high, medium := 0, 0
+	high, medium, low := 0, 0, 0
 	for _, f := range result.Findings {
 		switch f.Severity {
 		case kit.High:
 			high++
 		case kit.Medium:
 			medium++
+		case kit.Low:
+			low++
 		}
 	}
 	switch {
@@ -932,6 +934,10 @@ func printFindings(repo *kit.Repo, result audited, color bool) {
 			count(medium, "MEDIUM"))
 	case medium > 0:
 		fmt.Printf("%s to fix.\n\n", count(medium, "MEDIUM finding"))
+	// A report whose findings are all LOW used to end with a blank line and no summary
+	// at all, which reads as a run that found nothing after printing something.
+	case low > 0:
+		fmt.Printf("%s. Nothing here gates a claim or a ship.\n\n", count(low, "LOW finding"))
 	}
 }
 
