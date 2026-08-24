@@ -197,7 +197,9 @@ Draft -> Shipped     (exit: Dropped)
 - **`kit init` writes an `AGENTS.md` with a title and the marker note.** It used to write
   the bare protocol section, opening on an `##` heading with no project name and nothing
   saying the section is regenerated — so the promise that house rules survive above the
-  marker reached nobody.
+  marker reached nobody. `CLAUDE.md` is a symlink to it, because the kit reads either name
+  and one git object cannot disagree with itself; a Windows checkout gets the target's path
+  as text instead, and the protocol is in `AGENTS.md` either way.
 - **Every fact has one home, and the routing is decided at ship.** Still true afterwards and
   it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,
   naming the change; neither and it belongs in the pull request.

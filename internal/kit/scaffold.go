@@ -193,7 +193,31 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 	if err := writeProtocol(templates, root, res); err != nil {
 		return nil, err
 	}
+	linkProtocolAlias(root, res)
 	return res, nil
+}
+
+// linkProtocolAlias points CLAUDE.md at AGENTS.md, because the kit reads a protocol from
+// either name and wrote only the first: an agent that reads the second found nothing
+// unless somebody typed the link by hand, which two projects did.
+//
+// A symlink and not a copy — one git object, so the two names cannot drift apart. The cost
+// is Windows, where a checkout with core.symlinks off holds the string "AGENTS.md" as text
+// and the create itself needs a privilege; that is a warning rather than an error, because
+// the protocol is in AGENTS.md either way. Lstat and not Stat, so a link whose target is
+// missing counts as somebody's file and is kept.
+func linkProtocolAlias(root string, res *Result) {
+	alias := filepath.Join(root, "CLAUDE.md")
+	if _, err := os.Lstat(alias); err == nil {
+		res.Kept = append(res.Kept, "CLAUDE.md")
+		return
+	}
+	if err := os.Symlink("AGENTS.md", alias); err != nil {
+		fmt.Fprintf(os.Stderr, "kit init: warning — could not link CLAUDE.md to AGENTS.md: %v\n"+
+			"an agent reading that name finds no protocol; AGENTS.md carries it\n", err)
+		return
+	}
+	res.Created = append(res.Created, "CLAUDE.md -> AGENTS.md")
 }
 
 // ignoreFor names the .gitignore template a stack gets, and the default for no stack.
