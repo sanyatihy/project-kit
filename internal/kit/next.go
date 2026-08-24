@@ -264,7 +264,13 @@ func Survey(r *Repo) Plan {
 				// send an agent to a command that turns it away. Draft is the only status
 				// work starts from; anything else open is a doc left behind by an older
 				// kit, and fixing it is what has to happen first.
-				item.WaitingOn = "unknown status " + f.Status + " — set it to " + StatusDraft
+				// Naming the command rather than the edit, for `unfilled-template`'s
+				// reason: "set it to Draft" is an instruction to hand-edit the one field
+				// the kit owns, which is how the bad value got there.
+				item.WaitingOn = "unknown status " + f.Status + " — kit reset " + f.ID
+				if f.Status == "" {
+					item.WaitingOn = "no status: — kit reset " + f.ID
+				}
 				plan.Blocked = append(plan.Blocked, item)
 			} else if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
 				// `claim` refuses this, so offering it is the board sending an agent to a

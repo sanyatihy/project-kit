@@ -1,9 +1,9 @@
 ---
 id: 0067
 title: A status the kit refuses has a command that clears it
-status: Draft
+status: Shipped
 created: 2026-08-24
-shipped:
+shipped: 2026-08-24
 needs: 0066
 ---
 
@@ -47,9 +47,14 @@ time, and the one finding whose fix was prose is the one it botched.
 
 ## Tasks
 
-- [ ] `kit reset <id> "<why>"` sets any non-Shipped doc to `Draft`, logs the reason, and
+- [x] `kit reset <id> "<why>"` sets any non-Shipped doc to `Draft`, logs the reason, and
       refuses a `Shipped` doc and another checkout's claim, with a conformance case
-- [ ] `kit help` and the help topics list it beside `ship` and `drop`
-- [ ] `no-status`'s `fix:` line and `next`'s blocked reason name it instead of an edit
+- [x] `kit help` and the help topics list it beside `ship` and `drop`
+- [x] `no-status`'s `fix:` line and `next`'s blocked reason name it instead of an edit
 
 ## Log
+
+- 2026-08-24 — `reset` also writes a `status:` line into a doc that carries none, which the
+  plan did not say. `no-status` is one finding with two outcomes, so naming the command for
+  the unrecognised value and an edit for the missing line would have left half the wedge
+  standing. The refusal it replaces is a doc with no frontmatter at all.
