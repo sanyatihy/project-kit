@@ -34,6 +34,27 @@ func TestDropRetiresAFeatureAndRecordsWhy(t *testing.T) {
 	p.run("next").ok().lacks("0001")
 }
 
+func TestDropCommitsTheStatusItWrites(t *testing.T) {
+	t.Parallel()
+	// `ship`'s reason: a status only the working tree carries is one session from being
+	// read as debris. The doc's path is the whole commit — a retired plan is often edited
+	// in the same breath, and nothing else in the tree is this command's to take.
+	p := setUp(t)
+	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
+	p.commitAll("the plan")
+	p.write("probe-output.json", "{}\n")
+
+	p.run("drop", "0001", "the metric it chased moved on its own").ok().has("Drop 0001")
+
+	head := p.gitOut(nil, "show", "HEAD:docs/features/0001-shorten.md")
+	if !strings.Contains(head, "status: Dropped") {
+		t.Errorf("the committed doc is not the retired one:\n%s", head)
+	}
+	if left := p.gitOut(nil, "status", "--porcelain"); left != "?? probe-output.json" {
+		t.Errorf("drop committed something that was not the doc, or lost it: %q", left)
+	}
+}
+
 func TestDropSaysWhenNoReasonWasGiven(t *testing.T) {
 	t.Parallel()
 	// Not an error — refusing would only get an empty string typed at it. Saying so

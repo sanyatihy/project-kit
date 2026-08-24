@@ -657,7 +657,6 @@ func TestATerminalDocIsAskedNothingAboutItsPlan(t *testing.T) {
 	dropped.run("new", "Never written").ok()
 	dropped.commitAll("commit a doc nobody wrote")
 	dropped.run("drop", "0002", "not worth building").ok()
-	dropped.commitAll("retire it")
 	dropped.run("audit", "--strict").ok().lacks("unfilled-template")
 
 	// Shipped is the other terminal status, and rule 21 freezes it harder: a doc written

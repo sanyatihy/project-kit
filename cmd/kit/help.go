@@ -286,8 +286,10 @@ measurement, and cut only what the code now says.
 
 	"drop": `kit drop <id> "<why>"
 
-Retire a feature that will not be built. Sets status: Dropped and records the
-reason in "## Log".
+Retire a feature that will not be built. Sets status: Dropped, records the reason in
+"## Log", and commits that doc — a status left in the working tree is one session
+from being read as debris. Only the doc: whatever else the tree carries is yours.
+Refuses at exit 2 when the commit fails, naming the file the status is already on.
 
 Feature docs live on the default branch at every status, so an unwanted one cannot
 be disposed of by deleting a branch — left alone it sits on the board for ever and
