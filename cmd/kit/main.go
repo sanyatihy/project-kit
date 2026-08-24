@@ -489,6 +489,9 @@ func runShip(args []string) int {
 	}
 
 	fmt.Printf("\n  shipped  %s  (was %s)\n", res.Doc, res.Was)
+	if res.Commit != "" {
+		fmt.Printf("  commit   %s — the stamp is committed, not left in the tree\n", res.Commit)
+	}
 	fmt.Printf("\nnext:\n")
 	if res.TechCreated {
 		fmt.Printf("  created %s — the as-built doc. See: kit help as-built\n", res.TechDoc)
