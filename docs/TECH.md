@@ -328,6 +328,11 @@ Draft -> Shipped     (exit: Dropped)
   from a worktree as well as from the trunk. `claim` writes `.worktrees/` to
   `.git/info/exclude` rather than asking, because declining the exclude is not legitimate and
   `git clone` carries none — which puts the write in the command that runs in every clone.
+- **`needs-unstated` is the kit's only LOW check, and the level is the design.** A plan
+  naming a feature that has not shipped, with `needs:` silent about it, is worth printing
+  and not worth gating: the check cannot tell a dependency from a comparison. It reads
+  `## Problem` and `## Design` only and skips terminal docs — without that gate 41 of this
+  repo's 65 docs fire, every one of them citing settled work.
 - **`kit reset <id> "<why>"` is the one repair for a status the kit refuses.** It writes
   `Draft` over any status but `Shipped`, and writes the field into a doc that carries no
   `status:` line, so the three writers are `ship`, `drop` and `reset` and nothing is left

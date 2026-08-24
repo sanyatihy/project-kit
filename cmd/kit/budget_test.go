@@ -121,7 +121,10 @@ const (
 	// an unrecognised status, and one with no status: line at all, were both repairable
 	// only by the edit rule 6 forbids — which is the fact a reader cannot recover from a
 	// command's help.
-	techBudget = 410
+	// 415 on 0068. Five lines for the first LOW check and why that level is the design:
+	// a check that cannot tell a dependency from a comparison earns a printed line and no
+	// gate, and the terminal skip is what separates it from a finding on two docs in three.
+	techBudget = 415
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
