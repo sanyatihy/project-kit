@@ -52,6 +52,12 @@ is blocked by it.
 - [x] the template's `needs:` guidance states the test without pre-answering it
 - [x] `audit` reports a non-terminal id named in `## Problem` or `## Design` that `needs:`
       omits, skipping terminal docs, with a conformance case
-- [ ] the docs on the trunk pass it
+- [x] the docs on the trunk pass it
 
 ## Log
+
+- 2026-08-24 — no doc on the trunk fires the check, which the terminal gate predicts:
+  every doc there but this one is Shipped or Dropped. What the gate also hides is that a
+  four-digit run in prose is resolved against *this* project's features, so a doc quoting
+  another project's numbering can be reported for a feature it never meant. This doc does
+  exactly that and is silent only because the ids it quotes have shipped here.
