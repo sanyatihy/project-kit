@@ -1,9 +1,9 @@
 ---
 id: 0066
 title: A status the kit writes lands in a commit
-status: Draft
+status: Shipped
 created: 2026-08-24
-shipped:
+shipped: 2026-08-24
 needs:
 ---
 
