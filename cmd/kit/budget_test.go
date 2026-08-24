@@ -113,7 +113,11 @@ const (
 	// 399 on 0065. Four lines for why the frontmatter carries no prose and what catches
 	// the prose that gets there anyway: two spaces is the whole margin between a comment
 	// and a value, which is a constraint a later edit can spend without noticing.
-	techBudget = 399
+	// 405 on 0066. Six lines for what makes a status durable and what notices when it is
+	// not: the commit belongs to the command that wrote the status, and the check behind it
+	// is the only one that reads HEAD, which is the fact a reader cannot recover from a
+	// registry entry.
+	techBudget = 405
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

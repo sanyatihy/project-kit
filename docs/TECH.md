@@ -328,6 +328,12 @@ Draft -> Shipped     (exit: Dropped)
   from a worktree as well as from the trunk. `claim` writes `.worktrees/` to
   `.git/info/exclude` rather than asking, because declining the exclude is not legitimate and
   `git clone` carries none — which puts the write in the command that runs in every clone.
+- **A status the kit writes is committed by the command that wrote it.** `ship`'s
+  dirty-tree refusal makes that commit exactly the stamp; `drop` takes the doc's path
+  alone, because a plan is often edited in the breath that retires it. `status-uncommitted`
+  is the backstop and the only check that reads `HEAD` — every other one reads the working
+  tree, which is why a stamp nobody committed reported as agreement. It reads the whole
+  board in one `ls-tree` and one `cat-file --batch`.
 - **A release is part of shipping, because `@latest` is whatever the newest tag says.**
   `make release TAG=…` gates, cuts an annotated tag and pushes it, refusing a dirty tree or
   a HEAD that is not `origin`'s default-branch tip; `audit` reports `tag-stale` when the
