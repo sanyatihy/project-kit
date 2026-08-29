@@ -7,20 +7,6 @@ shipped:
 needs: 0069
 ---
 
-<!-- `needs:` is the only field that changes what `kit next` offers, so it earns care.
-     One question decides it, asked of every feature in the round: could this START
-     before that one ships? List the id of each whose answer is no, and leave it empty
-     when there is none — empty ones are what let agents work in parallel.
-
-     Ask it of the work, not of what it touches — clean boundaries hide couplings
-     that make a feature dependent anyway:
-       - a shared composition root or wiring function both features must edit
-       - a shared router, registry, or dispatch table both add an entry to
-       - numbered files in one sequence — migrations above all. Two features each
-         adding "the next number" merge cleanly and break at runtime.
-     Any of those means the second feature needs the first, however separate they look. -->
-
-
 ## Problem
 
 TECH.md ranks a printed command with the refusal it sits next to, and a printed
@@ -92,3 +78,9 @@ The protocol file cannot.
   that happens after it returns. Leaning: no. `AwaitingReview` already drops a branch the
   trunk contains, and an authorship line would be wrong on this repo. The protectable
   half is the forge.
+
+## Log
+
+- 2026-08-29 — dropped the template's `needs:` HTML comment. It is scaffolding `kit new`
+  writes; a filled doc does not keep it. 0065 moved that guidance off the field, and 0069
+  was filled without the copy.
