@@ -14,7 +14,10 @@ TECH.md ranks a printed command with the refusal it sits next to, and a printed
 still that tier: `claim` prints `git worktree add` instead of creating the isolation
 unit, and its refusals still name `../<repo>-trunk`; a missing `status:` is refused
 with a hand-edit of the field 0067 exists to own; `ship` says merging is not yours
-and does not say when the trunk already contains the claim.
+and does not say when the trunk already contains the claim. The same class of leftover
+sits in three other places: `docs/features/TEMPLATE.md` still pre-answers `needs:`,
+protocol rules 9 and 10 restate refusals `claim` already makes, and a doc with no
+`id:` is invisible to `id-mismatch`.
 
 ## Non-goals
 
@@ -24,13 +27,16 @@ and does not say when the trunk already contains the claim.
 - **Creating a trunk worktree on a refused claim.** A lost or refused claim must not
   mutate the disk. The path is named; the add stays with the agent that has to stand
   there.
-- **A new audit check.** `needs-unstated` already spent "a finding is always a problem".
-  A check that cannot tell a coordinator merge from a builder merge would spend it again.
+- **An authorship check, or another check that cannot tell a dependency from a
+  comparison.** `needs-unstated` already spent "a finding is always a problem". A
+  missing `id:` is not that: both halves are absent or they agree, and there is
+  nothing to guess.
 - **The single-operator plan-and-build path.** That is a protocol fork, not a printed
   command. It stays in BACKLOG.md until that question is answered.
 - **Making the worktree optional.** 0063 permitted a clone that is already the feature's
   checkout. After `claim` the current checkout is still the trunk, so the worktree is
   always the place to stand.
+- **A second code for a missing `id:`.** Same guarantee as `id-mismatch`, same finding.
 
 ## Design
 
@@ -55,9 +61,23 @@ is readable without asking who pushed. Merge-after-ship stays a prose line and a
 protected trunk. `AwaitingReview` already going quiet is the board's half of that; this
 is `ship`'s.
 
+**Rules 9 and 10 go.** They restate refusals `claim` and `new` already make. The
+worktree sentence that remains is the output of a won claim, not a rule; it lives in
+`kit help` and the command. The rest of the list is renumbered. Citations stay by name.
+
+**`docs/features/TEMPLATE.md` is deleted.** `kit help template` prints the embedded
+copy, `kit init` must not write this file, and `notAFeature` already keeps the name off
+the board. The copy in the features directory still carries the `needs:` sentence 0068
+removed, so a hand-copy is the bug that round closed.
+
+**`id-mismatch` reports a missing `id:`.** The filename prefix with no frontmatter id is
+the same defect as the two disagreeing: the id the commands take is not a key that
+finds this file. HIGH, as it already is. `no-status`'s fix names the file when `id:` is
+empty, because `kit reset  "<why>"` is a command nobody can type.
+
 **`needs: 0069` because both rewrite `templates/AGENTS-section.md`.** This round changes
-the worktree sentence; 0069 changes the feature definition. The code could start today.
-The protocol file cannot.
+the worktree sentence and drops two rules; 0069 changes the feature definition. The
+code could start today. The protocol file cannot.
 
 ## Tasks
 
@@ -68,9 +88,12 @@ The protocol file cannot.
       `.worktrees/<trunk>`, not `../<repo>-trunk`
 - [ ] `claim`'s missing-`status:` refusal names `kit reset`, not a hand-edit
 - [ ] `kit ship` says when the trunk already contains the claim branch
-- [ ] `kit help`, the protocol's worktree sentence, and `docs/TECH.md` say claim
-      creates the worktree, and this project's `AGENTS.md` is regenerated in the same
+- [ ] `kit help`, the protocol, and `docs/TECH.md` say claim creates the worktree;
+      rules 9 and 10 are gone; this project's `AGENTS.md` is regenerated in the same
       commit as the template
+- [ ] `docs/features/TEMPLATE.md` is gone
+- [ ] `id-mismatch` reports a missing `id:` at HIGH, with a conformance case, and
+      `no-status`'s fix names the file when `id:` is empty
 
 ## Open questions
 
@@ -84,3 +107,6 @@ The protocol file cannot.
 - 2026-08-29 — dropped the template's `needs:` HTML comment. It is scaffolding `kit new`
   writes; a filled doc does not keep it. 0065 moved that guidance off the field, and 0069
   was filled without the copy.
+- 2026-08-30 — three leftovers join the round: delete `docs/features/TEMPLATE.md`, drop
+  protocol rules 9 and 10, and extend `id-mismatch` to a missing `id:`. The non-goal on
+  new checks narrows to authorship and comparison-vs-dependency; a missing id is neither.

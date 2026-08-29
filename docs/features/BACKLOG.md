@@ -57,24 +57,6 @@ learns a path that does not require a claim branch.
 **Value:** the common single-operator session stops ending in a state the tool reports as wrong.
 **Promote when:** it happens a third time, or a second operator hits it.
 
-## A doc with no `id:` is invisible to every command that takes one
-
-Nothing checks for a missing `id:`. `id-mismatch` needs both halves present, so a doc whose
-frontmatter has no id at all is reported by nothing, appears on the board as `????`, and
-`kit claim` cannot be pointed at it — the id is the argument. Found while fixing the fix
-line `done-not-shipped` printed for one; that line now names the edit, but the doc is still
-unclaimable and nothing says so.
-
-0067 made it worse in one place: `no-status` builds its fix from the doc's id, so a doc with
-neither prints `run: kit reset  "<why>"` — a command that cannot be typed. `unfilled-template`
-already carries the branch for an id-less doc that `no-status` does not.
-
-The fix is a check, at the severity `id-mismatch` already carries: the same guarantee is
-broken, and by the same amount.
-
-**Value:** a doc nobody can claim says so, instead of sitting on the board being skipped.
-**Promote when:** a second doc reaches this state, or an agent is seen unable to claim one.
-
 ## A scaffolded project's CI has the flaws 0053 fixed here
 
 `templates/stacks/go/check.yml` is where the kit's own workflow came from, so it carries
@@ -160,19 +142,6 @@ The fix is the shape 0059 gave the trunk question: one condition read by `Survey
 **Promote when:** an agent is seen running it there, or a third claim refusal the board
 cannot see is added.
 
-## Two protocol rules restate a refusal `kit claim` now makes
-
-0062 shipped while 0061 was being built: `ClaimFeature` refuses a checkout that already
-claims something, and `kit new` refuses to draft on a branch citing an id that is not this
-checkout's claim. 0061 kept the two rules because the refusal did not exist yet and cut
-seven others on exactly that test; 0062's own `## Design` says the two collapse into it.
-Four lines read at the start of every session in every project, saying what the command now
-says at the moment it matters. They were rules 11 and 12 when this was written and are 9 and
-10 now, which is the entry above happening to this one.
-
-**Value:** the protocol keeps only what no refusal can make.
-**Promote when:** fired — 0067 rewrote rule 6, and these two were not looked at.
-
 ## Nothing tells an agent which language a project's docs are written in
 
 Kit generates no prose: the templates and what you typed are its only sources. The language
@@ -191,19 +160,3 @@ ASCII title — `Slug` strips to `[a-z0-9]`.
 **Value:** a project says what language its docs are written in once, and every agent is told.
 **Promote when:** a second project needs non-English docs, or an agent writes English into
 one that asked for Russian.
-
-## `docs/features/TEMPLATE.md` is a copy nothing reads
-
-`kit init` stopped writing it and a conformance case pins that it must not, `notAFeature`
-keeps it off the board, and `kit help template` prints the embedded copy. So the file is
-read by nothing and has already drifted: it lost a paragraph two rounds before 0065
-brought its frontmatter back in line. What it still does is sit in the features directory
-looking like the template, where the next person to copy from it gets whatever it has
-drifted to.
-
-It drifted again in 0068, and into the worst version of itself: the copy still carries the
-`needs:` guidance that round deleted for pre-answering its own question, so a doc copied from
-it is handed the advice that cost a chain a session.
-
-**Value:** one template, so a doc copied by hand is the doc `kit new` writes.
-**Promote when:** fired — the drift is the misleading sentence 0068 removed.
