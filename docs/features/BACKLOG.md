@@ -192,18 +192,6 @@ ASCII title — `Slug` strips to `[a-z0-9]`.
 **Promote when:** a second project needs non-English docs, or an agent writes English into
 one that asked for Russian.
 
-## `claim`'s two refusals still send an agent to a sibling directory
-
-0063 moved a claim's worktree to `.worktrees/<branch>` inside the project, but the two
-refusals in `ClaimFeature` that tell an agent to stand somewhere else still print
-`git worktree add --detach ../<repo>-trunk <trunk>`. It is a detached checkout rather than
-a claim, so it has no branch to be named for, and the sibling path is the layout 0063
-argued against.
-
-**Value:** one layout for every checkout the kit tells an agent to make.
-**Promote when:** an operator's parent directory collects trunk checkouts, or a third
-message needs a path and there is still no one answer to give it.
-
 ## `docs/features/TEMPLATE.md` is a copy nothing reads
 
 `kit init` stopped writing it and a conformance case pins that it must not, `notAFeature`
@@ -219,17 +207,3 @@ it is handed the advice that cost a chain a session.
 
 **Value:** one template, so a doc copied by hand is the doc `kit new` writes.
 **Promote when:** fired — the drift is the misleading sentence 0068 removed.
-
-## Nothing notices an agent merging its own work
-
-`kit claim` says a project with no remote is one no other agent can see, and `ship` says
-there is nowhere to hand the work off and that merging is not yours. An unattended chain
-read both and merged four of its own feature branches into the trunk anyway, because with no
-remote there is no pull request to stop at and no reviewer to wait for. `ship` knows the
-claim branch name and could say when the trunk already contains it, which reports the
-breach after the fact rather than preventing it.
-
-**Value:** an operator can tell whether a branch was reviewed or merged by the agent that
-wrote it.
-**Promote when:** a project with a remote is found doing it, or the report is wanted for a
-chain the operator intends to run unattended.
