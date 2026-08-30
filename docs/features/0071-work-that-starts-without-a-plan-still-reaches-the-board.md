@@ -48,10 +48,18 @@ reserved, so starting costs nothing and a spike that dies leaks no number. A bra
 name begins with an id stays a claim; `orphan-claim` already reports one naming a doc that
 does not exist, so a mistyped claim does not silently become a spike.
 
-**`kit harvest` takes the id when the work is done.** The doc is written at the end, from
-a branch that already carries the answer, so a number only ever names something that
-exists. It writes the mechanical half and nothing else: `## Tasks` ticked from the commits,
-files touched from the diff, `created:` from the first commit.
+**`kit harvest` does not read history. It creates it.** A locked-in session leaves a
+working tree, not a commit log: the project that produced this feature had 2,090 lines, 82
+tests and no commits at all. So harvest takes the id, writes the doc, and commits the tree
+together with it. That single commit is where the work becomes reviewable, and it is what
+makes `ship`'s clean-tree gate reachable from a spike at all.
+
+**The operator names the boxes and the kit ticks them.** No order of work can be recovered
+from a tree, and a commit message is not an outcome — the mechanical half is the list of
+files harvest is about to commit, printed as raw material. Every box it writes is ticked,
+because a doc written after the work has nothing unticked to offer. Rule 13 is answered
+rather than broken: one commit carries the boxes and the code that makes them true, which
+is what a reviewer needs in one place.
 
 **The kit asks rather than invents.** `## Problem`, `## Design` and `## Log` are written as
 the questions only the operator can answer — what this was for, what was chosen over what,
@@ -77,8 +85,9 @@ question by name, so it is also the doc that says this comes after.
 - [ ] `kit next` recognises a branch that is neither a claim nor a plan, names it, and does
       not print a refusal — with a conformance case that the output contains no
       `Stopping here is the right outcome`
-- [ ] `kit harvest` takes the next id, writes a doc with `## Tasks` ticked from the branch's
-      commits, and leaves `## Problem`, `## Design` and `## Log` as the questions to answer
+- [ ] `kit harvest` takes the next id, writes a doc whose `## Tasks` are ticked and whose
+      `## Problem`, `## Design` and `## Log` are the questions to answer, and commits the
+      working tree with it — with a conformance case that runs on a repo with no commits
 - [ ] `kit harvest --nothing "<what it showed>"` appends a BACKLOG entry and reserves no id
 - [ ] `kit harvest` offers the BACKLOG entries as drafts, so the round the fleet claims
       comes out of the spike that ended
@@ -105,3 +114,7 @@ question by name, so it is also the doc that says this comes after.
   repairs: name the case in the protocol, or teach `ship` a path with no claim branch.
   Neither is taken. Both treat the doc as owed before the work, and the third occurrence
   was a project where the code came first and the docs were better for it.
+- 2026-08-30 — harvest no longer reads commits. It was drafted to tick boxes from a branch's
+  log, and a locked-in session has no commits to read: the project that prompted this had
+  none for its whole build. Harvest makes the commit instead, which also reaches `ship`'s
+  clean-tree gate. The boxes come from the operator, since a tree carries no order of work.
