@@ -77,6 +77,23 @@ third-party imports are where it leaks. Four structural: the Go preamble's refus
 sentence was dropped, `Enum` and SQL binding were each stated twice or more, and a promise
 to name no library sits above eight of them.
 
+**That promise comes out, and naming becomes a rule tiered by reversibility.** Go's
+standard library covers the places a checklist points at and Python's does not, so a
+checklist that names nothing goes quiet exactly where the decision is load-bearing — the
+draft used pytest's `tmp_path` and `monkeypatch` while promising it named no library.
+Development tooling is named flatly, because none of it ships and all of it is swappable in
+an afternoon; this is the tier the Go checklist already occupies with `golangci-lint` and
+`govulncheck`. The boundary library is named as a default with the criterion for leaving
+it, because it reaches every type at every edge: pydantic, and msgspec where
+deserialisation is measured on the hot path. That is also what closes "parse, do not
+validate" — a validating parser at the boundary, a frozen dataclass inside it. A framework
+is named only in the tier that uses it and never in Core, carrying the constraint that
+keeps it an adapter: the handler parses, calls a use case that has never heard of the
+framework, and maps the result back. Nothing is named where the standard library is
+adequate, or "a dependency earns its place" is a rule the checklist cannot hold anyone to.
+Names sit in the tier sections and principles in Core, so a name that ages costs a
+paragraph rather than a rule.
+
 **`needs: 0071` because both edit `templates/AGENTS-section.md`.** 0071 adds a second route
 through the protocol's rules and this changes the line that sends an agent to a checklist.
 Trivial to merge textually and serialised anyway, because that file has one owner at a time.
@@ -87,8 +104,8 @@ Trivial to merge textually and serialised anyway, because that file has one owne
       so no Go filename appears in it — with the conformance cases `--stack go` already has
       still passing
 - [ ] `templates/python-checklist.md` carries the corrected list: the audit refusal
-      restored, the six omissions added, the five wrong claims fixed, and `Enum`, SQL
-      binding and the library-neutrality promise reconciled
+      restored, the six omissions added, the five wrong claims fixed, `Enum` and SQL
+      binding stated once, and every library it names sitting in one of the four tiers
 - [ ] `kit help python-checklist` prints it, and the protocol and the help overview send an
       agent to the checklist for its language — this project's `AGENTS.md` regenerated in
       the same commit as the template
@@ -112,3 +129,7 @@ Trivial to merge textually and serialised anyway, because that file has one owne
 
 - 2026-08-30 — drafted against a Python checklist reviewed before this doc existed, so the
   fifteen corrections are a task rather than a thing to discover while writing the template.
+- 2026-08-30 — the library-neutrality promise is dropped rather than kept. Reconciling it
+  was one clause of a task box until the boundary library turned out to be the only thing
+  that closes "parse, do not validate", which makes naming a design position with a rule
+  under it.
