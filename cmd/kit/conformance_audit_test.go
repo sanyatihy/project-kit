@@ -1098,6 +1098,17 @@ func TestIDMismatchFailsStrict(t *testing.T) {
 		doc("0009", "Confused", "Draft", "", "- [ ] Something"))
 	mismatched.run("audit", "--strict").fails(1).has("id-mismatch")
 
+	// No id: at all is the same defect and the same code: the id every command takes
+	// finds nothing. `no-status` fires beside it and names the file, because the fix it
+	// prints otherwise is `kit reset  "<why>"`, which nobody can type.
+	missing := cleanProject(t)
+	missing.write("docs/features/0002-nameless.md",
+		"---\ntitle: Nameless\n---\n\n"+
+			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] y\n\n## Log\n- 2026-01-01 — x.\n")
+	missing.run("audit", "--strict").fails(1).
+		has("id-mismatch", "no id:", "0002-nameless.md").
+		lacks(`kit reset  "<why>"`)
+
 	// The quiet half: agreeing is the normal case and must not fail anything.
 	agreed := cleanProject(t)
 	agreed.write("docs/features/0002-agreed.md",

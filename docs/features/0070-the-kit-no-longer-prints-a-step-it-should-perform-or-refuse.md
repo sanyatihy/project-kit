@@ -92,7 +92,7 @@ code could start today. The protocol file cannot.
       rules 9 and 10 are gone; this project's `AGENTS.md` is regenerated in the same
       commit as the template
 - [x] `docs/features/TEMPLATE.md` is gone
-- [ ] `id-mismatch` reports a missing `id:` at HIGH, with a conformance case, and
+- [x] `id-mismatch` reports a missing `id:` at HIGH, with a conformance case, and
       `no-status`'s fix names the file when `id:` is empty
 
 ## Open questions
