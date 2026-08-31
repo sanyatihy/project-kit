@@ -277,9 +277,12 @@ Draft -> Shipped     (exit: Dropped)
 - **PDCA was rejected** as the frame — it comes from repeated processes and software changes
   are mostly one-offs, so mandatory predictions became ceremony. The optional
   `check:`/`checked:` pair that survived it was itself removed: zero of 82 docs used it.
+- **A stack declares its files, entry-point globs, keep directory and pipelines**, so `Init`
+  names no language. Python's entry point is `src/*/__main__.py`, under a package name a
+  hyphenated repository name cannot be, and its keep directory is `tests/`.
 - **Deployment scaffolding is not generated**, and the topic that documented it is gone.
-  `--stack go` produces what you need to write and verify code; the rest is the
-  fastest-rotting part, and no project ever read the topic.
+  A stack produces what you need to write and verify code; the rest is the fastest-rotting
+  part, and no project ever read the topic.
 - **The forge is detected at `init`, written as a file, and never consulted again.** First
   rung with positive evidence: the project's CI directory, the remote's host, then the
   module path's host segment. Unknown writes **no CI file** and says so — a missing pipeline

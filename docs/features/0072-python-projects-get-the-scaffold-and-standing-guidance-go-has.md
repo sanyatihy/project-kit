@@ -117,7 +117,7 @@ a conflict a reviewer reads.
       stack's `.gitignore`
 - [x] `kit init --stack python --forge github` and `--forge gitlab` each write that forge's
       pipeline, and an unknown forge gets none and is told so
-- [ ] `docs/TECH.md` says what a stack declares, in one line
+- [x] `docs/TECH.md` says what a stack declares, in one line
 
 ## Open questions
 

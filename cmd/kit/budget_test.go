@@ -140,7 +140,9 @@ const (
 	// what it costs on Windows, where a symlink is a text file holding a path.
 	// 422 with the feature rule: the shapes that are not an addition are the whole reach
 	// of the change, and a definition that lists none of them reads as the old one.
-	techBudget = 422
+	// 425 with the second stack: what a stack declares is the fact that stops the next one
+	// costing a condition in Init, and the package name is why it is not one line.
+	techBudget = 425
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
