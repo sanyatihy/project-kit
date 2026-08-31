@@ -1,9 +1,9 @@
 ---
 id: 0069
 title: Drafting reaches reliability, security, speed and removal
-status: Draft
+status: Shipped
 created: 2026-08-24
-shipped:
+shipped: 2026-08-31
 needs:
 ---
 
