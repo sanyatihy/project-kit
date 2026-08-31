@@ -1,0 +1,41 @@
+# Bytecode and build output
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+
+# Environments — the virtualenv is per project and never committed
+.venv/
+venv/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments — ignore all .env variants except the committed template
+.env
+.env.*
+!.env.example
+
+# Secrets / credentials
+*.pem
+*.key
+secrets.yml
+
+# The editor and OS lines from the file this one replaces. A stack's copy is the whole
+# .gitignore, so it carries what is true of every project as well as what is true of Python.
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.orig
+*.rej

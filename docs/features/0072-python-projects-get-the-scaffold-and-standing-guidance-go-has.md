@@ -112,8 +112,8 @@ a conflict a reviewer reads.
 - [x] `kit help python-checklist` prints it, and the protocol and the help overview send an
       agent to the checklist for its language — this project's `AGENTS.md` regenerated in
       the same commit as the template
-- [ ] `kit init --stack python` scaffolds `pyproject.toml`, a Makefile whose `check` is the
-      same gate, `src/{{name}}/` with `__init__.py` and `__main__.py`, a README and the
+- [x] `kit init --stack python` scaffolds `pyproject.toml`, a Makefile whose `check` is the
+      same gate, `src/{{pkg}}/` with `__init__.py` and `__main__.py`, a README and the
       stack's `.gitignore`
 - [ ] `kit init --stack python --forge github` and `--forge gitlab` each write that forge's
       pipeline, and an unknown forge gets none and is told so
@@ -144,3 +144,6 @@ a conflict a reviewer reads.
   against Go's 193 and one number for every help topic would have handed the other six 93
   lines of headroom nobody justified. `Typing` and `Data modelling` merged, which is where
   `Enum` was stated twice.
+- 2026-08-31 — the package directory is `{{pkg}}` rather than `{{name}}`, which the box
+  said. A repository called `url-shortener` cannot hold a package of that name, so the box
+  as written scaffolded something no import statement could reach.

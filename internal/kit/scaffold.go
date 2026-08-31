@@ -70,13 +70,28 @@ var stackLayout = map[string]stack{
 		entryGlobs: []string{"main.go", "cmd/*/main.go"},
 		keep:       "internal",
 	},
+	// The package directory is `{{pkg}}` and not `{{name}}`: a project called
+	// `url-shortener` is not importable under that name.
+	"python": {
+		files: [][2]string{
+			{"Makefile", "Makefile"},
+			{"pyproject.toml", "pyproject.toml"},
+			{"init.py", "src/{{pkg}}/__init__.py"},
+			{"main.py", "src/{{pkg}}/__main__.py"},
+			{"README.md", "README.md"},
+		},
+		entry:      "main.py",
+		entryGlobs: []string{"main.py", "src/*/__main__.py"},
+		keep:       "tests",
+	},
 }
 
 // ignoreLayout is the .gitignore a stack writes instead of the default. Instead, not as
 // well: one file to read beats two, at the price of repeating the editor and OS lines in
 // every stack — the trade worth taking while there is one stack.
 var ignoreLayout = map[string]string{
-	"go": "templates/stacks/go/gitignore",
+	"go":     "templates/stacks/go/gitignore",
+	"python": "templates/stacks/python/gitignore",
 }
 
 // ciLayout is the one part of a stack that depends on where the project is hosted.
@@ -157,6 +172,7 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 	if stack != "" {
 		values := map[string]string{
 			"name":      filepath.Base(root),
+			"pkg":       PackageName(filepath.Base(root)),
 			"module":    ModulePath(root),
 			"goversion": goVersion(),
 		}
@@ -463,6 +479,27 @@ func ModulePath(root string) string {
 		}
 	}
 	return filepath.Base(root)
+}
+
+// PackageName is the project name as an importable identifier: a directory called
+// `url-shortener` holds a package called `url_shortener`, because the hyphen a repository
+// name carries is not one an import statement can.
+func PackageName(name string) string {
+	pkg := strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '_':
+			return r
+		case r >= 'A' && r <= 'Z':
+			return r + ('a' - 'A')
+		}
+		return '_'
+	}, name)
+	// An identifier cannot start with a digit, and a leading underscore would read as
+	// private to every tool that looks at it.
+	if pkg == "" || (pkg[0] >= '0' && pkg[0] <= '9') {
+		pkg = "pkg_" + pkg
+	}
+	return pkg
 }
 
 func goVersion() string {
