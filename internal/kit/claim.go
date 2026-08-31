@@ -31,6 +31,13 @@ type Claimed struct {
 	// already ignored the worktree directory and there was nothing to write.
 	Excluded   string
 	ExcludeErr error
+
+	// Worktree is the checkout to work the claim in, named whether or not this run
+	// made it. Created is false when the path was already a worktree of the claim
+	// branch, and WorktreeErr says what stopped it otherwise.
+	Worktree        string
+	WorktreeCreated bool
+	WorktreeErr     error
 }
 
 // ClaimFeature takes a feature by creating the branch that claims it and pushing
@@ -246,7 +253,52 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	}
 	claimed := &Claimed{Branch: branch, Remote: remote}
 	claimed.Excluded, claimed.ExcludeErr = r.excludeWorktrees()
+	claimed.Worktree = r.WorktreePath(branch)
+	claimed.WorktreeCreated, claimed.WorktreeErr = r.addWorktree(branch, claimed.Worktree)
 	return claimed, nil
+}
+
+// addWorktree creates the checkout the claim is worked in, and reports whether this run
+// made it.
+//
+// It runs after the push for the reason the exclude does: the claim is won by then and
+// nothing here may undo it, so a failure is reported beside the claim rather than instead
+// of it. An agent told it lost a feature it actually holds moves on for good.
+//
+// A path that is already a worktree of the claim branch is success, so a second claim in
+// a checkout that has one is not an error. Anything else there is left where it is and
+// named — it is somebody's directory, and this is not the command that removes one.
+func (r *Repo) addWorktree(branch, path string) (bool, error) {
+	if held := r.worktreeBranch(path); held != "" {
+		if held == branch {
+			return false, nil
+		}
+		return false, fmt.Errorf("%s is already a worktree of %s", path, held)
+	}
+	if _, err := os.Stat(path); err == nil {
+		return false, fmt.Errorf("%s already exists and is not a worktree of %s", path, branch)
+	}
+	if _, err := r.gitRun("worktree", "add", path, branch); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// worktreeBranch names the branch checked out at a path, and "" when git lists no
+// worktree there. Records are separated by a blank line, so a path is matched against the
+// branch of its own record rather than the next one's.
+func (r *Repo) worktreeBranch(path string) string {
+	here := false
+	for _, line := range strings.Split(r.git("worktree", "list", "--porcelain"), "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "worktree "):
+			here = filepath.Clean(strings.TrimPrefix(line, "worktree ")) == filepath.Clean(path)
+		case here && strings.HasPrefix(line, "branch "):
+			return strings.TrimPrefix(strings.TrimPrefix(line, "branch "), "refs/heads/")
+		}
+	}
+	return ""
 }
 
 // excludeWorktrees puts the worktree directory out of git's reach in this clone, and

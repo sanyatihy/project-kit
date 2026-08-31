@@ -277,11 +277,11 @@ func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
 	// where the work was done and where it ships from.
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	a.git("checkout", "-q", "0007-widget")
-	a.write("docs/features/0007-widget.md",
+	w := a.claimWorktree("0007-widget")
+	w.write("docs/features/0007-widget.md",
 		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
 
-	shipping(a, "0007").ok().has("shipped")
+	shipping(w, "0007").ok().has("shipped")
 }
 
 func TestShipRefusesADocThatDeclaresAKeyTwice(t *testing.T) {

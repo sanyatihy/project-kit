@@ -81,7 +81,7 @@ code could start today. The protocol file cannot.
 
 ## Tasks
 
-- [ ] `kit claim` creates `.worktrees/<branch>` after a won push, prints that path, and
+- [x] `kit claim` creates `.worktrees/<branch>` after a won push, prints that path, and
       does not unclaim if the add fails — with a conformance case that the success
       output contains no `git worktree add`
 - [ ] the two `ClaimFeature` refusals that send an agent to the trunk name
@@ -110,3 +110,7 @@ code could start today. The protocol file cannot.
 - 2026-08-30 — three leftovers join the round: delete `docs/features/TEMPLATE.md`, drop
   protocol rules 9 and 10, and extend `id-mismatch` to a missing `id:`. The non-goal on
   new checks narrows to authorship and comparison-vs-dependency; a missing id is neither.
+- 2026-08-31 — `kit release` removes the worktree inside the box that made `claim` create
+  one. Every release would otherwise find the branch checked out and leave it behind, which
+  is the leftover this round exists to stop. A worktree an operator put elsewhere is still
+  theirs and is reported, not removed.

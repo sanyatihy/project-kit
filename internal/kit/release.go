@@ -124,9 +124,19 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 		}
 	}
 
+	// `claim` creates the worktree, so removing it is the other half of that and not a
+	// courtesy: without this every release would find the branch checked out and could
+	// never delete it. Only the one the kit made at the path it chooses — a worktree an
+	// operator put somewhere else is theirs, and is reported below rather than removed.
+	if own := r.WorktreePath(branch); r.worktreeBranch(own) == branch {
+		if _, err := r.gitRun("worktree", "remove", own); err != nil {
+			res.Kept = own
+		}
+	}
+
 	// The local branch is a copy, and by here the claim itself is already released, so
-	// failing to delete it must not fail the command. It fails in the ordinary case: an
-	// agent releasing from the worktree it was working in is standing on the branch.
+	// failing to delete it must not fail the command. It fails when the worktree above
+	// could not go: an agent releasing from the checkout it was working in.
 	if r.hasRef("refs/heads/" + branch) {
 		if _, err := r.gitRun("branch", "-D", branch); err != nil {
 			if res.Kept = r.worktreeFor(branch); res.Kept == "" {

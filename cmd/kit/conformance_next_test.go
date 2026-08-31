@@ -676,14 +676,12 @@ func TestNextRefusesAPathArgument(t *testing.T) {
 // the doc still says what it said when the round landed.
 func shipOnItsBranch(p *project, id, slug, title string) {
 	p.t.Helper()
-	trunk := p.headBranch()
 	p.run("claim", id).ok()
-	p.git("checkout", "-q", id+"-"+slug)
-	p.write("thing.txt", "the work\n")
-	feature(p, id, slug, title, "Shipped", "- [x] Build it")
-	p.commitAll("build and ship " + id)
-	p.git("push", "-q", "origin", "HEAD:refs/heads/"+id+"-"+slug)
-	p.git("checkout", "-q", trunk)
+	w := p.claimWorktree(id + "-" + slug)
+	w.write("thing.txt", "the work\n")
+	feature(w, id, slug, title, "Shipped", "- [x] Build it")
+	w.commitAll("build and ship " + id)
+	w.git("push", "-q", "origin", "HEAD:refs/heads/"+id+"-"+slug)
 }
 
 func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
@@ -775,7 +773,7 @@ func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
 	shipOnItsBranch(a, "0007", "widget", "A widget")
 
 	// The builder's own checkout, standing where the work was done.
-	a.git("checkout", "-q", "0007-widget")
+	a = a.claimWorktree("0007-widget")
 	if got := a.plan("next", "--json").AwaitingReview; len(got) != 1 || !got[0].Mine {
 		t.Errorf("the builder's own board does not say it built 0007: %+v", got)
 	}
@@ -878,10 +876,10 @@ func TestTheBoardCountsTheBoxesTheRemoteHas(t *testing.T) {
 	a.run("claim", "0007").ok()
 	b.git("fetch", "-q", "origin")
 
-	a.git("checkout", "-q", "0007-widget")
-	feature(a, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [ ] Ship it")
-	a.commitAll("0007: one box")
-	a.git("push", "-q", "origin", "0007-widget")
+	w := a.claimWorktree("0007-widget")
+	feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [ ] Ship it")
+	w.commitAll("0007: one box")
+	w.git("push", "-q", "origin", "0007-widget")
 
 	stale := b.plan("next", "--json").Taken
 	if len(stale) != 1 {

@@ -27,6 +27,18 @@ func projectAt(t *testing.T, root string) *project {
 	return &project{t: t, Root: root}
 }
 
+// claimWorktree is the checkout `kit claim` made, as a project to run commands in. A
+// test that needs to stand on the claim branch stands here: the branch is checked out in
+// that worktree, so the trunk this is called on cannot switch to it.
+func (p *project) claimWorktree(branch string) *project {
+	p.t.Helper()
+	return projectAt(p.t, filepath.Join(p.Root, WorktreesDirName, branch))
+}
+
+// WorktreesDirName is kit.WorktreesDir, named here so a test reads the same constant the
+// command writes.
+const WorktreesDirName = ".worktrees"
+
 // gitIn runs git somewhere that is not a project, for setting up the remote.
 func gitIn(t *testing.T, dir string, args ...string) {
 	t.Helper()
@@ -131,7 +143,7 @@ func TestClaimPushesTheBranchAndSaysSo(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 
-	a.run("claim", "0007").ok().has("claimed", "0007-widget", "git worktree add")
+	a.run("claim", "0007").ok().has("claimed", "0007-widget", "worktree")
 
 	// The claim is the ref on the remote, so it is the remote that has to have it.
 	// A local branch alone is the state the old protocol could not distinguish from
@@ -275,13 +287,13 @@ func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
 	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
 
 	a.run("claim", "0007").ok()
-	a.git("checkout", "-q", "0007-widget")
-	a.write("widget.go", "package widget\n")
-	a.commitAll("0007: build it")
+	w := a.claimWorktree("0007-widget")
+	w.write("widget.go", "package widget\n")
+	w.commitAll("0007: build it")
 
 	// Exit 2: the repository is in the wrong state, and every other id would carry the
 	// same commits, so "take something else" would send the agent into the same wall.
-	a.run("claim", "0008").fails(2).errHas("ahead of "+trunk, "git worktree add")
+	w.run("claim", "0008").fails(2).errHas("ahead of "+trunk, "git worktree add")
 
 	for _, name := range a.branches() {
 		if strings.HasPrefix(name, "0008") {
@@ -307,11 +319,11 @@ func TestClaimRefusesFromACheckoutThatAlreadyHoldsAClaim(t *testing.T) {
 	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
 
 	a.run("claim", "0007").ok()
-	a.git("checkout", "-q", "0007-widget")
+	w := a.claimWorktree("0007-widget")
 
 	// Exit 2: the feature may well be free, and the repository is in the wrong state
 	// for taking it here, so "take something else" would be the wrong instruction.
-	a.run("claim", "0008").fails(2).errHas("one feature per checkout", "git worktree add")
+	w.run("claim", "0008").fails(2).errHas("one feature per checkout", "git worktree add")
 
 	for _, name := range a.branches() {
 		if strings.HasPrefix(name, "0008") {
@@ -319,8 +331,7 @@ func TestClaimRefusesFromACheckoutThatAlreadyHoldsAClaim(t *testing.T) {
 		}
 	}
 
-	// The quiet half: the same claim from a checkout that holds nothing.
-	a.git("checkout", "-q", trunk)
+	// The quiet half: the same claim from the trunk, which holds nothing.
 	a.run("claim", "0008").ok().has("claimed", "0008-later")
 }
 
@@ -767,7 +778,7 @@ func TestARebaseLeavesTheFeatureWithTheAgentRebasing(t *testing.T) {
 	// from the worktree it was already in.
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	a.git("checkout", "-q", "0007-widget")
+	a = a.claimWorktree("0007-widget")
 	a.write("docs/features/0007-widget.md",
 		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
 	a.commitAll("0007: build it")
@@ -796,7 +807,10 @@ func TestClaimNamesAWorktreeInsideTheProject(t *testing.T) {
 	from := projectAt(t, side)
 
 	want := filepath.Join(a.Root, ".worktrees", "0007-widget")
-	from.run("claim", "0007").ok().has("git worktree add " + want)
+	from.run("claim", "0007").ok().has(want).lacks("git worktree add")
+	if got := projectAt(t, want).headBranch(); got != "0007-widget" {
+		t.Errorf("the claim left %s on %q, want the claim branch", want, got)
+	}
 }
 
 func TestClaimExcludesTheWorktreeDirectoryOncePerClone(t *testing.T) {

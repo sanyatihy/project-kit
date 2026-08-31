@@ -413,8 +413,22 @@ func runClaim(args []string) int {
 			"           add the line yourself before creating the worktree\n",
 			kit.WorktreesDir, claimed.ExcludeErr)
 	}
+	// The claim is won either way, so a worktree that could not be made is a warning and
+	// not a failure — but the agent has nowhere to stand until it exists, so the path and
+	// the reason are both named.
+	if claimed.WorktreeErr != nil {
+		fmt.Fprintf(os.Stderr, "  warning  could not create the worktree: %v\n"+
+			"           make it at %s yourself and work there — the claim is yours\n",
+			claimed.WorktreeErr, claimed.Worktree)
+	} else if claimed.WorktreeCreated {
+		fmt.Printf("  worktree %s — created for this claim\n", claimed.Worktree)
+	} else {
+		fmt.Printf("  worktree %s — already a checkout of this branch\n", claimed.Worktree)
+	}
 	fmt.Printf("\nnext:\n")
-	fmt.Printf("  git worktree add %s %s\n", repo.WorktreePath(claimed.Branch), claimed.Branch)
+	if claimed.WorktreeErr == nil {
+		fmt.Printf("  cd %s\n", claimed.Worktree)
+	}
 	// No status edit to instruct: the branch just pushed is what says this is started,
 	// and asking for a second copy of that in the doc is what the model forbade all along.
 	fmt.Printf("  work there, not here — the branch is the claim, so nothing else to set\n\n")

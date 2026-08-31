@@ -874,14 +874,14 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	a, _ := twoAgents(t)
 	trunk := a.headBranch()
 	a.run("claim", "0007").ok()
-	a.git("checkout", "-q", "0007-widget")
-	a.write("thing.txt", "the work\n")
-	feature(a, "0007", "widget", "A widget", "Shipped", "- [x] Build it")
-	a.commitAll("build and ship 0007")
+	w := a.claimWorktree("0007-widget")
+	w.write("thing.txt", "the work\n")
+	feature(w, "0007", "widget", "A widget", "Shipped", "- [x] Build it")
+	w.commitAll("build and ship 0007")
 
 	// One: shipped here and pushed to its own branch.
-	a.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
-	if codes := a.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
+	w.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
+	if codes := w.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
 		t.Errorf("fired on work pushed to its own branch: %v", codes)
 	}
 
