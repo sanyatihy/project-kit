@@ -284,6 +284,26 @@ func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
 	shipping(w, "0007").ok().has("shipped")
 }
 
+// Merged before the stamp: the branch is already in, so "push the branch and stop" names
+// a push that changes nothing, and the commit ship is about to make is the part nobody has
+// reviewed. Containment says this without asking who merged it.
+func TestShipSaysWhenTheTrunkAlreadyHasTheWork(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	trunk := a.headBranch()
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("0007-widget")
+	w.write("widget.go", "package widget\n")
+	w.write("docs/features/0007-widget.md",
+		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
+	w.commitAll("0007: build it")
+	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+
+	// Not `shipping`, which makes a commit first: the tree is already clean here, and
+	// the clean tree is what the merge-early case looks like.
+	w.run("ship", "0007").ok().has("shipped", "already contains", trunk)
+}
+
 func TestShipRefusesADocThatDeclaresAKeyTwice(t *testing.T) {
 	t.Parallel()
 	// The parser keeps the last occurrence and SetField rewrites the first, so this
