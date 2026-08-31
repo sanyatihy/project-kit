@@ -37,15 +37,38 @@ var docLayout = []struct{ src, dest string }{
 	{"templates/BACKLOG.md", "docs/features/BACKLOG.md"},
 }
 
+// stack is one scaffold, and everything `Init` needs to know about it. `Init` knew two
+// things about Go directly — that `main.go.tmpl` writes the entry point and that
+// `internal/` wants a `.gitkeep` — and a second stack is what turns those from conditions
+// in the code into data beside the templates.
+type stack struct {
+	// files are template-to-destination pairs, the destination filled from the project's
+	// values.
+	files [][2]string
+	// entry is the template in files that writes an entry point, and entryGlobs the paths
+	// that mean the project has one already. Scaffolding fills gaps and never writes a
+	// second entry point over somebody's first. Empty entry means the stack has none.
+	entry      string
+	entryGlobs []string
+	// keep is a directory the stack wants to exist even while it is empty, which git
+	// otherwise drops. Empty means no such directory.
+	keep string
+}
+
 // stackLayout is per-stack scaffolding. Deployment files are deliberately absent:
 // they rot fastest and are not needed to write code. Add them when the project
 // actually has something to deploy.
-var stackLayout = map[string][][2]string{
+var stackLayout = map[string]stack{
 	"go": {
-		{"Makefile", "Makefile"},
-		{"gomod", "go.mod"},
-		{"main.go.tmpl", "cmd/{{name}}/main.go"},
-		{"README.md", "README.md"},
+		files: [][2]string{
+			{"Makefile", "Makefile"},
+			{"gomod", "go.mod"},
+			{"main.go.tmpl", "cmd/{{name}}/main.go"},
+			{"README.md", "README.md"},
+		},
+		entry:      "main.go.tmpl",
+		entryGlobs: []string{"main.go", "cmd/*/main.go"},
+		keep:       "internal",
 	},
 }
 
@@ -139,10 +162,11 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 		}
 		// A project that already has an entry point must not get a second one
 		// named after its directory. Scaffolding fills gaps; it never duplicates.
-		entryExists := hasMainPackage(root)
-		for _, pair := range stackLayout[stack] {
-			if pair[0] == "main.go.tmpl" && entryExists {
-				res.Kept = append(res.Kept, "cmd/ (already has an entry point)")
+		sc := stackLayout[stack]
+		entryExists := sc.entry != "" && hasEntryPoint(root, sc.entryGlobs)
+		for _, pair := range sc.files {
+			if pair[0] == sc.entry && entryExists {
+				res.Kept = append(res.Kept, entryDir(pair[1])+" (already has an entry point)")
 				continue
 			}
 			src := path.Join("templates/stacks", stack, pair[0])
@@ -160,16 +184,16 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 		} else if len(ciLayout[stack]) > 0 {
 			res.CINotWritten = true
 		}
-		// .gitkeep only earns its place in a directory git would otherwise drop.
-		if internal := filepath.Join(root, "internal"); isEmptyDir(internal) {
-			keep := filepath.Join(internal, ".gitkeep")
-			if err := os.MkdirAll(internal, 0o755); err != nil {
+		// .gitkeep only earns its place in a directory git would otherwise drop, and
+		// only where the stack asked for one.
+		if dir := filepath.Join(root, sc.keep); sc.keep != "" && isEmptyDir(dir) {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
 				return nil, err
 			}
-			if err := os.WriteFile(keep, nil, 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(dir, ".gitkeep"), nil, 0o644); err != nil {
 				return nil, err
 			}
-			res.Created = append(res.Created, "internal/.gitkeep")
+			res.Created = append(res.Created, sc.keep+"/.gitkeep")
 		}
 	}
 
@@ -385,14 +409,26 @@ func ReplaceSection(text, marker, replacement string) (string, bool) {
 	return strings.Join(out, "\n"), true
 }
 
-// hasMainPackage reports whether the project already has an entry point, at the
-// root or under cmd/.
-func hasMainPackage(root string) bool {
-	if _, err := os.Stat(filepath.Join(root, "main.go")); err == nil {
-		return true
+// hasEntryPoint reports whether the project already has one, by the globs its stack
+// declares. Nothing here names a language.
+func hasEntryPoint(root string, globs []string) bool {
+	for _, glob := range globs {
+		matches, _ := filepath.Glob(filepath.Join(root, filepath.FromSlash(glob)))
+		if len(matches) > 0 {
+			return true
+		}
 	}
-	matches, _ := filepath.Glob(filepath.Join(root, "cmd", "*", "main.go"))
-	return len(matches) > 0
+	return false
+}
+
+// entryDir is the directory an entry point is reported under when the project already has
+// one: the first segment of the destination, so the message names `cmd/` or `src/` without
+// the placeholder the rest of the path carries.
+func entryDir(dest string) string {
+	if i := strings.Index(dest, "/"); i > 0 {
+		return dest[:i+1]
+	}
+	return dest
 }
 
 // isEmptyDir reports whether a path is absent or an empty directory — the only

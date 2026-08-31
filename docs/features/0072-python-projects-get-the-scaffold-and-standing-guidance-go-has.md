@@ -103,7 +103,7 @@ a conflict a reviewer reads.
 
 ## Tasks
 
-- [ ] `Init` takes the entry-point glob and the keep-directory from the stack's own layout,
+- [x] `Init` takes the entry-point glob and the keep-directory from the stack's own layout,
       so no Go filename appears in it — with the conformance cases `--stack go` already has
       still passing
 - [ ] `templates/python-checklist.md` carries the corrected list: the audit refusal
