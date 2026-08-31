@@ -129,7 +129,9 @@ const (
 	// gate, and the terminal skip is what separates it from a finding on two docs in three.
 	// 417 on the chore that rode with 0068: two lines for the second protocol name and
 	// what it costs on Windows, where a symlink is a text file holding a path.
-	techBudget = 417
+	// 422 with the feature rule: the shapes that are not an addition are the whole reach
+	// of the change, and a definition that lists none of them reads as the old one.
+	techBudget = 422
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

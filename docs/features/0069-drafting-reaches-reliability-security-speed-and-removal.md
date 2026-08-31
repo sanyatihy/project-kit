@@ -70,7 +70,7 @@ the third home for it.
       project's `AGENTS.md` regenerated in the same commit
 - [x] `templates/VISION.md` names what stops breaking among the observables `## What done
       looks like` asks for
-- [ ] `docs/TECH.md`'s definition line says what the protocol now says
+- [x] `docs/TECH.md`'s definition line says what the protocol now says
 
 ## Log
 
