@@ -146,7 +146,7 @@ var (
 	// on handing the feature out. It has to fail --strict — it cannot be left sitting
 	// while agents run.
 	checkIDMismatch = Check{"id-mismatch", High,
-		"frontmatter id: disagrees with the filename, so a claim on it is invisible to the board"}
+		"frontmatter id: is missing or disagrees with the filename, so a claim on it is invisible to the board"}
 	// One defect wearing two names: a line `kit block` would never have written. Out of
 	// format it blocks by prose match, and against an id nobody wrote it blocks nothing —
 	// opposite consequences, one cause, and the same line to correct.
@@ -584,6 +584,12 @@ func statusState(s *docState) []Finding {
 	// the rule it was told to follow. `reset` writes the field, including into a doc that
 	// carries no `status:` line at all.
 	fix := `run: kit reset ` + s.f.ID + ` "<why>"`
+	// `kit reset  "<why>"` is a command nobody can type. A doc with no id: has no key to
+	// name it by, so the fix names the file — and `id-mismatch` is already reporting the
+	// missing id at HIGH beside this.
+	if s.f.ID == "" {
+		fix = "add an id: to " + s.f.Rel + " — kit reset takes the id, not the filename"
+	}
 	switch {
 	case s.f.Status == "":
 		return []Finding{finding(checkNoStatus, s.at, s.f.Name()+": no status:", fix)}
@@ -649,8 +655,17 @@ func claimState(s *docState) []Finding {
 
 func idMismatch(s *docState) []Finding {
 	prefix := s.f.FilenamePrefix()
-	if prefix == "" || s.f.ID == "" || prefix == s.f.ID {
+	if prefix == "" || prefix == s.f.ID {
 		return nil
+	}
+	// No id: at all is the same defect as two that disagree — the id every command takes
+	// is not a key that finds this file — so it is the same code at the same level. A
+	// second would split one guarantee in two, and there is nothing here to guess: the
+	// halves are absent or they agree.
+	if s.f.ID == "" {
+		return []Finding{finding(checkIDMismatch, s.at,
+			fmt.Sprintf("no id: in the frontmatter, and the filename says %q", prefix),
+			"add id: "+prefix+"; the ID is how commits and branches cite this doc")}
 	}
 	return []Finding{finding(checkIDMismatch, s.at,
 		fmt.Sprintf("id %q does not match filename %q", s.f.ID, prefix),

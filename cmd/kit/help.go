@@ -51,7 +51,8 @@ The four rules:
   3. One agent per feature, one feature per checkout. "kit claim <id>" pushes the
      branch that claims it, and creating that ref on the remote is what decides:
      exit 1 means another agent won it. Local branches, remote branches and
-     worktrees all count as claims. Work in the worktree it prints, not here.
+     worktrees all count as claims. A won claim makes the worktree to work in;
+     go there, not here.
   4. A feature named by a BLOCKING line in docs/INBOX.md is blocked until it is
      answered, and so is one whose "needs:" has not shipped. "Named" means the id
      field of the line, not a mention in the question text. FYI lines never block.
@@ -168,7 +169,7 @@ Take a feature. Creates the branch named after its doc and pushes it, and the pu
 is what decides: creating the branch on the remote either succeeds or it does not,
 so of any number of agents claiming at once exactly one wins.
 
-  0  it is yours — a worktree command to start in is printed
+  0  it is yours — the worktree to work in is made and named
   1  it is not yours: another agent got there first, a branch already claims it,
      an open INBOX question blocks it, something in its needs: has not shipped,
      the doc is closed or has no status:, the id: disagrees with the filename,
@@ -197,9 +198,9 @@ Nothing local is written unless the push wins, so a lost race leaves no branch
 behind. On a project with no remote the branch is still created and the command
 says so — that claim is invisible to everyone else.
 
-The worktree goes at .worktrees/<branch> in the project, so the parent stays a list of
-repositories. Declining one is fine; declining the exclude is not, so a won claim writes
-.worktrees/ to this clone's .git/info/exclude — git clone does not carry it.
+The worktree is created at .worktrees/<branch>. A path already holding the claim branch is
+success and anything else there is left alone; making it cannot fail a claim the push has
+won. A won claim also writes .worktrees/ to .git/info/exclude — git clone does not carry it.
 
 This does not fetch first and does not edit the doc. A stale view only ever costs you
 a clearer error, because the remote decides. Nothing to set afterwards either: the
@@ -228,9 +229,10 @@ For the second, push the branch and open the pull request unfinished, saying why
 --force deletes it anyway. Reach for it when the commits are genuinely worth nothing;
 git keeps them reachable only through the reflog afterwards.
 
-The local branch cannot be deleted from the worktree standing on it, which is where an
-agent stopping usually is. The claim is released either way and the command says what
-is left to remove — until it goes, this checkout still reads the feature as taken.
+Release removes the worktree the claim made, which is the other half of creating it. It
+cannot remove the one you are standing in, and a worktree you put elsewhere is yours: the
+claim is released either way and the command says what is left, because until the branch
+goes this checkout still reads the feature as taken.
 
   kit release 0007
   kit release 7 --force`,

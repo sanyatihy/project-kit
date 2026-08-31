@@ -18,6 +18,11 @@ type ShipResult struct {
 	OpenLogs    bool   // whether ## Log looks like it was left untouched
 	HasRemote   bool   // whether there is anywhere to hand the work off to
 	Commit      string // the commit the stamp landed in, empty when there is no history to commit onto
+
+	// Merged is the claim branch the trunk already contains, and Trunk the branch that
+	// contains it. Both empty in the ordinary case, where the work is still in flight.
+	Merged string
+	Trunk  string
 }
 
 // Ship marks a feature shipped: it verifies every box is ticked, sets the status
@@ -109,6 +114,18 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	}
 
 	res := &ShipResult{Doc: target.Rel, Was: target.Status, HasRemote: len(r.remotes()) > 0}
+	// The trunk already holding the claim branch is the merge-early case: the work landed
+	// before the stamp, so the commit made below is not in the trunk and the instruction
+	// to push and wait means something different. Containment rather than authorship —
+	// agents here share the operator's git identity, so a branch's author names nobody.
+	if trunk := r.trunkRef(); trunk != "" {
+		for _, branch := range r.Claims(id) {
+			if r.reaches(branch, trunk) {
+				res.Merged, res.Trunk = branch, trunk
+				break
+			}
+		}
+	}
 	res.TechDoc = r.Rel(r.Tech)
 	if r.Tech == "" {
 		// A fallback, not where the file comes from: `kit init` writes the as-built

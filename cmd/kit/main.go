@@ -413,8 +413,22 @@ func runClaim(args []string) int {
 			"           add the line yourself before creating the worktree\n",
 			kit.WorktreesDir, claimed.ExcludeErr)
 	}
+	// The claim is won either way, so a worktree that could not be made is a warning and
+	// not a failure — but the agent has nowhere to stand until it exists, so the path and
+	// the reason are both named.
+	if claimed.WorktreeErr != nil {
+		fmt.Fprintf(os.Stderr, "  warning  could not create the worktree: %v\n"+
+			"           make it at %s yourself and work there — the claim is yours\n",
+			claimed.WorktreeErr, claimed.Worktree)
+	} else if claimed.WorktreeCreated {
+		fmt.Printf("  worktree %s — created for this claim\n", claimed.Worktree)
+	} else {
+		fmt.Printf("  worktree %s — already a checkout of this branch\n", claimed.Worktree)
+	}
 	fmt.Printf("\nnext:\n")
-	fmt.Printf("  git worktree add %s %s\n", repo.WorktreePath(claimed.Branch), claimed.Branch)
+	if claimed.WorktreeErr == nil {
+		fmt.Printf("  cd %s\n", claimed.Worktree)
+	}
 	// No status edit to instruct: the branch just pushed is what says this is started,
 	// and asking for a second copy of that in the doc is what the model forbade all along.
 	fmt.Printf("  work there, not here — the branch is the claim, so nothing else to set\n\n")
@@ -558,6 +572,13 @@ func runShip(args []string) int {
 	// protocol is read at the start of one. An agent that reaches this point with
 	// no instruction fills the gap by merging its own work, which is what happened
 	// the first time a real project ran the loop.
+	if res.Merged != "" {
+		// Said before the push line, which it changes the meaning of: the branch is
+		// already in, and what still needs review is the stamp this command just made.
+		fmt.Printf("  %s already contains %s, so the work merged before this stamp —\n"+
+			"  the commit above is not in it and still needs a review of its own\n",
+			res.Trunk, res.Merged)
+	}
 	if res.HasRemote {
 		fmt.Printf("  push the branch and stop — reviewing and merging are not yours\n")
 	} else {

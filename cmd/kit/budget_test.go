@@ -131,7 +131,9 @@ const (
 	// what it costs on Windows, where a symlink is a text file holding a path.
 	// 422 with the feature rule: the shapes that are not an addition are the whole reach
 	// of the change, and a definition that lists none of them reads as the old one.
-	techBudget = 422
+	// 424 when claim took the worktree over: the create, what it does with a path that is
+	// already one, and release removing it are three facts and one line each.
+	techBudget = 424
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
