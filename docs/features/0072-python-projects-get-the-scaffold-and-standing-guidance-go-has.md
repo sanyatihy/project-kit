@@ -1,9 +1,9 @@
 ---
 id: 0072
 title: Python projects get the scaffold and standing guidance Go has
-status: Draft
+status: Shipped
 created: 2026-08-30
-shipped:
+shipped: 2026-08-31
 needs:
 ---
 
