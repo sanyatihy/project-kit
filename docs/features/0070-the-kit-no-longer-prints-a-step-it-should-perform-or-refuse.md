@@ -84,7 +84,7 @@ code could start today. The protocol file cannot.
 - [x] `kit claim` creates `.worktrees/<branch>` after a won push, prints that path, and
       does not unclaim if the add fails — with a conformance case that the success
       output contains no `git worktree add`
-- [ ] the two `ClaimFeature` refusals that send an agent to the trunk name
+- [x] the two `ClaimFeature` refusals that send an agent to the trunk name
       `.worktrees/<trunk>`, not `../<repo>-trunk`
 - [ ] `claim`'s missing-`status:` refusal names `kit reset`, not a hand-edit
 - [ ] `kit ship` says when the trunk already contains the claim branch

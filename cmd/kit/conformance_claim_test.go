@@ -293,7 +293,7 @@ func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
 
 	// Exit 2: the repository is in the wrong state, and every other id would carry the
 	// same commits, so "take something else" would send the agent into the same wall.
-	w.run("claim", "0008").fails(2).errHas("ahead of "+trunk, "git worktree add")
+	w.run("claim", "0008").fails(2).errHas("ahead of "+trunk, filepath.Join(a.Root, ".worktrees", trunk))
 
 	for _, name := range a.branches() {
 		if strings.HasPrefix(name, "0008") {
@@ -323,7 +323,7 @@ func TestClaimRefusesFromACheckoutThatAlreadyHoldsAClaim(t *testing.T) {
 
 	// Exit 2: the feature may well be free, and the repository is in the wrong state
 	// for taking it here, so "take something else" would be the wrong instruction.
-	w.run("claim", "0008").fails(2).errHas("one feature per checkout", "git worktree add")
+	w.run("claim", "0008").fails(2).errHas("one feature per checkout", filepath.Join(a.Root, ".worktrees", trunk))
 
 	for _, name := range a.branches() {
 		if strings.HasPrefix(name, "0008") {

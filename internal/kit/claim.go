@@ -170,8 +170,8 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 		return nil, fmt.Errorf("this checkout is ahead of %s, so the branch this would "+
 			"push carries commits that are not %s's — another feature's work, which only "+
 			"its own author could merge.\nClaim from a checkout of the trunk: git worktree "+
-			"add --detach ../%s-trunk %s, then claim there", r.Trunk(), target.ID,
-			r.Name, r.Trunk())
+			"add --detach %s %s, then claim there", r.Trunk(), target.ID,
+			r.WorktreePath(r.Trunk()), r.Trunk())
 	}
 
 	// One feature per checkout, which until now was a rule in prose and nothing else:
@@ -185,8 +185,8 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	if held := r.HeldClaim(); held != "" {
 		return nil, fmt.Errorf("this checkout is on %s, which claims %s — one feature per "+
 			"checkout.\nClaim from a checkout of the trunk: git worktree add --detach "+
-			"../%s-trunk %s, then claim there",
-			r.HeadBranch(), held, r.Name, orTrunk(r.Trunk()))
+			"%s %s, then claim there",
+			r.HeadBranch(), held, r.WorktreePath(orTrunk(r.Trunk())), orTrunk(r.Trunk()))
 	}
 
 	remote, err := pickRemote(r)
