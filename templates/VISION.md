@@ -30,8 +30,9 @@ before drafting one.
 ## What done looks like
 
 <!-- How you will know it worked. Prefer something observable over something
-     aspirational: what a user can do that they could not before, what number moved,
-     what stops being manual. This is what a feature is decomposed against. -->
+     aspirational: what a user can do that they could not before, what stops breaking,
+     what number moved, what stops being manual. This is what a feature is decomposed
+     against. -->
 
 ## What it is not
 

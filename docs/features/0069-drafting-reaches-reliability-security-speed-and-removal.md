@@ -68,7 +68,7 @@ the third home for it.
       not`, defines a feature as a change in what the project can do, can be trusted to do
       or can be trusted not to do, and gates it on the backlog's two questions — with this
       project's `AGENTS.md` regenerated in the same commit
-- [ ] `templates/VISION.md` names what stops breaking among the observables `## What done
+- [x] `templates/VISION.md` names what stops breaking among the observables `## What done
       looks like` asks for
 - [ ] `docs/TECH.md`'s definition line says what the protocol now says
 
