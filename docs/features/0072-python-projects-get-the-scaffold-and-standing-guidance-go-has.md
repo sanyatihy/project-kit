@@ -106,7 +106,7 @@ a conflict a reviewer reads.
 - [x] `Init` takes the entry-point glob and the keep-directory from the stack's own layout,
       so no Go filename appears in it — with the conformance cases `--stack go` already has
       still passing
-- [ ] `templates/python-checklist.md` carries the corrected list: the audit refusal
+- [x] `templates/python-checklist.md` carries the corrected list: the audit refusal
       restored, the six omissions added, the five wrong claims fixed, `Enum` and SQL
       binding stated once, and every library it names sitting in one of the four tiers
 - [ ] `kit help python-checklist` prints it, and the protocol and the help overview send an
@@ -140,3 +140,7 @@ a conflict a reviewer reads.
   `templates/AGENTS-section.md`, and the test is whether the work could start rather than
   what it touches. Three rounds queued behind one prose file cost more than the conflict
   the queue avoided.
+- 2026-08-31 — the checklists take a ceiling of their own, because Python's is 286 lines
+  against Go's 193 and one number for every help topic would have handed the other six 93
+  lines of headroom nobody justified. `Typing` and `Data modelling` merged, which is where
+  `Enum` was stated twice.
