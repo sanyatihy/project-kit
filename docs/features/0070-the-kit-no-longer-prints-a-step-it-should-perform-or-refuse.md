@@ -91,7 +91,7 @@ code could start today. The protocol file cannot.
 - [x] `kit help`, the protocol, and `docs/TECH.md` say claim creates the worktree;
       rules 9 and 10 are gone; this project's `AGENTS.md` is regenerated in the same
       commit as the template
-- [ ] `docs/features/TEMPLATE.md` is gone
+- [x] `docs/features/TEMPLATE.md` is gone
 - [ ] `id-mismatch` reports a missing `id:` at HIGH, with a conformance case, and
       `no-status`'s fix names the file when `id:` is empty
 
