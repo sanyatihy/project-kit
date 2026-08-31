@@ -10,9 +10,15 @@ Do this only when you are asked to plan.
 
 1. **Read `docs/VISION.md` first.** A feature that cannot be traced to it is the wrong
    feature. Split by `## What done looks like`: each observable outcome is at least one
-   feature.
-2. **A feature is one shipped increase in what the project can do, or can be trusted to
-   do.** Name it in one sentence an operator would recognise: "the board no longer hands one
+   feature. `## Constraints` and `## What it is not` generate work as well as reject it —
+   a constraint the project does not yet honour is a feature.
+2. **A feature is one shipped change in what the project can do, can be trusted to do, or
+   can be trusted not to do.** Adding a capability is one shape and not the privileged one:
+   a failure that stops happening, an exposure that closes, a number that crosses a line, a
+   capability removed with its cost. Each needs a value somebody would notice and a trigger
+   that can be observed, the two questions the backlog asks before an idea is promoted.
+   Removing what already shipped is a new doc citing the frozen one, never an edit to it.
+   Name it in one sentence an operator would recognise: "the board no longer hands one
    feature to two agents", not "refactor `Mine`". No such sentence means it is a task box in
    another feature, or a chore commit that rides on a pull request under a branch name
    carrying no id. A separate doc earns its place when it holds a decision someone must read

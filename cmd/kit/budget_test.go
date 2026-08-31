@@ -37,7 +37,10 @@ const (
 	// decision. Decomposition is what the protocol is for.
 	// 113 since 0054: nothing named the step after a merge, and an install resolves to the
 	// newest tag, so every round after the last one reached no project that installed it.
-	protocolBudget = 113
+	// 114 since the feature rule became change-shaped: naming the shapes that are not an
+	// addition is what routes hardening, speed and removal to a draft at all, and the
+	// vision sections that produce them had no route either.
+	protocolBudget = 114
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -126,14 +129,18 @@ const (
 	// gate, and the terminal skip is what separates it from a finding on two docs in three.
 	// 417 on the chore that rode with 0068: two lines for the second protocol name and
 	// what it costs on Windows, where a symlink is a text file holding a path.
-	techBudget = 417
+	// 422 with the feature rule: the shapes that are not an addition are the whole reach
+	// of the change, and a definition that lists none of them reads as the old one.
+	techBudget = 422
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
 	// 169 on 0054: the protocol's tagging rule arrives here with it, and the line above it
 	// names the command that cuts one — the generated section cannot, because the Go stack
 	// it scaffolds already ships a `make release` that builds a binary.
-	agentsBudget = 169
+	// 170 with the protocol's own ceiling: this file carries that section verbatim, so a
+	// line added there arrives here whether the house rules above it move or not.
+	agentsBudget = 170
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary

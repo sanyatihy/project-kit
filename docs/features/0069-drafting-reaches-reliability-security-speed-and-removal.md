@@ -1,9 +1,9 @@
 ---
 id: 0069
 title: Drafting reaches reliability, security, speed and removal
-status: Draft
+status: Shipped
 created: 2026-08-24
-shipped:
+shipped: 2026-08-31
 needs:
 ---
 
@@ -64,18 +64,16 @@ the third home for it.
 
 ## Tasks
 
-- [ ] `templates/AGENTS-section.md` sends a planner to `## Constraints` and `## What it is
+- [x] `templates/AGENTS-section.md` sends a planner to `## Constraints` and `## What it is
       not`, defines a feature as a change in what the project can do, can be trusted to do
       or can be trusted not to do, and gates it on the backlog's two questions — with this
       project's `AGENTS.md` regenerated in the same commit
-- [ ] `templates/VISION.md` names what stops breaking among the observables `## What done
+- [x] `templates/VISION.md` names what stops breaking among the observables `## What done
       looks like` asks for
-- [ ] `docs/TECH.md`'s definition line says what the protocol now says
+- [x] `docs/TECH.md`'s definition line says what the protocol now says
 
-## Open questions
+## Log
 
-- **Does the protocol state how a shipped capability is removed?** `kit drop` refuses a
-  Shipped doc because it is frozen history, so a removal is a new doc citing the old one —
-  which is what 0032 and 0048 did, and what nothing says. Leaning: one clause in rule 2,
-  since promoting subtraction to a named shape is what raises the question; a reader who
-  cannot find the answer will edit a frozen doc instead.
+- 2026-08-31 — the removal question is settled in the rule rather than left open. Naming
+  subtraction as a shape is what sends a reader looking for how a shipped capability comes
+  out, and the answer they need — a new doc citing the frozen one — is one clause.
