@@ -113,9 +113,8 @@ Draft -> Shipped     (exit: Dropped)
   feature's own claim branch is exempt, so a doc discovered mid-build still lands there.
 - **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks
   whether HEAD *is* the claim branch, which is right for `ship` — shipping happens in the
-  worktree doing the work — and wrong for `release`, because `claim` tells you to make that
-  worktree, so between claiming and moving there you could not release what you had just
-  taken. A local ref means this clone created the branch: the same answer for every
+  worktree doing the work — and wrong for `release`, which runs in the trunk the claim was
+  made from rather than in the worktree it created. A local ref means this clone created the branch: the same answer for every
   worktree sharing it, a different one for an agent that only saw the claim over the wire.
 - **An unknown answer must not be the permissive one in a command that deletes.**
   `BranchBuildsOn` reads an unresolvable trunk as "carries no work", so `release` deleted
@@ -329,10 +328,13 @@ Draft -> Shipped     (exit: Dropped)
 - **`--json` is a contract and its shape is pinned.** The board's four groups are `[]` when
   empty, `moved` is absent rather than a year-1 timestamp — `omitempty` does nothing for a
   struct — and a directory nothing surveyed reports through `error` at exit 2.
-- **A claim's worktree lives in the project, at `.worktrees/<branch>`.** The parent stays a
-  list of repositories, and a dot directory is skipped by ripgrep and the Go toolchain on the
-  name alone. The printed path is absolute, anchored at the main worktree, so it is right
-  from a worktree as well as from the trunk. `claim` writes `.worktrees/` to
+- **A won claim creates the worktree at `.worktrees/<branch>`, and `release` removes it.**
+  The parent stays a list of repositories, and a dot directory is skipped by ripgrep and the
+  Go toolchain on the name alone. The path is absolute, anchored at the main worktree, so it
+  is right from a worktree as well as from the trunk. The add runs after the push and cannot
+  undo it: a failure is a warning beside a claim that is already won, and a path already
+  holding the claim branch is success. `release` removing it is what keeps the branch
+  deletable, since otherwise every claim would leave one checked out. `claim` writes `.worktrees/` to
   `.git/info/exclude` rather than asking, because declining the exclude is not legitimate and
   `git clone` carries none — which puts the write in the command that runs in every clone.
 - **`needs-unstated` is the kit's only LOW check, and the level is the design.** A plan
