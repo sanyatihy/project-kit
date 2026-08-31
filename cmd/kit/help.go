@@ -81,20 +81,22 @@ Topics:
   kit help backlog       the docs/features/BACKLOG.md format, and what promotes an entry
   kit help vision        the docs/VISION.md shape, and what it is not for
   kit help as-built      the docs/TECH.md shape, section by section
-  kit help go-checklist  engineering practices for Go projects, tiered
+  kit help go-checklist      engineering practices for Go projects, tiered
+  kit help python-checklist  the same for Python, and the libraries it does name
 
 Run "kit <command> --help" for a command's options.`
 
 // topics map a help topic to embedded content, so the binary carries its own
 // documentation and an agent never needs the kit's repository.
 var topics = map[string]string{
-	"protocol":     "templates/AGENTS-section.md",
-	"template":     "templates/features-TEMPLATE.md",
-	"go-checklist": "templates/go-checklist.md",
-	"vision":       "templates/VISION.md",
-	"as-built":     "templates/TECH.md",
-	"inbox":        "templates/INBOX.md",
-	"backlog":      "templates/BACKLOG.md",
+	"protocol":         "templates/AGENTS-section.md",
+	"template":         "templates/features-TEMPLATE.md",
+	"go-checklist":     "templates/go-checklist.md",
+	"python-checklist": "templates/python-checklist.md",
+	"vision":           "templates/VISION.md",
+	"as-built":         "templates/TECH.md",
+	"inbox":            "templates/INBOX.md",
+	"backlog":          "templates/BACKLOG.md",
 }
 
 // commandHelp is the description and examples printed by `kit <cmd> --help`,

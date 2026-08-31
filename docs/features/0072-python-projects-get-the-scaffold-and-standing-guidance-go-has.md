@@ -109,7 +109,7 @@ a conflict a reviewer reads.
 - [x] `templates/python-checklist.md` carries the corrected list: the audit refusal
       restored, the six omissions added, the five wrong claims fixed, `Enum` and SQL
       binding stated once, and every library it names sitting in one of the four tiers
-- [ ] `kit help python-checklist` prints it, and the protocol and the help overview send an
+- [x] `kit help python-checklist` prints it, and the protocol and the help overview send an
       agent to the checklist for its language — this project's `AGENTS.md` regenerated in
       the same commit as the template
 - [ ] `kit init --stack python` scaffolds `pyproject.toml`, a Makefile whose `check` is the
