@@ -115,7 +115,7 @@ a conflict a reviewer reads.
 - [x] `kit init --stack python` scaffolds `pyproject.toml`, a Makefile whose `check` is the
       same gate, `src/{{pkg}}/` with `__init__.py` and `__main__.py`, a README and the
       stack's `.gitignore`
-- [ ] `kit init --stack python --forge github` and `--forge gitlab` each write that forge's
+- [x] `kit init --stack python --forge github` and `--forge gitlab` each write that forge's
       pipeline, and an unknown forge gets none and is told so
 - [ ] `docs/TECH.md` says what a stack declares, in one line
 

@@ -374,6 +374,33 @@ func TestInitStackPythonDoesNotAddASecondEntryPoint(t *testing.T) {
 	}
 }
 
+func TestInitStackPythonWritesOnePipelinePerForge(t *testing.T) {
+	t.Parallel()
+	gh := newProject(t)
+	gh.run("init", "--stack", "python", "--forge", "github").ok()
+	if !gh.exists(".github/workflows/check.yml") || gh.exists(".gitlab-ci.yml") {
+		t.Error("--forge github did not write exactly the GitHub workflow")
+	}
+	if got := gh.read(".github/workflows/check.yml"); !strings.Contains(got, "make check") {
+		t.Errorf("the workflow does not run the project's own gate:\n%s", got)
+	}
+
+	gl := newProject(t)
+	gl.run("init", "--stack", "python", "--forge", "gitlab").ok()
+	if !gl.exists(".gitlab-ci.yml") || gl.exists(".github/workflows/check.yml") {
+		t.Error("--forge gitlab did not write exactly the GitLab pipeline")
+	}
+
+	// A missing pipeline is visible and one for the wrong forge is not, so nothing is
+	// written when nothing says which forge this is — and the run says so.
+	none := newProject(t)
+	r := none.run("init", "--stack", "python").ok()
+	if none.exists(".github/workflows/check.yml") || none.exists(".gitlab-ci.yml") {
+		t.Error("guessed a forge when nothing named one")
+	}
+	r.has("no CI file")
+}
+
 func TestInitStackGoInfersTheModulePathFromDisk(t *testing.T) {
 	t.Parallel()
 	p := newProject(t)

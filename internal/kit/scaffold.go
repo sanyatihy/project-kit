@@ -102,6 +102,10 @@ var ciLayout = map[string]map[string][2]string{
 		ForgeGitHub: {"check.yml", ".github/workflows/check.yml"},
 		ForgeGitLab: {"gitlab-ci.yml", ".gitlab-ci.yml"},
 	},
+	"python": {
+		ForgeGitHub: {"check.yml", ".github/workflows/check.yml"},
+		ForgeGitLab: {"gitlab-ci.yml", ".gitlab-ci.yml"},
+	},
 }
 
 var goVersionRe = regexp.MustCompile(`go(\d+\.\d+(?:\.\d+)?)`)

@@ -1,0 +1,40 @@
+# One gate: the same `make check` you run locally. Deployment lives in its own
+# pipeline, added when the project has something to deploy.
+#
+# `kit audit --strict` deliberately does not run here. It would mean installing
+# the kit, which is a private module, which means a credential in every project
+# scaffolded from this template — one more secret to store and rotate in each
+# repo, and a first pipeline that fails until someone sets it. Drift is cheap to
+# catch locally, where `kit next` is already being run; it is not worth that.
+#
+# Two things are yours to set, because no template can guess them and they differ
+# between one GitLab instance and the next:
+#
+#   image  — the uv image works on gitlab.com. A self-hosted instance usually
+#            pulls from an internal registry mirror instead.
+#   tags   — the runner tags this project is allowed to use. Delete the key
+#            entirely if the instance has untagged shared runners.
+
+stages: [check]
+
+variables:
+  UV_CACHE_DIR: $CI_PROJECT_DIR/.cache/uv
+
+check:
+  stage: check
+  image: ghcr.io/astral-sh/uv:debian
+  tags: []
+  timeout: 15m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  cache:
+    key:
+      files: [uv.lock]
+    paths: [.cache/uv]
+  script:
+    # The interpreter pyproject.toml pins, and a lockfile that does not match it fails
+    # here rather than resolving to something this run invented.
+    - uv python install
+    - uv sync --locked
+    - make check
