@@ -44,19 +44,6 @@ touch it. Most forges do not delete a source branch on merge, and nothing says t
 **Promote when:** a merged feature is seen holding a slot, or a second machine reads a board
 this one has already cleaned.
 
-## One agent that plans and builds in the same session has no path
-
-The protocol has two: a drafting round lands on the trunk, then a builder claims from it. An
-agent asked to do both in one session can do neither cleanly — `claim` refuses until the
-round lands, and `ship` needs a claim, so the work ends as a plan branch carrying docs whose
-boxes are ticked and whose status is still `Draft`. It has happened twice.
-
-Either the protocol names this as the coordinator's case and says what to do, or `ship`
-learns a path that does not require a claim branch.
-
-**Value:** the common single-operator session stops ending in a state the tool reports as wrong.
-**Promote when:** it happens a third time, or a second operator hits it.
-
 ## A scaffolded project's CI has the flaws 0053 fixed here
 
 `templates/stacks/go/check.yml` is where the kit's own workflow came from, so it carries
