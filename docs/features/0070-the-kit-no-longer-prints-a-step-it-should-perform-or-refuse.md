@@ -1,9 +1,9 @@
 ---
 id: 0070
 title: The kit no longer prints a step it should perform or refuse
-status: Draft
+status: Shipped
 created: 2026-08-29
-shipped:
+shipped: 2026-08-31
 needs: 0069
 ---
 
