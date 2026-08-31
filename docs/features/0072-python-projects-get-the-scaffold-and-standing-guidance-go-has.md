@@ -4,7 +4,7 @@ title: Python projects get the scaffold and standing guidance Go has
 status: Draft
 created: 2026-08-30
 shipped:
-needs: 0071
+needs:
 ---
 
 ## Problem
@@ -94,9 +94,12 @@ adequate, or "a dependency earns its place" is a rule the checklist cannot hold 
 Names sit in the tier sections and principles in Core, so a name that ages costs a
 paragraph rather than a rule.
 
-**`needs: 0071` because both edit `templates/AGENTS-section.md`.** 0071 adds a second route
-through the protocol's rules and this changes the line that sends an agent to a checklist.
-Trivial to merge textually and serialised anyway, because that file has one owner at a time.
+**No `needs:`, because a prose section is not a wiring table.** The rounds ahead of this one
+edit `templates/AGENTS-section.md` too, at the numbered rules and the planning route, while
+this changes the closing paragraph that names the checklists. The template's test for a
+shared file is one where both features add an entry to the same dispatch, merge cleanly and
+break at runtime; disjoint prose sections do not, so this starts today and the worst case is
+a conflict a reviewer reads.
 
 ## Tasks
 
@@ -133,3 +136,7 @@ Trivial to merge textually and serialised anyway, because that file has one owne
   was one clause of a task box until the boundary library turned out to be the only thing
   that closes "parse, do not validate", which makes naming a design position with a rule
   under it.
+- 2026-08-31 — the declared `needs:` is dropped. It named the round ahead because both edit
+  `templates/AGENTS-section.md`, and the test is whether the work could start rather than
+  what it touches. Three rounds queued behind one prose file cost more than the conflict
+  the queue avoided.
