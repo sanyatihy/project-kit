@@ -92,7 +92,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	case StatusDraft:
 	case "":
 		return nil, &NotYours{target.Name() + " has no status:, so there is no work to claim",
-			"give it one: " + strings.Join(AllStatuses, ", ")}
+			`run: kit reset ` + target.ID + ` "<why>"`}
 	default:
 		return nil, &NotYours{
 			fmt.Sprintf("%s is %s — it is not open work", target.Name(), target.Status),

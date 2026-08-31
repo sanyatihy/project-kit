@@ -86,7 +86,7 @@ code could start today. The protocol file cannot.
       output contains no `git worktree add`
 - [x] the two `ClaimFeature` refusals that send an agent to the trunk name
       `.worktrees/<trunk>`, not `../<repo>-trunk`
-- [ ] `claim`'s missing-`status:` refusal names `kit reset`, not a hand-edit
+- [x] `claim`'s missing-`status:` refusal names `kit reset`, not a hand-edit
 - [ ] `kit ship` says when the trunk already contains the claim branch
 - [ ] `kit help`, the protocol, and `docs/TECH.md` say claim creates the worktree;
       rules 9 and 10 are gone; this project's `AGENTS.md` is regenerated in the same
