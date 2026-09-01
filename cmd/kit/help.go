@@ -41,6 +41,12 @@ How it works:
   starts when a claim branch is pushed, so there is no status for it and nothing to
   set by hand.
 
+  Two routes in. Plan first — draft a round, land it, claim from it — which is what
+  agents that never speak to each other need, because "needs:" is what orders them.
+  Or work first on a branch that claims nothing, and run "kit harvest" at the end: it
+  takes an id, writes the doc and commits the tree in one commit. Both end in a Draft
+  somebody else reviews.
+
   "kit next" and "kit audit" read the project you are in. For several projects:
     for d in ~/code/*; do (cd $d && kit next); done
 

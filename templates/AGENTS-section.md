@@ -46,30 +46,37 @@ Do this only when you are asked to plan.
    - **1** — it is not yours. Run `kit next` and take a different feature. Do not retry.
    - **2** — the command could not run. Read the error, fix it, claim again.
 
+9. **Work that started without a plan reaches the board with `kit harvest`.** A branch that
+   is neither a claim nor a plan round is a spike: nothing routes it, and `kit next` says so
+   rather than refusing you. When it is done, `kit harvest "<title>" --box "<outcome>"`
+   takes an id, writes the doc and commits the tree in one commit; `kit harvest --nothing
+   "<what it showed>"` is the spike that did not survive. It writes a `Draft`, so
+   everything below still applies.
+
 ### Doing the work
 
-9. **Read the feature doc for the design, and nowhere else.** It is the one home for it.
-10. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the order
+10. **Read the feature doc for the design, and nowhere else.** It is the one home for it.
+11. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the order
     of work.
-11. **Tick the box in the commit that implements it.** One box, one commit. Nobody re-reads
+12. **Tick the box in the commit that implements it.** One box, one commit. Nobody re-reads
     the branch to check, so the commit is what has to be honest.
-12. **Discovered work becomes a new box, a new doc, or a `BACKLOG.md` line — never a `TODO`
+13. **Discovered work becomes a new box, a new doc, or a `BACKLOG.md` line — never a `TODO`
     in the code.** Append it, unless it blocks the boxes below.
-13. **A box that turns out wrong may be rewritten, split or deleted.** Own commit, reason in
+14. **A box that turns out wrong may be rewritten, split or deleted.** Own commit, reason in
     `## Log`. Never silently drop one you could not finish. A whole feature that should not
     be built is `kit drop <id> "<why>"`.
-14. **Stopping mid-feature is `kit release <id>`.** It refuses while the branch carries
+15. **Stopping mid-feature is `kit release <id>`.** It refuses while the branch carries
     work: that is a pause, so push the branch and open the pull request unfinished instead.
-15. **Never put a real secret in a doc.** Name the variable and where the value lives, never
+16. **Never put a real secret in a doc.** Name the variable and where the value lives, never
     the value. A pushed commit cannot be unpublished.
-16. **Never edit a doc whose status is `Shipped`.** It is frozen history.
+17. **Never edit a doc whose status is `Shipped`.** It is frozen history.
 
 ### Finishing
 
-17. **When the last box is ticked, run this project's own gate, then `kit audit --strict`,
+18. **When the last box is ticked, run this project's own gate, then `kit audit --strict`,
     then `kit ship <id>`.** In that order: `ship` freezes the doc, so anything the other
     two would have made you change has to be found before it.
-18. **Push the branch, open the pull request, and stop. You never merge your own work.**
+19. **Push the branch, open the pull request, and stop. You never merge your own work.**
     Opening a pull request is not approving it. With no remote, say so and leave the work
     on the branch.
 

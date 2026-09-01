@@ -40,7 +40,9 @@ const (
 	// 114 since the feature rule became change-shaped: naming the shapes that are not an
 	// addition is what routes hardening, speed and removal to a draft at all, and the
 	// vision sections that produce them had no route either.
-	protocolBudget = 114
+	// 116 with the second route: a spike is a branch the board does not route, and an
+	// agent that never reads about harvest has one way in rather than two.
+	protocolBudget = 116
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -54,7 +56,8 @@ const (
 	// Headroom nobody has to justify spending is not a ceiling.
 	// 114 once the checklists took a ceiling of their own: 193 was go-checklist's number,
 	// and with it out of this pool the longest topic left is the protocol.
-	topicBudget = 114
+	// 116 with the protocol, which is the longest topic in this pool and sets it.
+	topicBudget = 116
 
 	// The checklists are the standing engineering guidance a project is held to, read once
 	// per language rather than per session, and their substance is the whole point. The
@@ -154,7 +157,8 @@ const (
 	// it scaffolds already ships a `make release` that builds a binary.
 	// 170 with the protocol's own ceiling: this file carries that section verbatim, so a
 	// line added there arrives here whether the house rules above it move or not.
-	agentsBudget = 170
+	// 172 with the second route, which this file carries verbatim from the protocol.
+	agentsBudget = 172
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary

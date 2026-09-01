@@ -91,7 +91,7 @@ question by name, so it is also the doc that says this comes after.
 - [x] `kit harvest --nothing "<what it showed>"` appends a BACKLOG entry and reserves no id
 - [x] `kit harvest` offers the BACKLOG entries as drafts, so the round the fleet claims
       comes out of the spike that ended
-- [ ] the protocol gains the second route, `kit help` carries it, and this project's
+- [x] the protocol gains the second route, `kit help` carries it, and this project's
       `AGENTS.md` is regenerated in the same commit as the template
 - [ ] `docs/TECH.md` says a spike is a branch the board does not route, and that an id is
       taken at harvest
