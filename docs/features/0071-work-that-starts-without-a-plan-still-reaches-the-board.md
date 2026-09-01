@@ -1,9 +1,9 @@
 ---
 id: 0071
 title: Work that starts without a plan still reaches the board
-status: Draft
+status: Shipped
 created: 2026-08-30
-shipped:
+shipped: 2026-09-01
 needs: 0070
 ---
 
