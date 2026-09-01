@@ -75,6 +75,8 @@ func run() int {
 		return runInit(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
+	case "harvest":
+		return runHarvest(os.Args[2:])
 	case "claim":
 		return runClaim(os.Args[2:])
 	case "release":
@@ -361,6 +363,104 @@ func runReset(args []string) int {
 }
 
 // ---------------------------------------------------------------- claim
+
+// boxList collects a repeated --box. A slice and not a single string because the boxes
+// are a list of outcomes in the order they were done, and joining them on a separator
+// would make a box containing that separator into two.
+type boxList []string
+
+func (b *boxList) String() string     { return strings.Join(*b, ", ") }
+func (b *boxList) Set(v string) error { *b = append(*b, v); return nil }
+
+func runHarvest(args []string) int {
+	fs := newFlagSet("harvest", args)
+	var boxes boxList
+	fs.Var(&boxes, "box", "an outcome this work delivered; repeat once per box")
+	nothing := fs.String("nothing", "", "the spike did not survive: record what it "+
+		"showed as a BACKLOG.md entry, and take no id")
+	title := strings.TrimSpace(strings.Join(parseArgs(fs, args), " "))
+
+	if *nothing != "" {
+		if title != "" || len(boxes) > 0 {
+			fmt.Fprintln(os.Stderr, "kit harvest: --nothing is the spike that did not "+
+				"survive, so it takes no title and no --box")
+			return 2
+		}
+		return harvestNothing(*nothing)
+	}
+	if title == "" {
+		fmt.Fprintln(os.Stderr, "kit harvest: give the work a title, e.g."+
+			` kit harvest "Shorten URLs" --box "a long URL comes back short"`)
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit harvest: %v\n", err)
+		return 2
+	}
+	harvested, err := kit.Harvest(repo, title, boxes, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit harvest: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  created   %s\n", repo.Rel(harvested.Path))
+	fmt.Printf("  committed %s — the work and the doc in one commit, so a reviewer\n",
+		harvested.Commit)
+	fmt.Printf("            reads what changed beside what it was for\n")
+	if harvested.Remote != "" {
+		fmt.Printf("  reserved  %s on %s — no other agent can be handed it\n",
+			harvested.ID, harvested.Remote)
+	} else {
+		fmt.Printf("\n  no remote, so nothing reserved %s — another agent drafting off\n",
+			harvested.ID)
+		fmt.Printf("  this trunk right now can be handed the same id\n")
+	}
+	fmt.Printf("\n  answer ## Problem, ## Design and ## Log — they are the part the code\n")
+	fmt.Printf("  cannot say, and audit --strict refuses the doc until they are written.\n")
+	fmt.Printf("  then: kit ship %s, push the branch, and open the pull request.\n",
+		harvested.ID)
+
+	// The handoff. This is the moment the operator knows what is worth doing next and the
+	// fleet has nothing to claim, so the parked entries are named here rather than waiting
+	// for somebody to go and read the file. Named and not promoted: which of them is worth
+	// building is a product decision, and the kit does not make one.
+	if parked := kit.BacklogEntries(repo); len(parked) > 0 {
+		// Not plural(), which pluralises by adding an s: "2 entrys".
+		noun := "entries"
+		if len(parked) == 1 {
+			noun = "entry"
+		}
+		fmt.Printf("\n  %d %s parked in %s. Promote the ones whose trigger has\n",
+			len(parked), noun, repo.Rel(repo.Backlog))
+		fmt.Printf("  fired, so the fleet has a round to claim when this one is merged:\n")
+		for _, entry := range parked {
+			fmt.Printf("    kit new %q\n", entry)
+		}
+	}
+	fmt.Println()
+	return 0
+}
+
+// harvestNothing is the --nothing arm: one entry, no id, no doc.
+func harvestNothing(what string) int {
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit harvest: %v\n", err)
+		return 2
+	}
+	res, err := kit.HarvestNothing(repo, what, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit harvest: %v\n", err)
+		return 2
+	}
+	fmt.Printf("\n  appended  %s — no id taken, so nothing is reserved for work\n",
+		repo.Rel(res.Path))
+	fmt.Printf("  committed %s\n", res.Commit)
+	fmt.Printf("\n  the entry is what the spike leaves behind. Name the trigger that\n")
+	fmt.Printf("  would promote it, or delete it — an option nobody will take is not one.\n\n")
+	return 0
+}
 
 func runClaim(args []string) int {
 	fs := newFlagSet("claim", args)
@@ -771,7 +871,13 @@ func printPlan(plan kit.Plan, color bool) {
 		// guidance says what to do; this is the thing to run. Not while something is
 		// awaiting review: there the guidance says merging is the work, and a second
 		// command under it is the page giving two answers.
-		if plan.Empty() && len(plan.AwaitingReview) == 0 {
+		switch {
+		// Mid-spike the command to run is the one that ends it. `kit new` here names the
+		// route the operator did not take, which is the board printing a step for
+		// somebody else.
+		case plan.Spike != "":
+			fmt.Printf("    kit harvest \"<what the work delivered>\" --box \"<outcome>\"\n")
+		case plan.Empty() && len(plan.AwaitingReview) == 0:
 			fmt.Printf("    kit new \"<what the feature does>\"\n")
 		}
 	}

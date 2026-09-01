@@ -684,6 +684,29 @@ func shipOnItsBranch(p *project, id, slug, title string) {
 	w.git("push", "-q", "origin", "HEAD:refs/heads/"+id+"-"+slug)
 }
 
+func TestNextNamesASpikeRatherThanRefusingIt(t *testing.T) {
+	t.Parallel()
+	// Work that started without a doc. The board routes claims and plan rounds; a branch
+	// that is neither has nothing to refuse, so the stopping line answers a question the
+	// operator at the keyboard did not ask.
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok()
+	a.git("checkout", "-q", "-b", "spike/try-something")
+
+	r := a.run("next").ok().has("spike/try-something", "not routing it")
+	if strings.Contains(r.Stdout, "Stopping here is the right outcome") {
+		t.Errorf("the board refused a branch it does not route:\n%s", r.Stdout)
+	}
+	// The command under the guidance is the one that ends a spike, not the one that
+	// starts the route the operator did not take.
+	r.has("kit harvest").lacks(`kit new "<what the feature does>"`)
+
+	// The conservative direction: a branch citing an id is a claim however it is spelled,
+	// so a mistyped one is reported by orphan-claim rather than becoming a spike.
+	a.git("checkout", "-q", "-b", "0009-mistyped")
+	a.run("next").ok().lacks("not routing it")
+}
+
 func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
 	t.Parallel()
 	// 0013's rule: never leave an agent without an instruction. A board with nothing

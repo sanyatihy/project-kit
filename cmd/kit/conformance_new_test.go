@@ -364,3 +364,107 @@ func TestAReservationSaysWhatItWasHandedOutFor(t *testing.T) {
 		t.Errorf("the reservation reads %q, want %q", got, want)
 	}
 }
+
+// A locked-in session leaves a working tree, not a log: the project that prompted this
+// had 2,090 lines, 82 tests and no commits at all. Harvest has to make the history rather
+// than read it, and a repository with no commits is where that is provable.
+func TestHarvestMakesTheCommitOnARepoWithNoCommits(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.write("thing.py", "print('hi')\n")
+
+	r := p.run("harvest", "Shorten URLs",
+		"--box", "a long URL comes back short",
+		"--box", "an unknown code is a 404").ok()
+	r.has("created", "committed")
+
+	// The doc, with the operator's boxes ticked and the questions left to answer.
+	doc := p.read("docs/features/0001-shorten-urls.md")
+	for _, want := range []string{
+		"status: Draft",
+		"- [x] a long URL comes back short",
+		"- [x] an unknown code is a 404",
+		"## Problem", "## Design", "## Log",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Errorf("the harvested doc does not carry %q:\n%s", want, doc)
+		}
+	}
+
+	// The commit is the point: the work and the doc arrive together, and the tree is
+	// clean afterwards, which is what `kit ship` refuses to run without.
+	if dirty := p.run("audit").out(); strings.Contains(dirty, "status-uncommitted") {
+		t.Errorf("harvest left the doc uncommitted:\n%s", dirty)
+	}
+	out := p.gitOut(nil, "status", "--porcelain")
+	if strings.TrimSpace(out) != "" {
+		t.Errorf("harvest left the tree dirty:\n%s", out)
+	}
+	if log := p.gitOut(nil, "log", "--oneline"); !strings.Contains(log, "Harvest 0001") {
+		t.Errorf("no harvest commit:\n%s", log)
+	}
+	if files := p.gitOut(nil, "show", "--name-only", "--format=", "HEAD"); !strings.Contains(files, "thing.py") {
+		t.Errorf("the commit does not carry the work:\n%s", files)
+	}
+}
+
+// The boxes are the operator's, because no order of work can be recovered from a tree.
+// The refusal hands back the one mechanical half there is: what the tree holds.
+func TestHarvestRefusesToInventTheBoxes(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.write("thing.py", "print('hi')\n")
+
+	p.run("harvest", "Shorten URLs").fails(2).errHas("--box", "thing.py")
+
+	if p.exists("docs/features/0001-shorten-urls.md") {
+		t.Error("a refused harvest wrote a doc anyway")
+	}
+}
+
+// The spike that did not survive. Throwing work away has to stay cheap, so this takes no
+// id and writes no doc — the entry is the one durable thing it leaves behind.
+func TestHarvestNothingTakesNoID(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.write("thing.py", "print('hi')\n")
+
+	p.run("harvest", "--nothing", "a bloom filter costs more than the lookups it saves").
+		ok().has("appended", "no id taken")
+
+	backlog := p.read("docs/features/BACKLOG.md")
+	if !strings.Contains(backlog, "a bloom filter costs more than the lookups it saves") {
+		t.Errorf("the entry did not reach the backlog:\n%s", backlog)
+	}
+	if docs, _ := filepath.Glob(p.path("docs/features/0*.md")); len(docs) != 0 {
+		t.Errorf("--nothing wrote %v, and it takes no id", docs)
+	}
+	// The discarded work stays discarded: only the entry is committed.
+	if out := p.gitOut(nil, "status", "--porcelain"); !strings.Contains(out, "thing.py") {
+		t.Errorf("--nothing committed the work it was throwing away:\n%s", out)
+	}
+
+	// A title or a box contradicts it: those are the shape for work that survived.
+	p.run("harvest", "--nothing", "something", "A title").fails(2).errHas("no title")
+}
+
+// The handoff: a spike ends where the operator knows what is worth doing next and the
+// fleet has nothing to claim, so harvest names the parked entries there. Named, not
+// promoted — which of them is worth building is not the kit's decision.
+func TestHarvestOffersTheParkedEntries(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.write("docs/features/BACKLOG.md", "# Backlog\n\n"+
+		"- **A bloom filter in front of the store** — one line. Promote when: reads cost.\n\n"+
+		"## Batching the writes\n\nProse about it.\n")
+	p.write("thing.py", "print('hi')\n")
+
+	r := p.run("harvest", "Shorten URLs", "--box", "a long URL comes back short").ok()
+	r.has("2 entries", `kit new "A bloom filter in front of the store"`,
+		`kit new "Batching the writes"`)
+
+	// Offered, not taken: nothing was drafted for them.
+	if docs, _ := filepath.Glob(p.path("docs/features/0002-*.md")); len(docs) != 0 {
+		t.Errorf("harvest promoted %v on the operator's behalf", docs)
+	}
+}

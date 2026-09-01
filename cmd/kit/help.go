@@ -17,6 +17,7 @@ const overview = `kit — bootstrap projects and run them with agents.
 Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
+  kit harvest <title...> --box "..."  give finished work a doc and a commit
   kit claim <id>                      take a feature: push the branch, win or lose
   kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
@@ -39,6 +40,12 @@ How it works:
   Three statuses, and only "kit ship", "kit drop" and "kit reset" write them. Work
   starts when a claim branch is pushed, so there is no status for it and nothing to
   set by hand.
+
+  Two routes in. Plan first — draft a round, land it, claim from it — which is what
+  agents that never speak to each other need, because "needs:" is what orders them.
+  Or work first on a branch that claims nothing, and run "kit harvest" at the end: it
+  takes an id, writes the doc and commits the tree in one commit. Both end in a Draft
+  somebody else reviews.
 
   "kit next" and "kit audit" read the project you are in. For several projects:
     for d in ~/code/*; do (cd $d && kit next); done
@@ -136,6 +143,37 @@ something to deploy.
   kit init ~/code/github.com/you/thing --stack go
   kit init . --stack go --forge gitlab
   kit init .                     # fill in what is missing here`,
+
+	"harvest": `kit harvest <title...> --box "<outcome>" [--box "<outcome>"]
+
+Give finished work a doc and a commit. This is the route for a session that explored
+first, on a branch that is neither a claim nor a plan round — the board does not route
+one, and "kit next" says so rather than refusing you.
+
+Harvest does not read history. It takes the next id, writes the doc, and commits the
+whole working tree with it, so a session that produced two thousand lines and no commits
+still becomes one reviewable change. That commit is also what leaves the clean working
+tree "kit ship" refuses to run without.
+
+Every box it writes is ticked: work that is finished has no unticked box to offer. The
+boxes are yours to name, because no order of work can be recovered from a tree and a
+commit message is not an outcome. Run it without --box and the refusal lists what the
+tree holds, which is the raw material for naming them.
+
+## Problem, ## Design and ## Log arrive as questions. They carry what the code cannot
+say, and the kit will not invent them: "kit audit --strict" refuses the doc until they
+are answered. The status is Draft, so the work still ends in a pull request somebody
+else merges.
+
+Refused on the trunk, where committing the whole tree is a change nobody could review,
+and on a branch whose name cites a four-digit id, which would claim that feature.
+
+--nothing is the spike that did not survive: it appends one BACKLOG.md entry, commits
+that file alone, and takes no id. Trying something and throwing it away has to stay as
+cheap as it is, and the entry is the one durable thing it leaves.
+
+  kit harvest "Shorten URLs" --box "a long URL comes back short"
+  kit harvest --nothing "a bloom filter costs more than the lookups it saves"`,
 
 	"new": `kit new <title...>
 
