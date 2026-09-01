@@ -79,6 +79,11 @@ type Plan struct {
 	Branch   string `json:"branch,omitempty"`
 	Claiming string `json:"claiming,omitempty"`
 
+	// Spike is the branch this checkout is on when the board is not routing it: neither
+	// a claim nor a plan round, which is what work that started without a doc looks like.
+	// Empty on the trunk and on a detached HEAD.
+	Spike string `json:"spike,omitempty"`
+
 	// RemoteUnanswered says the remote was asked and did not answer, so the board is a
 	// weaker statement than it looks: claims come from the last fetch, and anything
 	// awaiting review is missing rather than absent.
@@ -167,6 +172,7 @@ func NewPlan() Plan {
 func Survey(r *Repo) Plan {
 	plan := NewPlan()
 	plan.Branch = r.HeadBranch()
+	plan.Spike = spikeBranch(r, plan.Branch)
 	// Before the board, because the board is what this takes entries out of. A feature
 	// its builder has shipped is finished work waiting for a merge, not a claim somebody
 	// is holding, and it was reported as both — one feature under `taken` and again under
@@ -382,6 +388,14 @@ func guidanceFor(r *Repo, plan Plan) string {
 		return "work the box named under yours, in this checkout. It is already claimed by you."
 	case len(plan.Ready) > 0:
 		return "take one with kit claim <id>, then work it in the worktree it prints."
+	// Before every arm below, all of which say some version of "there is nothing for you
+	// here". On a spike that answers a question nobody asked: the board routes claims and
+	// plan rounds, this is neither, and it has nothing to refuse.
+	case plan.Spike != "":
+		return "this checkout is on " + plan.Spike + ", which claims no feature and is not " +
+			"a plan round, so the board is not routing it. Nothing here is refusing you: " +
+			"work as you are, and what survives has to reach the board before anyone else " +
+			"can build on it."
 	case !plan.Empty() && len(plan.AwaitingReview) > 0:
 		return "nothing is free to build: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
@@ -422,6 +436,22 @@ func guidanceFor(r *Repo, plan Plan) string {
 // reviewing is the instruction when what is left is not building. Telling an agent to
 // stop while work sits pushed and unmerged is the vacuum 0013 exists to close: the board
 // had an answer and did not say it.
+// spikeBranch names the branch when this checkout is on one the board does not route:
+// not the trunk, not a plan round, and citing no feature id anywhere in its name.
+//
+// Any id counts as a claim, which is the conservative direction. A mistyped claim is
+// reported by `orphan-claim` rather than quietly becoming a spike, and nothing the board
+// does route is ever described as work it is not.
+func spikeBranch(r *Repo, branch string) string {
+	if branch == "" || branch == r.Trunk() || strings.HasPrefix(branch, "plan/") {
+		return ""
+	}
+	if idListRe.FindString(branch) != "" {
+		return ""
+	}
+	return branch
+}
+
 func reviewing(n int) string {
 	what := fmt.Sprintf("%d features are", n)
 	if n == 1 {

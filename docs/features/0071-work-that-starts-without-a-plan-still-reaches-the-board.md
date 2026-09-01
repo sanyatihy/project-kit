@@ -82,7 +82,7 @@ question by name, so it is also the doc that says this comes after.
 
 ## Tasks
 
-- [ ] `kit next` recognises a branch that is neither a claim nor a plan, names it, and does
+- [x] `kit next` recognises a branch that is neither a claim nor a plan, names it, and does
       not print a refusal — with a conformance case that the output contains no
       `Stopping here is the right outcome`
 - [ ] `kit harvest` takes the next id, writes a doc whose `## Tasks` are ticked and whose
