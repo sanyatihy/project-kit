@@ -418,8 +418,27 @@ func runHarvest(args []string) int {
 	}
 	fmt.Printf("\n  answer ## Problem, ## Design and ## Log — they are the part the code\n")
 	fmt.Printf("  cannot say, and audit --strict refuses the doc until they are written.\n")
-	fmt.Printf("  then: kit ship %s, push the branch, and open the pull request.\n\n",
+	fmt.Printf("  then: kit ship %s, push the branch, and open the pull request.\n",
 		harvested.ID)
+
+	// The handoff. This is the moment the operator knows what is worth doing next and the
+	// fleet has nothing to claim, so the parked entries are named here rather than waiting
+	// for somebody to go and read the file. Named and not promoted: which of them is worth
+	// building is a product decision, and the kit does not make one.
+	if parked := kit.BacklogEntries(repo); len(parked) > 0 {
+		// Not plural(), which pluralises by adding an s: "2 entrys".
+		noun := "entries"
+		if len(parked) == 1 {
+			noun = "entry"
+		}
+		fmt.Printf("\n  %d %s parked in %s. Promote the ones whose trigger has\n",
+			len(parked), noun, repo.Rel(repo.Backlog))
+		fmt.Printf("  fired, so the fleet has a round to claim when this one is merged:\n")
+		for _, entry := range parked {
+			fmt.Printf("    kit new %q\n", entry)
+		}
+	}
+	fmt.Println()
 	return 0
 }
 

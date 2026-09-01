@@ -202,6 +202,34 @@ func HarvestNothing(r *Repo, what string, today time.Time) (*Harvested, error) {
 	return res, nil
 }
 
+// BacklogEntries names what docs/features/BACKLOG.md is holding, in file order.
+//
+// Both shapes the kit has written are read: the template's bullet, `- **Title** — …`, and
+// the `## Title` section its own backlog grew into. Neither is wrong and a project may
+// hold both, so this reads what is there rather than deciding which one it should be.
+func BacklogEntries(r *Repo) []string {
+	if r.Backlog == "" {
+		return nil
+	}
+	raw, err := os.ReadFile(r.Backlog)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, line := range strings.Split(Normalise(string(raw)), "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "## "):
+			out = append(out, strings.TrimSpace(strings.TrimPrefix(line, "## ")))
+		case strings.HasPrefix(line, "- **"):
+			if rest := line[4:]; strings.Contains(rest, "**") {
+				out = append(out, strings.TrimSpace(rest[:strings.Index(rest, "**")]))
+			}
+		}
+	}
+	return out
+}
+
 // describeFiles is the working tree as raw material: the paths, or how many when there are
 // more than a screen's worth.
 func describeFiles(files []string) string {

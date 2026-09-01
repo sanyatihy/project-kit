@@ -89,7 +89,7 @@ question by name, so it is also the doc that says this comes after.
       `## Problem`, `## Design` and `## Log` are the questions to answer, and commits the
       working tree with it — with a conformance case that runs on a repo with no commits
 - [x] `kit harvest --nothing "<what it showed>"` appends a BACKLOG entry and reserves no id
-- [ ] `kit harvest` offers the BACKLOG entries as drafts, so the round the fleet claims
+- [x] `kit harvest` offers the BACKLOG entries as drafts, so the round the fleet claims
       comes out of the spike that ended
 - [ ] the protocol gains the second route, `kit help` carries it, and this project's
       `AGENTS.md` is regenerated in the same commit as the template
@@ -122,3 +122,6 @@ question by name, so it is also the doc that says this comes after.
   working tree, and on the trunk that is the one commit nobody could review. The refusal is
   skipped where there is no history: `Trunk` falls back to whatever HEAD names, and a
   repository with no commits is the state this command exists for.
+- 2026-08-31 — "offers as drafts" is read as naming them with the command that drafts each,
+  not as writing the drafts. Which parked entry is worth building is a product decision,
+  and the rule against making one on the human's behalf outranks the convenience.
