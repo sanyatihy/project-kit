@@ -331,6 +331,12 @@ Draft -> Shipped     (exit: Dropped)
 - **`--json` is a contract and its shape is pinned.** The board's four groups are `[]` when
   empty, `moved` is absent rather than a year-1 timestamp — `omitempty` does nothing for a
   struct — and a directory nothing surveyed reports through `error` at exit 2.
+- **A spike is a branch the board does not route, and the id is taken at harvest.** Not the
+  trunk, not `plan/`, and citing no four-digit id anywhere in its name — any id counts as a
+  claim, so a mistyped one is reported by `orphan-claim` rather than becoming a spike.
+  Nothing reserves a number while the work is exploratory, so a spike that dies leaks none;
+  `kit harvest` takes one, writes the doc and commits the whole working tree with it,
+  because a session that explored leaves a tree rather than a log.
 - **A won claim creates the worktree at `.worktrees/<branch>`, and `release` removes it.**
   The parent stays a list of repositories, and a dot directory is skipped by ripgrep and the
   Go toolchain on the name alone. The path is absolute, anchored at the main worktree, so it

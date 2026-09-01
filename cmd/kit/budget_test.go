@@ -148,7 +148,9 @@ const (
 	// 427 with the second stack, which landed beside it: what a stack declares is the fact
 	// that stops the next one costing a condition in Init, and the package name is why it
 	// is not one line.
-	techBudget = 427
+	// 433 with the second route: what makes a branch a spike, and when the id is taken,
+	// are the two facts an agent cannot recover from a board that says nothing about it.
+	techBudget = 433
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

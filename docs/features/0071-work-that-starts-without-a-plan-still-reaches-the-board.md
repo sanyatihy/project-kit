@@ -93,7 +93,7 @@ question by name, so it is also the doc that says this comes after.
       comes out of the spike that ended
 - [x] the protocol gains the second route, `kit help` carries it, and this project's
       `AGENTS.md` is regenerated in the same commit as the template
-- [ ] `docs/TECH.md` says a spike is a branch the board does not route, and that an id is
+- [x] `docs/TECH.md` says a spike is a branch the board does not route, and that an id is
       taken at harvest
 
 ## Open questions
