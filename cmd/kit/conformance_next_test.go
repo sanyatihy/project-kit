@@ -697,6 +697,9 @@ func TestNextNamesASpikeRatherThanRefusingIt(t *testing.T) {
 	if strings.Contains(r.Stdout, "Stopping here is the right outcome") {
 		t.Errorf("the board refused a branch it does not route:\n%s", r.Stdout)
 	}
+	// The command under the guidance is the one that ends a spike, not the one that
+	// starts the route the operator did not take.
+	r.has("kit harvest").lacks(`kit new "<what the feature does>"`)
 
 	// The conservative direction: a branch citing an id is a claim however it is spelled,
 	// so a mistyped one is reported by orphan-claim rather than becoming a spike.

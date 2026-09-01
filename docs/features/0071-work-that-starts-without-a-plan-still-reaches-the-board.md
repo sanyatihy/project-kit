@@ -95,6 +95,8 @@ question by name, so it is also the doc that says this comes after.
       `AGENTS.md` is regenerated in the same commit as the template
 - [x] `docs/TECH.md` says a spike is a branch the board does not route, and that an id is
       taken at harvest
+- [x] the command `kit next` prints under the spike guidance is `kit harvest`, not
+      `kit new`
 
 ## Open questions
 
@@ -125,3 +127,7 @@ question by name, so it is also the doc that says this comes after.
 - 2026-08-31 — "offers as drafts" is read as naming them with the command that drafts each,
   not as writing the drafts. Which parked entry is worth building is a product decision,
   and the rule against making one on the human's behalf outranks the convenience.
+- 2026-08-31 — a seventh box, found by running the route by hand rather than by a test: the
+  board printed `kit new` under the spike guidance, which names the route the operator did
+  not take. Box 1 was satisfied — no refusal was printed — and the command beside it was
+  still wrong.

@@ -871,7 +871,13 @@ func printPlan(plan kit.Plan, color bool) {
 		// guidance says what to do; this is the thing to run. Not while something is
 		// awaiting review: there the guidance says merging is the work, and a second
 		// command under it is the page giving two answers.
-		if plan.Empty() && len(plan.AwaitingReview) == 0 {
+		switch {
+		// Mid-spike the command to run is the one that ends it. `kit new` here names the
+		// route the operator did not take, which is the board printing a step for
+		// somebody else.
+		case plan.Spike != "":
+			fmt.Printf("    kit harvest \"<what the work delivered>\" --box \"<outcome>\"\n")
+		case plan.Empty() && len(plan.AwaitingReview) == 0:
 			fmt.Printf("    kit new \"<what the feature does>\"\n")
 		}
 	}
