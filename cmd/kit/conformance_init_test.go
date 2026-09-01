@@ -310,6 +310,97 @@ func TestInitStackGoScaffoldsTheCodeLayout(t *testing.T) {
 	}
 }
 
+func TestInitStackPythonScaffoldsTheCodeLayout(t *testing.T) {
+	t.Parallel()
+	p := newProject(t)
+	p.run("init", "widget", "--stack", "python").ok()
+
+	for _, want := range []string{
+		"widget/Makefile", "widget/.gitignore", "widget/pyproject.toml", "widget/README.md",
+		"widget/src/widget/__init__.py", "widget/src/widget/__main__.py", "widget/tests/.gitkeep",
+	} {
+		if !p.exists(want) {
+			t.Errorf("--stack python did not write %s", want)
+		}
+	}
+
+	// The keep directory belongs to the stack that asked for it. Go's is internal/, and a
+	// Python project getting one was the assumption `Init` used to carry.
+	if p.exists("widget/internal/.gitkeep") {
+		t.Error("--stack python wrote internal/.gitkeep, which is the go stack's")
+	}
+
+	pyproject := p.read("widget/pyproject.toml")
+	for _, want := range []string{"requires-python", "strict = true", "-W error"} {
+		if !strings.Contains(pyproject, want) {
+			t.Errorf("pyproject.toml does not carry %q:\n%s", want, pyproject)
+		}
+	}
+	if make := p.read("widget/Makefile"); !strings.Contains(make, "check: tools fmt-check lint type test") {
+		t.Errorf("make check is not the same gate:\n%s", make)
+	}
+
+	for _, unwanted := range []string{"widget/terraform", "widget/Dockerfile", "widget/compose.yaml"} {
+		if p.exists(unwanted) {
+			t.Errorf("--stack python scaffolded %s, which is deliberately not generated", unwanted)
+		}
+	}
+}
+
+// A directory name is not an import name: `url-shortener` holds `url_shortener`, and a
+// package directory named after the repository would not import at all.
+func TestInitStackPythonNamesAnImportablePackage(t *testing.T) {
+	t.Parallel()
+	p := newProject(t)
+	p.run("init", "url-shortener", "--stack", "python").ok()
+
+	if !p.exists("url-shortener/src/url_shortener/__main__.py") {
+		t.Error("the package directory is not an importable name")
+	}
+	if got := p.read("url-shortener/pyproject.toml"); !strings.Contains(got, "src/url_shortener") {
+		t.Errorf("pyproject.toml does not point at the package directory:\n%s", got)
+	}
+}
+
+func TestInitStackPythonDoesNotAddASecondEntryPoint(t *testing.T) {
+	t.Parallel()
+	// The same guarantee the go stack has, read through the globs the stack declares
+	// rather than through a filename in Init.
+	p := newProject(t)
+	p.write("src/thing/__main__.py", "raise SystemExit(0)\n")
+	p.run("init", "--stack", "python").ok().has("already has an entry point")
+	if p.read("src/thing/__main__.py") == "" {
+		t.Error("the existing entry point was emptied")
+	}
+}
+
+func TestInitStackPythonWritesOnePipelinePerForge(t *testing.T) {
+	t.Parallel()
+	gh := newProject(t)
+	gh.run("init", "--stack", "python", "--forge", "github").ok()
+	if !gh.exists(".github/workflows/check.yml") || gh.exists(".gitlab-ci.yml") {
+		t.Error("--forge github did not write exactly the GitHub workflow")
+	}
+	if got := gh.read(".github/workflows/check.yml"); !strings.Contains(got, "make check") {
+		t.Errorf("the workflow does not run the project's own gate:\n%s", got)
+	}
+
+	gl := newProject(t)
+	gl.run("init", "--stack", "python", "--forge", "gitlab").ok()
+	if !gl.exists(".gitlab-ci.yml") || gl.exists(".github/workflows/check.yml") {
+		t.Error("--forge gitlab did not write exactly the GitLab pipeline")
+	}
+
+	// A missing pipeline is visible and one for the wrong forge is not, so nothing is
+	// written when nothing says which forge this is — and the run says so.
+	none := newProject(t)
+	r := none.run("init", "--stack", "python").ok()
+	if none.exists(".github/workflows/check.yml") || none.exists(".gitlab-ci.yml") {
+		t.Error("guessed a forge when nothing named one")
+	}
+	r.has("no CI file")
+}
+
 func TestInitStackGoInfersTheModulePathFromDisk(t *testing.T) {
 	t.Parallel()
 	p := newProject(t)

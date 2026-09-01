@@ -160,6 +160,6 @@ before claiming either: give one doc a free id, rename its file, and rename its 
 
 These rules are the judgement no refusal can make. Everything else the kit knows, it
 prints: `kit help checks` for what `audit` reports, `kit help template` for the doc format,
-`kit help backlog` for what a deferred entry looks like, and **`kit help go-checklist` for
-the engineering practice a Go project is held to** — read that before writing code, not
-after.
+`kit help backlog` for what a deferred entry looks like, and **`kit help go-checklist` or
+`kit help python-checklist` for the practice this project's language is held to** — read
+that before writing code, not after.

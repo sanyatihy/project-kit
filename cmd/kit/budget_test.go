@@ -52,7 +52,16 @@ const (
 	// 193 since 0060: the inbox and feature-doc topics lost the lines describing checks
 	// that no longer exist, and the ceiling is retaken against the longest topic left.
 	// Headroom nobody has to justify spending is not a ceiling.
-	topicBudget = 193
+	// 114 once the checklists took a ceiling of their own: 193 was go-checklist's number,
+	// and with it out of this pool the longest topic left is the protocol.
+	topicBudget = 114
+
+	// The checklists are the standing engineering guidance a project is held to, read once
+	// per language rather than per session, and their substance is the whole point. The
+	// number is Python's, which is longer than Go's because Python's standard library
+	// leaves more to decide — validation, packaging, an encoding on every read, a start
+	// method — and because it carries a fifth tier for work that transforms data.
+	checklistBudget = 286
 
 	// The two documents this repo itself reads every session: the protocol above, and the
 	// as-built doc before any change to the kit. 0031 cut TECH from 546 lines to 247 and
@@ -133,7 +142,10 @@ const (
 	// of the change, and a definition that lists none of them reads as the old one.
 	// 424 when claim took the worktree over: the create, what it does with a path that is
 	// already one, and release removing it are three facts and one line each.
-	techBudget = 424
+	// 427 with the second stack, which landed beside it: what a stack declares is the fact
+	// that stops the next one costing a condition in Init, and the package name is why it
+	// is not one line.
+	techBudget = 427
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
@@ -211,6 +223,10 @@ func TestEveryTopicStaysUnderItsCeiling(t *testing.T) {
 			t.Errorf("reading topic %q (%s): %v", name, path, err)
 			continue
 		}
-		overBudget(t, "topic "+name+" ("+path+")", string(raw), topicBudget)
+		budget := topicBudget
+		if strings.HasSuffix(name, "-checklist") {
+			budget = checklistBudget
+		}
+		overBudget(t, "topic "+name+" ("+path+")", string(raw), budget)
 	}
 }

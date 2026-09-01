@@ -1,9 +1,9 @@
 ---
 id: 0072
 title: Python projects get the scaffold and standing guidance Go has
-status: Draft
+status: Shipped
 created: 2026-08-30
-shipped:
+shipped: 2026-08-31
 needs:
 ---
 
@@ -103,21 +103,21 @@ a conflict a reviewer reads.
 
 ## Tasks
 
-- [ ] `Init` takes the entry-point glob and the keep-directory from the stack's own layout,
+- [x] `Init` takes the entry-point glob and the keep-directory from the stack's own layout,
       so no Go filename appears in it — with the conformance cases `--stack go` already has
       still passing
-- [ ] `templates/python-checklist.md` carries the corrected list: the audit refusal
+- [x] `templates/python-checklist.md` carries the corrected list: the audit refusal
       restored, the six omissions added, the five wrong claims fixed, `Enum` and SQL
       binding stated once, and every library it names sitting in one of the four tiers
-- [ ] `kit help python-checklist` prints it, and the protocol and the help overview send an
+- [x] `kit help python-checklist` prints it, and the protocol and the help overview send an
       agent to the checklist for its language — this project's `AGENTS.md` regenerated in
       the same commit as the template
-- [ ] `kit init --stack python` scaffolds `pyproject.toml`, a Makefile whose `check` is the
-      same gate, `src/{{name}}/` with `__init__.py` and `__main__.py`, a README and the
+- [x] `kit init --stack python` scaffolds `pyproject.toml`, a Makefile whose `check` is the
+      same gate, `src/{{pkg}}/` with `__init__.py` and `__main__.py`, a README and the
       stack's `.gitignore`
-- [ ] `kit init --stack python --forge github` and `--forge gitlab` each write that forge's
+- [x] `kit init --stack python --forge github` and `--forge gitlab` each write that forge's
       pipeline, and an unknown forge gets none and is told so
-- [ ] `docs/TECH.md` says what a stack declares, in one line
+- [x] `docs/TECH.md` says what a stack declares, in one line
 
 ## Open questions
 
@@ -140,3 +140,10 @@ a conflict a reviewer reads.
   `templates/AGENTS-section.md`, and the test is whether the work could start rather than
   what it touches. Three rounds queued behind one prose file cost more than the conflict
   the queue avoided.
+- 2026-08-31 — the checklists take a ceiling of their own, because Python's is 286 lines
+  against Go's 193 and one number for every help topic would have handed the other six 93
+  lines of headroom nobody justified. `Typing` and `Data modelling` merged, which is where
+  `Enum` was stated twice.
+- 2026-08-31 — the package directory is `{{pkg}}` rather than `{{name}}`, which the box
+  said. A repository called `url-shortener` cannot hold a package of that name, so the box
+  as written scaffolded something no import statement could reach.
