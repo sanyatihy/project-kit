@@ -155,6 +155,53 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 	return res, nil
 }
 
+// HarvestNothing records what a spike showed and takes no id.
+//
+// Trying something and discarding it has to stay as cheap as it is, or it stops happening.
+// The entry is the one durable output, so it is committed on its own: the work it came
+// from is being thrown away, and committing that too would defeat the point.
+func HarvestNothing(r *Repo, what string, today time.Time) (*Harvested, error) {
+	if strings.TrimSpace(what) == "" {
+		return nil, fmt.Errorf("say what the spike showed: kit harvest --nothing \"<what it showed>\"")
+	}
+	if r.Backlog == "" {
+		return nil, fmt.Errorf("no BACKLOG.md to append to — run: kit init %s", r.Root)
+	}
+	// The trigger is left open rather than guessed at. An entry the backlog cannot promote
+	// is one it deletes, and saying so beside the entry is what keeps that honest.
+	entry := fmt.Sprintf("- **%s** — from a spike, %s. Promote when: nothing yet, and this "+
+		"is deleted rather than kept if nothing ever does.\n",
+		strings.TrimSpace(what), today.UTC().Format(DateLayout))
+
+	old, err := os.ReadFile(r.Backlog)
+	if err != nil {
+		return nil, err
+	}
+	lead := ""
+	if len(old) > 0 && !strings.HasSuffix(string(old), "\n") {
+		lead = "\n"
+	}
+	f, err := os.OpenFile(r.Backlog, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return nil, err
+	}
+	_, err = f.WriteString(lead + entry)
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	res := &Harvested{Path: r.Backlog, Commit: "Backlog what a spike showed"}
+	if err := r.commitPaths(res.Commit, r.Backlog); err != nil {
+		return nil, fmt.Errorf("%s carries the entry, and committing it failed:\n%v\n"+
+			"commit that file yourself — it is the only thing the spike leaves behind",
+			r.Rel(r.Backlog), err)
+	}
+	return res, nil
+}
+
 // describeFiles is the working tree as raw material: the paths, or how many when there are
 // more than a screen's worth.
 func describeFiles(files []string) string {

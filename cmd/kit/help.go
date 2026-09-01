@@ -162,7 +162,12 @@ else merges.
 Refused on the trunk, where committing the whole tree is a change nobody could review,
 and on a branch whose name cites a four-digit id, which would claim that feature.
 
-  kit harvest "Shorten URLs" --box "a long URL comes back short"`,
+--nothing is the spike that did not survive: it appends one BACKLOG.md entry, commits
+that file alone, and takes no id. Trying something and throwing it away has to stay as
+cheap as it is, and the entry is the one durable thing it leaves.
+
+  kit harvest "Shorten URLs" --box "a long URL comes back short"
+  kit harvest --nothing "a bloom filter costs more than the lookups it saves"`,
 
 	"new": `kit new <title...>
 

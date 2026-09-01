@@ -88,7 +88,7 @@ question by name, so it is also the doc that says this comes after.
 - [x] `kit harvest` takes the next id, writes a doc whose `## Tasks` are ticked and whose
       `## Problem`, `## Design` and `## Log` are the questions to answer, and commits the
       working tree with it — with a conformance case that runs on a repo with no commits
-- [ ] `kit harvest --nothing "<what it showed>"` appends a BACKLOG entry and reserves no id
+- [x] `kit harvest --nothing "<what it showed>"` appends a BACKLOG entry and reserves no id
 - [ ] `kit harvest` offers the BACKLOG entries as drafts, so the round the fleet claims
       comes out of the spike that ended
 - [ ] the protocol gains the second route, `kit help` carries it, and this project's

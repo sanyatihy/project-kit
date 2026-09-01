@@ -421,3 +421,29 @@ func TestHarvestRefusesToInventTheBoxes(t *testing.T) {
 		t.Error("a refused harvest wrote a doc anyway")
 	}
 }
+
+// The spike that did not survive. Throwing work away has to stay cheap, so this takes no
+// id and writes no doc — the entry is the one durable thing it leaves behind.
+func TestHarvestNothingTakesNoID(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.write("thing.py", "print('hi')\n")
+
+	p.run("harvest", "--nothing", "a bloom filter costs more than the lookups it saves").
+		ok().has("appended", "no id taken")
+
+	backlog := p.read("docs/features/BACKLOG.md")
+	if !strings.Contains(backlog, "a bloom filter costs more than the lookups it saves") {
+		t.Errorf("the entry did not reach the backlog:\n%s", backlog)
+	}
+	if docs, _ := filepath.Glob(p.path("docs/features/0*.md")); len(docs) != 0 {
+		t.Errorf("--nothing wrote %v, and it takes no id", docs)
+	}
+	// The discarded work stays discarded: only the entry is committed.
+	if out := p.gitOut(nil, "status", "--porcelain"); !strings.Contains(out, "thing.py") {
+		t.Errorf("--nothing committed the work it was throwing away:\n%s", out)
+	}
+
+	// A title or a box contradicts it: those are the shape for work that survived.
+	p.run("harvest", "--nothing", "something", "A title").fails(2).errHas("no title")
+}

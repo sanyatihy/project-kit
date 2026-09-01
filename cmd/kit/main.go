@@ -376,7 +376,18 @@ func runHarvest(args []string) int {
 	fs := newFlagSet("harvest", args)
 	var boxes boxList
 	fs.Var(&boxes, "box", "an outcome this work delivered; repeat once per box")
+	nothing := fs.String("nothing", "", "the spike did not survive: record what it "+
+		"showed as a BACKLOG.md entry, and take no id")
 	title := strings.TrimSpace(strings.Join(parseArgs(fs, args), " "))
+
+	if *nothing != "" {
+		if title != "" || len(boxes) > 0 {
+			fmt.Fprintln(os.Stderr, "kit harvest: --nothing is the spike that did not "+
+				"survive, so it takes no title and no --box")
+			return 2
+		}
+		return harvestNothing(*nothing)
+	}
 	if title == "" {
 		fmt.Fprintln(os.Stderr, "kit harvest: give the work a title, e.g."+
 			` kit harvest "Shorten URLs" --box "a long URL comes back short"`)
@@ -409,6 +420,26 @@ func runHarvest(args []string) int {
 	fmt.Printf("  cannot say, and audit --strict refuses the doc until they are written.\n")
 	fmt.Printf("  then: kit ship %s, push the branch, and open the pull request.\n\n",
 		harvested.ID)
+	return 0
+}
+
+// harvestNothing is the --nothing arm: one entry, no id, no doc.
+func harvestNothing(what string) int {
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit harvest: %v\n", err)
+		return 2
+	}
+	res, err := kit.HarvestNothing(repo, what, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit harvest: %v\n", err)
+		return 2
+	}
+	fmt.Printf("\n  appended  %s — no id taken, so nothing is reserved for work\n",
+		repo.Rel(res.Path))
+	fmt.Printf("  committed %s\n", res.Commit)
+	fmt.Printf("\n  the entry is what the spike leaves behind. Name the trigger that\n")
+	fmt.Printf("  would promote it, or delete it — an option nobody will take is not one.\n\n")
 	return 0
 }
 
