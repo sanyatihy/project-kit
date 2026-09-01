@@ -453,6 +453,16 @@ func (r *Repo) commitPaths(message string, paths ...string) error {
 	return err
 }
 
+// commitAll stages the whole working tree and commits it. `harvest` is the only caller:
+// every other command commits the paths it wrote, and this one commits work it did not do.
+func (r *Repo) commitAll(message string) error {
+	if _, err := r.gitRun("add", "-A"); err != nil {
+		return err
+	}
+	_, err := r.gitRun("commit", "--quiet", "-m", message)
+	return err
+}
+
 // reaches reports whether a revision has landed on another — whether the branch's work
 // is already contained in the trunk.
 func (r *Repo) reaches(rev, trunk string) bool {

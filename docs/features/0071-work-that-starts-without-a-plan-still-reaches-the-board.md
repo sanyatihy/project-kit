@@ -85,7 +85,7 @@ question by name, so it is also the doc that says this comes after.
 - [x] `kit next` recognises a branch that is neither a claim nor a plan, names it, and does
       not print a refusal — with a conformance case that the output contains no
       `Stopping here is the right outcome`
-- [ ] `kit harvest` takes the next id, writes a doc whose `## Tasks` are ticked and whose
+- [x] `kit harvest` takes the next id, writes a doc whose `## Tasks` are ticked and whose
       `## Problem`, `## Design` and `## Log` are the questions to answer, and commits the
       working tree with it — with a conformance case that runs on a repo with no commits
 - [ ] `kit harvest --nothing "<what it showed>"` appends a BACKLOG entry and reserves no id
@@ -118,3 +118,7 @@ question by name, so it is also the doc that says this comes after.
   log, and a locked-in session has no commits to read: the project that prompted this had
   none for its whole build. Harvest makes the commit instead, which also reaches `ship`'s
   clean-tree gate. The boxes come from the operator, since a tree carries no order of work.
+- 2026-08-31 — harvest refuses on the trunk, which no box asked for. It commits the whole
+  working tree, and on the trunk that is the one commit nobody could review. The refusal is
+  skipped where there is no history: `Trunk` falls back to whatever HEAD names, and a
+  repository with no commits is the state this command exists for.

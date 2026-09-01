@@ -364,3 +364,60 @@ func TestAReservationSaysWhatItWasHandedOutFor(t *testing.T) {
 		t.Errorf("the reservation reads %q, want %q", got, want)
 	}
 }
+
+// A locked-in session leaves a working tree, not a log: the project that prompted this
+// had 2,090 lines, 82 tests and no commits at all. Harvest has to make the history rather
+// than read it, and a repository with no commits is where that is provable.
+func TestHarvestMakesTheCommitOnARepoWithNoCommits(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.write("thing.py", "print('hi')\n")
+
+	r := p.run("harvest", "Shorten URLs",
+		"--box", "a long URL comes back short",
+		"--box", "an unknown code is a 404").ok()
+	r.has("created", "committed")
+
+	// The doc, with the operator's boxes ticked and the questions left to answer.
+	doc := p.read("docs/features/0001-shorten-urls.md")
+	for _, want := range []string{
+		"status: Draft",
+		"- [x] a long URL comes back short",
+		"- [x] an unknown code is a 404",
+		"## Problem", "## Design", "## Log",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Errorf("the harvested doc does not carry %q:\n%s", want, doc)
+		}
+	}
+
+	// The commit is the point: the work and the doc arrive together, and the tree is
+	// clean afterwards, which is what `kit ship` refuses to run without.
+	if dirty := p.run("audit").out(); strings.Contains(dirty, "status-uncommitted") {
+		t.Errorf("harvest left the doc uncommitted:\n%s", dirty)
+	}
+	out := p.gitOut(nil, "status", "--porcelain")
+	if strings.TrimSpace(out) != "" {
+		t.Errorf("harvest left the tree dirty:\n%s", out)
+	}
+	if log := p.gitOut(nil, "log", "--oneline"); !strings.Contains(log, "Harvest 0001") {
+		t.Errorf("no harvest commit:\n%s", log)
+	}
+	if files := p.gitOut(nil, "show", "--name-only", "--format=", "HEAD"); !strings.Contains(files, "thing.py") {
+		t.Errorf("the commit does not carry the work:\n%s", files)
+	}
+}
+
+// The boxes are the operator's, because no order of work can be recovered from a tree.
+// The refusal hands back the one mechanical half there is: what the tree holds.
+func TestHarvestRefusesToInventTheBoxes(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.write("thing.py", "print('hi')\n")
+
+	p.run("harvest", "Shorten URLs").fails(2).errHas("--box", "thing.py")
+
+	if p.exists("docs/features/0001-shorten-urls.md") {
+		t.Error("a refused harvest wrote a doc anyway")
+	}
+}

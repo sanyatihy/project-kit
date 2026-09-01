@@ -75,6 +75,8 @@ func run() int {
 		return runInit(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
+	case "harvest":
+		return runHarvest(os.Args[2:])
 	case "claim":
 		return runClaim(os.Args[2:])
 	case "release":
@@ -361,6 +363,54 @@ func runReset(args []string) int {
 }
 
 // ---------------------------------------------------------------- claim
+
+// boxList collects a repeated --box. A slice and not a single string because the boxes
+// are a list of outcomes in the order they were done, and joining them on a separator
+// would make a box containing that separator into two.
+type boxList []string
+
+func (b *boxList) String() string     { return strings.Join(*b, ", ") }
+func (b *boxList) Set(v string) error { *b = append(*b, v); return nil }
+
+func runHarvest(args []string) int {
+	fs := newFlagSet("harvest", args)
+	var boxes boxList
+	fs.Var(&boxes, "box", "an outcome this work delivered; repeat once per box")
+	title := strings.TrimSpace(strings.Join(parseArgs(fs, args), " "))
+	if title == "" {
+		fmt.Fprintln(os.Stderr, "kit harvest: give the work a title, e.g."+
+			` kit harvest "Shorten URLs" --box "a long URL comes back short"`)
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit harvest: %v\n", err)
+		return 2
+	}
+	harvested, err := kit.Harvest(repo, title, boxes, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit harvest: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  created   %s\n", repo.Rel(harvested.Path))
+	fmt.Printf("  committed %s — the work and the doc in one commit, so a reviewer\n",
+		harvested.Commit)
+	fmt.Printf("            reads what changed beside what it was for\n")
+	if harvested.Remote != "" {
+		fmt.Printf("  reserved  %s on %s — no other agent can be handed it\n",
+			harvested.ID, harvested.Remote)
+	} else {
+		fmt.Printf("\n  no remote, so nothing reserved %s — another agent drafting off\n",
+			harvested.ID)
+		fmt.Printf("  this trunk right now can be handed the same id\n")
+	}
+	fmt.Printf("\n  answer ## Problem, ## Design and ## Log — they are the part the code\n")
+	fmt.Printf("  cannot say, and audit --strict refuses the doc until they are written.\n")
+	fmt.Printf("  then: kit ship %s, push the branch, and open the pull request.\n\n",
+		harvested.ID)
+	return 0
+}
 
 func runClaim(args []string) int {
 	fs := newFlagSet("claim", args)

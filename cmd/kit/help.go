@@ -17,6 +17,7 @@ const overview = `kit — bootstrap projects and run them with agents.
 Commands:
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
+  kit harvest <title...> --box "..."  give finished work a doc and a commit
   kit claim <id>                      take a feature: push the branch, win or lose
   kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
@@ -136,6 +137,32 @@ something to deploy.
   kit init ~/code/github.com/you/thing --stack go
   kit init . --stack go --forge gitlab
   kit init .                     # fill in what is missing here`,
+
+	"harvest": `kit harvest <title...> --box "<outcome>" [--box "<outcome>"]
+
+Give finished work a doc and a commit. This is the route for a session that explored
+first, on a branch that is neither a claim nor a plan round — the board does not route
+one, and "kit next" says so rather than refusing you.
+
+Harvest does not read history. It takes the next id, writes the doc, and commits the
+whole working tree with it, so a session that produced two thousand lines and no commits
+still becomes one reviewable change. That commit is also what leaves the clean working
+tree "kit ship" refuses to run without.
+
+Every box it writes is ticked: work that is finished has no unticked box to offer. The
+boxes are yours to name, because no order of work can be recovered from a tree and a
+commit message is not an outcome. Run it without --box and the refusal lists what the
+tree holds, which is the raw material for naming them.
+
+## Problem, ## Design and ## Log arrive as questions. They carry what the code cannot
+say, and the kit will not invent them: "kit audit --strict" refuses the doc until they
+are answered. The status is Draft, so the work still ends in a pull request somebody
+else merges.
+
+Refused on the trunk, where committing the whole tree is a change nobody could review,
+and on a branch whose name cites a four-digit id, which would claim that feature.
+
+  kit harvest "Shorten URLs" --box "a long URL comes back short"`,
 
 	"new": `kit new <title...>
 
