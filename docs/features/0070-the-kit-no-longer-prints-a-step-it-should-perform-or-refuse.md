@@ -1,9 +1,9 @@
 ---
 id: 0070
 title: The kit no longer prints a step it should perform or refuse
-status: Draft
+status: Shipped
 created: 2026-08-29
-shipped:
+shipped: 2026-08-31
 needs: 0069
 ---
 
@@ -81,18 +81,18 @@ code could start today. The protocol file cannot.
 
 ## Tasks
 
-- [ ] `kit claim` creates `.worktrees/<branch>` after a won push, prints that path, and
+- [x] `kit claim` creates `.worktrees/<branch>` after a won push, prints that path, and
       does not unclaim if the add fails — with a conformance case that the success
       output contains no `git worktree add`
-- [ ] the two `ClaimFeature` refusals that send an agent to the trunk name
+- [x] the two `ClaimFeature` refusals that send an agent to the trunk name
       `.worktrees/<trunk>`, not `../<repo>-trunk`
-- [ ] `claim`'s missing-`status:` refusal names `kit reset`, not a hand-edit
-- [ ] `kit ship` says when the trunk already contains the claim branch
-- [ ] `kit help`, the protocol, and `docs/TECH.md` say claim creates the worktree;
+- [x] `claim`'s missing-`status:` refusal names `kit reset`, not a hand-edit
+- [x] `kit ship` says when the trunk already contains the claim branch
+- [x] `kit help`, the protocol, and `docs/TECH.md` say claim creates the worktree;
       rules 9 and 10 are gone; this project's `AGENTS.md` is regenerated in the same
       commit as the template
-- [ ] `docs/features/TEMPLATE.md` is gone
-- [ ] `id-mismatch` reports a missing `id:` at HIGH, with a conformance case, and
+- [x] `docs/features/TEMPLATE.md` is gone
+- [x] `id-mismatch` reports a missing `id:` at HIGH, with a conformance case, and
       `no-status`'s fix names the file when `id:` is empty
 
 ## Open questions
@@ -110,3 +110,7 @@ code could start today. The protocol file cannot.
 - 2026-08-30 — three leftovers join the round: delete `docs/features/TEMPLATE.md`, drop
   protocol rules 9 and 10, and extend `id-mismatch` to a missing `id:`. The non-goal on
   new checks narrows to authorship and comparison-vs-dependency; a missing id is neither.
+- 2026-08-31 — `kit release` removes the worktree inside the box that made `claim` create
+  one. Every release would otherwise find the branch checked out and leave it behind, which
+  is the leftover this round exists to stop. A worktree an operator put elsewhere is still
+  theirs and is reported, not removed.

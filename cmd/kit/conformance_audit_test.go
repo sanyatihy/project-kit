@@ -874,14 +874,14 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	a, _ := twoAgents(t)
 	trunk := a.headBranch()
 	a.run("claim", "0007").ok()
-	a.git("checkout", "-q", "0007-widget")
-	a.write("thing.txt", "the work\n")
-	feature(a, "0007", "widget", "A widget", "Shipped", "- [x] Build it")
-	a.commitAll("build and ship 0007")
+	w := a.claimWorktree("0007-widget")
+	w.write("thing.txt", "the work\n")
+	feature(w, "0007", "widget", "A widget", "Shipped", "- [x] Build it")
+	w.commitAll("build and ship 0007")
 
 	// One: shipped here and pushed to its own branch.
-	a.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
-	if codes := a.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
+	w.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
+	if codes := w.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
 		t.Errorf("fired on work pushed to its own branch: %v", codes)
 	}
 
@@ -1097,6 +1097,17 @@ func TestIDMismatchFailsStrict(t *testing.T) {
 	mismatched.write("docs/features/0002-confused.md",
 		doc("0009", "Confused", "Draft", "", "- [ ] Something"))
 	mismatched.run("audit", "--strict").fails(1).has("id-mismatch")
+
+	// No id: at all is the same defect and the same code: the id every command takes
+	// finds nothing. `no-status` fires beside it and names the file, because the fix it
+	// prints otherwise is `kit reset  "<why>"`, which nobody can type.
+	missing := cleanProject(t)
+	missing.write("docs/features/0002-nameless.md",
+		"---\ntitle: Nameless\n---\n\n"+
+			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] y\n\n## Log\n- 2026-01-01 — x.\n")
+	missing.run("audit", "--strict").fails(1).
+		has("id-mismatch", "no id:", "0002-nameless.md").
+		lacks(`kit reset  "<why>"`)
 
 	// The quiet half: agreeing is the normal case and must not fail anything.
 	agreed := cleanProject(t)

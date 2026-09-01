@@ -40,41 +40,36 @@ Do this only when you are asked to plan.
 
 ### Taking work
 
-8. **Take a feature with `kit claim <id>`.** It pushes the branch that claims it. Read the
-   exit code:
-   - **0** — the feature is yours. Work it.
+8. **Take a feature with `kit claim <id>`.** It pushes the branch that claims it and makes
+   the worktree to work it in. Read the exit code:
+   - **0** — the feature is yours. Go to the worktree it names and work there.
    - **1** — it is not yours. Run `kit next` and take a different feature. Do not retry.
    - **2** — the command could not run. Read the error, fix it, claim again.
-9. **A feature `kit next` lists as `taken` is not yours.** Do not work it, do not tick a
-   box in it, do not help with it. Two agents in one feature produce one branch nobody
-   can review.
-10. **Work one feature per checkout, in the worktree `kit claim` prints.** If `kit next`
-    lists features under **free, but not in this checkout**, do not start them here.
 
 ### Doing the work
 
-11. **Read the feature doc for the design, and nowhere else.** It is the one home for it.
-12. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the order
+9. **Read the feature doc for the design, and nowhere else.** It is the one home for it.
+10. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the order
     of work.
-13. **Tick the box in the commit that implements it.** One box, one commit. Nobody re-reads
+11. **Tick the box in the commit that implements it.** One box, one commit. Nobody re-reads
     the branch to check, so the commit is what has to be honest.
-14. **Discovered work becomes a new box, a new doc, or a `BACKLOG.md` line — never a `TODO`
+12. **Discovered work becomes a new box, a new doc, or a `BACKLOG.md` line — never a `TODO`
     in the code.** Append it, unless it blocks the boxes below.
-15. **A box that turns out wrong may be rewritten, split or deleted.** Own commit, reason in
+13. **A box that turns out wrong may be rewritten, split or deleted.** Own commit, reason in
     `## Log`. Never silently drop one you could not finish. A whole feature that should not
     be built is `kit drop <id> "<why>"`.
-16. **Stopping mid-feature is `kit release <id>`.** It refuses while the branch carries
+14. **Stopping mid-feature is `kit release <id>`.** It refuses while the branch carries
     work: that is a pause, so push the branch and open the pull request unfinished instead.
-17. **Never put a real secret in a doc.** Name the variable and where the value lives, never
+15. **Never put a real secret in a doc.** Name the variable and where the value lives, never
     the value. A pushed commit cannot be unpublished.
-18. **Never edit a doc whose status is `Shipped`.** It is frozen history.
+16. **Never edit a doc whose status is `Shipped`.** It is frozen history.
 
 ### Finishing
 
-19. **When the last box is ticked, run this project's own gate, then `kit audit --strict`,
+17. **When the last box is ticked, run this project's own gate, then `kit audit --strict`,
     then `kit ship <id>`.** In that order: `ship` freezes the doc, so anything the other
     two would have made you change has to be found before it.
-20. **Push the branch, open the pull request, and stop. You never merge your own work.**
+18. **Push the branch, open the pull request, and stop. You never merge your own work.**
     Opening a pull request is not approving it. With no remote, say so and leave the work
     on the branch.
 

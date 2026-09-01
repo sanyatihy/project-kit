@@ -6,7 +6,6 @@ package main
 
 import (
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -25,11 +24,14 @@ func hasRemoteBranch(t *testing.T, p *project, branch string) bool {
 
 // workOn puts a commit on the claim branch, which is what turns a claim nobody has
 // built on into work that releasing would destroy.
-func workOn(t *testing.T, p *project, branch string) {
+// workOn puts a commit on the claim branch, in the worktree `kit claim` made: the trunk
+// checkout cannot switch to a branch that worktree already holds.
+func workOn(t *testing.T, p *project, branch string) *project {
 	t.Helper()
-	p.git("checkout", "-q", branch)
-	p.write("main.go", "package main\n")
-	p.commitAll("0007: build it")
+	w := p.claimWorktree(branch)
+	w.write("main.go", "package main\n")
+	w.commitAll("0007: build it")
+	return w
 }
 
 func TestReleaseGivesTheFeatureBackToTheBoard(t *testing.T) {
@@ -69,7 +71,6 @@ func TestReleaseForceDeletesWorkOnPurpose(t *testing.T) {
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
 	workOn(t, a, "0007-widget")
-	a.git("checkout", "-q", a.headBranch())
 
 	a.run("release", "0007", "--force").ok()
 
@@ -86,9 +87,11 @@ func TestReleaseSaysWhatIsLeftWhenAWorktreeHoldsTheBranch(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	a.git("worktree", "add", "-q", filepath.Join(t.TempDir(), "wt"), "0007-widget")
+	w := a.claimWorktree("0007-widget")
 
-	a.run("release", "0007").ok().has("still here", "git branch -D 0007-widget")
+	// Released from inside the worktree it was working in. Git will not remove the
+	// checkout you are standing in, so the branch outlives the claim and release says so.
+	w.run("release", "0007").ok().has("still here")
 
 	if hasRemoteBranch(t, a, "0007-widget") {
 		t.Error("the claim on the remote survived a release that reported success")
@@ -170,12 +173,11 @@ func TestATagNamedLikeTheClaimDoesNotStrandIt(t *testing.T) {
 	a.git("tag", "0007-widget", trunk)
 
 	// The claim is still the claim-holder's, read from the checkout standing on it.
-	a.git("checkout", "-q", "0007-widget")
-	if got := boardGroup(a.plan("next", "--json"), "0007"); got != "yours" {
+	w := a.claimWorktree("0007-widget")
+	if got := boardGroup(w.plan("next", "--json"), "0007"); got != "yours" {
 		t.Errorf("under a tag of the same name the board says 0007 is %s, want yours", got)
 	}
 
-	a.git("checkout", "-q", trunk)
 	a.run("release", "0007").ok().has("released", "0007-widget")
 	if hasRemoteBranch(t, a, "0007-widget") {
 		t.Error("release exited 0 but the remote still has 0007-widget, so the claim stands")
