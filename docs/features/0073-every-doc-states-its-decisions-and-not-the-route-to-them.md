@@ -52,7 +52,7 @@ any route-narration rather than being rewritten.
 
 ## Tasks
 
-- [ ] `### How to write` and `templates/features-TEMPLATE.md` carry the three rules, with
+- [x] `### How to write` and `templates/features-TEMPLATE.md` carry the three rules, with
       this project's `AGENTS.md` regenerated in the same commit
 - [ ] The five docs over 100 lines state decisions only
 - [ ] Every doc of 60 lines or more states decisions only

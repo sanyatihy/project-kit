@@ -42,7 +42,9 @@ const (
 	// vision sections that produce them had no route either.
 	// 116 with the second route: a spike is a branch the board does not route, and an
 	// agent that never reads about harvest has one way in rather than two.
-	protocolBudget = 116
+	// 120 with the density rules. The protocol is the one doc that buys brevity in every
+	// other, and the rule it already had was too abstract to be followed.
+	protocolBudget = 120
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -57,7 +59,7 @@ const (
 	// 114 once the checklists took a ceiling of their own: 193 was go-checklist's number,
 	// and with it out of this pool the longest topic left is the protocol.
 	// 116 with the protocol, which is the longest topic in this pool and sets it.
-	topicBudget = 116
+	topicBudget = 120
 
 	// The checklists are the standing engineering guidance a project is held to, read once
 	// per language rather than per session, and their substance is the whole point. The
@@ -160,7 +162,7 @@ const (
 	// 170 with the protocol's own ceiling: this file carries that section verbatim, so a
 	// line added there arrives here whether the house rules above it move or not.
 	// 172 with the second route, which this file carries verbatim from the protocol.
-	agentsBudget = 172
+	agentsBudget = 176
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary

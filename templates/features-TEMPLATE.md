@@ -27,8 +27,9 @@ needs:
      whether it was worth doing; longer and the doc is arguing instead of deciding. -->
 
 ## Non-goals
-<!-- What this deliberately does not do, and where that lives instead. One line each;
-     a reason with each, or the next person reopens the argument. -->
+<!-- What this deliberately does not do, and where that lives instead. One line each, with
+     the reason on it: "A database. None is needed at four hundred rows a month." Not an
+     argument, and never a thing nobody would have built. -->
 
 ## Design
 <!-- Decisions only: what was chosen, what it beat, what it costs. Not a walkthrough — the
@@ -43,7 +44,9 @@ needs:
        yes  The cache is per-process. A shared one needs cross-worker invalidation, which
             this deployment does not have.
      The third clause was about the work rather than the system, so it is gone rather
-     than split.
+     than split. Write the decision and not the route to it: "Changed JSONL for SQLite",
+     never "we researched the append-only design, found it would not scale, and chose a
+     database".
 
      A doc is as long as its decisions and no longer. One a reader cannot hold in one
      sitting is describing a feature that is too big, not a design worth the length. -->

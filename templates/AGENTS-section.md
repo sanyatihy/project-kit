@@ -102,10 +102,14 @@ before claiming either: give one doc a free id, rename its file, and rename its 
   would make it unnecessary. Prose is the weakest tier and is honest only for judgement.
 - **A sentence earns its place by deciding, constraining or measuring something.** One
   claim per sentence. Evidence gets one trailing clause, never two.
-- **Write about the system, not the session.** State what holds, not what happened while
-  you worked.
+- **Write the decision, not the route to it.** "Changed JSONL for SQLite", never "we
+  researched the append-only design, found it would not scale, and chose a database".
+- **A non-goal is one line: what is excluded, and why.** "A database. None is needed at
+  four hundred rows a month." Not an argument, and never a thing nobody would build.
+- **Cite another feature by id; never restate its reasoning.** It has one home.
 - **Every fact has one home.** True after this ships → `docs/TECH.md`, one line. Changed
-  this doc's plan → one `## Log` entry naming the change. Neither → the pull request.
+  this doc's plan → one `## Log` entry, and a plan that never moved has an empty Log.
+  Neither → the pull request.
 
 ### Where the rest lives
 
