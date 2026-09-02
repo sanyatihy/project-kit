@@ -46,7 +46,9 @@ const (
 	// other, and the rule it already had was too abstract to be followed.
 	// 123 with the commit message. It deletes a class of writing rather than adding one to
 	// remember: 151 of the last 200 commits carried a body, 1,101 lines restating the diff.
-	protocolBudget = 123
+	// 126 with the comment rule. Same trade as the commit one: 27% of non-test source is
+	// comment, 1,969 lines, and 927 of them sit in blocks of six or more.
+	protocolBudget = 126
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -61,7 +63,7 @@ const (
 	// 114 once the checklists took a ceiling of their own: 193 was go-checklist's number,
 	// and with it out of this pool the longest topic left is the protocol.
 	// 116 with the protocol, which is the longest topic in this pool and sets it.
-	topicBudget = 123
+	topicBudget = 126
 
 	// The checklists are the standing engineering guidance a project is held to, read once
 	// per language rather than per session, and their substance is the whole point. The
@@ -168,7 +170,7 @@ const (
 	// line added there arrives here whether the house rules above it move or not.
 	// 172 with the second route, which this file carries verbatim from the protocol.
 	// 179: this file carries the protocol verbatim, so the commit rule arrives with it.
-	agentsBudget = 179
+	agentsBudget = 182
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary

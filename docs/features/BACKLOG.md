@@ -159,3 +159,13 @@ cannot do it through the kit reaches for git, and the kit stops being the record
 **Value:** the kit stays the record for the one disposal path that leaves it.
 **Promote when:** fired — 0074 was released by hand on 2026-09-01.
 
+## The comments already written carry the incidents their feature docs hold
+
+27% of non-test source is comment — 1,969 lines of 7,239 — and 105 blocks of six lines or
+more hold 927 of them. `OnlyHere` spends 20 lines, seven of which restate 0039's
+`## Problem`. 0073 added the rule and cut nothing, so every block written before it still
+carries the incident beside the constraint.
+
+**Value:** a reader of the code gets the constraint without the archaeology.
+**Promote when:** fired — measured 2026-09-01, and the rule that judges it now exists.
+

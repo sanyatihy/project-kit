@@ -166,6 +166,9 @@ before claiming either: give one doc a free id, rename its file, and rename its 
 - **A non-goal is one line: what is excluded, and why.** "A database. None is needed at
   four hundred rows a month." Not an argument, and never a thing nobody would build.
 - **Cite another feature by id; never restate its reasoning.** It has one home.
+- **A comment says what the code cannot, and stops.** The contract, and the constraint the
+  next editor would otherwise break — never what the code already says, and never the
+  incident that produced it.
 - **Every fact has one home.** True after this ships → `docs/TECH.md`, one line. Changed
   this doc's plan → one `## Log` entry, and a plan that never moved has an empty Log.
   Neither → the pull request.

@@ -26,6 +26,8 @@ averages 62 lines over 15 docs, so the difference is practice rather than rules.
 - Retitling or re-scoping a feature. `Branch()` reads the filename, so a rename strands a
   claim.
 - A target length. The longest doc in the sibling project is 95 lines.
+- Cutting the comments already written. 1,969 lines is its own feature, and the rule changes
+  what gets written next.
 
 ## Design
 
@@ -50,6 +52,15 @@ list of six.
 A doc is as long as its decisions. One already at that density loses its bold lead-ins and
 any route-narration rather than being rewritten.
 
+Code comments are the same defect in the third artifact. 27% of non-test source is comment —
+1,969 lines of 7,239 — and 105 blocks of six lines or more hold 927 of them. `OnlyHere`
+spends 20: the contract and two constraints earn their place, and seven restate 0039's
+`## Problem` verbatim. A comment says what the code cannot and stops — the contract, and the
+constraint the next editor would otherwise break. Not what the code already says, and not
+the incident that produced it, which the feature doc holds. It goes in `### How to write`
+beside the sentence rule, because a comment is prose and the language checklists are
+per-language.
+
 The commit message is the same defect in the same corpus. 151 of the last 200 commits carry
 a body — 1,101 lines, median 7, longest 21 — restating the diff a paragraph per file, and
 the protocol never named the message: rule 12 requires the commit to name its box honestly
@@ -69,6 +80,8 @@ about the commit rather than about the change in it. It goes in rule 12 rather t
 - [x] `docs/TECH.md` records the one-time compaction and what it may not cut
 - [x] Rule 12 says the subject names the box and the body stays empty unless the diff cannot
       show what it says, with this project's `AGENTS.md` regenerated in the same commit
+- [x] `### How to write` says a comment carries the contract and the constraint the next
+      editor would break, and not the incident that produced it
 
 ## Log
 
@@ -79,3 +92,6 @@ about the commit rather than about the change in it. It goes in rule 12 rather t
 - 2026-09-01 — the commit message joins the round rather than taking an id of its own. It is
   the same defect measured in the same corpus, and a second doc would restate this one's
   design. 0074 was drafted for it and dropped before it landed.
+- 2026-09-01 — the comment rule ships without a pass over the 1,969 lines already written.
+  Docs are prose with no behaviour behind them; comments sit in code, and a corpus that size
+  is its own feature. It is a BACKLOG entry with the measurement.
