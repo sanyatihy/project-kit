@@ -54,7 +54,7 @@ any route-narration rather than being rewritten.
 
 - [x] `### How to write` and `templates/features-TEMPLATE.md` carry the three rules, with
       this project's `AGENTS.md` regenerated in the same commit
-- [ ] The five docs over 100 lines state decisions only
+- [x] The five docs over 100 lines state decisions only
 - [ ] Every doc of 60 lines or more states decisions only
 - [ ] Every doc under 60 lines loses its bold lead-ins and its route-narration
 - [ ] `docs/TECH.md` records the one-time compaction and what it may not cut
