@@ -152,7 +152,9 @@ const (
 	// is not one line.
 	// 433 with the second route: what makes a branch a spike, and when the id is taken,
 	// are the two facts an agent cannot recover from a board that says nothing about it.
-	techBudget = 433
+	// 437 with the one-time compaction: what it may not cut is the fact that keeps a
+	// later pass from deleting a decision and calling it brevity.
+	techBudget = 437
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.

@@ -56,7 +56,12 @@ any route-narration rather than being rewritten.
       this project's `AGENTS.md` regenerated in the same commit
 - [x] The five docs over 100 lines state decisions only
 - [x] Every doc of 60 lines or more states decisions only
-- [ ] Every doc under 60 lines loses its bold lead-ins and its route-narration
-- [ ] `docs/TECH.md` records the one-time compaction and what it may not cut
+- [x] Every doc under 60 lines loses its bold lead-ins and its route-narration
+- [x] `docs/TECH.md` records the one-time compaction and what it may not cut
 
 ## Log
+
+- 2026-09-01 — the bloat is not uniform, so the pass is not either. Docs 0060–0072 averaged
+  841 words against 0034–0059's 632, the latter written under 0041, 0044 and 0045's rules
+  and the former after attention moved elsewhere. The first group is rewritten; the second
+  mostly needed its bold lead-ins removed, which is one scripted change across 47 files.

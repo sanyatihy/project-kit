@@ -331,6 +331,10 @@ Draft -> Shipped     (exit: Dropped)
 - **`--json` is a contract and its shape is pinned.** The board's four groups are `[]` when
   empty, `moved` is absent rather than a year-1 timestamp — `omitempty` does nothing for a
   struct — and a directory nothing surveyed reports through `error` at exit 2.
+- **The Shipped corpus was compacted once, under 0073.** What is frozen is the decision
+  record — status, boxes, and every decision, constraint and measurement. What was cut is
+  narration of how a decision was reached, which no reader acts on. Rule 17 is unchanged and
+  this is the exception it does not carry.
 - **A spike is a branch the board does not route, and the id is taken at harvest.** Not the
   trunk, not `plan/`, and citing no four-digit id anywhere in its name — any id counts as a
   claim, so a mistyped one is reported by `orphan-claim` rather than becoming a spike.
