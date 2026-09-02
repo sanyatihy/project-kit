@@ -15,16 +15,14 @@ to "a branch whose name contains no four-digit id", which nothing pushes, nothin
 and nothing decides. Two agents given the same bug both start it, both branch, and neither
 finds out.
 
-The gap is not hypothetical. Every merge-conflict resolution in the round that shipped
-0050 through 0056 went on an unclaimed branch, named by whoever got there first. Nothing
-would have stopped a second agent doing the same work beside it.
+Every merge-conflict resolution in the round that shipped 0050 through 0056 went on an
+unclaimed branch, named by whoever got there first.
 
-Two smaller holes in the same command have the same shape. `ClaimFeature` never asks
-whether this checkout already holds a claim, so `kit claim 0008` from inside 0007's
-worktree exits 0 — protocol rule 12 says one feature per checkout and no refusal enforces
-it. And `Claims` matches any branch whose name mentions an id, so `plan/fold-in-0002-fix`
-makes the board report 0002 as taken while `kit audit` exits 0 saying the docs and the
-repo agree.
+Two smaller holes in the same command have the same shape. `ClaimFeature` never asks whether
+this checkout already holds a claim, so `kit claim 0008` from inside 0007's worktree exits 0
+while rule 12 says one feature per checkout. And `Claims` matches any branch whose name
+mentions an id, so `plan/fold-in-0002-fix` makes the board report 0002 as taken while
+`kit audit` exits 0 saying the docs and the repo agree.
 
 ## Non-goals
 
@@ -36,27 +34,21 @@ repo agree.
 
 ## Design
 
-A chore is claimed by the same push that claims a feature. `kit chore "<what>"` mints
-a claim from a title, pushes the branch that takes it, and records one line — id, title,
-who, when — in a file the board reads. No `## Problem`, no `## Design`, no boxes: a chore
-that needs any of those is a feature, and the operator is told so rather than guessed at.
-The alternative — leaving chores uncoordinated and documenting the risk — is what the kit
-does today, and it is the one class of work where the kit's headline promise does not hold.
+A chore is claimed by the same push that claims a feature. `kit chore "<what>"` mints a
+claim from a title, pushes the branch that takes it, and records one line — id, title, who,
+when — in a file the board reads. No `## Problem`, no `## Design`, no boxes: a chore that
+needs any of those is a feature, and the operator is told so rather than guessed at.
 
-A chore takes an id, so the record can be cited. Branch names, commits and the board
-all key on the id, and a chore with no id cannot appear on the board at all. This is why
-this feature waits on 0058: handing out an id twice is worse for chores than for features,
-because there is no doc whose contents disambiguate them.
+A chore takes an id, so the record can be cited: branch names, commits and the board all key
+on it. That is why this waits on 0058 — handing out an id twice is worse for chores than for
+features, because there is no doc whose contents disambiguate them.
 
-One checkout holds one claim, and `claim` says so. The condition is already computed —
-`next` prints "take one of those in a worktree of its own, never here" — and never
-enforced. `ClaimFeature` refuses when this checkout already holds a claim, which collapses
-protocol rules 11 and 12 into a refusal and one line of prose.
+One checkout holds one claim, and `claim` says so. The condition is already computed and
+never enforced, and refusing collapses rules 11 and 12 into a refusal and one line of prose.
 
-A claim is a branch that claims, not a branch that mentions. What counts as a claim is
-`Claims`, and it currently matches a substring. Narrowing it to the branch a claim actually
-creates would close the `plan/`-prefix hole, and would also change a guarantee the kit
-states out loud — see `## Open questions`.
+A claim is a branch that claims, not a branch that mentions. Narrowing `Claims` from a
+substring match closes the `plan/`-prefix hole and changes a guarantee the kit states out
+loud — see `## Open questions`.
 
 ## Tasks
 
