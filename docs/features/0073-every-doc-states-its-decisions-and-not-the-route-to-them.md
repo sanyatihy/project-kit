@@ -1,9 +1,9 @@
 ---
 id: 0073
 title: Every doc states its decisions and not the route to them
-status: Draft
+status: Shipped
 created: 2026-09-01
-shipped:
+shipped: 2026-09-02
 needs:
 ---
 
