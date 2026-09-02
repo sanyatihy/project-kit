@@ -147,3 +147,15 @@ ASCII title — `Slug` strips to `[a-z0-9]`.
 **Value:** a project says what language its docs are written in once, and every agent is told.
 **Promote when:** a second project needs non-English docs, or an agent writes English into
 one that asked for Russian.
+
+## A reservation cannot be released before the horizon, and nothing else can reach it
+
+`kit drop <id>` refuses a reservation younger than the `stalled` horizon, which is right for
+a draft in flight and wrong for one whose branch was deleted minutes ago. There is no
+`--force`, so the only way past is `git push origin --delete refs/kit/ids/<id>` — the raw
+command 0046 gave `release` a flag to avoid, for the reason it gave there: an agent that
+cannot do it through the kit reaches for git, and the kit stops being the record.
+
+**Value:** the kit stays the record for the one disposal path that leaves it.
+**Promote when:** fired — 0074 was released by hand on 2026-09-01.
+
