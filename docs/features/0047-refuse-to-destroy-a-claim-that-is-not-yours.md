@@ -60,9 +60,7 @@ Reproduced against the built binary:
 - [x] Tests drive a foreign checkout releasing a claim, and a release on a non-`main` trunk
 
 ## Log
-- 2026-08-21 — the ownership test is a local head, not `Repo.Mine`. The design named `Mine`
-  because `Ship` uses it, and that premise was wrong: `Mine` asks whether HEAD *is* the
-  claim branch, so an agent that had just claimed a feature and not yet moved to the
-  worktree could not release what it had taken. A local ref answers "this clone created
-  the branch", which holds for every worktree sharing it and fails for an agent that only
-  saw the claim over the wire.
+- 2026-08-21 — the ownership test is a local head, not `Repo.Mine`. `Mine` asks whether HEAD
+  is the claim branch, so an agent that had just claimed a feature and not yet moved to the
+  worktree could not release what it had taken. A local ref answers "this clone created the
+  branch", which holds for every worktree sharing it.
