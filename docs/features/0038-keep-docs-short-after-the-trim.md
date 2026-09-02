@@ -15,20 +15,20 @@ template only reaches an existing project when somebody re-runs `kit init`. A ch
 binary reaches every project at the next upgrade.
 
 ## Non-goals
-- **Blocking a ship.** Length is hygiene, not drift. LOW, never HIGH, so `--strict` stays
+- Blocking a ship. Length is hygiene, not drift. LOW, never HIGH, so `--strict` stays
   about things that are untrue.
-- **Judging quality.** The check counts lines. Whether a doc is *good* is review's job.
+- Judging quality. The check counts lines. Whether a doc is *good* is review's job.
 
 ## Design
-**`doc-bloat`, LOW.** Fires on a feature doc past N lines, or a `## Log` entry past two.
+`doc-bloat`, LOW. Fires on a feature doc past N lines, or a `## Log` entry past two.
 The fix line offers both ways out — trim it, or say in the `## Log` why it earns the
 length — so a genuinely dense doc is a sentence away from quiet rather than a lie away.
 
-**N is measured, not guessed.** After 0037, N is the trimmed corpus's 90th percentile
+N is measured, not guessed. After 0037, N is the trimmed corpus's 90th percentile
 rounded up, recorded in the constant's comment with the date and the sample. A number
 picked before the trim would only encode what the docs happen to weigh today.
 
-**`kit ship` prints one line**, at the moment a doc stops being a working document. The
+`kit ship` prints one line, at the moment a doc stops being a working document. The
 wording leads with what to keep, because the risk is an agent reading "compact" as
 "delete":
 

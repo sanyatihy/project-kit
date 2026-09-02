@@ -42,7 +42,13 @@ const (
 	// vision sections that produce them had no route either.
 	// 116 with the second route: a spike is a branch the board does not route, and an
 	// agent that never reads about harvest has one way in rather than two.
-	protocolBudget = 116
+	// 120 with the density rules. The protocol is the one doc that buys brevity in every
+	// other, and the rule it already had was too abstract to be followed.
+	// 123 with the commit message. It deletes a class of writing rather than adding one to
+	// remember: 151 of the last 200 commits carried a body, 1,101 lines restating the diff.
+	// 126 with the comment rule. Same trade as the commit one: 27% of non-test source is
+	// comment, 1,969 lines, and 927 of them sit in blocks of six or more.
+	protocolBudget = 126
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -57,7 +63,7 @@ const (
 	// 114 once the checklists took a ceiling of their own: 193 was go-checklist's number,
 	// and with it out of this pool the longest topic left is the protocol.
 	// 116 with the protocol, which is the longest topic in this pool and sets it.
-	topicBudget = 116
+	topicBudget = 126
 
 	// The checklists are the standing engineering guidance a project is held to, read once
 	// per language rather than per session, and their substance is the whole point. The
@@ -150,7 +156,10 @@ const (
 	// is not one line.
 	// 433 with the second route: what makes a branch a spike, and when the id is taken,
 	// are the two facts an agent cannot recover from a board that says nothing about it.
-	techBudget = 433
+	// 437 with the one-time compaction: what it may not cut is the fact that keeps a
+	// later pass from deleting a decision and calling it brevity.
+	// 440 with the commit as a named non-home for a fact, beside the three that are.
+	techBudget = 440
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
@@ -160,7 +169,8 @@ const (
 	// 170 with the protocol's own ceiling: this file carries that section verbatim, so a
 	// line added there arrives here whether the house rules above it move or not.
 	// 172 with the second route, which this file carries verbatim from the protocol.
-	agentsBudget = 172
+	// 179: this file carries the protocol verbatim, so the commit rule arrives with it.
+	agentsBudget = 182
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary

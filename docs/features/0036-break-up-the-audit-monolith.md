@@ -18,21 +18,21 @@ data is well factored and the logic is not.
 
 What it costs, in order of how often it bites:
 
-- **No check can be exercised on its own.** Every conformance case runs the whole audit
+- No check can be exercised on its own. Every conformance case runs the whole audit
   against a throwaway project, so a test for one check is really a test for all of them
   passing quietly. That is why the fixtures are as elaborate as they are.
-- **Adding a check means editing the middle of a long function**, with its conditions
+- Adding a check means editing the middle of a long function, with its conditions
   interleaved with unrelated ones — three of the nested `if`s already guard four checks
   between them.
-- **Reading it does not answer "what does `stalled` do".** The answer is spread across a
+- Reading it does not answer "what does `stalled` do". The answer is spread across a
   status test, a claim test, a date fold, and a threshold.
 
 ## Non-goals
-- **Changing what any check reports.** Codes, severities, messages and fixes stay
+- Changing what any check reports. Codes, severities, messages and fixes stay
   identical; the conformance suite is the proof and it does not change either.
-- **A plugin system, or checks in configuration.** The set is fixed and enumerable, and
+- A plugin system, or checks in configuration. The set is fixed and enumerable, and
   `kit help checks` prints it from the registry. Nothing here becomes extensible.
-- **Splitting `repo.go` or `main.go`.** Both are long, neither is in the way. The kit's
+- Splitting `repo.go` or `main.go`. Both are long, neither is in the way. The kit's
   own rule is not to refactor what is not broken; this one is broken in a way the other
   two are not, because adding a check is a routine act and adding a command is not.
 
@@ -52,10 +52,10 @@ printed report both depend on HIGH coming first and on stability between runs.
 
 Two things the split has to preserve, and they are the reason it is worth doing at all:
 
-- **`TestEveryRegisteredCheckIsExercised`** compares the conformance cases against the
+- `TestEveryRegisteredCheckIsExercised` compares the conformance cases against the
   registry in both directions. With the logic beside the registry entry it can start
   asserting that every entry *has* a `run`, which is a stronger version of the same rule.
-- **The shared work stays shared.** `Claims`, `UnmetNeeds` and the date folding are
+- The shared work stays shared. `Claims`, `UnmetNeeds` and the date folding are
   computed once per feature and handed to the checks that need them, or the split trades
   readability for the subprocess fan-out 0035 is removing.
 

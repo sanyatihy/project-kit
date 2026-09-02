@@ -16,24 +16,24 @@ with every bug the last two rounds fixed.
 
 ## Non-goals
 
-- **A changelog written by hand.** The feature docs are the record; a release names the
+- A changelog written by hand. The feature docs are the record; a release names the
   range, it does not restate it.
-- **Publishing anywhere.** The module stays private and `go install` stays the delivery.
-- **Automatic tagging on merge.** What to release is a human call.
+- Publishing anywhere. The module stays private and `go install` stays the delivery.
+- Automatic tagging on merge. What to release is a human call.
 
 ## Design
 
-**A tag is what `@latest` means, so cutting one is part of shipping.** Nothing in the
+A tag is what `@latest` means, so cutting one is part of shipping. Nothing in the
 protocol, the Makefile or CI mentions tagging, and the gap has grown to 192 commits without
 anything reporting it. `make release` cuts an annotated tag after running the gate, and the
 protocol names it as the step after a round lands.
 
-**The version the binary prints is the version you can install.** `kit version` reports
+The version the binary prints is the version you can install. `kit version` reports
 `v0.2.0-192-ge1ebe92` from `git describe`, which is honest about the source and silent about
 the fact that no such thing is installable. When the tag is behind the trunk by more than a
 release, say so.
 
-**A stale tag is drift, and `audit` reports drift.** Everything else that can fall behind
+A stale tag is drift, and `audit` reports drift. Everything else that can fall behind
 here is a finding — the protocol, the as-built doc, the board. The distance between the
 newest tag and the trunk is the same kind of fact.
 

@@ -17,12 +17,12 @@ draft. Found by auditing this repo with three of its own features open as pull r
 it fires on every in-flight feature of every project.
 
 ## Non-goals
-- **Fetching to find out.** 0017 settled that reads ask one cheap question and never mutate refs.
-- **Dropping `orphan-claim`.** A branch citing a doc nobody wrote is real: the ID it holds is unclaimable.
-- **Reading pull-request state.** Whether the branch carries the doc is the same answer, and git already has it.
+- Fetching to find out. 0017 settled that reads ask one cheap question and never mutate refs.
+- Dropping `orphan-claim`. A branch citing a doc nobody wrote is real: the ID it holds is unclaimable.
+- Reading pull-request state. Whether the branch carries the doc is the same answer, and git already has it.
 
 ## Design
-**A finding needs positive evidence.** Both checks reasoned from absence — the doc is not
+A finding needs positive evidence. Both checks reasoned from absence — the doc is not
 *here*, so it does not exist — and absence in one checkout says nothing about a branch.
 
 ```

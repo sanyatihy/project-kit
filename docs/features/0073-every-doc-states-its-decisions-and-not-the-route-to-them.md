@@ -1,9 +1,9 @@
 ---
 id: 0073
 title: Every doc states its decisions and not the route to them
-status: Draft
+status: Shipped
 created: 2026-09-01
-shipped:
+shipped: 2026-09-02
 needs:
 ---
 
@@ -26,6 +26,8 @@ averages 62 lines over 15 docs, so the difference is practice rather than rules.
 - Retitling or re-scoping a feature. `Branch()` reads the filename, so a rename strands a
   claim.
 - A target length. The longest doc in the sibling project is 95 lines.
+- Cutting the comments already written. 1,969 lines is its own feature, and the rule changes
+  what gets written next.
 
 ## Design
 
@@ -50,13 +52,46 @@ list of six.
 A doc is as long as its decisions. One already at that density loses its bold lead-ins and
 any route-narration rather than being rewritten.
 
+Code comments are the same defect in the third artifact. 27% of non-test source is comment —
+1,969 lines of 7,239 — and 105 blocks of six lines or more hold 927 of them. `OnlyHere`
+spends 20: the contract and two constraints earn their place, and seven restate 0039's
+`## Problem` verbatim. A comment says what the code cannot and stops — the contract, and the
+constraint the next editor would otherwise break. Not what the code already says, and not
+the incident that produced it, which the feature doc holds. It goes in `### How to write`
+beside the sentence rule, because a comment is prose and the language checklists are
+per-language.
+
+The commit message is the same defect in the same corpus. 151 of the last 200 commits carry
+a body — 1,101 lines, median 7, longest 21 — restating the diff a paragraph per file, and
+the protocol never named the message: rule 12 requires the commit to name its box honestly
+and stops. The subject names the box and the body stays empty, because the diff shows what
+changed and the doc says why. A body earns its place only where the diff cannot show what it
+says — a revert and its cause, the source a commit was cherry-picked from — which are facts
+about the commit rather than about the change in it. It goes in rule 12 rather than
+`### How to write`, because a commit is written at the moment a box is ticked.
+
 ## Tasks
 
-- [ ] `### How to write` and `templates/features-TEMPLATE.md` carry the three rules, with
+- [x] `### How to write` and `templates/features-TEMPLATE.md` carry the three rules, with
       this project's `AGENTS.md` regenerated in the same commit
-- [ ] The five docs over 100 lines state decisions only
-- [ ] Every doc of 60 lines or more states decisions only
-- [ ] Every doc under 60 lines loses its bold lead-ins and its route-narration
-- [ ] `docs/TECH.md` records the one-time compaction and what it may not cut
+- [x] The five docs over 100 lines state decisions only
+- [x] Every doc of 60 lines or more states decisions only
+- [x] Every doc under 60 lines loses its bold lead-ins and its route-narration
+- [x] `docs/TECH.md` records the one-time compaction and what it may not cut
+- [x] Rule 12 says the subject names the box and the body stays empty unless the diff cannot
+      show what it says, with this project's `AGENTS.md` regenerated in the same commit
+- [x] `### How to write` says a comment carries the contract and the constraint the next
+      editor would break, and not the incident that produced it
 
 ## Log
+
+- 2026-09-01 — the bloat is not uniform, so the pass is not either. Docs 0060–0072 averaged
+  841 words against 0034–0059's 632, the latter written under 0041, 0044 and 0045's rules
+  and the former after attention moved elsewhere. The first group is rewritten; the second
+  mostly needed its bold lead-ins removed, which is one scripted change across 47 files.
+- 2026-09-01 — the commit message joins the round rather than taking an id of its own. It is
+  the same defect measured in the same corpus, and a second doc would restate this one's
+  design. 0074 was drafted for it and dropped before it landed.
+- 2026-09-01 — the comment rule ships without a pass over the 1,969 lines already written.
+  Docs are prose with no behaviour behind them; comments sit in code, and a corpus that size
+  is its own feature. It is a BACKLOG entry with the measurement.

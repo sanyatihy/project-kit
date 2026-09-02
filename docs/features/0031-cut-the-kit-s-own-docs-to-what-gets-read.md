@@ -9,81 +9,67 @@ related: 0022-say-how-much-to-write-and-hold-the-kit-s-own-docs-to-it.md
 ---
 
 ## Problem
-`docs/TECH.md` is 546 lines and 6,325 words. `AGENTS.md` is 237. Both are read at the
-start of every session — the protocol in every project, TECH before any change to the
-kit — so their length is a tax paid per session, and past a point it is paid for
-nothing: a long file is skimmed, and a skimmed rule is one an agent gets wrong.
 
-The cost is time, which is the only thing the kit is for. `docs/VISION.md` now says the
-kit is measured by speed and transparency, and a document nobody finishes reading is the
-clearest case of a cost with no return.
+`docs/TECH.md` is 546 lines and 6,325 words; `AGENTS.md` is 237. Both are read at the start
+of every session — the protocol in every project, TECH before any change to the kit — so
+their length is a tax paid per session, and past a point it is paid for nothing: a long file
+is skimmed, and a skimmed rule is one an agent gets wrong.
 
-It grew the way 0022 predicted, one justified paragraph at a time, and 0022's ceilings
-only cover text the binary *ships*. TECH has no ceiling at all, and it shows:
+It grew the way 0022 predicted, one justified paragraph at a time, and 0022's ceilings only
+cover text the binary ships. TECH has none, and it shows: "a claim is a branch name" appears
+twice and shipping-as-handoff three times under three headings; `## The model` (278 lines)
+and `## Decisions and why` (131) both answer "what we chose and why" and are 75% of the
+file; incident narratives run to paragraphs where a clause would carry the same weight.
 
-- **The same fact is stated more than once.** "A claim is a branch name" appears twice.
-  Shipping-as-handoff appears three times, under three headings.
-- **Two sections answer the same question.** `## The model` (278 lines) and
-  `## Decisions and why` (131) are both "what we chose and why"; together they are 75%
-  of the file.
-- **Incident narratives run to paragraphs** where a clause would carry the same weight.
-
-The protocol has the opposite problem: it is not repetitive, it is *discursive*. Rule 13
-is 11 lines. An agent skims it and follows the first sentence.
+The protocol has the opposite problem. It is not repetitive but discursive — rule 13 is 11
+lines, and an agent skims it and follows the first sentence.
 
 ## Non-goals
-- **Cutting decisions, constraints, or the fact that evidence exists.** 0022's rule
-  stands: a doc too thin to act on costs a session to reconstruct. What goes is the
-  retelling — the decision keeps a clause of evidence, not a paragraph.
-- **Rewriting README.md.** It is the front door for a reader who chose to be there, not
-  a per-session tax. Out of scope, and it is 426 lines.
-- **Splitting TECH into several files.** Two files nobody reads is not an improvement.
-- **Changing any behaviour.** Nothing in `internal/` or `cmd/` changes except the
-  ceilings that hold this.
+
+- Cutting decisions, constraints, or the fact that evidence exists. A doc too thin to act on
+  costs a session to reconstruct; what goes is the retelling.
+- Rewriting README.md. It is the front door for a reader who chose to be there, not a
+  per-session tax.
+- Splitting TECH into several files. Two files nobody reads is not an improvement.
+- Changing any behaviour. Nothing in `internal/` or `cmd/` changes except the ceilings.
 
 ## Design
-One editing pass per file, then a ceiling that stops the regrowth — the second is what
-makes this a feature rather than a tidy-up, because 0022 already proved the first does
-not hold on its own.
 
-**`docs/TECH.md` → 250 lines or fewer**, from 546. `## The model` and `## Decisions and
-why` merge: one list of what is true and why, deduplicated, each entry a sentence of
-decision and at most a clause of evidence. `## What it is`, `## Gotchas`, `## Verifying`
-and `## State of play` stay as sections and get the same treatment.
+One editing pass per file, then a ceiling that stops the regrowth. The second is what makes
+this a feature rather than a tidy-up, because 0022 already proved the first does not hold on
+its own.
 
-**`templates/AGENTS-section.md` → 110 lines or fewer**, from 153. Same thirteen rules
-and the same two closing sections — nothing is dropped — but each rule states its
-constraint and its consequence and stops. Where a rule needs a reason to be obeyed
-rather than merely understood, the reason stays; where it is background, it moves to
-TECH or goes. Rule 13 is the worst offender at 11 lines and the test of whether this
-works.
+`docs/TECH.md` goes to 250 lines or fewer, from 546. `## The model` and `## Decisions and
+why` merge into one deduplicated list, each entry a sentence of decision and at most a
+clause of evidence. The remaining sections get the same treatment.
 
-**Ceilings for both, in `cmd/kit/budget_test.go`.** It already holds shipped text to a
-number; this extends it to the two docs this repo reads every session, with the same
-failure message and the same escape hatch — raise it in the test and say why.
+`templates/AGENTS-section.md` goes to 110 lines or fewer, from 153. Same thirteen rules and
+the same two closing sections — nothing is dropped — but each rule states its constraint and
+its consequence and stops. Where a rule needs a reason to be obeyed rather than merely
+understood, the reason stays; where it is background, it moves to TECH.
 
-The measure of success is not the number. It is that an agent reading the protocol once,
-quickly, follows it correctly — so each rule has to survive being read in isolation and
-in a hurry. Every line kept must answer "what does this save the reader"; the ones that
-only record that we thought about something go.
+Ceilings for both in `cmd/kit/budget_test.go`, which already holds shipped text to a number,
+with the same failure message and the same escape hatch: raise it in the test and say why.
+
+The measure of success is not the number but that an agent reading the protocol once,
+quickly, follows it correctly. Every line kept must answer "what does this save the reader".
 
 ## Tasks
+
 - [x] `docs/TECH.md` merged and cut to ≤250 lines, with no fact stated twice
-- [x] `templates/AGENTS-section.md` cut to ≤115 lines, every rule kept, and the repo's
-      own `AGENTS.md` regenerated
+- [x] `templates/AGENTS-section.md` cut to ≤115 lines, every rule kept, and the repo's own
+      `AGENTS.md` regenerated
 - [x] Ceilings for both in `cmd/kit/budget_test.go`, with the reasoning for the numbers
-- [x] `kit help as-built` and README describe what TECH is for, in one place rather than
-      three
-- [x] The template and protocol shift weight from writing before the work to writing
-      during it: `## Design` is decisions a builder cannot derive, `## Log` carries what
-      was learned
+- [x] `kit help as-built` and README describe what TECH is for, in one place rather than three
+- [x] The template and protocol shift weight from writing before the work to writing during
+      it: `## Design` is decisions a builder cannot derive, `## Log` carries what was learned
 
 ## Log
+
 - 2026-08-17 — `docs/VISION.md` gains the standard this applies: speed and transparency
   together, the record a byproduct of the work rather than a stage before it.
-- 2026-08-17 — TECH lands at 247 lines from 546, the protocol at 114 from 153 with all
-  thirteen rules kept. The reasoning behind the rules moved to TECH, read once rather than
-  every session in every project.
+- 2026-08-17 — TECH lands at 247 lines from 546 and the protocol at 114 from 153, with all
+  thirteen rules kept. The reasoning moved to TECH, read once rather than every session.
 - 2026-08-17 — `TestHelpAnswersWhatAnOutsideReviewGotWrong` caught the rewrite dropping the
-  literal "One feature per checkout." while keeping the meaning: that test pins the phrases
+  literal "One feature per checkout." while keeping the meaning. That test pins the phrases
   an outside reader once got wrong, and rephrasing one is how the guarantee is lost.

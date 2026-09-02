@@ -9,141 +9,81 @@ needs:
 
 ## Problem
 
-Go is the only stack `kit init` has and `kit help go-checklist` the only standing
-engineering guidance the binary carries. A Python project bootstrapped with the kit gets
-the docs, the protocol and a language-neutral `.gitignore` — and is then held to whatever
-practice the agent happens to remember. The kit says it bootstraps projects; it bootstraps
-one language.
-
-Nothing proves `stackLayout` is a map until a second stack reads it. Two decisions in
-`Init` are Go's and are written as neither the stack's nor the map's: it writes
-`internal/.gitkeep` for any stack, and it skips the entry point by matching the literal
-filename `main.go.tmpl` against a glob for `main.go`. A Python project would get a stray
-`internal/` and a duplicate entry point.
+Go is the only stack `kit init` has and `kit help go-checklist` the only standing guidance
+the binary carries, so a Python project gets the docs and then whatever practice the agent
+remembers. Two decisions in `Init` are Go's and written as neither the stack's nor the
+map's: it writes `internal/.gitkeep` for any stack, and skips the entry point by matching
+the filename `main.go.tmpl`. A Python project would get a stray `internal/` and a duplicate
+entry point.
 
 ## Non-goals
 
-- **A checklist `audit` enforces.** The Go checklist's preamble refuses this in a sentence
-  and the Python one keeps it. Prose is judgement; a check that could be written would
-  already be a check.
-- **Recording which stack a project is.** The kit stores nothing about a project beyond
-  its files, and `--stack` is an argument to one command rather than state. The protocol
-  therefore names both checklists and lets the agent pick, which is the price of not
-  keeping that fact anywhere.
-- **Generalising for a third stack.** Two is what separates the parts of `Init` that are
-  Go's from the parts that are every stack's. A third would be guessed at.
-- **Rewriting the Go checklist.** The review that produced the Python one found nothing
-  that carries over: Go's `time.Time` holds a monotonic reading, and Go has no `-O` that
-  strips assertions.
-- **Deployment scaffolding.** The same refusal the go stack makes, for the same reason.
+- A checklist `audit` enforces. Prose is judgement; a rule a check could make would be one.
+- Recording which stack a project is. The kit stores nothing about a project beyond its
+  files, so the protocol names both checklists and the agent picks.
+- Generalising for a third stack. Two separates Go's parts of `Init` from every stack's.
+- Rewriting the Go checklist. Nothing in the Python review carries over: Go's `time.Time`
+  is monotonic and Go has no `-O`.
+- Deployment scaffolding. The same refusal the go stack makes.
 
 ## Design
 
-**A stack declares what `Init` currently assumes.** Two fields join each stack's layout:
-the glob that means the project already has an entry point, and the directory that gets a
-`.gitkeep`. Go's are `cmd/*/main.go` and `internal/`; Python's are `src/*/__main__.py` and
-nothing. Both `if`s leave `Init`, so adding a stack after this one is templates and a map
-entry.
+A stack declares the two things `Init` knew about Go: the glob that means the project
+already has an entry point, and the directory that gets a `.gitkeep`. Go's are
+`cmd/*/main.go` and `internal/`, Python's `src/*/__main__.py` and `tests/`. Both `if`s
+leave `Init`, so a third stack is templates and a map entry.
 
-**The checklist is a template and a help topic, exactly as Go's is.** No new mechanism, and
-`templates/python-checklist.md` sits beside `templates/go-checklist.md`.
+The checklist is a template and a help topic, as Go's is. The protocol names one per
+language rather than one outright, a clause per stack, which is what not storing a
+project's stack costs.
 
-**The protocol names a checklist per language rather than one.**
-`templates/AGENTS-section.md` sends every agent to `kit help go-checklist`; it will name
-both and say to read the one for the project's language. One clause per stack is affordable
-at two and is what not storing the stack costs.
+uv pins the interpreter, locks, and makes the virtualenv in one binary, which keeps the
+Makefile as thin as Go's. Cost: a tool outside the stdlib and younger than pip-tools, so
+`make check` reports a missing uv by name rather than failing obscurely. `check` is format,
+lint, type and test in both languages, so what the protocol says about a project's own gate
+stays true.
 
-**The stack pins the interpreter and locks dependencies with uv.** The checklist requires a
-lockfile and does not choose the tool, so the template does. uv gives the interpreter pin,
-the lock and the virtualenv in one binary, which keeps the Makefile as thin as the Go one.
-The cost is a tool younger than pip-tools and outside the stdlib, so `make check` reports a
-missing uv as a missing tool rather than failing obscurely — the shape the go Makefile
-already uses for `golangci-lint`.
+The checklist ships corrected against fifteen review findings; the rules themselves live in
+`templates/python-checklist.md`. Two were decisions rather than fixes. "Parse, do not
+validate" named no parser while the next section made the plain dataclass the default,
+which validates nothing — so a validating parser sits at the boundary and the frozen
+dataclass inside it. And the preamble promised to name no library above eight of them.
 
-**`check` is the same gate in a second language.** Format, lint, type and test behind one
-`make check`, so the sentence the protocol writes about a project's own gate stays true
-whatever it is written in.
+That promise comes out, and naming is tiered by reversibility: development tooling flatly,
+because none of it ships; the boundary library as a default with its exit — pydantic, or
+msgspec where deserialisation is on the hot path — which is what closes "parse, do not
+validate"; a framework only in the tier that uses it, carrying the constraint that keeps it
+an adapter. Nothing where the standard library is adequate. Names sit in the tier sections
+and principles in Core, so a name that ages costs a paragraph rather than a rule.
 
-**The checklist ships corrected, not as reviewed.** Fifteen findings against the draft, in
-three groups. Six omissions where a rule was missing outright: `assert` stripped by `-O`,
-text I/O without an explicit `encoding=`, warnings-as-errors in CI, a `with` held open
-inside an unexhausted generator, the `multiprocessing` start method, and `time.monotonic`
-for durations. Five claims that were wrong: `slots=True` as a blanket default breaks
-`cached_property` and weakrefs; "parse, do not validate" named no parser while the next
-section made the plain dataclass the default, which validates nothing; the mutable-default
-rule gave the dataclass remedy and not the `None` sentinel; `Protocol` was implied to be
-unusable with `isinstance`; and `--strict` was required without saying that untyped
-third-party imports are where it leaks. Four structural: the Go preamble's refusal
-sentence was dropped, `Enum` and SQL binding were each stated twice or more, and a promise
-to name no library sits above eight of them.
-
-**That promise comes out, and naming becomes a rule tiered by reversibility.** Go's
-standard library covers the places a checklist points at and Python's does not, so a
-checklist that names nothing goes quiet exactly where the decision is load-bearing — the
-draft used pytest's `tmp_path` and `monkeypatch` while promising it named no library.
-Development tooling is named flatly, because none of it ships and all of it is swappable in
-an afternoon; this is the tier the Go checklist already occupies with `golangci-lint` and
-`govulncheck`. The boundary library is named as a default with the criterion for leaving
-it, because it reaches every type at every edge: pydantic, and msgspec where
-deserialisation is measured on the hot path. That is also what closes "parse, do not
-validate" — a validating parser at the boundary, a frozen dataclass inside it. A framework
-is named only in the tier that uses it and never in Core, carrying the constraint that
-keeps it an adapter: the handler parses, calls a use case that has never heard of the
-framework, and maps the result back. Nothing is named where the standard library is
-adequate, or "a dependency earns its place" is a rule the checklist cannot hold anyone to.
-Names sit in the tier sections and principles in Core, so a name that ages costs a
-paragraph rather than a rule.
-
-**No `needs:`, because a prose section is not a wiring table.** The rounds ahead of this one
-edit `templates/AGENTS-section.md` too, at the numbered rules and the planning route, while
-this changes the closing paragraph that names the checklists. The template's test for a
-shared file is one where both features add an entry to the same dispatch, merge cleanly and
-break at runtime; disjoint prose sections do not, so this starts today and the worst case is
-a conflict a reviewer reads.
+No `needs:`. The rounds ahead edit `templates/AGENTS-section.md` at the numbered rules and
+the planning route; this changes the closing paragraph. The dependency test is a shared
+dispatch that merges cleanly and breaks at runtime, which disjoint prose is not.
 
 ## Tasks
 
-- [x] `Init` takes the entry-point glob and the keep-directory from the stack's own layout,
-      so no Go filename appears in it — with the conformance cases `--stack go` already has
-      still passing
-- [x] `templates/python-checklist.md` carries the corrected list: the audit refusal
-      restored, the six omissions added, the five wrong claims fixed, `Enum` and SQL
-      binding stated once, and every library it names sitting in one of the four tiers
-- [x] `kit help python-checklist` prints it, and the protocol and the help overview send an
-      agent to the checklist for its language — this project's `AGENTS.md` regenerated in
-      the same commit as the template
-- [x] `kit init --stack python` scaffolds `pyproject.toml`, a Makefile whose `check` is the
-      same gate, `src/{{pkg}}/` with `__init__.py` and `__main__.py`, a README and the
-      stack's `.gitignore`
-- [x] `kit init --stack python --forge github` and `--forge gitlab` each write that forge's
-      pipeline, and an unknown forge gets none and is told so
-- [x] `docs/TECH.md` says what a stack declares, in one line
+- [x] `Init` takes the entry-point glob and the keep directory from the stack's own layout
+- [x] `templates/python-checklist.md` carries the corrected list
+- [x] `kit help python-checklist` prints it, and the protocol names a checklist per language
+- [x] `kit init --stack python` scaffolds pyproject, Makefile, `src/{{pkg}}/`, README, ignore
+- [x] A pipeline per forge, and none for a forge nothing names
+- [x] `docs/TECH.md` says what a stack declares
 
 ## Open questions
 
-- **Does one clause per stack hold past two?** Leaning: yes at two, and a third stack is
-  what earns a `kit help checklists` that lists them. Adding it now would be a registry
-  with one reader.
-- **uv, or a venv and pip-tools?** Leaning: uv, because the alternative needs three tools
-  to reach the same lockfile. Reversible — it is one Makefile and one CI file, and no doc
-  outside this one names it.
+- Does a clause per stack hold past two? Leaning: yes, and a third stack earns
+  `kit help checklists`. A registry with one reader is not one.
+- uv, or a venv and pip-tools? Leaning: uv. Reversible — one Makefile and one CI file name
+  it.
 
 ## Log
 
-- 2026-08-30 — drafted against a Python checklist reviewed before this doc existed, so the
-  fifteen corrections are a task rather than a thing to discover while writing the template.
-- 2026-08-30 — the library-neutrality promise is dropped rather than kept. Reconciling it
-  was one clause of a task box until the boundary library turned out to be the only thing
-  that closes "parse, do not validate", which makes naming a design position with a rule
-  under it.
-- 2026-08-31 — the declared `needs:` is dropped. It named the round ahead because both edit
-  `templates/AGENTS-section.md`, and the test is whether the work could start rather than
-  what it touches. Three rounds queued behind one prose file cost more than the conflict
-  the queue avoided.
-- 2026-08-31 — the checklists take a ceiling of their own, because Python's is 286 lines
-  against Go's 193 and one number for every help topic would have handed the other six 93
-  lines of headroom nobody justified. `Typing` and `Data modelling` merged, which is where
-  `Enum` was stated twice.
-- 2026-08-31 — the package directory is `{{pkg}}` rather than `{{name}}`, which the box
-  said. A repository called `url-shortener` cannot hold a package of that name, so the box
-  as written scaffolded something no import statement could reach.
+- 2026-08-30 — the library-neutrality promise is dropped rather than kept. The boundary
+  library is the only thing that closes "parse, do not validate", so naming became a rule
+  with four tiers.
+- 2026-08-31 — `needs:` dropped. The test is whether the work could start, not what it
+  touches.
+- 2026-08-31 — the checklists take a ceiling of their own. Python's is 286 lines against
+  Go's 193, and one number for every topic hands the other six 93 lines of headroom.
+- 2026-08-31 — the package directory is `{{pkg}}`, not the `{{name}}` the box said.
+  `url-shortener` cannot hold a package of that name.

@@ -26,18 +26,18 @@ while drafting 0039 on a plan branch that happened to name it.
 
 ## Non-goals
 
-- **Not a change to what counts as a claim.** A branch citing an id is a claim wherever the id
+- Not a change to what counts as a claim. A branch citing an id is a claim wherever the id
   sits in the name — that is deliberate and 0010 settled it. This makes one branch count once.
 
 ## Design
 
-**The worktree's branch is read the way every other ref is: strip `refs/heads/`, keep the
-rest.** Splitting on `/` and taking the last segment was only ever right for unnamespaced
+The worktree's branch is read the way every other ref is: strip `refs/heads/`, keep the
+rest. Splitting on `/` and taking the last segment was only ever right for unnamespaced
 branches, which is what the kit's own claims are, so nothing noticed. `branchName` already
 strips a remote prefix and nothing else; the worktree path is the one place that invented its
 own rule.
 
-**The convention says *mentions*, not *named after*.** `docs/TECH.md` tells drafters a plan
+The convention says *mentions*, not *named after*. `docs/TECH.md` tells drafters a plan
 branch must never be "named after a feature, since a leading four-digit ID is a claim", which
 reads as a rule about the first segment. A plan branch called `plan/fold-the-misfire-into-0039`
 is a claim on 0039 by the same rule, and it was written by an agent that had read the sentence.

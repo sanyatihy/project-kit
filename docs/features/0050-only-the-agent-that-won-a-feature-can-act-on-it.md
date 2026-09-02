@@ -16,25 +16,25 @@ branch name, and the board will tell it the feature is its own.
 
 ## Non-goals
 
-- **Changing how a claim is won.** `--force-with-lease` plus `pushFlag` is right.
-- **A lock, a lease or a heartbeat.** The branch stays the whole record.
-- **Reporting stray branches less.** A branch citing an id is still worth `split-claim`.
+- Changing how a claim is won. `--force-with-lease` plus `pushFlag` is right.
+- A lock, a lease or a heartbeat. The branch stays the whole record.
+- Reporting stray branches less. A branch citing an id is still worth `split-claim`.
 
 ## Design
 
-**Ownership is branch equality, not a name that mentions the id.** `Mine` asks whether HEAD
+Ownership is branch equality, not a name that mentions the id. `Mine` asks whether HEAD
 is *a* branch mentioning the feature's id. Reproduced: after losing the race,
 `git checkout -b notes-0001-alpha` makes the board print `yours — this checkout claims it`,
 and `kit ship` then freezes the winner's doc. `review-0001`, `wip-0001-x` and `fix-0001` all
 qualify, so this needs no malice. `Mine` becomes `HeadBranch() == f.Branch()`.
 
-**The claim is won atomically or not at all.** `claim` pushes, then runs `git branch`. A
+The claim is won atomically or not at all. `claim` pushes, then runs `git branch`. A
 name git accepts as a refspec and rejects as a branch argument leaves the claim on the
 remote and reports failure — after which `claim` says the feature is taken and `release`
 says this clone never created it, so only `--force` escapes. Create the local branch first,
 and roll the ref back if the local step fails.
 
-**A branch name comes from git's ref list, not from a string that looks like one.**
+A branch name comes from git's ref list, not from a string that looks like one.
 `git branch --format=%(refname:short)` emits `(no branch, rebasing 0002-beta)` and
 `(HEAD detached at …)`, and disambiguates a branch shadowed by a tag as `heads/0002-beta`.
 Each is read as a second claim: `split-claim` fires with an unfollowable fix, you cannot

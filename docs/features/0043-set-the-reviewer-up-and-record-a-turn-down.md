@@ -21,33 +21,33 @@ work of reviewing it is repeated until somebody happens to approve.
 
 ## Non-goals
 
-- **Holding a review open.** No lock ref, no "being reviewed" state: two agents reviewing
+- Holding a review open. No lock ref, no "being reviewed" state: two agents reviewing
   one branch waste a reading, and 0042's ref creation already stops the second from
   shipping it twice. A lock would be state to expire and clean up for a duplicate that
   costs one diff.
-- **Carrying the reason.** The turn-down records *that* and *at which commit*. Why belongs
+- Carrying the reason. The turn-down records *that* and *at which commit*. Why belongs
   in the pull request, where the argument already lives; the kit is not an issue tracker.
 
 ## Design
 
-**`kit review [<id>]`** takes the feature that has waited longest and that this checkout may
+`kit review [<id>]` takes the feature that has waited longest and that this checkout may
 review, or the one named. It prints the fetch, the detached worktree 0042 requires, the
 range `<trunk>...<branch>` so the diff is the branch's own work rather than the trunk moving
 underneath it, what a review has to establish, and the merge command for the forge. It
 refuses the checkout holding the claim, since that is the one that may not ship it.
 
-**The merge command means consulting the forge at review time.** `docs/TECH.md` says the
+The merge command means consulting the forge at review time. `docs/TECH.md` says the
 forge is detected at `init` and never consulted again; `DetectForge` reads a directory and a
 remote and keeps no state, so calling it here costs nothing and changes no answer. The
 sentence changes with this feature rather than quietly becoming untrue.
 
-**`kit review <id> --changes` creates `refs/kit/changes/<id>` at the commit turned down.**
+`kit review <id> --changes` creates `refs/kit/changes/<id>` at the commit turned down.
 Symmetric with 0042's reviewed ref and the same primitive. The board then shows the feature
 as *changes requested* rather than awaiting review, and stops offering it, until the branch
 moves past that commit — at which point the ref names an ancestor and the entry is waiting
 again. Nothing to clear by hand: new work is what clears it.
 
-**`review: human` refuses to print a merge command** and says a person takes this one. Any
+`review: human` refuses to print a merge command and says a person takes this one. Any
 non-empty value counts, which is 0029's fail-safe direction.
 
 ## Tasks

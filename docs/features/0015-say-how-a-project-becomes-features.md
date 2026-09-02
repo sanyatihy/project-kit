@@ -19,24 +19,24 @@ the agent to set `status: Accepted` — the contradiction 0014 removed from `nex
 here, because its test read the protocol text rather than what commands print.
 
 ## Non-goals
-- **Auditing decomposition quality.** A check that guessed would fire on good plans.
-- **A feature count.** Any number would be arbitrary; the criteria are per feature and the count falls out.
-- **Deciding for the agent.** `kit new` writes a doc; it does not read the vision and emit a plan.
+- Auditing decomposition quality. A check that guessed would fire on good plans.
+- A feature count. Any number would be arbitrary; the criteria are per feature and the count falls out.
+- Deciding for the agent. `kit new` writes a doc; it does not read the vision and emit a plan.
 
 ## Design
-**Bootstrapping means producing the whole set**, left `Draft` for a human. Waiting to be
+Bootstrapping means producing the whole set, left `Draft` for a human. Waiting to be
 asked is what made the shape depend on the prompt.
 
-**A feature is one pull request.** That is the criterion that discriminates and the one the
+A feature is one pull request. That is the criterion that discriminates and the one the
 kit had never written down: the agent pushes a branch and a human reads the PR, so the
 feature is the unit of review. Too big is a PR nobody can review in one sitting — the first
 run's single feature was config, domain, storage, HTTP and CLI together. Too small changes
 nothing observable and exists only so the next can begin: that is a task box wearing a doc.
 
-**The boundaries come from the vision's `## What done looks like`**, already a list of
+The boundaries come from the vision's `## What done looks like`, already a list of
 observable outcomes, so each is at least one feature.
 
-**The commands stop contradicting the protocol**, and the test that pins it reads command
+The commands stop contradicting the protocol, and the test that pins it reads command
 output rather than the protocol text — which is where an agent meets the instruction.
 
 ## Tasks

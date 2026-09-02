@@ -25,26 +25,26 @@ Both were built and verified on 0057's branch before it was dropped: commit `068
 
 ## Non-goals
 
-- **Changing what counts as a claim.** `Claims` stays broad. `docs/TECH.md` and `kit help`
+- Changing what counts as a claim. `Claims` stays broad. `docs/TECH.md` and `kit help`
   both state that local branches, remote branches and worktrees all count, and a
   conformance case pins it.
-- **A second kind of work.** 0057 proposed one and was dropped; the protocol sentence that
+- A second kind of work. 0057 proposed one and was dropped; the protocol sentence that
   made it look necessary goes in 0061.
 
 ## Design
 
-**A checkout that holds a claim takes no other.** `ClaimFeature` refuses when `Mine` is
+A checkout that holds a claim takes no other. `ClaimFeature` refuses when `Mine` is
 true of any other feature, which turns protocol rules 11 and 12 into a refusal and one
 line of prose. The fix line names the worktree to make, because that is what the agent was
 going to be told next.
 
-**A draft written on somebody else's claim is refused, not reported.** `kit new` refuses
+A draft written on somebody else's claim is refused, not reported. `kit new` refuses
 while HEAD's branch name cites a four-digit id that is not this checkout's own claim — its
 own worktree may still draft a discovered doc, which is the case that has to keep working.
 This is the kit's stated preference for a refusal over a rule, applied to the one rule
 that fails silently: a `plan/` branch carrying an id corrupts the board and audits clean.
 
-**The work is a cherry-pick, not a rewrite.** `0684b67` is self-contained and touches
+The work is a cherry-pick, not a rewrite. `0684b67` is self-contained and touches
 nothing 0057 added; it lands first and the boxes below verify it against a trunk that has
 moved since.
 
