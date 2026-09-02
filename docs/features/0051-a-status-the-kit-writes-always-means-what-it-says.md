@@ -27,11 +27,10 @@ frozen history; `ship` refuses only Shipped, so a Dropped feature ships. Reprodu
 ship 0001` on a retired doc exits 0 and prints `(was Dropped)`. `Ship` refuses any terminal
 status, with the message `drop` already uses.
 
-A frontmatter write never touches the body. `ship`'s fallback for a doc with no
-`shipped:` key is a document-wide `strings.Replace` — the shape `SetField` exists to
-prevent, and `parse.go` still carries the comment saying why: docs for a tool whose subject
-is frontmatter quote frontmatter constantly. `AddField` does exactly this job inside the
-frontmatter bounds and has had no callers since `accept --review` was deleted. Use it.
+A frontmatter write never touches the body. `ship`'s fallback for a doc with no `shipped:`
+key is a document-wide `strings.Replace`, the shape `SetField` exists to prevent: docs for a
+tool whose subject is frontmatter quote frontmatter constantly. `AddField` does the job
+inside the frontmatter bounds and has had no callers since `accept --review` was deleted.
 
 A key that appears twice is refused, not guessed. `ParseFrontmatter` keeps the last
 occurrence and `SetField` rewrites the first, so `ship` reports success, writes a line

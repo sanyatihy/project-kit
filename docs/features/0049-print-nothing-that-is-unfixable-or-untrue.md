@@ -16,12 +16,11 @@ learns the tool can be ignored stops reading it, and being believed is the only 
 
 ## Non-goals
 
-- Judging whether a doc is any good. `audit` reports what is checkable and never
-  guesses. A check that cannot separate a healthy doc from a broken one is removed rather
-  than tuned.
+- Judging whether a doc is any good. A check that cannot separate a healthy doc from a
+  broken one is deleted rather than tuned.
 - A prose linter. The three writing checks are being removed, not replaced.
-- Editing the shipped corpus to silence findings. A check that cannot separate a
-  healthy doc from a broken one is deleted; the docs it fired on stay as written.
+- Editing the shipped corpus to silence findings. The docs a deleted check fired on stay
+  as written.
 
 ## Design
 
