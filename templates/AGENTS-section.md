@@ -59,7 +59,10 @@ Do this only when you are asked to plan.
 11. **Do the topmost unticked `## Tasks` box, and only that one.** List order is the order
     of work.
 12. **Tick the box in the commit that implements it.** One box, one commit. Nobody re-reads
-    the branch to check, so the commit is what has to be honest.
+    the branch to check, so the commit is what has to be honest. The subject names the box;
+    the body stays empty, because the diff shows what changed and the doc says why. A body
+    earns its place only where the diff cannot show what it says — a revert and its cause,
+    the source a cherry-pick came from.
 13. **Discovered work becomes a new box, a new doc, or a `BACKLOG.md` line — never a `TODO`
     in the code.** Append it, unless it blocks the boxes below.
 14. **A box that turns out wrong may be rewritten, split or deleted.** Own commit, reason in
