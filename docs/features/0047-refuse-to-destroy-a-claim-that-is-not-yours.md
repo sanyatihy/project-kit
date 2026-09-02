@@ -39,8 +39,8 @@ carries the work guard and now the ownership check; the raw git line carries nei
 a losing agent reading it is one step from taking the winner's branch. A hedging sentence
 does not stop a printed command from being run.
 
-**The conformance harness gives the binary the same fixed git environment it gives
-itself.** `gitEnv()` exists for this and is applied to `p.git` but not `p.run`, so every
+The conformance harness gives the binary the same fixed git environment it gives
+itself. `gitEnv()` exists for this and is applied to `p.git` but not `p.run`, so every
 git call the binary makes inherits the developer's `~/.gitconfig`.
 
 Reproduced against the built binary:

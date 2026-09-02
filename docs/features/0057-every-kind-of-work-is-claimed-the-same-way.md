@@ -59,13 +59,13 @@ loud — see `## Open questions`.
 
 ## Open questions
 
-- **Does narrowing `Claims` belong here or nowhere?** `docs/TECH.md` and `kit help` both
+- Does narrowing `Claims` belong here or nowhere? `docs/TECH.md` and `kit help` both
   state that local branches, remote branches and worktrees all count as claims, and a
   conformance case pins that a namespaced branch in a worktree is one claim. Narrowing the
   match closes the `plan/fold-in-0002-fix` hole and weakens that. The leaning is to keep
   the broad match and refuse the name at `kit new` instead, so nothing that exists stops
   counting; the alternative is a `plan-branch-claims` finding at HIGH.
-- **Where does the chore record live?** One line appended to `docs/CHORES.md` is the
+- Where does the chore record live? One line appended to `docs/CHORES.md` is the
   cheapest thing the board can read. A chore with no file at all — the pushed branch as
   the whole record — is cheaper still and cannot drift, but then a finished chore leaves
   nothing behind. The leaning is the file.

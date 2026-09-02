@@ -35,8 +35,8 @@ whole judgement; "that is the common case" is the part that pre-answered it, and
 work it argues for is already argued for two lines below. `kit help template` prints the
 template file itself, so the one edit covers the printed topic too.
 
-**`needs-unstated` reports a non-terminal feature id named in `## Problem` or `## Design`
-that `needs:` omits.** It is a grep against ids that resolve to a doc, so a four-digit run
+`needs-unstated` reports a non-terminal feature id named in `## Problem` or `## Design`
+that `needs:` omits. It is a grep against ids that resolve to a doc, so a four-digit run
 that is a port number or a year names no feature and reports nothing. It skips terminal docs
 for `needs-unparsed`'s reason: a frozen doc's `needs:` cannot be corrected, so a finding on
 one never clears.

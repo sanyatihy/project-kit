@@ -31,8 +31,8 @@ while drafting 0039 on a plan branch that happened to name it.
 
 ## Design
 
-**The worktree's branch is read the way every other ref is: strip `refs/heads/`, keep the
-rest.** Splitting on `/` and taking the last segment was only ever right for unnamespaced
+The worktree's branch is read the way every other ref is: strip `refs/heads/`, keep the
+rest. Splitting on `/` and taking the last segment was only ever right for unnamespaced
 branches, which is what the kit's own claims are, so nothing noticed. `branchName` already
 strips a remote prefix and nothing else; the worktree path is the one place that invented its
 own rule.
