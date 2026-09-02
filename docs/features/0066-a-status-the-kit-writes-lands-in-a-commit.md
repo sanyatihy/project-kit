@@ -18,27 +18,27 @@ memory of the previous session, which is what a chain is.
 
 ## Non-goals
 
-- **Pushing the commit.** `claim` pushes because a claim is a race and only the remote can
+- Pushing the commit. `claim` pushes because a claim is a race and only the remote can
   settle it; a status is not contested, and the branch still goes for review the way rule 20
   says.
-- **Committing anything else.** `ship` already refuses a dirty tree, so what it writes
+- Committing anything else. `ship` already refuses a dirty tree, so what it writes
   afterwards is the whole diff — see below.
-- **Repairing a committed status that is wrong.** That is a status the kit never wrote, and
+- Repairing a committed status that is wrong. That is a status the kit never wrote, and
   0067 gives it a command.
 
 ## Design
 
-**The two commands that write a status commit it.** Prevention over detection, and the
+The two commands that write a status commit it. Prevention over detection, and the
 refusal above `ship`'s write is what makes it safe: the tree is clean before the stamp, so
 the commit is exactly `status:` and `shipped:`, plus the as-built doc in the one case where
 shipping created it. `drop` writes a status and a `## Log` line and is the same defect, so
 it commits too. Message form is the one this repo's own history already uses: `Ship 0065`.
 
-**A commit that cannot be made is reported, not swallowed.** No identity configured, a
+A commit that cannot be made is reported, not swallowed. No identity configured, a
 rebase in progress, a detached HEAD: the stamp is already on disk, so the command says what
 is uncommitted and exits 2 rather than claiming a freeze that only this checkout can see.
 
-**`status-not-committed` reports a terminal status absent from `HEAD`, at HIGH.** It reads
+`status-not-committed` reports a terminal status absent from `HEAD`, at HIGH. It reads
 the doc at `HEAD` and compares the status the kit acts on, which is the first check to look
 past the working tree for anything but a claim branch. HIGH for `shipped-not-pushed`'s
 reason: the record says a feature was never built, and the fix — commit it — is not

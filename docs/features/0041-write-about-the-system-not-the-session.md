@@ -20,15 +20,15 @@ this repo immediately after 0037 cut it, they fire on 7 of `localcode`'s 14 docs
 its 56 `## Log` entries.
 
 ## Non-goals
-- **Per-section budgets, or a `## Problem` ≥ `## Design` check.** The sharper signal — it
+- Per-section budgets, or a `## Problem` ≥ `## Design` check. The sharper signal — it
   separates the two corpora exactly, 10 docs here and 0 there — and it needs its own
   calibration rather than riding along. BACKLOG.
-- **Trimming the corpus again.** 0037 did that once and rule 11 freezes what shipped. This
+- Trimming the corpus again. 0037 did that once and rule 11 freezes what shipped. This
   changes what gets written next.
-- **Judging quality.** A check counts; whether a doc is good is review's job.
+- Judging quality. A check counts; whether a doc is good is review's job.
 
 ## Design
-**Write about the system, not the session.** The rule an agent can apply: a sentence about
+Write about the system, not the session. The rule an agent can apply: a sentence about
 *the work* — which session it happened in, what an earlier try did, who got a rule wrong
 — is not about the system and stops being true the moment it is fixed. State what
 holds. The incident lives in the pull request, and anything durable in `docs/TECH.md`.
@@ -39,7 +39,7 @@ session outright.
 precedent and inherits its honesty: narration written without the markers matches nothing,
 so the check is a backstop and the rule is the rule.
 
-**The `## Log` carries what the doing taught, and the entry cap goes.** 0038 capped an entry
+The `## Log` carries what the doing taught, and the entry cap goes. 0038 capped an entry
 at five lines and the template narrowed it to "only when the plan changed" — both measured
 over a corpus whose Logs had just been cut, so the calibration only confirmed the trim. The
 reference corpus puts 13 of 56 entries past that cap, and they hold its best content: a
@@ -52,7 +52,7 @@ cancels the change on the way out: 7 of 14 docs there are already over 100 lines
 Log that grows is what pushes a doc past it. Same convention as 0038 — the number, its
 sample and its date in the constant's comment.
 
-**A feature records a decision.** 40 docs here against 14 there, for the smaller subject of
+A feature records a decision. 40 docs here against 14 there, for the smaller subject of
 the two. A change whose whole story fits in its commit message is a BACKLOG line and a
 commit, not six sections padded to fill. Nothing can read a doc and rule on whether it
 decided anything, so this one is prose that stays prose — it goes in rule 1, beside the

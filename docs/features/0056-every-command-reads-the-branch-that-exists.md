@@ -16,28 +16,28 @@ unreachable at exit 0 with no `--force`.
 
 ## Non-goals
 
-- **Fetching inside `next`.** The board already asks `ls-remote`; this is about which answer
+- Fetching inside `next`. The board already asks `ls-remote`; this is about which answer
   it believes.
-- **Refusing to work offline.** `--offline` stays, and stays explicit about what it cost.
+- Refusing to work offline. `--offline` stays, and stays explicit about what it cost.
 
 ## Design
 
-**The ref about to be deleted is the ref that is asked.** `Release` resolves the branch
+The ref about to be deleted is the ref that is asked. `Release` resolves the branch
 locally first, so a stale local copy answers "carries no work" while the remote carries
 commits. `BranchBuildsOn` is asked of the remote ref when one exists, and `release` refuses
 outright when the two copies disagree — an unknown answer must not be the permissive one in
 a command that deletes.
 
-**Progress comes from the branch the remote has.** `next --help` says a taken feature's
+Progress comes from the branch the remote has. `next --help` says a taken feature's
 count "comes from its claim branch, where the boxes are actually ticked". It comes from
 whichever copy resolves first, so two checkouts print different progress for one feature in
 the same instant, and `stalled` measures its age from the same stale ref.
 
-**Every remote is a remote.** `branchName` strips only `origin/`, so on a clone whose remote
+Every remote is a remote. `branchName` strips only `origin/`, so on a clone whose remote
 is named `upstream` the trunk resolves to `upstream/main`, `trunkRef` resolves nothing,
 `stalled` can never fire and `release` refuses everything. Strip any configured remote prefix.
 
-**An answer that cannot change inside one command is asked once.** `Trunk()` uses an empty
+An answer that cannot change inside one command is asked once. `Trunk()` uses an empty
 string as its "not asked yet" sentinel — the one memo on `Repo` with no companion flag — so
 when no trunk resolves it re-runs `findTrunk` on every call. Measured at 2N+1 git processes,
 linear in the size of the board, which is the one shape `gitbudget_test.go` exists to catch.

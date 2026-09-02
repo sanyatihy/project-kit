@@ -18,12 +18,12 @@ minutes of an agent watching a progress bar — the one delay in the loop that n
 else hides.
 
 ## Non-goals
-- **Using the whole machine.** Other work runs here. The point is a faster gate, not a
+- Using the whole machine. Other work runs here. The point is a faster gate, not a
   saturated box.
-- **Making the tests share fixtures.** Each builds its own `t.TempDir()`, and that
+- Making the tests share fixtures. Each builds its own `t.TempDir()`, and that
   independence is what makes this safe. A shared fixture would trade the wait for
   flakiness.
-- **Touching what the tests assert.** Nothing about coverage or behaviour changes.
+- Touching what the tests assert. Nothing about coverage or behaviour changes.
 
 ## Design
 `t.Parallel()` as the first statement of every top-level test, and a cap in the Makefile.
@@ -34,7 +34,7 @@ Measured on this repo, `go test -race ./cmd/kit`:
 |---|---|---|---|---|---|
 | wall clock | 22.2s | 19.0s | **17.4s** | 12.0s | 8.8s |
 
-**4 is the default**, as `PARALLEL ?= 4` in the Makefile so an idle machine can raise it
+4 is the default, as `PARALLEL ?= 4` in the Makefile so an idle machine can raise it
 without editing a recipe. It leaves two thirds of the cores alone and still halves the
 gate. Uncapped is nearly four times faster and is deliberately not the default: the gate
 runs beside whatever else the operator is doing.

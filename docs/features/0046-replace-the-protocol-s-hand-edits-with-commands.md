@@ -17,15 +17,15 @@ doc, which rule 11 forbids. `ship` accepts a worktree of scratch files without a
 three hit in one feature built under the protocol elsewhere.
 
 ## Non-goals
-- **Deciding what a frozen doc is.** Rule 11 against the checks that contradict it is one
+- Deciding what a frozen doc is. Rule 11 against the checks that contradict it is one
   question, and it is in BACKLOG. `kit check` needs no answer to it: no agent hand-edits the
   doc, so rule 11 needs no exception in prose.
-- **Setting `check:` after a doc ships.** A doc that never named a date never claimed to be
+- Setting `check:` after a doc ships. A doc that never named a date never claimed to be
   a bet, and a revisit somebody wants anyway is a BACKLOG line. Nor does `ship` prompt for
   the field: a non-interactive session has nobody to answer.
-- **A `merged-claim` finding.** `AwaitingReview` already skips a branch the trunk contains
+- A `merged-claim` finding. `AwaitingReview` already skips a branch the trunk contains
   and compares against a trunk ref that prefers the local one — a freshness bug, in BACKLOG.
-- **A field for "paused".** The branch and its pull request say it, and a second copy in the
+- A field for "paused". The branch and its pull request say it, and a second copy in the
   doc could only disagree — 0032's reason for there being no in-progress status. A paused
   branch reads as a claim and then as `stalled`, which is what `stalled` is for.
 
@@ -38,20 +38,20 @@ proposal, one carrying anything else is work — so the test is one the board al
 `--force` is the way past it, because an agent that cannot release through the kit reaches
 for `git` and the kit stops being the record.
 
-**Pausing is rule 13's handoff without the status change**: push, open the pull request
+Pausing is rule 13's handoff without the status change: push, open the pull request
 unfinished, and say why there. Neither path writes `## Log` — under the routing rule an
 entry naming no change to the plan is not an entry, and a plan that did change has its
 command already: rule 7 for a box, `kit drop` for the whole feature.
 
-**`kit check <id> "<outcome>"` stamps `checked:` and appends one `## Log` line**, the way
+`kit check <id> "<outcome>"` stamps `checked:` and appends one `## Log` line, the way
 `ship` stamps `shipped:`. That is the only write into a frozen doc the protocol asks for, so
 owning it is what lets rule 11 stay absolute.
 
-**`kit ship` refuses a dirty worktree before it writes anything.** The last box is ticked in
+`kit ship` refuses a dirty worktree before it writes anything. The last box is ticked in
 the commit that implements it, so a clean tree is the expected state at ship.
 `git status --porcelain` is the test and it already excludes ignored files.
 
-**The protocol does not grow.** Rule 8 loses the recipe it no longer needs, which pays for
+The protocol does not grow. Rule 8 loses the recipe it no longer needs, which pays for
 the two lines it never had: `kit next --json` is the machine-readable board, and rule 9
 covers the human who is present rather than filing a question at somebody sitting there.
 `protocolBudget` holds at 123 or falls — 0045 is renegotiating that ceiling now, which is

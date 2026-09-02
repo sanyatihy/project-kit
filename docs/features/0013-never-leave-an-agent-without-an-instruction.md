@@ -24,19 +24,19 @@ Separately, with only drafts open `next` printed *"settle the design, then set s
 Accepted"* — instructing an agent to take the human's gate.
 
 ## Non-goals
-- **Detecting two agents in one checkout.** The checkout is the kit's unit of identity; two agents in one are indistinguishable to it.
-- **Refusing to print the board.** Seeing what is taken and why things are blocked is useful; the board gains a conclusion, not a censor.
-- **A new command or state.** This is what `next` already computes, said out loud.
+- Detecting two agents in one checkout. The checkout is the kit's unit of identity; two agents in one are indistinguishable to it.
+- Refusing to print the board. Seeing what is taken and why things are blocked is useful; the board gains a conclusion, not a censor.
+- A new command or state. This is what `next` already computes, said out loud.
 
 ## Design
-**Every run of `next` ends with an instruction.** That is the invariant — the states are:
+Every run of `next` ends with an instruction. That is the invariant — the states are:
 something is yours, something is free, nothing is free, nothing exists yet.
 
-**Nothing free gets the instruction the situation calls for**: everything is claimed or
+Nothing free gets the instruction the situation calls for: everything is claimed or
 waiting, a claimed feature is not yours to help with, and stopping is correct — in those
 terms, because the failure was an agent concluding the opposite from silence.
 
-**Drafts stop telling an agent to accept.** A tool that instructs past the project's own gate
+Drafts stop telling an agent to accept. A tool that instructs past the project's own gate
 makes the gate advisory.
 
 ## Tasks

@@ -18,17 +18,17 @@ notes — fourteen entries in one feature, each revising the last — then remov
 cap on that reading.
 
 ## Non-goals
-- **Shorter docs.** Length is the symptom; what a line is *for* is the rule. No threshold
+- Shorter docs. Length is the symptom; what a line is *for* is the rule. No threshold
   moves down here and `doc-bloat` is untouched.
-- **The `## Problem` ≥ `## Design` composition check.** Still the sharper instrument, still
+- The `## Problem` ≥ `## Design` composition check. Still the sharper instrument, still
   needs a corpus written under this rule before it can be calibrated. Stays in BACKLOG.
-- **Re-trimming shipped feature docs.** Rule 11 freezes them, and they are where the
+- Re-trimming shipped feature docs. Rule 11 freezes them, and they are where the
   incidents belong. `docs/TECH.md` has no status and is rewritten here.
-- **Ruling on whether a fact is durable.** No check can. One shape gets a detector; the
+- Ruling on whether a fact is durable. No check can. One shape gets a detector; the
   rest is prose and says so.
 
 ## Design
-**Three destinations, chosen as the sentence is written.**
+Three destinations, chosen as the sentence is written.
 
 | the sentence is | it goes to |
 | --- | --- |
@@ -36,28 +36,28 @@ cap on that reading.
 | what changed this doc's plan | one `## Log` entry naming the change |
 | neither | the pull request |
 
-**What makes it mechanical is "name what changed".** An entry that cannot name a box
+What makes it mechanical is "name what changed". An entry that cannot name a box
 rewritten, a premise falsified, or a number something downstream reads is not an entry.
 This is what "what the doing taught" fails to exclude: under R&D the doing teaches on every
 run, so every run qualifies, and the doc becomes the run log with the conclusions mixed in.
 
-**Rule and evidence are separate sentences, and only the rule is mandatory.** Evidence earns
+Rule and evidence are separate sentences, and only the rule is mandatory. Evidence earns
 a trailing clause where it stops the rule being reversed — the constraint or the
 measurement, never how it was discovered and never the order the attempts came in. The
 budget stays (`116 git processes against 29`); the session that measured it goes.
 
-**0041's mechanism stands, its calibration does not.** The per-entry cap stays removed —
+0041's mechanism stands, its calibration does not. The per-entry cap stays removed —
 entry length was never the signal — but the reference corpus is withdrawn: `localcode`'s
 logs are notes taken during a sweep, which is the shape being excluded, so a target taken
 from them aims at the defect.
 
-**Detection is one marker set, with the same bargain `secret-in-doc` makes.**
+Detection is one marker set, with the same bargain `secret-in-doc` makes.
 `session-narration` grows to the revision shapes an R&D corpus produces, keeping only
 markers that misfire on neither corpus: certain when it fires, blind to prose, so the rule
 is still the rule. `kit ship` is where routing is actually decided, so it names the three
 destinations rather than saying "move durable facts".
 
-**`docs/TECH.md` is rewritten to the rule it now states.** It is read before every change
+`docs/TECH.md` is rewritten to the rule it now states. It is read before every change
 and it is the worked example; left as it is, it teaches the old shape to everything that
 reads it. `techBudget` is retaken from the result — a ceiling, not a target.
 

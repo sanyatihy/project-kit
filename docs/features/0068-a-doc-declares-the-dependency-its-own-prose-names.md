@@ -20,17 +20,17 @@ paid for the first: the nudge misleads a planner who has no such round behind th
 
 ## Non-goals
 
-- **Judging whether the declared ids are the right ones.** 0065's line, unchanged: no
+- Judging whether the declared ids are the right ones. 0065's line, unchanged: no
   heuristic has that judgement.
-- **Reading anything but `## Problem` and `## Design`.** `## Log` and `## Non-goals` cite
+- Reading anything but `## Problem` and `## Design`. `## Log` and `## Non-goals` cite
   neighbouring features constantly, and a citation there is history rather than a plan.
-- **Reporting a mention of a feature that has shipped or been dropped.** Measured over the
+- Reporting a mention of a feature that has shipped or been dropped. Measured over the
   65 docs here: 41 name an id their `needs:` omits and every one is a reference to settled
   work, so a check without that gate is noise at 63%. With it, no doc on the trunk fires.
 
 ## Design
 
-**The comment states the test and stops.** "Could this start before that ships?" is the
+The comment states the test and stops. "Could this start before that ships?" is the
 whole judgement; "that is the common case" is the part that pre-answered it, and the parallel
 work it argues for is already argued for two lines below. `kit help template` prints the
 template file itself, so the one edit covers the printed topic too.
@@ -41,7 +41,7 @@ that is a port number or a year names no feature and reports nothing. It skips t
 for `needs-unparsed`'s reason: a frozen doc's `needs:` cannot be corrected, so a finding on
 one never clears.
 
-**LOW, and the first check to use that level.** The check cannot tell a dependency from a
+LOW, and the first check to use that level. The check cannot tell a dependency from a
 comparison, so a draft contrasting itself with a sibling draft trips it, and the fix there is
 a reworded sentence rather than a field — that is too weak for MEDIUM and worth printing
 anyway, because the misread it catches costs a session. `--strict` gates on HIGH, so nothing

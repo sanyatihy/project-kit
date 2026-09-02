@@ -15,23 +15,23 @@ days decompose against different pictures. The kit already has the other two cor
 `TECH.md` is what exists, `features/` is what is being done now.
 
 ## Non-goals
-- **Auditing whether a feature matches the vision.** A judgement call; a check that guessed would fire on good features.
-- **Freezing it.** It moves while the project is built — that is the normal case, not drift.
-- **A roadmap, milestones or dates.** The board is `features/` and BACKLOG.md holds what is unscheduled.
-- **Generating features from it.** The agent decomposes; there is no heuristic here worth encoding.
+- Auditing whether a feature matches the vision. A judgement call; a check that guessed would fire on good features.
+- Freezing it. It moves while the project is built — that is the normal case, not drift.
+- A roadmap, milestones or dates. The board is `features/` and BACKLOG.md holds what is unscheduled.
+- Generating features from it. The agent decomposes; there is no heuristic here worth encoding.
 
 ## Design
-**`docs/VISION.md`, written by `kit init` as a stub with prompts.** It completes the triad:
+`docs/VISION.md`, written by `kit init` as a stub with prompts. It completes the triad:
 vision is what the project is becoming, feature docs what is being done now, as-built what
 exists — one owner and one lifecycle each.
 
-**Mutable, no status.** Same rules as `TECH.md`; the difference is tense — the as-built doc
+Mutable, no status. Same rules as `TECH.md`; the difference is tense — the as-built doc
 must be true now, the vision is allowed to be aspirational.
 
-**A registered `kit help vision` topic**, so the document's purpose is reachable without
+A registered `kit help vision` topic, so the document's purpose is reachable without
 this repository. Protocol gains one line, not a section: read the vision before drafting.
 
-**`no-vision` is LOW** and fires only once a project has feature docs — before that there is
+`no-vision` is LOW and fires only once a project has feature docs — before that there is
 nothing to decompose and it would be noise on a fresh `init`.
 
 ## Tasks

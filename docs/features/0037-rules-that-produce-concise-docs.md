@@ -15,10 +15,10 @@ log diaries, walkthroughs of code that now exists, incidents already recorded in
 `docs/TECH.md`. The decisions inside are worth keeping; the retelling around them is not.
 
 ## Non-goals
-- **Losing anything.** Every decision, constraint, measurement and rejected alternative
+- Losing anything. Every decision, constraint, measurement and rejected alternative
   stays. If a sentence is the only record of why something is the way it is, it stays.
-- **Hitting a number.** Each doc ends where its content ends.
-- **Rewriting the protocol.** The one-off edit of shipped docs is authorised directly, not
+- Hitting a number. Each doc ends where its content ends.
+- Rewriting the protocol. The one-off edit of shipped docs is authorised directly, not
   by a rule change.
 
 ## Design

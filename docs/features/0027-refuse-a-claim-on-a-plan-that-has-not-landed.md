@@ -24,12 +24,12 @@ own author coordinated. It happened here — four features built this way, three
 commits under the builder's name, nothing pushed for review.
 
 ## Non-goals
-- **Checking the plan is merged on the *remote* trunk.** The local trunk ref is what
+- Checking the plan is merged on the *remote* trunk. The local trunk ref is what
   `Trunk()` and `trunkRef()` already resolve, and requiring a network call would make
   `claim` fail offline for a reason that has nothing to do with claiming.
-- **Refusing when there is no trunk at all.** A fresh project with one branch and no
+- Refusing when there is no trunk at all. A fresh project with one branch and no
   remote is normal, and `claim` already says the claim is invisible to everyone.
-- **Blocking `new` or `next`.** Drafting and reading the board off a plan branch are
+- Blocking `new` or `next`. Drafting and reading the board off a plan branch are
   correct; it is taking work that must wait.
 
 ## Design

@@ -16,16 +16,16 @@ learns the tool can be ignored stops reading it, and being believed is the only 
 
 ## Non-goals
 
-- **Judging whether a doc is any good.** `audit` reports what is checkable and never
+- Judging whether a doc is any good. `audit` reports what is checkable and never
   guesses. A check that cannot separate a healthy doc from a broken one is removed rather
   than tuned.
-- **A prose linter.** The three writing checks are being removed, not replaced.
-- **Editing the shipped corpus to silence findings.** A check that cannot separate a
+- A prose linter. The three writing checks are being removed, not replaced.
+- Editing the shipped corpus to silence findings. A check that cannot separate a
   healthy doc from a broken one is deleted; the docs it fired on stay as written.
 
 ## Design
 
-**A check that reports a state nobody may fix is deleted, not tuned.** Rule 11 freezes a
+A check that reports a state nobody may fix is deleted, not tuned. Rule 11 freezes a
 Shipped doc, so a finding whose only remedy edits one is a standing instruction to break
 the protocol. Measured on `localcode`, whose 18 docs are the only corpus written under it:
 
@@ -38,10 +38,10 @@ the protocol. Measured on `localcode`, whose 18 docs are the only corpus written
 | `long-sentence` | a sentence parser, 130 lines, for one LOW finding on frozen docs | delete |
 | `needs-unknown` | walks a Dropped doc's `needs:`, reporting for ever | guard on terminal status |
 
-**Deleting five checks deletes their machinery.** `NarrationMarkers` and the sentence
+Deleting five checks deletes their machinery. `NarrationMarkers` and the sentence
 splitter are half of `parse.go` and serve nothing else.
 
-**Every statement about behaviour is checked against the behaviour.** The exit-code
+Every statement about behaviour is checked against the behaviour. The exit-code
 contract is wrong in two documents — `claim` exits 1 on a lost race, which nine tests pin.
 The README enumerates checks by hand under a sentence claiming the list cannot drift, and
 it has drifted twice: it invents `no-claim` and omits `duplicate-id`. The list is deleted
@@ -49,12 +49,12 @@ and `kit help checks` is cited, because the generated list is the one that canno
 Rule numbers leave user-facing output: `ship` prints "rule 8" and `kit check --help` says
 "rule 11", numbers valid in neither list a reader holds.
 
-**`kit init` writes a file an agent can act on.** Today it writes an `AGENTS.md` that
+`kit init` writes a file an agent can act on. Today it writes an `AGENTS.md` that
 opens on an `## Work protocol` heading with no title and no note that the section is
 regenerated, so the promise that house rules live above the marker reaches nobody. The
 file gains a project title and that note.
 
-**Every state of `next` ends with the action for that state.** A doc straight out of
+Every state of `next` ends with the action for that state. A doc straight out of
 `kit new` lands in `blocked` and the closing line reads "stopping here is the right
 outcome", when the work is to write the plan that was just created. `guidanceFor` gains
 the case.

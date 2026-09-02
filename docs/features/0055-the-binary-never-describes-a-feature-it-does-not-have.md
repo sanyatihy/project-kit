@@ -16,33 +16,33 @@ build compares what the binary says about itself with what it does.
 
 ## Non-goals
 
-- **Golden files for all output.** A whole-page snapshot fails on every wording change and
+- Golden files for all output. A whole-page snapshot fails on every wording change and
   teaches people to re-record it. What is pinned is the identifiers, not the prose.
-- **Rewriting the prose again.** The corrections here are the ones the tests then hold.
+- Rewriting the prose again. The corrections here are the ones the tests then hold.
 
 ## Design
 
-**Every identifier the help text names is checked against the thing that defines it.** Three
+Every identifier the help text names is checked against the thing that defines it. Three
 classes, three tests, all cheap because the registries already exist: a check code named
 anywhere in `help.go` must be in `Checks`; a command named in `commandHelp` must be a case
 in the dispatcher and the reverse; a topic named in the overview must resolve in `topics`
 and the reverse. `kit ship --help` advertising `doc-bloat` is what this catches.
 
-**A refusal list is complete or it is not a list.** `kit ship` refuses for six reasons and
+A refusal list is complete or it is not a list. `kit ship` refuses for six reasons and
 the protocol names four; `release`'s exit-2 list omits two that 0047 added; `claim --help`
 says every refusal is one the board already makes, and three are not. Each list is
 generated from, or tested against, the refusals in the code.
 
-**The machine-readable board is a contract, so its shape is pinned.** `moved` carries
+The machine-readable board is a contract, so its shape is pinned. `moved` carries
 `0001-01-01T00:00:00Z` on every unclaimed feature because `omitempty` does nothing for a
 struct; empty groups marshal as `null` while `findings` marshals as `[]`; `--json` on an
 unset-up project is untested in both commands. A schema test covers the shapes, and the
 zero time stops being emitted.
 
-**Help goes to stdout.** `kit next -h` writes to stderr and exits 0, so redirecting it
+Help goes to stdout. `kit next -h` writes to stderr and exits 0, so redirecting it
 produces an empty file, while `kit new --help` writes to stdout.
 
-**A comment that describes deleted code is deleted with it.** The cut left a docstring for
+A comment that describes deleted code is deleted with it. The cut left a docstring for
 `Bloat` sitting on `SetStatus`, one for `gitRun` sitting on `gitFed`, one for `Audit` sitting
 on `docState`, three dangling fragments at the end of `parse.go`, and two rule-number
 citations that are now wrong.

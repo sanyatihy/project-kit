@@ -27,16 +27,16 @@ drafted this feature did.
 
 ## Non-goals
 
-- **A counter file.** A number in a tracked file is a line two agents edit at once, which
+- A counter file. A number in a tracked file is a line two agents edit at once, which
   is the collision this feature exists to remove.
-- **Renumbering history.** Ids already handed out stay where they are, including the ones
+- Renumbering history. Ids already handed out stay where they are, including the ones
   a previous collision produced.
-- **Refusing to work offline.** A project with no remote still drafts; it just cannot be
+- Refusing to work offline. A project with no remote still drafts; it just cannot be
   protected from a second agent it cannot see.
 
 ## Design
 
-**The id is taken by the same compare-and-swap that takes a feature.** `kit new` pushes
+The id is taken by the same compare-and-swap that takes a feature. `kit new` pushes
 `refs/kit/ids/<id>` before writing the doc, and a push that does not create the ref means
 the id is gone and the next one is tried. A ref update is a compare-and-swap against the
 value the server advertised, so of any number of simultaneous drafters exactly one gets a
@@ -44,17 +44,17 @@ given number — the property `kit claim` already relies on, applied one step ea
 `BACKLOG.md` proposes this and it is promoted here because the workaround has now been
 used.
 
-**A reserved id is never reused, however the doc leaves.** The ref outlives the file, so
+A reserved id is never reused, however the doc leaves. The ref outlives the file, so
 deleting a doc no longer frees its number and `kit drop` stops being the only thing
 standing between a deleted file and a duplicated id. `kit drop` keeps its own job:
 retiring a feature visibly, with dependants named.
 
-**No remote means no protection, said out loud.** With no remote there is nothing to
+No remote means no protection, said out loud. With no remote there is nothing to
 compare and swap against, so `kit new` falls back to the disk scan and says which
 guarantee it could not give. Silently degrading is what makes the current behaviour hard
 to see.
 
-**The refs are cheap and the board never reads them.** They cost one push per draft and
+The refs are cheap and the board never reads them. They cost one push per draft and
 answer exactly one question. `next` and `audit` keep reading the docs, so a stale ref
 namespace cannot make the board wrong.
 

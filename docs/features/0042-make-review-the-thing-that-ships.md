@@ -22,48 +22,48 @@ share one credential, so every commit carries the operator's name.
 
 ## Non-goals
 
-- **Telling agents apart.** The kit cannot and will not try. Everything below is a fact
+- Telling agents apart. The kit cannot and will not try. Everything below is a fact
   about a commit, not about a person.
-- **Running anything.** Not tests, not builds. A verdict the kit produced would be one
+- Running anything. Not tests, not builds. A verdict the kit produced would be one
   nobody could audit. It says what to establish; the reviewer establishes it.
-- **Merging.** The forge owns that. Required approvals on the trunk is the only real
+- Merging. The forge owns that. Required approvals on the trunk is the only real
   enforcement there has ever been, and the protocol says to turn it on.
-- **A status for waiting.** 0032 removed the last one. Finished-and-waiting is derivable:
+- A status for waiting. 0032 removed the last one. Finished-and-waiting is derivable:
   every box ticked, on a pushed branch, not yet on the trunk.
 
 ## Design
 
-**`Shipped` is set by a checkout that does not hold the claim.** A claim is a branch name,
+`Shipped` is set by a checkout that does not hold the claim. A claim is a branch name,
 so a checkout on `0042-…` *is* the claim and is refused. The reviewer works detached —
 `git worktree add --detach <path> origin/<branch>` — which is what makes "not the builder"
 a structural fact rather than an etiquette. `kit ship` inverts its current refusal, and that
 refusal carries the builder's next instruction: push and stop, a reviewer ships this. Its
 other verifications, boxes ticked and `needs:` met, stay where they are.
 
-**The act is recorded as a ref, because a commit cannot record it.** `kit ship` creates
+The act is recorded as a ref, because a commit cannot record it. `kit ship` creates
 `refs/kit/reviewed/<id>` at the commit it reviewed, then writes the status. Ref creation is
 a server-side compare-and-swap — the same primitive `claim` trusts — so one approval wins
 and a second is told the work is already shipped. Verified against the forge: a `refs/kit/*`
 ref is created, advertised to `ls-remote` and deleted like any other.
 
-**The ref names the commit, so the check is exact.** The reviewed ref must be the *parent*
+The ref names the commit, so the check is exact. The reviewed ref must be the *parent*
 of the commit that set `Shipped`: the reviewer approves the work, and the status commit sits
 directly on top of it. `unreviewed-ship` at HIGH reports a Shipped doc whose ref is missing
 or names anything else — which is what a hand-edited status looks like, and what shipping
 work that grew after it was read looks like.
 
-**It costs no extra network call.** `remoteHeads` asks `ls-remote --heads`; dropping the
+It costs no extra network call. `remoteHeads` asks `ls-remote --heads`; dropping the
 flag returns the kit refs in the same process, filtered apart locally. The git-process
 ceiling in `cmd/kit/gitbudget_test.go` fails the build if that stops being true.
 
-**What the board reads changes with it.** `AwaitingReview` stops meaning *Shipped on the
+What the board reads changes with it. `AwaitingReview` stops meaning *Shipped on the
 branch* and starts meaning *every box ticked, on a pushed branch, not on the trunk* — true
 of docs shipped either way, so the board stays correct across the change. `done-not-shipped`
 must stay quiet for exactly that state or it reports MEDIUM on every feature waiting its
 turn. Both callers read one memoised set, or the per-feature `git show` is the fan-out 0039
 removed.
 
-**What this guarantees.** That the status was set by the tool rather than typed; that it was
+What this guarantees. That the status was set by the tool rather than typed; that it was
 set from a checkout not holding the claim; that the work shipped is the work reviewed, to
 the commit. **What it does not.** That two different agents were involved — an agent that
 releases its claim can review its own work, which is the tier the kit has always been:

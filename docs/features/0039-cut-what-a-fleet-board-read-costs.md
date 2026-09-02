@@ -27,26 +27,26 @@ claim on a Shipped feature.
 
 ## Non-goals
 
-- **No cache that outlives the process.** A remote branch list held between runs would report
+- No cache that outlives the process. A remote branch list held between runs would report
   a claim that was released seconds ago; claims are read from the remote, never from a cache.
-- **Not leftover-branch cleanup.** Twelve merged claim branches sit on this remote; the answer
+- Not leftover-branch cleanup. Twelve merged claim branches sit on this remote; the answer
   is delete-on-merge on the forge, not a kit check that fires on a healthy repo. Nothing here
   deletes a branch either — `audit` does not write.
 
 ## Design
 
-**Projects are read concurrently, capped.** They share nothing — each is its own `Repo`, and
+Projects are read concurrently, capped. They share nothing — each is its own `Repo`, and
 the fleet board already merges independent results — so the whole serial cost is avoidable.
 The cap follows 0034's precedent rather than inventing a second parallelism idiom. Output
 order stays the order the paths were given: 0026 made reporting positional, and a board whose
 lines move between runs cannot be compared with the last one.
 
-**Within a project, the network call starts before the local walk.** Parse, `show-ref` and the
+Within a project, the network call starts before the local walk. Parse, `show-ref` and the
 per-feature reads do not need the remote's answer until the checks run, so the round trip
 overlaps the work instead of preceding it. Worth about 0.8s per project here, nothing where
 there is no remote.
 
-**`shipped-not-pushed` asks the trunk's copy of the doc what its status is.** The handoff
+`shipped-not-pushed` asks the trunk's copy of the doc what its status is. The handoff
 happened if and only if a copy saying `Shipped` reached the trunk on the remote, and that is
 what to test — not the age of a commit, which any later edit resets. Presence of the doc is
 not the test and cannot be: a doc reaches the trunk when it is *drafted*, so 0039's own copy
@@ -54,13 +54,13 @@ on `origin/main` says `Draft` while this is being written, and a presence test w
 the check for every feature. The branch-list negative stays as it is, because a Shipped doc on
 a pushed branch is the awaiting-review state and must not fire.
 
-**That replaces the per-feature fan-out with a batched read.** `ls-tree` on the trunk plus one
+That replaces the per-feature fan-out with a batched read. `ls-tree` on the trunk plus one
 `cat-file --batch` reads every doc in two processes — 20ms for 40 docs here — where the
 current pair of questions costs one `log -1` per feature and one `branch --contains` per
 revision, 63 processes for the same answer. The memoisation 0035 applied to per-repo answers
 is not needed if the question is asked once for all of them.
 
-**`gitcount` measures the online path too.** It stays offline by default and grows a second
+`gitcount` measures the online path too. It stays offline by default and grows a second
 line for the online fan-out against a local remote, so the network is one cheap process and
 what is measured is still per-feature growth. A guard that cannot see the path where the
 duplication lives is why this shipped twice.

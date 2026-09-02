@@ -21,11 +21,11 @@ This is `unfilled-template`'s defect one file over. Rule 1 sends every agent to
 wrong feature — against a stub, anything traces to nothing.
 
 ## Non-goals
-- **Judging whether a vision is any good.** Only whether it was written. `audit`
+- Judging whether a vision is any good. Only whether it was written. `audit`
   reports what is checkable and never guesses.
-- **Refusing to create the stub.** The headings are the prompt; a project with no
+- Refusing to create the stub. The headings are the prompt; a project with no
   file at all is worse off.
-- **Blocking `new` or `claim` on it.** A thin vision is a planning problem, not a
+- Blocking `new` or `claim` on it. A thin vision is a planning problem, not a
   reason to stop work already planned.
 
 ## Design

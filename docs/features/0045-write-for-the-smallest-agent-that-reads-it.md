@@ -24,18 +24,18 @@ A small local model pays this first and worst. It reads 496 lines of `AGENTS.md`
 `docs/TECH.md` before it opens a feature doc, and then it imitates the style it just read.
 
 ## Non-goals
-- **A tighter word or line budget on a document.** It is the gameable instrument: the
+- A tighter word or line budget on a document. It is the gameable instrument: the
   cheapest way to clear it is to delete a decision. `DocLineLimit` stays where it is.
-- **A filler-phrase marker set.** Measured over both corpora: 2 of 44 docs here and 1 of
+- A filler-phrase marker set. Measured over both corpora: 2 of 44 docs here and 1 of
   16 there contain one. The stock phrases are not what makes these docs long.
-- **A restatement check inside one doc.** Shingle overlap between `## Problem` and
+- A restatement check inside one doc. Shingle overlap between `## Problem` and
   `## Design` peaks at 6.2% across the 44 docs, so the restatement 0037 named is not
   literal and cannot be matched.
-- **The `## Problem` ≥ `## Design` composition check.** Still the sharper instrument on
+- The `## Problem` ≥ `## Design` composition check. Still the sharper instrument on
   what a doc spends its lines on, still needs its own calibration. Stays in BACKLOG.
-- **A short-form protocol for small models.** That is one fact with two homes, and the
+- A short-form protocol for small models. That is one fact with two homes, and the
   short one would be the one nobody updates.
-- **Rewriting shipped docs.** Rule 11 freezes them. This changes what gets written next.
+- Rewriting shipped docs. Rule 11 freezes them. This changes what gets written next.
 
 ## Design
 **One rule, in the protocol: a sentence earns its place by deciding something, constraining
@@ -44,7 +44,7 @@ sentence with no taste required, which is what a model with few parameters can a
 "As much as necessary and no more" is not that test — necessity is a judgement, and the
 model making it is the one that wrote the sentence.
 
-**One claim per sentence, and evidence gets one trailing clause and never a second.** 0044
+One claim per sentence, and evidence gets one trailing clause and never a second. 0044
 already grants the first clause where it stops a rule being reversed. The second is where
 the words are: p99 is 47 words here and 57 in the reference corpus, and a sentence that
 needs three clauses is two sentences with the smaller one hidden.
@@ -54,14 +54,14 @@ not rise.** Each of the others keeps one line that cites the rule instead of res
 A raise is the signal that the rule was written as an addition, so `protocolBudget` holding
 at 123 or falling is the check on this feature rather than a matter of taste.
 
-**The backstop is per sentence, not per document, and that is the whole answer to gaming.**
+The backstop is per sentence, not per document, and that is the whole answer to gaming.
 A document ceiling is cleared most cheaply by cutting a paragraph, so it teaches deletion.
 A sentence ceiling is cleared most cheaply by splitting the sentence, which deletes nothing
 and leaves every decision, constraint and measurement in place. `long-sentence` at LOW,
 over the docs rule 11 still leaves editable, at a threshold chosen for the volume it
 produces rather than taken from either corpus's tail.
 
-**The template carries one rejected sentence beside its rewrite.** A small model imitates
+The template carries one rejected sentence beside its rewrite. A small model imitates
 the corpus it just read more reliably than it follows an instruction about it, and this is
 how every convention here that stuck was taught. It costs no protocol lines and no session
 context, because a template is read when a doc is created rather than every session.

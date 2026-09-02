@@ -30,31 +30,31 @@ unattended, so a hang costs more than a wrong answer.
 
 ## Non-goals
 
-- **Teaching `next` to refuse.** The board reports; it does not gate. What it must not do
+- Teaching `next` to refuse. The board reports; it does not gate. What it must not do
   is print a command that will be refused.
-- **Removing `--offline`.** It stays, and stays explicit about what it cost.
-- **A second trunk check.** `claim` already resolves the trunk; this is the same question
+- Removing `--offline`. It stays, and stays explicit about what it cost.
+- A second trunk check. `claim` already resolves the trunk; this is the same question
   asked of HEAD.
 
 ## Design
 
-**The board offers only what a claim would accept.** `next` asks the question `claim`
+The board offers only what a claim would accept. `next` asks the question `claim`
 already answers and reports the feature as blocked, naming the round that has to land,
 rather than printing a command that exits 2. One condition, evaluated once, read by both
 — the same shape `Survey` and `ClaimFeature` already share for `needs:`.
 
-**A claim carries the trunk, not the checkout.** `ClaimFeature` refuses when HEAD holds
+A claim carries the trunk, not the checkout. `ClaimFeature` refuses when HEAD holds
 commits absent from the trunk, which is the mirror of the check it already makes on the
 doc, and its refusal already states the reason: only the branch's own author could merge
 it. The fix line names the worktree to make, because that is what the agent was going to
 be told next anyway.
 
-**A deadline that cannot be enforced is not a deadline.** `cmd.WaitDelay` closes the pipes
+A deadline that cannot be enforced is not a deadline. `cmd.WaitDelay` closes the pipes
 the grandchild holds, so the bound the help text already promises becomes true. The
 alternative — documenting the real behaviour — leaves an unattended agent stopped for ever
 on a network the operator cannot see.
 
-**A feature appears once on the board.** A shipped-but-unmerged feature is listed under
+A feature appears once on the board. A shipped-but-unmerged feature is listed under
 both `taken` and `awaiting review`; the second is the true one, because the work is
 finished and the claim is only waiting for a merge.
 

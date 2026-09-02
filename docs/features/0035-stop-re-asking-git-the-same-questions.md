@@ -25,11 +25,11 @@ on this repo from under a second to 1m57s. The pattern survived in two more plac
 compounds with the fleet board — `kit next ~/code/*` pays it per project.
 
 ## Non-goals
-- **Caching between runs.** Nothing on disk, no state the kit has to invalidate. These
+- Caching between runs. Nothing on disk, no state the kit has to invalidate. These
   answers live for one command and die with it.
-- **Batching the reads that genuinely differ**, such as one `git show` per claim branch to
+- Batching the reads that genuinely differ, such as one `git show` per claim branch to
   count its boxes. Those ask different questions; only the repeated ones are waste.
-- **A general query layer.** Three memoised accessors, in the shape `Trunk()` already uses.
+- A general query layer. Three memoised accessors, in the shape `Trunk()` already uses.
 
 ## Design
 `HeadBranch()` and `remotes()` memoise, exactly as `Trunk()` and `remoteHeads()` already
@@ -42,7 +42,7 @@ Measured with a counting wrapper on `$PATH`, same 30-feature project:
 | today | 116 | 0.56s |
 | memoised | **56** | **0.30s** |
 
-**Then the 32 `rev-parse`.** `resolveBranch` tries `refs/heads/<branch>` and then each
+Then the 32 `rev-parse`. `resolveBranch` tries `refs/heads/<branch>` and then each
 `refs/remotes/<remote>/<branch>`, so a claimed feature costs one or two processes and the
 trunk lookup costs more. A single `git show-ref` lists every ref in the repository at once,
 which answers all of them from one map. This is the larger change of the two and it is

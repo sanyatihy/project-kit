@@ -14,16 +14,16 @@ them. Separately, the protocol governs the feature-doc process and says nothing 
 approach the code, which is how an agent can follow it perfectly and still sprawl.
 
 ## Non-goals
-- **Scaffolding deployment files.** Terraform, ansible and images rot fastest; this ships the patterns, not the files.
-- **Auditable rules.** `audit` cannot check a word of either, and a checklist it could check would be duller.
-- **Provider specifics.** DigitalOcean droplets, Spaces and doctl stay in ai-bot.
+- Scaffolding deployment files. Terraform, ansible and images rot fastest; this ships the patterns, not the files.
+- Auditable rules. `audit` cannot check a word of either, and a checklist it could check would be duller.
+- Provider specifics. DigitalOcean droplets, Spaces and doctl stay in ai-bot.
 
 ## Design
 Both ship as embedded `kit help` topics. Copies drift and `audit` is what notices drift —
 nothing could notice a stale checklist in twenty repos, so there is one copy, updated on
 upgrade.
 
-**The checkbox syntax has to go.** In a kit project `- [ ]` means "a PR-sized unit of work,
+The checkbox syntax has to go. In a kit project `- [ ]` means "a PR-sized unit of work,
 do the topmost one"; in the source checklist it means "a property to verify". An agent
 following the protocol would work through 139 of them. Converted to prose bullets, tiers
 kept — skipping the tiers is what makes a checklist noise.

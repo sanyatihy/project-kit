@@ -28,32 +28,32 @@ repo agree.
 
 ## Non-goals
 
-- **A second coordination mechanism.** The pushed ref stays the claim. A chore is claimed
+- A second coordination mechanism. The pushed ref stays the claim. A chore is claimed
   the way a feature is, or the guarantee is two guarantees.
-- **A doc for every chore.** What a chore needs is a name nobody else can take, not a
+- A doc for every chore. What a chore needs is a name nobody else can take, not a
   design someone must read.
-- **Retiring `plan/` branches.** A drafting round is still one branch merged once.
+- Retiring `plan/` branches. A drafting round is still one branch merged once.
 
 ## Design
 
-**A chore is claimed by the same push that claims a feature.** `kit chore "<what>"` mints
+A chore is claimed by the same push that claims a feature. `kit chore "<what>"` mints
 a claim from a title, pushes the branch that takes it, and records one line — id, title,
 who, when — in a file the board reads. No `## Problem`, no `## Design`, no boxes: a chore
 that needs any of those is a feature, and the operator is told so rather than guessed at.
 The alternative — leaving chores uncoordinated and documenting the risk — is what the kit
 does today, and it is the one class of work where the kit's headline promise does not hold.
 
-**A chore takes an id, so the record can be cited.** Branch names, commits and the board
+A chore takes an id, so the record can be cited. Branch names, commits and the board
 all key on the id, and a chore with no id cannot appear on the board at all. This is why
 this feature waits on 0058: handing out an id twice is worse for chores than for features,
 because there is no doc whose contents disambiguate them.
 
-**One checkout holds one claim, and `claim` says so.** The condition is already computed —
+One checkout holds one claim, and `claim` says so. The condition is already computed —
 `next` prints "take one of those in a worktree of its own, never here" — and never
 enforced. `ClaimFeature` refuses when this checkout already holds a claim, which collapses
 protocol rules 11 and 12 into a refusal and one line of prose.
 
-**A claim is a branch that claims, not a branch that mentions.** What counts as a claim is
+A claim is a branch that claims, not a branch that mentions. What counts as a claim is
 `Claims`, and it currently matches a substring. Narrowing it to the branch a claim actually
 creates would close the `plan/`-prefix hole, and would also change a guarantee the kit
 states out loud — see `## Open questions`.

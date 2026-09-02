@@ -14,17 +14,17 @@ statement of the exit-code contract. Guidance the kit ships and does not follow 
 nobody else should take seriously.
 
 ## Non-goals
-- **Chasing the whole checklist.** Three items were rejected as thumping in 0003 and stay rejected.
-- **Restructuring for testability beyond the one seam.** `NewFeature` gets a date parameter because a test needs it.
+- Chasing the whole checklist. Three items were rejected as thumping in 0003 and stay rejected.
+- Restructuring for testability beyond the one seam. `NewFeature` gets a date parameter because a test needs it.
 
 ## Design
-**The clock** is passed in from `main`, matching `Audit`'s existing shape rather than
+The clock is passed in from `main`, matching `Audit`'s existing shape rather than
 inventing a `Clock` interface for one caller. The loose date assertion then tightens.
 
-**Exit codes** are already pinned by `TestExitCodesAreDistinct`; this documents what the
+Exit codes are already pinned by `TestExitCodesAreDistinct`; this documents what the
 suite enforces and adds nothing new.
 
-**Build hardening** is three gaps sharing a home: a `toolchain` line, `govulncheck` in CI,
+Build hardening is three gaps sharing a home: a `toolchain` line, `govulncheck` in CI,
 and `CGO_ENABLED=0 -trimpath -ldflags "-s -w"` for reproducible binaries.
 
 ## Tasks
