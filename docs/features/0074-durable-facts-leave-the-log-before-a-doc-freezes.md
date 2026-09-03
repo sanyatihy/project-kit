@@ -33,6 +33,11 @@ line of code rather than because length stopped mattering. Nothing replaced it.
 - A `--force`. The escape is moving the facts, which is the action wanted.
 - Bounding entries per commit. One box, one commit, one thing learned is the honest rate;
   what is wrong is where the learning is filed.
+- A check on `## Design`. Measured over the same 140 docs, Design runs 45 words per box here
+  at the median and 185 at another project's worst, so no threshold separates a doc that
+  restates its Tasks from one whose single box needs the room.
+- A rule against a doc that is a bucket of unrelated fixes. Rule 2 already refuses it by
+  name, and a second statement is the defect this round exists to remove.
 
 ## Design
 
@@ -51,6 +56,12 @@ it refuses and the first about what the doc says rather than what the repo holds
 growing mid-work is visible before anyone reaches `ship`. Terminal docs are skipped for
 0049's reason.
 
+Two writing rules join the protocol, both found by reading docs written under the current
+set. A bold lead-in opening a bullet or a paragraph restates the sentence after it: 374 came
+out of this corpus under 0073 and the rule was never written down, so nine are in one doc
+drafted since. And a `## Design` paragraph per `## Tasks` box is the Tasks list restated —
+the same fact in two sections, which is what `## Design` is not for.
+
 ## Tasks
 
 - [ ] `Ship` refuses when `## Log` outweighs the rest of the doc, naming `docs/TECH.md` and
@@ -58,5 +69,7 @@ growing mid-work is visible before anyone reaches `ship`. Terminal docs are skip
 - [ ] `log-outweighs-plan` reports it on a non-terminal doc, skipping terminal ones
 - [ ] The ratio, its sample and its date sit in the constant's comment
 - [ ] `kit help ship`, `kit help checks` and `docs/TECH.md` carry it
+- [ ] `### How to write` refuses a bold lead-in, and the feature template's `## Design`
+      guidance says a paragraph per box is the Tasks list restated
 
 ## Log
