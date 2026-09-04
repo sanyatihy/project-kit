@@ -50,7 +50,9 @@ const (
 	// comment, 1,969 lines, and 927 of them sit in blocks of six or more.
 	// 127 with the bold lead-in. Same trade again: it deletes a shape rather than adding a
 	// thing to remember.
-	protocolBudget = 127
+	// 129 with the floor under a feature's size. The ceiling above it had stood alone, so
+	// the rule read as one-directional and a doc per task box broke none of it.
+	protocolBudget = 129
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -65,8 +67,8 @@ const (
 	// 114 once the checklists took a ceiling of their own: 193 was go-checklist's number,
 	// and with it out of this pool the longest topic left is the protocol.
 	// 116 with the protocol, which is the longest topic in this pool and sets it.
-	// 127 with it still setting it: the pool's ceiling is whatever the protocol's is.
-	topicBudget = 127
+	// 129 with it still setting it: the pool's ceiling is whatever the protocol's is.
+	topicBudget = 129
 
 	// The checklists are the standing engineering guidance a project is held to, read once
 	// per language rather than per session, and their substance is the whole point. The
@@ -177,7 +179,8 @@ const (
 	// 172 with the second route, which this file carries verbatim from the protocol.
 	// 179: this file carries the protocol verbatim, so the commit rule arrives with it.
 	// 183: the same, for the bold lead-in rule.
-	agentsBudget = 183
+	// 185: the same again, for the floor under a feature's size.
+	agentsBudget = 185
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary
