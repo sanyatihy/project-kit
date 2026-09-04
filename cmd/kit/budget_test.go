@@ -159,7 +159,10 @@ const (
 	// 437 with the one-time compaction: what it may not cut is the fact that keeps a
 	// later pass from deleting a decision and calling it brevity.
 	// 440 with the commit as a named non-home for a fact, beside the three that are.
-	techBudget = 440
+	// 444 with the ceiling on a doc's ## Log: what it is measured against and where it is
+	// refused are what a reader cannot recover from the registry entry, and the deleted
+	// check it replaces is the fact that stops a line count being tried again.
+	techBudget = 444
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
