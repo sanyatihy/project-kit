@@ -66,7 +66,7 @@ the same fact in two sections, which is what `## Design` is not for.
 
 - [x] `Ship` refuses when `## Log` outweighs the rest of the doc, naming `docs/TECH.md` and
       the routing rule
-- [ ] `log-outweighs-plan` reports it on a non-terminal doc, skipping terminal ones
+- [x] `log-outweighs-plan` reports it on a non-terminal doc, skipping terminal ones
 - [ ] The ratio, its sample and its date sit in the constant's comment
 - [ ] `kit help ship`, `kit help checks` and `docs/TECH.md` carry it
 - [ ] `### How to write` refuses a bold lead-in, and the feature template's `## Design`
