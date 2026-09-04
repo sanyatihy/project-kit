@@ -179,6 +179,12 @@ var (
 		"no status: in the frontmatter, or one the kit does not recognise"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
 		"AGENTS.md and the installed kit disagree about the work protocol, so one side is superseded"}
+	// MEDIUM for done-not-shipped's reason: nothing here is untrue, and `ship` refuses
+	// the same doc anyway. What this adds is the warning while the fix is still legal —
+	// past `ship` the doc is frozen and rule 17 forbids the edit.
+	checkLogOutweighsPlan = Check{"log-outweighs-plan", Medium,
+		fmt.Sprintf("more than %d%% of a doc is ## Log, so the facts the project runs "+
+			"on are filed in a plan nothing reads", int(LogShareMax*100))}
 
 	// LOW — worth saying, and not worth stopping for.
 	// The first check at this level, and it is here because it cannot tell a dependency
@@ -220,7 +226,7 @@ var Checks = []Check{
 	checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkInboxUnparsed,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
-	checkNoStatus, checkNoProtocol, checkProtocolStale,
+	checkNoStatus, checkNoProtocol, checkProtocolStale, checkLogOutweighsPlan,
 	checkNeedsUnstated,
 }
 
@@ -347,6 +353,7 @@ var featureChecks = []featureCheck{
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
 	{[]Check{checkSplitClaim}, claimState},
 	{[]Check{checkIDMismatch}, idMismatch},
+	{[]Check{checkLogOutweighsPlan}, logWeight},
 }
 
 // repoChecks run after every feature has been through the list above.
@@ -670,6 +677,22 @@ func idMismatch(s *docState) []Finding {
 	return []Finding{finding(checkIDMismatch, s.at,
 		fmt.Sprintf("id %q does not match filename %q", s.f.ID, prefix),
 		"make them match; the ID is how commits and branches cite this doc")}
+}
+
+// The Log records what changed this doc's plan. Past LogShareMax it is holding what is
+// true after the feature ships, which has one home and it is not here.
+//
+// Terminal docs are skipped: `ship` refuses this before it freezes a doc, so on a doc
+// already Shipped the only fix rule 17 leaves is an edit nobody may make.
+func logWeight(s *docState) []Finding {
+	log, doc, over := s.f.LogWeight()
+	if terminal(s.f.Status) || !over {
+		return nil
+	}
+	return []Finding{finding(checkLogOutweighsPlan, s.at,
+		fmt.Sprintf("## Log is %d%% of the doc (%d of %d words)", log*100/doc, log, doc),
+		"move what is true after this ships into "+techPath(s.r)+", one line each, and "+
+			"leave in ## Log only what changed the plan")}
 }
 
 func orphanClaims(s *repoState) []Finding {

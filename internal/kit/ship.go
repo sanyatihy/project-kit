@@ -91,6 +91,18 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 			strings.Join(shown, "\n  "))
 	}
 
+	// The last moment the doc can be edited at all. A ## Log that outweighs the rest of
+	// the document is the as-built doc in disguise — decisions, constants and formats
+	// filed where nothing reads them — and freezing it puts them out of reach of the rule
+	// that would have routed them.
+	if log, doc, over := target.LogWeight(); over {
+		return nil, fmt.Errorf("%s is %d%% ## Log (%d of %d words), so the plan is mostly "+
+			"a record of the work\n"+
+			"move what is true after this ships into %s, one line each, and leave in "+
+			"## Log only what changed the plan",
+			target.Name(), log*100/doc, log, doc, techPath(r))
+	}
+
 	raw, err := os.ReadFile(target.Path)
 	if err != nil {
 		return nil, err
@@ -160,6 +172,15 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 
 	res.OpenLogs = strings.TrimSpace(target.Section("Log")) == ""
 	return res, nil
+}
+
+// techPath names the as-built doc: where the project keeps it, or where shipping would
+// create it in a project that has none.
+func techPath(r *Repo) string {
+	if r.Tech == "" {
+		return "docs/TECH.md"
+	}
+	return r.Rel(r.Tech)
 }
 
 // createTechDoc writes the as-built template into a project that arrived without one.

@@ -1,9 +1,9 @@
 ---
 id: 0074
 title: Durable facts leave the Log before a doc freezes
-status: Draft
+status: Shipped
 created: 2026-09-03
-shipped:
+shipped: 2026-09-04
 needs:
 ---
 
@@ -64,12 +64,12 @@ the same fact in two sections, which is what `## Design` is not for.
 
 ## Tasks
 
-- [ ] `Ship` refuses when `## Log` outweighs the rest of the doc, naming `docs/TECH.md` and
+- [x] `Ship` refuses when `## Log` outweighs the rest of the doc, naming `docs/TECH.md` and
       the routing rule
-- [ ] `log-outweighs-plan` reports it on a non-terminal doc, skipping terminal ones
-- [ ] The ratio, its sample and its date sit in the constant's comment
-- [ ] `kit help ship`, `kit help checks` and `docs/TECH.md` carry it
-- [ ] `### How to write` refuses a bold lead-in, and the feature template's `## Design`
+- [x] `log-outweighs-plan` reports it on a non-terminal doc, skipping terminal ones
+- [x] The ratio, its sample and its date sit in the constant's comment
+- [x] `kit help ship`, `kit help checks` and `docs/TECH.md` carry it
+- [x] `### How to write` refuses a bold lead-in, and the feature template's `## Design`
       guidance says a paragraph per box is the Tasks list restated
 
 ## Log

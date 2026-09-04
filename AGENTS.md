@@ -79,7 +79,9 @@ Do this only when you are asked to plan.
    another feature, or a chore commit that rides on a pull request under a branch name
    carrying no id. A separate doc earns its place when it holds a decision someone must read
    before building, that is not recoverable from the code or the commit. A change nobody
-   could review in one sitting is too big — split it by value, not by layer.
+   could review in one sitting is too big — split it by value, not by layer. Under that
+   ceiling, take the larger feature: a second doc costs its own round of planning, claim,
+   gate and review, and one whose whole delivery is a single task box is a task box.
 3. **Draft the whole set in one session, not the first one only.** Write every doc with
    `kit new "<title>"`. Never copy the template by hand.
 4. **Fill `needs:` on every draft.** List the feature ids that must ship before this one
@@ -161,6 +163,7 @@ before claiming either: give one doc a free id, rename its file, and rename its 
   would make it unnecessary. Prose is the weakest tier and is honest only for judgement.
 - **A sentence earns its place by deciding, constraining or measuring something.** One
   claim per sentence. Evidence gets one trailing clause, never two.
+- **A bold lead-in never restates the sentence after it.** Cut it, not the sentence.
 - **Write the decision, not the route to it.** "Changed JSONL for SQLite", never "we
   researched the append-only design, found it would not scale, and chose a database".
 - **A non-goal is one line: what is excluded, and why.** "A database. None is needed at

@@ -369,6 +369,10 @@ Draft -> Shipped     (exit: Dropped)
   is the backstop and the only check that reads `HEAD` — every other one reads the working
   tree, which is why a stamp nobody committed reported as agreement. It reads the whole
   board in one `ls-tree` and one `cat-file --batch`.
+- **The `## Log` may not outweigh the rest of a doc.** `ship` refuses past `LogShareMax`,
+  the last moment the doc may be edited at all, and `log-outweighs-plan` reports the same
+  while the doc is still open. A share and not a line count, so nothing is recalibrated as
+  a corpus matures — the `doc-bloat` of 0038, deleted by 0049, counted lines.
 - **A release is part of shipping, because `@latest` is whatever the newest tag says.**
   `make release TAG=…` gates, cuts an annotated tag and pushes it, refusing a dirty tree or
   a HEAD that is not `origin`'s default-branch tip; `audit` reports `tag-stale` when the

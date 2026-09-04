@@ -48,7 +48,11 @@ const (
 	// remember: 151 of the last 200 commits carried a body, 1,101 lines restating the diff.
 	// 126 with the comment rule. Same trade as the commit one: 27% of non-test source is
 	// comment, 1,969 lines, and 927 of them sit in blocks of six or more.
-	protocolBudget = 126
+	// 127 with the bold lead-in. Same trade again: it deletes a shape rather than adding a
+	// thing to remember.
+	// 129 with the floor under a feature's size. The ceiling above it had stood alone, so
+	// the rule read as one-directional and a doc per task box broke none of it.
+	protocolBudget = 129
 
 	// A command help is a usage reference someone reads mid-task, often after a
 	// mistake. Anything approaching an essay belongs in a topic.
@@ -63,7 +67,8 @@ const (
 	// 114 once the checklists took a ceiling of their own: 193 was go-checklist's number,
 	// and with it out of this pool the longest topic left is the protocol.
 	// 116 with the protocol, which is the longest topic in this pool and sets it.
-	topicBudget = 126
+	// 129 with it still setting it: the pool's ceiling is whatever the protocol's is.
+	topicBudget = 129
 
 	// The checklists are the standing engineering guidance a project is held to, read once
 	// per language rather than per session, and their substance is the whole point. The
@@ -159,7 +164,10 @@ const (
 	// 437 with the one-time compaction: what it may not cut is the fact that keeps a
 	// later pass from deleting a decision and calling it brevity.
 	// 440 with the commit as a named non-home for a fact, beside the three that are.
-	techBudget = 440
+	// 444 with the ceiling on a doc's ## Log: what it is measured against and where it is
+	// refused are what a reader cannot recover from the registry entry, and the deleted
+	// check it replaces is the fact that stops a line count being tried again.
+	techBudget = 444
 	// 168 since the round that repaired this file: it was spliced at the wrong marker and
 	// lost 50 lines, including the only guard against an agent emptying a target directory,
 	// so the old number was calibrated against a truncated file.
@@ -170,7 +178,9 @@ const (
 	// line added there arrives here whether the house rules above it move or not.
 	// 172 with the second route, which this file carries verbatim from the protocol.
 	// 179: this file carries the protocol verbatim, so the commit rule arrives with it.
-	agentsBudget = 182
+	// 183: the same, for the bold lead-in rule.
+	// 185: the same again, for the floor under a feature's size.
+	agentsBudget = 185
 
 	// README.md is the first thing a person reads and the only one of these with no
 	// ceiling until now. It had drifted to 431 lines describing commands the binary

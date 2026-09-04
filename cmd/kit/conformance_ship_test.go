@@ -4,6 +4,7 @@ package main
 // findings exist only because this is normally done by hand.
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -410,4 +411,46 @@ func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
 	if got := p.read("docs/TECH.md"); !strings.Contains(got, "Real content someone wrote.") {
 		t.Errorf("shipping overwrote the as-built doc:\n%s", got)
 	}
+}
+
+// loggy is a doc whose ## Log carries the design: `entries` sentences of record against a
+// plan of about thirty words.
+func loggy(p *project, id string, entries int) {
+	p.t.Helper()
+	log := ""
+	for i := 0; i < entries; i++ {
+		log += fmt.Sprintf("- 2026-01-0%d — the currency is decided by the merchant "+
+			"account and the commission is written as basis points.\n", i%9+1)
+	}
+	p.write("docs/features/"+id+"-loggy.md", fmt.Sprintf(
+		"---\nid: %s\ntitle: Mostly log\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
+			"## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n"+
+			"## Tasks\n- [x] One\n\n## Log\n%s", id, log))
+}
+
+func TestShipRefusesADocThatIsMostlyLog(t *testing.T) {
+	t.Parallel()
+	// The state a real doc reached: 79% Log, holding the facts the project runs on.
+	// Shipping freezes it, so this is the last moment they can be moved at all.
+	p := setUp(t)
+	loggy(p, "0007", 6)
+
+	r := shipping(p, "0007").fails(2)
+	r.errHas("## Log", "docs/TECH.md", "one line each")
+	if strings.Contains(p.read("docs/features/0007-loggy.md"), "status: Shipped") {
+		t.Error("ship wrote the status despite refusing")
+	}
+}
+
+func TestShipAllowsALongLogUnderALongerPlan(t *testing.T) {
+	t.Parallel()
+	// The ratio is not a word count: the same Log ships under a ## Design that needed
+	// the room. A check that fired here would fire on the docs doing this right.
+	p := setUp(t)
+	loggy(p, "0007", 6)
+	doc := p.read("docs/features/0007-loggy.md")
+	p.write("docs/features/0007-loggy.md", strings.Replace(doc, "## Design\nThis way.",
+		"## Design\n"+strings.Repeat("The design says what is built and why. ", 40), 1))
+
+	shipping(p, "0007").ok()
 }

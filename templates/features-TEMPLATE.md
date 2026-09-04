@@ -48,6 +48,9 @@ needs:
      never "we researched the append-only design, found it would not scale, and chose a
      database".
 
+     A paragraph per `## Tasks` box is the Tasks list restated, and the same fact then
+     sits in two sections. What a box cannot say is what belongs here.
+
      A doc is as long as its decisions and no longer. One a reader cannot hold in one
      sitting is describing a feature that is too big, not a design worth the length. -->
 
