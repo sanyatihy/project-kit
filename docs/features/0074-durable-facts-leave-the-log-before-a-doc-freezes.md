@@ -69,7 +69,7 @@ the same fact in two sections, which is what `## Design` is not for.
 - [x] `log-outweighs-plan` reports it on a non-terminal doc, skipping terminal ones
 - [x] The ratio, its sample and its date sit in the constant's comment
 - [x] `kit help ship`, `kit help checks` and `docs/TECH.md` carry it
-- [ ] `### How to write` refuses a bold lead-in, and the feature template's `## Design`
+- [x] `### How to write` refuses a bold lead-in, and the feature template's `## Design`
       guidance says a paragraph per box is the Tasks list restated
 
 ## Log

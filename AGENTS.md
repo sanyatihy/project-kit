@@ -161,6 +161,8 @@ before claiming either: give one doc a free id, rename its file, and rename its 
   would make it unnecessary. Prose is the weakest tier and is honest only for judgement.
 - **A sentence earns its place by deciding, constraining or measuring something.** One
   claim per sentence. Evidence gets one trailing clause, never two.
+- **A bold lead-in labels a list item and never restates the sentence after it.** Cut the
+  lead-in, not the sentence — 374 came out of this corpus under 0073.
 - **Write the decision, not the route to it.** "Changed JSONL for SQLite", never "we
   researched the append-only design, found it would not scale, and chose a database".
 - **A non-goal is one line: what is excluded, and why.** "A database. None is needed at
