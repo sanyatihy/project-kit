@@ -64,7 +64,7 @@ the same fact in two sections, which is what `## Design` is not for.
 
 ## Tasks
 
-- [ ] `Ship` refuses when `## Log` outweighs the rest of the doc, naming `docs/TECH.md` and
+- [x] `Ship` refuses when `## Log` outweighs the rest of the doc, naming `docs/TECH.md` and
       the routing rule
 - [ ] `log-outweighs-plan` reports it on a non-terminal doc, skipping terminal ones
 - [ ] The ratio, its sample and its date sit in the constant's comment

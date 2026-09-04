@@ -47,6 +47,7 @@ var refusals = map[string]struct {
 		{"is claimed by a branch", "a claim another checkout holds"},
 		{"uncommitted or untracked files", "a dirty working tree"},
 		{"committing it failed", "a stamp this checkout would not commit"},
+		{"## Log outweighs the rest", "a plan that is mostly a record of the work"},
 	}},
 	"reset": {[]string{"Reset"}, []refusal{
 		{"reopening it", "a Shipped doc"},

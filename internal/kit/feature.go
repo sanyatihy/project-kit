@@ -131,3 +131,24 @@ func (f *Feature) FilenamePrefix() string {
 	}
 	return ""
 }
+
+// LogShareMax is the largest share of a document its ## Log may be. Past it the Log is
+// the as-built doc in disguise, and `ship` refuses rather than freezing it there.
+const LogShareMax = 0.5
+
+// LogWeight is the ## Log's word count, the whole document's, and whether the first
+// is more than LogShareMax of the second.
+//
+// Section content only: the frontmatter and the headings are not what either number is
+// about. A ratio rather than a word count, so it needs no recalibration as a corpus
+// matures and a doc with a long ## Design is not punished for it.
+func (f *Feature) LogWeight() (log, doc int, over bool) {
+	for heading, text := range f.sections {
+		words := len(strings.Fields(text))
+		doc += words
+		if heading == "Log" {
+			log = words
+		}
+	}
+	return log, doc, doc > 0 && float64(log) > LogShareMax*float64(doc)
+}

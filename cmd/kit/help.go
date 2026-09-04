@@ -303,7 +303,7 @@ Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
 status: Shipped, stamps shipped: with today's date, and commits that stamp — a
 status left in the working tree is one session from being read as debris.
 
-Eight more refusals, all exit 2. The doc is already Shipped, or it was Dropped and a
+Nine more refusals, all exit 2. The doc is already Shipped, or it was Dropped and a
 retired plan is not work to finish. Or it has no ## Tasks boxes at all, so there is
 nothing to have finished, or no status: line for this to write. Or something in its
 needs: has not shipped — the plan says this was built on a foundation that is not
@@ -314,7 +314,9 @@ Or this checkout has uncommitted or untracked files: the scratch a feature gener
 is yours to clean up, and what git ignores does not count. Or the stamp is written
 and committing it failed — an index another process holds, no identity configured, a
 rebase under way: the file carries status: Shipped and the doc is shipped only once
-that commit exists.
+that commit exists. Or the ## Log outweighs the rest of the doc: past half the
+document the Log is the as-built doc in disguise, and this is the last moment those
+facts can be moved into docs/TECH.md, one line each.
 
 Doing this by hand is where shipped-no-date comes from, so the command removes the
 mistake rather than reporting it afterwards.
