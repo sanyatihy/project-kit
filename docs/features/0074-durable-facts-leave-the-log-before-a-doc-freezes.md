@@ -1,9 +1,9 @@
 ---
 id: 0074
 title: Durable facts leave the Log before a doc freezes
-status: Draft
+status: Shipped
 created: 2026-09-03
-shipped:
+shipped: 2026-09-04
 needs:
 ---
 
