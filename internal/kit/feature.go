@@ -134,6 +134,12 @@ func (f *Feature) FilenamePrefix() string {
 
 // LogShareMax is the largest share of a document its ## Log may be. Past it the Log is
 // the as-built doc in disguise, and `ship` refuses rather than freezing it there.
+//
+// Half. Measured 2026-09-04 over 147 docs in three projects: the Log is 12% of a doc at
+// the median here and 28% at its worst, 23% and 55% in the second project, 20% and 55%
+// in the third. Half fires on 0 of the 74 here and on 2 of each of the others, which are
+// the four docs whose Log is the as-built doc in disguise. A ceiling at 45% fires on
+// nine, which is more than double.
 const LogShareMax = 0.5
 
 // LogWeight is the ## Log's word count, the whole document's, and whether the first
