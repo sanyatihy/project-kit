@@ -1,9 +1,9 @@
 ---
 id: 0076
 title: Operators can adopt kit v1.0 with reliable recovery and a stable upgrade contract
-status: Submitted
+status: Draft
 created: 2026-09-05
-submitted: 2026-09-05
+submitted: 
 needs: 0075
 ---
 
@@ -99,3 +99,4 @@ and installation verification; Submitted alone never claims that outcome.
 ## Log
 
 - 2026-09-05 — Candidate JSON reported a canonical branch for the legacy checkout that owns this feature. Added a correction before final validation so the upgrade contract preserves usable branch references.
+- 2026-09-05 — reopen to Draft: Review: distinguish the house-rule editing failure from parser defects and preserve unresolved backlog concerns
