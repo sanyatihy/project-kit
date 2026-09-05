@@ -20,9 +20,10 @@ Controlling raw git with prose. Merge authorization belongs on the remote.
 
 ## Design
 
-Shipped means submitted for review until it reaches the trunk. Reset supports review
-changes before integration; the integrated record stays frozen and audit checks edits
-and deletions against it. This revises 0042 and 0067 without another lifecycle status.
+Submit records Submitted on the feature branch; integration is derived from git.
+Reopen returns an unmerged submission to Draft. Legacy Shipped documents remain readable
+and frozen on trunk; ship/reset remain compatibility spellings. Routine review and
+explicit repair or disposal have distinct command contracts. This revises 0042 and 0067.
 
 Mutations require positive evidence for their safety. Release preserves every unmerged
 commit and leases the remote tip it inspected. The board, claim and ship share validation
@@ -39,6 +40,12 @@ available only after integration; a submission stamp alone is not a foundation. 
 board distinguishes local completion, pushed review, requested revisions and integration,
 including squash merges. Each checkout holds one feature without a global agent limit.
 
+Gates enforce correctness and preservation of work. Project age is advisory. Remove
+editorial proxies and count-based implementation tests; retain behavioral coverage and
+measure subprocess growth rather than incidental totals. Features include useful
+subtractions, security, reliability and performance. Prefer the largest coherent outcome
+that can be reviewed and integrated safely; implementation steps stay task boxes.
+
 ## Tasks
 
 - [x] Harden lifecycle, claims, audit coverage and generated gates against reproduced failures
@@ -53,6 +60,10 @@ including squash merges. Each checkout holds one feature without a global agent 
 - [x] Document both workflows and remove the arbitrary global work limit
 
 - [x] Verify frozen history against the published integration state
+
+- [ ] Make gates fail correctly and test behavior rather than editorial proxies
+- [ ] Clarify submission, reopening and explicit disposal command contracts
+- [ ] Teach substantial value-shaped features and align the workflow documentation
 
 ## Log
 
