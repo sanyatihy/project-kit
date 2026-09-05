@@ -36,6 +36,8 @@ cannot establish misplaced content. Durable facts still move to TECH before subm
 ## Tasks
 
 - [x] Harden lifecycle, claims, audit coverage and generated gates against reproduced failures
-- [ ] Pin and bound the Go scaffold's CI gate
+- [x] Pin and bound the Go scaffold's CI gate
 
 ## Log
+
+- Added the scaffold task when requiring lint exposed its missing GitLab installation.

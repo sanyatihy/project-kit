@@ -63,6 +63,7 @@ var stackLayout = map[string]stack{
 		files: [][2]string{
 			{"Makefile", "Makefile"},
 			{"gomod", "go.mod"},
+			{"golangci.yml", ".golangci.yml"},
 			{"main.go.tmpl", "cmd/{{name}}/main.go"},
 			{"README.md", "README.md"},
 		},

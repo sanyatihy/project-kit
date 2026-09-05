@@ -116,3 +116,22 @@ func TestTheGateIsCIMinusTheNetwork(t *testing.T) {
 			"red with no commit behind it", workflowPath)
 	}
 }
+
+func TestGoScaffoldProvidesTheLinterItsGateRequires(t *testing.T) {
+	t.Parallel()
+	github := readOrFail(t, "../../templates/stacks/go/check.yml")
+	gitlab := readOrFail(t, "../../templates/stacks/go/gitlab-ci.yml")
+	for _, want := range []string{"version: v2.12.2", "install-only: true", "timeout-minutes: 15"} {
+		if !strings.Contains(github, want) {
+			t.Errorf("Go GitHub gate lacks %q", want)
+		}
+	}
+	for _, want := range []string{"golangci-lint@v2.12.2", "timeout: 15m"} {
+		if !strings.Contains(gitlab, want) {
+			t.Errorf("Go GitLab gate lacks %q", want)
+		}
+	}
+	if !strings.Contains(readOrFail(t, workflowPath), "fetch-depth: 0") {
+		t.Error("the kit audit needs trunk history to protect frozen documents")
+	}
+}

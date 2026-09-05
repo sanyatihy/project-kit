@@ -414,7 +414,8 @@ Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. **CI 
 Makefile's `CI_STEPS` and nothing else**, and `cmd/kit/ci_test.go` fails when the workflow
 drifts from it. **The linter is pinned and its set committed** to `.golangci.yml`, or a
 release changes what the gate means with no commit behind it. Missing or failing lint
-fails `make check`, here and in the Go scaffold.
+fails `make check`, here and in the Go scaffold. Generated Go CI installs v2.12.2,
+uses the generated .golangci.yml and limits its job to 15 minutes on both forges.
 
 **The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
 it against throwaway projects, asserting on stdout, stderr, exit codes and the files left
