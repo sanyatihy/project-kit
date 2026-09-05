@@ -344,7 +344,7 @@ func writeProtocol(templates fs.FS, root string, res *Result) error {
 	}
 
 	current := Normalise(string(existing))
-	if !strings.Contains(current, ProtocolMarker) {
+	if !hasProtocol(current) {
 		if err := os.WriteFile(dest, []byte(current+"\n"+protocol), 0o644); err != nil {
 			return err
 		}
@@ -419,22 +419,9 @@ func ProtocolState(r *Repo, protocol string) ProtocolDrift {
 // is refreshed rather than left to rot — but only that section.
 func ReplaceSection(text, marker, replacement string) (string, bool) {
 	lines := strings.Split(text, "\n")
-	start := -1
-	for i, line := range lines {
-		if strings.TrimSpace(line) == marker {
-			start = i
-			break
-		}
-	}
-	if start == -1 {
+	start, end := sectionBounds(text, marker)
+	if start < 0 {
 		return text, false
-	}
-	end := len(lines)
-	for i := start + 1; i < len(lines); i++ {
-		if strings.HasPrefix(lines[i], "## ") {
-			end = i
-			break
-		}
 	}
 	out := append([]string{}, lines[:start]...)
 	out = append(out, strings.Split(strings.TrimSpace(replacement), "\n")...)
@@ -548,4 +535,38 @@ func run(dir, name string, args ...string) error {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, append([]string{"-C", dir}, args...)...)
 	return cmd.Run()
+}
+
+// sectionBounds ignores quoted examples and preserves the original line offsets.
+func sectionBounds(text, marker string) (int, int) {
+	masked := commentRe.ReplaceAllStringFunc(text, func(comment string) string {
+		return strings.Map(func(r rune) rune {
+			if r == '\n' {
+				return r
+			}
+			return ' '
+		}, comment)
+	})
+	lines := strings.Split(maskFences(masked), "\n")
+	start := -1
+	for i, line := range lines {
+		heading := strings.TrimLeft(line, " ")
+		if len(line)-len(heading) > 3 {
+			continue
+		}
+		heading = strings.TrimSpace(heading)
+		if start < 0 {
+			if heading == marker {
+				start = i
+			}
+		} else if strings.HasPrefix(heading, "## ") || strings.HasPrefix(heading, "# ") {
+			return start, i
+		}
+	}
+	return start, len(lines)
+}
+
+func hasProtocol(text string) bool {
+	start, _ := sectionBounds(text, ProtocolMarker)
+	return start >= 0
 }

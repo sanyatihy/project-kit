@@ -48,11 +48,11 @@ when nobody can say what was done or why and the only source left is the diff. W
 documents as a phase of their own is slow while it happens and produces files nobody
 finishes reading. Neither is the goal.
 
-So the record has to be a **byproduct of the work rather than a stage before it**: written
-while doing, not in advance of doing, and only the parts that a person or an agent coming
-back later cannot recover from the code. A ticked box in the commit that implemented it
-costs nothing and says what happened; a design essay written before the work is expensive
-and frequently wrong by the end.
+For planned work, record the decisions and observable outcomes the human must approve
+before implementation. During implementation, maintain only what a returning reader
+cannot recover from the code. A ticked box in its implementing commit records the result;
+Log records changes to the approved plan. Human-directed exploration records its decisions
+retrospectively through harvest, then receives implementation review.
 
 Every field, rule, command and document is weighed both ways: what it costs the person
 doing the work now, and what it saves the one who has to understand it later. Something

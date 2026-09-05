@@ -86,7 +86,7 @@ and installation verification; Submitted alone never claims that outcome.
 
 ## Tasks
 
-- [ ] Restore and preserve house rules, remove obsolete workflow guidance, and align approval and documentation rules with regression coverage for protocol-section boundaries
+- [x] Restore and preserve house rules, remove obsolete workflow guidance, and align approval and documentation rules with regression coverage for protocol-section boundaries
 - [ ] Make claim identity survive renames and recover interrupted acquisitions, with deterministic competing-clone tests and legacy-claim migration coverage
 - [ ] Make offline and unavailable-remote handoffs report uncertainty without inventing progress or ownership, verified in text and JSON
 - [ ] Document and verify the v1 compatibility and coordinated upgrade contract using legacy history, in-flight work and customized project files

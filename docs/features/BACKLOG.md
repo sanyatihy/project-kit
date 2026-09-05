@@ -32,38 +32,10 @@ any machine. It has to degrade for `--offline` and for projects with no remote.
 **Value:** a board that means the same thing on every machine.
 **Promote when:** a second machine joins, or a claim's work is lost with the machine holding it.
 
-## A merged claim holds its slot until the trunk ref catches up
-
-`AwaitingReview` skips a branch the trunk contains, comparing against `trunkRef`, which
-prefers the local `refs/heads/<trunk>`. A checkout that has not pulled since the merge keeps
-listing the feature as awaiting review — and the protocol tells every other agent not to
-touch it. Most forges do not delete a source branch on merge, and nothing says to run
-`kit release` afterwards, whose work guard passes on a merged branch.
-
-**Value:** a finished feature stops occupying a slot on everyone's board.
-**Promote when:** a merged feature is seen holding a slot, or a second machine reads a board
-this one has already cleaned.
-
-## A comment citing a rule by number misdirects the next reader
-
-`TestNothingUserFacingCitesARuleByNumber` reads string literals only, and says why: a
-comment misdirects nobody but the next reader of the source. Two went wrong anyway —
-`release.go` cited rule 8 for the stopping rule and `audit.go` rule 10 for the secret one,
-both left behind when 0048 renumbered the protocol, and both found by reading rather than
-by the build. Widening the test to comments is one line; the cost is that a note genuinely
-about the numbered list can no longer name a number.
-
-Two more are wrong now: `audit.go` and `conformance_audit_test.go` both cite rule 21, and the
-protocol ends at 20. 0067 added three citations of rule 6, one of them in `docs/TECH.md` —
-which is prose the guard cannot reach either way, because it reads Go string literals.
-
-**Value:** the reasoning in the source stops pointing at rules that have moved.
-**Promote when:** fired — two citations name a rule that does not exist.
-
 ## `tag-stale` reads this machine's tags, and `@latest` reads the remote's
 
 `TagDistance` describes against the local refs, so a tag cut and never pushed silences the
-check while an install still resolves to the one before it. It is `shipped-not-pushed` for
+check while an install still resolves to the one before it. It is `submitted-not-pushed` for
 tags, and that check exists because the branch version of it happened. `make release`
 pushes what it cuts, so the flow the kit defines does not produce this; a hand-cut
 `git tag -a` does. The remote's tags would cost no extra process — `audit` already makes an
@@ -85,35 +57,6 @@ design covers; an unreachable one is the case it does not. `next` and `audit` bo
 **Promote when:** an agent is seen unable to draft, or a round is delayed by a remote that
 was down.
 
-## `kit new`'s refusals are named nowhere
-
-`refusals` in `cmd/kit/refusals_test.go` holds `ship`, `release`, `claim` and, since 0067,
-`reset` — so the list 0055 made whole still does not cover `new`. It turns work away for six
-reasons — an empty title, a title that slugs to nothing, a project not set up, several
-remotes and no origin, a push
-that answered nothing, and an id range the remote has exhausted — and `kit new --help` names
-none of them. The last two arrived with 0058.
-
-**Value:** an agent that meets a `kit new` refusal is not told the command could not have
-made it.
-**Promote when:** fired — `reset` was the fourth command to join the list.
-
-## `next` prints a claim a checkout ahead of the trunk cannot make
-
-Since 0059 `kit claim` refuses when HEAD carries commits the trunk does not have, and
-`next` does not ask that question. Standing in the worktree that claims 0001, with 0002
-free, the board prints `kit claim 0002` under **free, but not in this checkout**, and
-running it there exits 2. The prose beside it already says to take the work in a worktree
-of its own and never here, so the command is addressed elsewhere — which is why this is a
-line rather than a box: the board is literal, not wrong.
-
-The fix is the shape 0059 gave the trunk question: one condition read by `Survey` and by
-`ClaimFeature`, and the worktree step printed ahead of the claim in that state.
-
-**Value:** every command the board prints runs where it is printed.
-**Promote when:** an agent is seen running it there, or a third claim refusal the board
-cannot see is added.
-
 ## Nothing tells an agent which language a project's docs are written in
 
 Kit generates no prose: the templates and what you typed are its only sources. The language
@@ -124,7 +67,7 @@ by hand in every project that wants one.
 `kit init --lang ru` would seed it above the marker in `AGENTS.md`, which `init` never
 rewrites and the project owns afterwards — any language, with no translated templates and
 no model in the binary. The seeded line has to name what stays English whatever the
-language: the headings the parsers read, the frontmatter keys, and `Draft | Shipped |
+language: the headings the parsers read, the frontmatter keys, and `Draft | Submitted |
 Dropped`. Without that an agent translates `## Tasks` and the board sees no tasks at all. A
 re-run under a different language would not update the line, and `kit new` still takes an
 ASCII title — `Slug` strips to `[a-z0-9]`.
@@ -135,7 +78,7 @@ one that asked for Russian.
 
 ## A reservation cannot be released before the horizon, and nothing else can reach it
 
-`kit drop <id>` refuses a reservation younger than the `stalled` horizon, which is right for
+`kit drop <id> --reservation` refuses a reservation younger than the `stalled` horizon, which is right for
 a draft in flight and wrong for one whose branch was deleted minutes ago. There is no
 `--force`, so the only way past is `git push origin --delete refs/kit/ids/<id>` — the raw
 command 0046 gave `release` a flag to avoid, for the reason it gave there: an agent that

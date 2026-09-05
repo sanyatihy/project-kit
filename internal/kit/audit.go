@@ -872,7 +872,7 @@ func noProtocol(s *repoState) []Finding {
 	switch raw, err := os.ReadFile(s.r.Protocol); {
 	case s.r.Protocol == "":
 		missing = append(missing, "no AGENTS.md, so agents have no protocol and will invent one")
-	case err == nil && !strings.Contains(Normalise(string(raw)), ProtocolMarker):
+	case err == nil && !hasProtocol(Normalise(string(raw))):
 		missing = append(missing, "no "+ProtocolMarker+" section in "+s.r.Rel(s.r.Protocol)+
 			", so agents have no protocol and will invent one")
 	}

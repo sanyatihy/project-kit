@@ -549,3 +549,34 @@ func TestInitReservesNothingTwiceAndNothingWithoutARemote(t *testing.T) {
 	local.run("new", "Alone").ok()
 	local.run("init").ok().lacks("reserved")
 }
+
+func TestProtocolRefreshPreservesHouseRulesWithQuotedMarkers(t *testing.T) {
+	t.Parallel()
+	for _, existing := range []bool{false, true} {
+		t.Run(map[bool]string{false: "append", true: "refresh"}[existing], func(t *testing.T) {
+			p := setUp(t)
+			prefix := "# House rules\n\nUse `## Work protocol` below.\n\n```md\n## Work protocol\nExample only.\n```\n\n<!--\n## Work protocol\nComment only.\n-->\n\nDo not delete the application.\n\n"
+			current := prefix
+			if existing {
+				current += "## Work protocol\n\nOld rules.\n\n## Local appendix\n\nKeep this too.\n"
+			}
+			p.write("AGENTS.md", current)
+			if !existing {
+				p.run("audit").ok().has("no-protocol")
+			}
+			p.run("init").ok()
+			got := p.read("AGENTS.md")
+			if !strings.HasPrefix(got, prefix) {
+				t.Fatal("refresh damaged house rules:", got)
+			}
+			if existing && !strings.HasSuffix(got, "## Local appendix\n\nKeep this too.\n") {
+				t.Fatal("refresh damaged appendix:", got)
+			}
+			p.run("audit").ok().lacks("no-protocol", "protocol-stale")
+			p.run("init").ok()
+			if p.read("AGENTS.md") != got {
+				t.Fatal("second refresh changed the document")
+			}
+		})
+	}
+}

@@ -203,6 +203,8 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   the right outcome when the work was to write the plan just created.
 - **`protocol-stale` compares the project's protocol section with the kit's**, because
   shipping a protocol change does not deliver one — `AGENTS.md` is rewritten only by `init`.
+  Protocol boundaries ignore quoted markers, fenced examples and HTML comments.
+  House rules before the real heading and sections after it survive refresh.
   It reports which side is behind: `kit init .` writes the binary's copy over the section,
   so offered to the newer side it reverts it, and the only project that can be the newer
   side is the one carrying `templates/AGENTS-section.md`. `no-protocol` covers a file whose
@@ -230,7 +232,7 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
 - **Severity is the damage.** `split-claim` is HIGH — two agents owning one feature is the
   worst failure here, and it gated nothing at MEDIUM. `id-mismatch` is HIGH because the
   branch comes from the filename and the claim is looked up by the id, so the board keeps
-  offering a feature somebody holds. Nothing is LOW, so no level prints empty.
+  offering a feature somebody holds. Empty severity groups are omitted.
 - **`audit` is silent only about what it checked.** A doc it cannot open is
   `unreadable-doc` at HIGH, carrying its filename and its still-reserved id, and no other
   feature check runs on it — they all fire on the empty struct. `--offline` names the
@@ -432,4 +434,4 @@ suite drives — 2.9% for a package covered end to end — and no threshold read
 
 ## State of play
 
-Private repo, tagged `v0.3.0`, `go install …/cmd/kit@latest`; four projects run it.
+Private Go module; install a published version with `go install …/cmd/kit@<tag>`.

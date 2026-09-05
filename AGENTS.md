@@ -4,7 +4,57 @@ This repo is the kit itself. **Read this routing rule before anything else.**
 
 - **Asked to bootstrap or set up a project at another path?** Follow
   [Bootstrapping another project](#bootstrapping-another-project). Change nothing in this
-  repo, and ignore the `## Work protocol
+  repo, and ignore the `## Work protocol` below — it governs work on the kit, not on the
+  project you were asked about. You do not need to be in this directory: `kit` is on
+  `$PATH`.
+- **Asked to change the kit?** See [Changing the kit](#changing-the-kit), and run
+  `kit next` here for the current plan.
+
+## Bootstrapping another project
+
+```sh
+kit init /path/to/project              # docs only
+kit init /path/to/project --stack go   # also Makefile, go.mod, cmd/, CI
+```
+
+**Never delete or clear the target directory first.** `kit init` creates what is missing
+and overwrites nothing you wrote, so it is safe on a directory that already has files and
+safe to re-run. Emptying a target to "start clean" destroys work and is never required.
+
+Then work **inside the new project**, not here. Run `kit next` there: it names the first
+step, and the `## Work protocol` in *that* project's `AGENTS.md` governs the rest. Never
+invent product decisions on the human's behalf — ask in `docs/INBOX.md`.
+
+## Changing the kit
+
+```sh
+make check     # fmt-check, lint, unit tests, conformance suite — the whole gate
+make install   # go install ./cmd/kit
+make release TAG=v0.3.0   # gate, then cut and push the tag `@latest` resolves to
+```
+
+**Run `make install` after anything lands on `main`.** `kit` on `$PATH` is one binary
+shared by every project, so a merged change reaches none of them until it is reinstalled.
+`docs/TECH.md` records what that cost once.
+
+**Cut a release tag when a round lands on `main`.** An install resolves to the newest tag,
+so a round that merged and was never tagged reaches nobody. This is a fact about a Go
+module installed with `@latest`, not about every project, so it lives here rather than in
+the protocol below.
+
+Three constraints that are easy to trip over:
+
+- Files under `templates/` must not be valid Go package files or a nested module, or
+  `go vet ./...` compiles them. Hence `gomod`, `gitignore`, `main.go.tmpl`.
+- Templates are embedded through `assets.go` at the repo root, because `go:embed` cannot
+  reach a parent directory from `cmd/kit/`.
+- A new check goes in the registry in `internal/kit/audit.go`, never as a bare string.
+  `kit help checks` prints from it, and `TestEveryRegisteredCheckIsExercised` fails the
+  build for a check with no conformance case.
+
+<!-- The section below is written by `kit init` from the kit's own template. Edits inside
+     it are lost on the next run; durable house rules go above this comment. -->
+## Work protocol
 
 Run `kit next` at the start of every session and after finishing or releasing work.
 It names the feature and next task. `kit audit` reports drift; `kit help <command>`
