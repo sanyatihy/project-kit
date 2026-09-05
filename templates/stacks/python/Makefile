@@ -53,7 +53,7 @@ lock:
 help:
 	@echo "Targets:"
 	@echo "  check      - fmt-check + lint + type + test (pre-push/CI gate)"
-	@echo "  sync       - install the locked environment"
+	@echo "  sync       - resolve if needed and install the environment"
 	@echo "  test       - pytest, warnings as errors"
 	@echo "  fmt        - ruff format, then ruff check --fix"
 	@echo "  fmt-check  - fail if anything is unformatted"

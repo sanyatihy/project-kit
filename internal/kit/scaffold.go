@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -45,10 +46,9 @@ type stack struct {
 	// files are template-to-destination pairs, the destination filled from the project's
 	// values.
 	files [][2]string
-	// entry is the template in files that writes an entry point, and entryGlobs the paths
-	// that mean the project has one already. Scaffolding fills gaps and never writes a
-	// second entry point over somebody's first. Empty entry means the stack has none.
-	entry      string
+	// entryFiles belong to the generated application; entryGlobs detect an existing
+	// entry point. Its presence suppresses the generated app and its companions.
+	entryFiles []string
 	entryGlobs []string
 	// keep is a directory the stack wants to exist even while it is empty, which git
 	// otherwise drops. Empty means no such directory.
@@ -67,7 +67,7 @@ var stackLayout = map[string]stack{
 			{"main.go.tmpl", "cmd/{{name}}/main.go"},
 			{"README.md", "README.md"},
 		},
-		entry:      "main.go.tmpl",
+		entryFiles: []string{"main.go.tmpl"},
 		entryGlobs: []string{"main.go", "cmd/*/main.go"},
 		keep:       "internal",
 	},
@@ -79,9 +79,11 @@ var stackLayout = map[string]stack{
 			{"pyproject.toml", "pyproject.toml"},
 			{"init.py", "src/{{pkg}}/__init__.py"},
 			{"main.py", "src/{{pkg}}/__main__.py"},
+			{"test_main.py", "tests/test_main.py"},
+			{"python-version", ".python-version"},
 			{"README.md", "README.md"},
 		},
-		entry:      "main.py",
+		entryFiles: []string{"main.py", "test_main.py", "python-version"},
 		entryGlobs: []string{"main.py", "src/*/__main__.py"},
 		keep:       "tests",
 	},
@@ -184,9 +186,9 @@ func Init(templates fs.FS, root, stack, forge string) (*Result, error) {
 		// A project that already has an entry point must not get a second one
 		// named after its directory. Scaffolding fills gaps; it never duplicates.
 		sc := stackLayout[stack]
-		entryExists := sc.entry != "" && hasEntryPoint(root, sc.entryGlobs)
+		entryExists := len(sc.entryFiles) > 0 && hasEntryPoint(root, sc.entryGlobs)
 		for _, pair := range sc.files {
-			if pair[0] == sc.entry && entryExists {
+			if entryExists && slices.Contains(sc.entryFiles, pair[0]) {
 				res.Kept = append(res.Kept, entryDir(pair[1])+" (already has an entry point)")
 				continue
 			}

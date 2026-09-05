@@ -317,7 +317,7 @@ func TestInitStackPythonScaffoldsTheCodeLayout(t *testing.T) {
 
 	for _, want := range []string{
 		"widget/Makefile", "widget/.gitignore", "widget/pyproject.toml", "widget/README.md",
-		"widget/src/widget/__init__.py", "widget/src/widget/__main__.py", "widget/tests/.gitkeep",
+		"widget/src/widget/__init__.py", "widget/src/widget/__main__.py", "widget/tests/test_main.py", "widget/.python-version",
 	} {
 		if !p.exists(want) {
 			t.Errorf("--stack python did not write %s", want)
@@ -369,6 +369,9 @@ func TestInitStackPythonDoesNotAddASecondEntryPoint(t *testing.T) {
 	p := newProject(t)
 	p.write("src/thing/__main__.py", "raise SystemExit(0)\n")
 	p.run("init", "--stack", "python").ok().has("already has an entry point")
+	if p.exists("tests/test_main.py") || p.exists(".python-version") {
+		t.Error("added a scaffold-specific test or interpreter pin to an existing application")
+	}
 	if p.read("src/thing/__main__.py") == "" {
 		t.Error("the existing entry point was emptied")
 	}

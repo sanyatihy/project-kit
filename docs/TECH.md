@@ -268,7 +268,8 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   `check:`/`checked:` pair that survived it was itself removed: zero of 82 docs used it.
 - **A stack declares its files, entry-point globs, keep directory and pipelines**, so `Init`
   names no language. Python's entry point is `src/*/__main__.py`, under a package name a
-  hyphenated repository name cannot be, and its keep directory is `tests/`.
+  hyphenated repository name cannot be. Generated Python entry-point tests run outside
+  the source tree; existing applications get neither those tests nor an interpreter pin.
 - **Deployment scaffolding is not generated**, and the topic that documented it is gone.
   A stack produces what you need to write and verify code; the rest is the fastest-rotting
   part, and no project ever read the topic.

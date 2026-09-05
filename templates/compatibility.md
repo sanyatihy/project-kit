@@ -3,9 +3,16 @@
 ## Supported use
 
 Kit runs on macOS and Linux with git as its only runtime dependency. Windows is outside
-the v1.0 support scope. Go and Python are the supported scaffolds. The release evidence
-records the tested tool versions; project manifests and CI pin their build requirements.
-An install from source also needs the Go version in the kit's go.mod.
+the v1.0 support scope. Go and Python are the supported scaffolds.
+
+The supported baseline is git 2.39.5, GNU make 3.81 for development gates, Go 1.26.4
+for source builds and the Go scaffold, and Python 3.12.9 with uv 0.12.10 for the Python
+scaffold. Older versions are not certified. Go projects record their toolchain in go.mod;
+the linter is v2.12.2. Python selects the 3.12 interpreter line in .python-version.
+Run make sync once and commit uv.lock before the first CI run. The lockfile records
+resolved development dependencies; CI uses uv sync --locked and the pinned uv version.
+The v1 candidate was exercised on macOS 15.7 and Debian 12, both arm64. Other architectures
+need the same gates before claiming validation; CI supplies additional runner evidence.
 
 Each agent uses its own checkout. Agents sharing a remote upgrade together. One binary
 cannot enforce human review when agents can use the human's merge credentials.
