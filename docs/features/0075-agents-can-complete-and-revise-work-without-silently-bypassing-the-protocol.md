@@ -1,9 +1,9 @@
 ---
 id: 0075
 title: Agents can complete and revise work without silently bypassing the protocol
-status: Shipped
+status: Draft
 created: 2026-09-05
-shipped: 2026-09-05
+shipped: 
 needs:
 ---
 
@@ -62,3 +62,4 @@ including squash merges. Each checkout holds one feature without a global agent 
 - Applied the release safety check to reservation disposal after finding the same stale-read gap.
 - 2026-09-05 — reset to Draft: Audit the harvested handoff
 - 2026-09-05 — reset to Draft: Review the complete planned and exploratory workflows
+- 2026-09-05 — reset to Draft: Tighten command contracts and gates; favor substantial value-shaped features
