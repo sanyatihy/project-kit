@@ -369,8 +369,9 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   concurrent create cannot be overwritten by a later template write.
 
 - **A release is part of shipping, because `@latest` is whatever the newest tag says.**
-  `make release TAG=…` gates, cuts an annotated tag and pushes it, refusing a dirty tree or
-  a HEAD that is not `origin`'s default-branch tip; `audit` reports `tag-stale` when the
+  `make release TAG=…` runs CI_STEPS, binds checks and an annotated tag to one clean
+  published trunk commit, and verifies the remote tag object. Retry preserves the same
+  tag; conflicting local or remote tags are never overwritten. Failed state reads refuse; `audit` reports `tag-stale` when the
   newest tag falls further than `TagStaleCommits` behind the trunk.
 
 ## Gotchas

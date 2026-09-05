@@ -90,7 +90,7 @@ and installation verification; Submitted alone never claims that outcome.
 - [x] Make claim identity survive renames and recover interrupted acquisitions, with deterministic competing-clone tests and legacy-claim migration coverage
 - [x] Make offline and unavailable-remote handoffs report uncertainty without inventing progress or ownership, verified in text and JSON
 - [x] Document and verify the v1 compatibility and coordinated upgrade contract using legacy history, in-flight work and customized project files
-- [ ] Make release run the complete gate, bind publication to the validated commit, and safely resume failed tag pushes under failure-injection tests
+- [x] Make release run the complete gate, bind publication to the validated commit, and safely resume failed tag pushes under failure-injection tests
 - [ ] Make fresh Go and Python projects pass their actual gates on the declared supported environments and document reproducible tool requirements
 - [ ] Rehearse plan approval, independent claims, interruption and blocker recovery, review revisions, squash integration and dependency unlock across separate clones, plus initial MVP harvest and a disposable financials upgrade
 - [ ] Record release-candidate evidence, remote enforcement verification or explicit pending conditions, and the exact post-merge v1.0.0 publication and installation procedure
