@@ -1,9 +1,9 @@
 ---
 id: 0075
 title: Agents can complete and revise work without silently bypassing the protocol
-status: Draft
+status: Shipped
 created: 2026-09-05
-shipped:
+shipped: 2026-09-05
 needs:
 ---
 
