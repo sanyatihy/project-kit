@@ -67,7 +67,8 @@ const (
 	// cannot answer it — that is the whole reason a stamp nobody committed read as
 	// agreement. One `ls-tree` names the board's blobs and one `cat-file --batch` reads
 	// them, both fixed, which is the shape `trunkStatuses` already uses for the trunk.
-	onlineBudget = 16
+	// One repository-wide diff checks frozen documents; no per-feature processes.
+	onlineBudget = 17
 
 	// The same board where no trunk resolves. `Trunk()` answered "" there, and "" was
 	// also its "not asked yet" sentinel, so `findTrunk` ran the whole ladder again for

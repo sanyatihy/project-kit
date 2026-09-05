@@ -72,13 +72,14 @@ fmt-check:
 vet:
 	$(GO) vet $(PKG)
 
-# lint is skipped with a notice when golangci-lint is not installed, so a fresh
-# clone goes green with only Go present. CI installs it, so there it really runs.
+# A missing or failing linter fails the gate. CI installs the pinned version.
 .PHONY: lint
 lint:
-	@which golangci-lint >/dev/null 2>&1 \
-		&& golangci-lint run \
-		|| echo "note: golangci-lint not installed, skipping (https://golangci-lint.run)"
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run; \
+	else \
+		echo "golangci-lint is required: https://golangci-lint.run"; exit 1; \
+	fi
 
 # install puts `kit` on your PATH via the Go toolchain.
 .PHONY: vuln
@@ -136,6 +137,6 @@ help:
 	@echo "  fmt         - gofmt -s -w ."
 	@echo "  fmt-check   - fail if anything is unformatted"
 	@echo "  vet         - go vet ./..."
-	@echo "  lint        - golangci-lint run (skipped if not installed)"
+	@echo "  lint        - golangci-lint run (required)"
 	@echo "  vuln        - govulncheck against the module"
 	@echo "  audit       - kit audit --strict on this repo (needs the remote)"

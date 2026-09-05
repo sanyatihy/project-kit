@@ -44,15 +44,13 @@ attempt — mutual exclusion defeated using only what the kit printed.
 One markdown file per feature, `docs/features/NNNN-name.md`, with `status:` canonical:
 
 ```
-Draft -> Shipped     (exit: Dropped)
+Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 ```
 
-- **Three statuses, and only `ship` and `drop` write one.** There is no status for work in
-  flight — the claim branch says that. `Accepted` was removed after 82 docs across five
-  projects reached it zero times; every feature went `Draft` to `Shipped`. `Superseded` was
-  removed because no command could write it, so reaching it required the hand edit the
-  protocol forbids. Both end states are terminal in both directions: `ship` refuses a
-  Dropped doc as `drop` refuses a Shipped one.
+- **Three statuses, written by ship, drop and reset.** Draft is open work; Shipped
+  submits completed work for review; Dropped retires a plan. Reset reopens an unmerged
+  submission for review changes and clears its date. A Shipped doc on the trunk is frozen.
+
 - **A write needs one unambiguous doc.** `WriteTarget` refuses an id two docs declare and a
   key one doc declares twice; the first match `FeatureByID` returns is for reads, where
   refusing to render would help nobody.
@@ -63,11 +61,10 @@ Draft -> Shipped     (exit: Dropped)
   comment from a value, so guidance there is one keystroke from data. `needs-unparsed`
   reports what leaks anyway — a `needs:` is ids, commas and spaces, and anything else in
   it is not a dependency `needs-unknown` could ever have asked about.
-- **What refuses a claim is a list, and it is stated in full wherever it is stated at
-  all:** an unmet `needs:`, a BLOCKING inbox line, an unwritten `## Problem`, `## Design`
-  or `## Tasks`, an `id:` disagreeing with the filename, a duplicate id, and a plan that
-  has not reached the trunk. Saying "a doc nobody wrote and a BLOCKING line" as if that
-  were the whole list taught readers that `needs:` does not gate claims. It does.
+- **Plan validation is shared by next, claim and ship.** Duplicate keys or ids, malformed
+  dependencies and dependency cycles block work; ship also refuses unanswered blockers,
+  unknown statuses and unwritten sections. Command help carries the invocation refusals.
+
 - **The claim is a branch name, and the push is what decides.** Only a *created* ref is a
   win: pushing to a branch the remote already holds at that commit prints "Everything
   up-to-date" and exits 0, which hands one feature to two agents. Ref creation is a
@@ -91,7 +88,7 @@ Draft -> Shipped     (exit: Dropped)
   those are the ids there is anything to free. One `fetch` mirrors `refs/kit/ids/*` here,
   because `ls-remote` answers with SHAs and the record is in the object — a list that could
   not be refreshed reports nothing and releases nothing.
-- **A claim carries the plan, branches from the trunk, and carries nothing else.** The doc
+- **A claim carries the plan and branches from the trunk.** The doc
   must be in `HEAD`'s tree and in `trunkRef()`'s, or the claim is a child of the plan
   branch and only its own author can integrate it. The push is of `HEAD`, so a checkout
   the trunk does not contain sends another feature's commits under the new name: from the
@@ -116,40 +113,29 @@ Draft -> Shipped     (exit: Dropped)
   worktree doing the work — and wrong for `release`, which runs in the trunk the claim was
   made from rather than in the worktree it created. A local ref means this clone created the branch: the same answer for every
   worktree sharing it, a different one for an agent that only saw the claim over the wire.
-- **An unknown answer must not be the permissive one in a command that deletes.**
-  `BranchBuildsOn` reads an unresolvable trunk as "carries no work", so `release` deleted
-  branches full of commits at exit 0 on any project whose default branch was neither `main`
-  nor `master`. The trunk ladder is `origin/HEAD`, local `main`, local `master`, the
-  remote-tracking copy of either, then a HEAD that is not claim-shaped — and `release`
-  refuses outright when none of them resolves. A branch name strips *any* configured
-  remote's prefix: with `origin/` alone, a clone whose remote is `upstream` resolved
-  `upstream/main`, which matches no ref.
+- **Release requires readable state and preserves work.** It refuses uncommitted files
+  and every unmerged commit, including changes only to the plan; git errors cannot mean
+  no work. The remote delete uses the observed tip as a lease, including under --force.
+
 - **Ordering needs no syntax.** Task order is dependency order and `next` returns the
   topmost unticked box. This replaced a dependency graph.
 - **`needs:` is the only cross-feature ordering, and it is declared.** Blocked until every
   id listed is `Shipped` — not merged, which would make the board depend on how fast
   somebody clicked. ID order was rejected: a prerequisite found late already has a higher
   id. The ready set is therefore the parallelism answer, and nothing declares it separately.
-- **Ship has a far side, and the board reports it.** `next` ends with **awaiting review**: a
-  branch the remote has, carrying a doc that says Shipped, not yet on the trunk. The status
-  is read *from the branch* — the only place it exists, since a coordinator stands on the
-  trunk where the doc still says what it said when the round landed. **Status, never
-  presence** — a doc reaches the trunk when it is *drafted*, so testing presence silences
-  the check for every feature. It leaves the groups above while it waits, or one finished
-  feature reads as two.
+- **Awaiting review reads the advertised remote tip.** A stale local branch cannot hide
+  a submission or keep a reopened submission in the review group. Unfetched objects
+  remain unknown until fetched.
+
 - **You never merge your own work: legibility here, enforcement on the remote.** The board
   marks what the reader built — the claim it stands on, or the branch's authorship. The
   second half is worth exactly as much as the identities are distinct, and on this repo
   four agents shared the operator's, so it separated none of them. Branch protection is
   the only real enforcement while that is true.
-- **An answer that cannot change inside one command is asked once** — the trunk, this
-  checkout's branch, the remotes, the remote's branch list, every ref (`git show-ref`), and
-  every feature doc's status on the trunk, and `HEAD`'s tree and the trunk's. Per feature
-  instead, a 30-feature board read cost 116 git processes against 30 now, and 12 online. A memo whose answer can be empty
-  needs a flag of its own: the trunk's used `""` for *not asked yet*, so a checkout where
-  none resolves re-ran the ladder per caller — 747 processes against 28. Each is a ceiling
-  the gate fails on, and each is measured, because a regression can leave the others
-  identical. `make gitcount` prints them.
+- **Git reads are memoised within a command.** The gate measures subprocess counts with
+  generated boards: 30 for next offline and 17 for audit online, including one diff for
+  frozen documents. `make gitcount` reports all ceilings and breakdowns.
+
 - **One project per invocation.** `next` and `audit` read the repo you are in and take no
   paths. The fan-out that read several at once keyed its payload by directory basename, so
   two projects called `proj` reported as one, silently, at exit 0 — and it had no `recover`,
@@ -181,10 +167,9 @@ Draft -> Shipped     (exit: Dropped)
   stops work invisibly; an unparseable line matches whole-line, which over-blocks — the safe
   direction. `next` skips at once, `audit` escalates after two days, because a line carries
   a date and no time. An FYI line never blocks and is never aged: nothing is owed it.
-- **The feature template's guidance lives in HTML comments, and that is load-bearing.**
-  Comments are stripped before parsing, so guidance reaches the author and not the tool.
-  Visible placeholder prose and two `- [ ] …` boxes make an unwritten doc parse as a
-  finished plan, which `next` then hands an agent to build.
+- **Template guidance lives in HTML comments and does not count as a plan.** Markdown
+  fences using backticks or tildes hide example headings and boxes from task parsing.
+
 - **The plan checks gate on *committed*, never on a terminal doc, and read a boxless
   `## Tasks` as unwritten** — so a doc out of `kit new` stays quiet, `claim` refuses what
   the board declines, and a stub `drop` retired stops refusing every ship in the project.
@@ -358,21 +343,27 @@ Draft -> Shipped     (exit: Dropped)
   and not worth gating: the check cannot tell a dependency from a comparison. It reads
   `## Problem` and `## Design` only and skips terminal docs — without that gate 41 of this
   repo's 65 docs fire, every one of them citing settled work.
-- **`kit reset <id> "<why>"` is the one repair for a status the kit refuses.** It writes
-  `Draft` over any status but `Shipped`, and writes the field into a doc that carries no
-  `status:` line, so the three writers are `ship`, `drop` and `reset` and nothing is left
-  that only a hand-edit can clear. `no-status` and the board's blocked reason name it: a
-  `fix:` line that instructs an edit to `status:` is telling an agent to break rule 6.
+- **Reset checks the published trunk before reopening a Shipped doc.** It refuses on
+  the trunk, on detached HEAD, or when the remote tip or its documents cannot be read.
+  Reset, ship and drop refuse a feature claimed by another checkout.
+
 - **A status the kit writes is committed by the command that wrote it.** `ship`'s
   dirty-tree refusal makes that commit exactly the stamp; `drop` takes the doc's path
   alone, because a plan is often edited in the breath that retires it. `status-uncommitted`
   is the backstop and the only check that reads `HEAD` — every other one reads the working
   tree, which is why a stamp nobody committed reported as agreement. It reads the whole
   board in one `ls-tree` and one `cat-file --batch`.
-- **The `## Log` may not outweigh the rest of a doc.** `ship` refuses past `LogShareMax`,
-  the last moment the doc may be edited at all, and `log-outweighs-plan` reports the same
-  while the doc is still open. A share and not a line count, so nothing is recalibrated as
-  a corpus matures — the `doc-bloat` of 0038, deleted by 0049, counted lines.
+- **Log length is not a gate.** A valid review reason can outweigh a short plan; no word
+  ratio proves misplaced content. Move durable facts before ship, and allow an empty Log.
+- **Frozen documents are checked against the trunk.** `frozen-doc` reports edits and
+  deletions before merge; required remote checks must enforce this against raw git.
+- **Strict online audit fails on an unanswered remote.** Explicit --offline runs local
+  checks and reports the omitted checks; neither path describes partial coverage as agreement.
+- **Concurrent blocking questions append without rewriting the inbox.** Each command
+  writes its whole line once, so a second question cannot erase the first.
+- **Scaffolding creates user files exclusively and preserves dangling symlinks.** A
+  concurrent create cannot be overwritten by a later template write.
+
 - **A release is part of shipping, because `@latest` is whatever the newest tag says.**
   `make release TAG=…` gates, cuts an annotated tag and pushes it, refusing a dirty tree or
   a HEAD that is not `origin`'s default-branch tip; `audit` reports `tag-stale` when the
@@ -422,8 +413,8 @@ make release TAG=v0.3.0   # gate, then cut and push the tag `@latest` resolves t
 Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. **CI runs the
 Makefile's `CI_STEPS` and nothing else**, and `cmd/kit/ci_test.go` fails when the workflow
 drifts from it. **The linter is pinned and its set committed** to `.golangci.yml`, or a
-release changes what the gate means with no commit behind it; `make lint` skips when it is
-absent, which is safe only while CI installs it.
+release changes what the gate means with no commit behind it. Missing or failing lint
+fails `make check`, here and in the Go scaffold.
 
 **The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
 it against throwaway projects, asserting on stdout, stderr, exit codes and the files left

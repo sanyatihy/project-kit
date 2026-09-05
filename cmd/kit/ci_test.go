@@ -107,10 +107,9 @@ func TestTheGateIsCIMinusTheNetwork(t *testing.T) {
 		}
 	}
 
-	// `make lint` skips with a notice when golangci-lint is absent — that skip is
-	// what keeps a fresh clone green, and it is only safe while CI installs it.
+	// CI provides the required linter before running the gate.
 	if !strings.Contains(workflow, "golangci/golangci-lint-action@") {
-		t.Errorf("%s installs no linter, so `make check` there skips the lint in silence", workflowPath)
+		t.Errorf("%s installs no linter, so `make check` there cannot run", workflowPath)
 	}
 	if strings.Contains(workflow, "version: latest") {
 		t.Errorf("%s takes whatever golangci-lint released today, which turns the trunk "+

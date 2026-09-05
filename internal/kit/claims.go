@@ -299,7 +299,7 @@ func (r *Repo) AwaitingReview() []Review {
 			if r.isTrunk(name) || !mentionsAny(name, ids) {
 				continue
 			}
-			rev := r.resolveBranch(name)
+			rev := r.claimRev(name)
 			if rev == "" || r.statusOn(rev, f.Rel) != StatusShipped {
 				continue
 			}
@@ -415,7 +415,7 @@ func (r *Repo) statusesOn(ref string) map[string]string {
 	if err != nil {
 		return nil
 	}
-	paths := map[string]string{} // blob sha -> path
+	paths := map[string][]string{} // blob sha -> paths
 	var wanted strings.Builder
 	for _, entry := range gitPaths(listing) {
 		meta, path, found := strings.Cut(entry, "\t")
@@ -426,11 +426,11 @@ func (r *Repo) statusesOn(ref string) map[string]string {
 		if len(fields) < 3 || fields[1] != "blob" {
 			continue
 		}
-		paths[fields[2]] = path
+		paths[fields[2]] = append(paths[fields[2]], path)
 		wanted.WriteString(fields[2] + "\n")
 	}
 	if len(paths) == 0 {
-		return nil
+		return map[string]string{}
 	}
 	batch, err := r.gitFed(wanted.String(), "cat-file", "--batch")
 	if err != nil {
@@ -454,9 +454,11 @@ func (r *Repo) statusesOn(ref string) map[string]string {
 		if err != nil || size > len(body) {
 			break
 		}
-		if path, ok := paths[fields[0]]; ok {
+		if names, ok := paths[fields[0]]; ok {
 			doc, _ := ParseFrontmatter(Normalise(body[:size]))
-			out[path] = doc["status"]
+			for _, path := range names {
+				out[path] = doc["status"]
+			}
 		}
 		rest = strings.TrimPrefix(body[size:], "\n")
 	}

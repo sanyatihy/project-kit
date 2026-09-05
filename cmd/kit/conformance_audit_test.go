@@ -119,6 +119,12 @@ var auditCases = []struct {
 	code  string
 	setUp func(p *project)
 }{
+	{"frozen-doc", func(p *project) {
+		feature(p, "0007", "frozen", "Frozen", "Shipped", "- [x] Done")
+		p.commitAll("shipped on trunk")
+		p.git("switch", "-c", "change-history")
+		p.write("docs/features/0007-frozen.md", doc("0007", "Reopened", "Draft", "", "- [ ] Again"))
+	}},
 	{"duplicate-id", func(p *project) {
 		// Set up the way the race actually produces it: two agents off the same base
 		// each take the next free ID, and the differing slugs mean the two files have
@@ -273,16 +279,7 @@ var auditCases = []struct {
 		// and nothing inside the project can tell.
 		p.write("AGENTS.md", "# House rules\n\n## Work protocol\n\nAn older protocol.\n")
 	}},
-	{"log-outweighs-plan", func(p *project) {
-		// A Draft partway through the work, whose Log has become the design: the
-		// decisions are stated where the routing rule sends nothing and nobody reads.
-		// Written out rather than through doc(), whose Log is one line by construction.
-		p.write("docs/features/0002-loggy.md",
-			"---\nid: 0002\ntitle: Loggy\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
-				"## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n"+
-				"## Tasks\n- [ ] Do it\n\n## Log\n"+strings.Repeat(
-				"- 2026-01-02 — the currency comes from the merchant account.\n", 5))
-	}},
+
 	{"unfilled-vision", func(p *project) {
 		// A fresh `kit init` and nothing else. The template's guidance is all
 		// comments, so every section under its headings reads as empty.
@@ -737,27 +734,6 @@ func TestATerminalDocIsAskedNothingAboutItsPlan(t *testing.T) {
 	open.run("new", "Also never written").ok()
 	open.commitAll("commit a doc nobody wrote")
 	open.run("audit", "--strict").fails(1).has("unfilled-template", "kit drop 0002")
-}
-
-func TestLogOutweighsPlanIsQuietOnceTheDocIsFrozen(t *testing.T) {
-	t.Parallel()
-	// 0049 deleted five checks for firing where rule 17 forbids the fix. A Shipped doc
-	// whose Log ran away is exactly that: `ship` is what refuses this, and past it the
-	// only repair is an edit to frozen history.
-	p := cleanProject(t)
-	heavy := "## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n" +
-		"## Tasks\n- [x] Done\n\n## Log\n" +
-		strings.Repeat("- 2026-01-02 — the currency comes from the merchant account.\n", 5)
-	p.write("docs/features/0002-frozen.md",
-		"---\nid: 0002\ntitle: Frozen\nstatus: Shipped\ncreated: 2026-01-01\nshipped: "+
-			daysAgo(1)+"\n---\n\n"+heavy)
-	p.write("docs/features/0003-retired.md",
-		"---\nid: 0003\ntitle: Retired\nstatus: Dropped\ncreated: 2026-01-01\n---\n\n"+heavy)
-	p.commitAll("two docs nobody may edit")
-
-	if codes := p.auditCodes(); slices.Contains(codes, "log-outweighs-plan") {
-		t.Errorf("log-outweighs-plan fired on a terminal doc: %v", codes)
-	}
 }
 
 func TestTagStaleIsQuietUntilTheDistanceCouldMislead(t *testing.T) {

@@ -21,7 +21,7 @@ Commands:
   kit claim <id>                      take a feature: push the branch, win or lose
   kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
-  kit ship  <id>                      tick the last box: verify, stamp, freeze
+  kit ship  <id>                      tick the last box: verify, stamp, submit for review
   kit drop  <id> "<why>"              retire a feature that will not be built
   kit reset <id> "<why>"              put a doc back to Draft: the one repair
   kit next  [--json] [--offline]      what should I work on?
@@ -245,7 +245,7 @@ won. A won claim also writes .worktrees/ to .git/info/exclude — git clone does
 This does not fetch first and does not edit the doc. A stale view only ever costs you
 a clearer error, because the remote decides. Nothing to set afterwards either: the
 branch is what says the work started.
-
+Malformed needs:, dependency cycles and duplicate keys also refuse the claim.
   kit claim 0007
   kit claim 7`,
 
@@ -274,6 +274,10 @@ cannot remove the one you are standing in, and a worktree you put elsewhere is y
 claim is released either way and the command says what is left, because until the branch
 goes this checkout still reads the feature as taken.
 
+Uncommitted work in its worktree also refuses release. A commit changing only the doc is work.
+The remote delete uses the observed tip as a lease, even with --force; a later push
+cannot be deleted by an earlier decision.
+
   kit release 0007
   kit release 7 --force`,
 
@@ -299,34 +303,26 @@ State a leaning. It turns most questions into a yes/no.
 
 	"ship": `kit ship <id>
 
-Mark a feature Shipped. Refuses unless every "## Tasks" box is ticked, sets
-status: Shipped, stamps shipped: with today's date, and commits that stamp — a
-status left in the working tree is one session from being read as debris.
+Submit finished work for review. Refuses unless every "## Tasks" box is ticked,
+sets status: Shipped, stamps shipped: with today's date, and commits that stamp.
 
-Nine more refusals, all exit 2. The doc is already Shipped, or it was Dropped and a
-retired plan is not work to finish. Or it has no ## Tasks boxes at all, so there is
-nothing to have finished, or no status: line for this to write. Or something in its
-needs: has not shipped — the plan says this was built on a foundation that is not
-there, so the plan is wrong and you have to look. Or it is claimed by a branch that
-is not this checkout's: ship it from that worktree, because "Shipped" is history
-nobody may edit and doing it from elsewhere freezes another agent's work mid-flight.
-Or this checkout has uncommitted or untracked files: the scratch a feature generated
-is yours to clean up, and what git ignores does not count. Or the stamp is written
-and committing it failed — an index another process holds, no identity configured, a
-rebase under way: the file carries status: Shipped and the doc is shipped only once
-that commit exists. Or the ## Log outweighs the rest of the doc: past half the
-document the Log is the as-built doc in disguise, and this is the last moment those
-facts can be moved into docs/TECH.md, one line each.
+Exit 2 when the doc is already Shipped or Dropped, has an unknown status or
+no status: line, no ## Tasks boxes, an unwritten Problem or Design, a BLOCKING
+question, ambiguous fields or ids, or invalid dependencies. If needs: has not
+shipped, finish the prerequisites first. If it is claimed by a branch other than
+this checkout's, use the owning worktree.
 
-Doing this by hand is where shipped-no-date comes from, so the command removes the
-mistake rather than reporting it afterwards.
+The command also refuses uncommitted or untracked files and an unreadable git
+status. A failure is not proof of a clean tree. If committing it failed after the
+stamp was written, the error names the file to commit.
 
-A Shipped doc is frozen history: durable facts belong in docs/TECH.md from then
-on, and what the doc decided must not be edited again.
+Before this command, move durable facts to docs/TECH.md, keep only changes to the
+plan in Log (an empty Log is fine), run the project gate, and run kit audit --strict.
+Ship verifies the document; it does not run or certify the project's tests.
 
-Shipping is also when a working document becomes context every later session carries,
-so the closing line asks you to compact it: keep every decision, constraint and
-measurement, and cut only what the code now says.
+Push the branch and open the pull request. Do not merge your own work.
+For review changes before merge, use kit reset <id> "<why>", revise the tasks,
+then repeat the gate and ship. A Shipped document on the trunk is frozen history.
 
   kit ship 0007
   kit ship 7`,
@@ -365,25 +361,21 @@ in, so say it in the pull request.
 
 	"reset": `kit reset <id> "<why>"
 
-Put a doc back to status: Draft, and commit it. The one repair for a status the kit
-does not recognise, which wedges the doc that carries it: "kit claim" says it is not
-open work, "kit ship" refuses while a box is open, and every instruction left named an
-edit to status: — the thing that put the bad value there.
+Put a doc back to status: Draft, clear shipped:, record the reason in Log, and
+commit it. This repairs unknown statuses, revives Dropped plans and lets review
+feedback revise a Shipped feature before it merges.
 
-Any status but Shipped is accepted, so this also revives a Dropped plan somebody wants
-back. The reason goes in "## Log" beside every other durable decision.
+Refuses if already Draft, claimed by a branch other than this checkout's, or
+carrying no frontmatter. If committing it failed after writing, commit the named
+file to preserve the repair.
 
-Four refusals, all exit 2. The doc is Shipped: that is frozen history and the work is
-in the repo, so reopening it would make the record say it was never done. Or it is
-already Draft, so there is nothing to repair. Or it is claimed by a branch that is not
-this checkout's: reset it from that worktree, because a doc another agent holds is work
-in flight. Or it has no frontmatter to write the field into — a doc missing only the
-status: line gets one. And if committing it failed —
-an index another process holds, no identity configured — the file is already back to
-Draft and the error says so.
+Reopening it from Shipped requires an unmerged working branch and a readable trunk.
+With a remote, reset checks its published trunk; fetch first if its objects are
+missing. A document already Shipped on the trunk is frozen history: create a new
+feature for further work.
 
-  kit reset 0007 "In Progress was never a status the kit writes"
-  kit reset 7 "revived: the constraint that retired it went away"`,
+  kit reset 0007 "review requested another case"
+  kit reset 7 "In Progress was never a status the kit writes"`,
 
 	"next": `kit next [--json] [--offline]
 
@@ -442,8 +434,9 @@ finding and what it means.
 --offline names the checks it did not run, because a check that was skipped and one
 that passed otherwise print the same page. A directory with no docs/features exits 2:
 nothing was read, so there is no finding and no clean bill either.
+With --strict, an unanswered remote also exits 2. --offline explicitly limits the audit.
 
-Reads only, and never edits a file. Uses the repo you are in. For several projects:
+Leaves project files unchanged; online reservation checks refresh git refs. Uses the repo you are in. For several projects:
   for d in ~/code/*; do (cd $d && kit audit); done
 
   kit audit                      # this project

@@ -84,6 +84,8 @@ var (
 	// the line nothing reads, so the finding survived its own fix.
 	checkDuplicateKey = Check{"duplicate-key", High,
 		"a doc declares one frontmatter key twice, so the value the kit reads is not the line a write would change"}
+	checkFrozenDoc = Check{"frozen-doc", High,
+		"a feature already Shipped on the trunk was changed or deleted"}
 	checkStalled = Check{"stalled", High,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
@@ -182,9 +184,6 @@ var (
 	// MEDIUM for done-not-shipped's reason: nothing here is untrue, and `ship` refuses
 	// the same doc anyway. What this adds is the warning while the fix is still legal —
 	// past `ship` the doc is frozen and rule 17 forbids the edit.
-	checkLogOutweighsPlan = Check{"log-outweighs-plan", Medium,
-		fmt.Sprintf("more than %d%% of a doc is ## Log, so the facts the project runs "+
-			"on are filed in a plan nothing reads", int(LogShareMax*100))}
 
 	// LOW — worth saying, and not worth stopping for.
 	// The first check at this level, and it is here because it cannot tell a dependency
@@ -220,13 +219,13 @@ func CheckCodes(checks []Check) []string {
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
-	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkSplitClaim, checkStalled,
+	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled,
 	checkInboxStale,
 	checkStatusUncommitted, checkShippedNotPushed,
 	checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
 	checkShippedNoDate, checkInboxUnparsed,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
-	checkNoStatus, checkNoProtocol, checkProtocolStale, checkLogOutweighsPlan,
+	checkNoStatus, checkNoProtocol, checkProtocolStale,
 	checkNeedsUnstated,
 }
 
@@ -353,11 +352,11 @@ var featureChecks = []featureCheck{
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
 	{[]Check{checkSplitClaim}, claimState},
 	{[]Check{checkIDMismatch}, idMismatch},
-	{[]Check{checkLogOutweighsPlan}, logWeight},
 }
 
 // repoChecks run after every feature has been through the list above.
 var repoChecks = []repoCheck{
+	{[]Check{checkFrozenDoc}, frozenDocs},
 	{[]Check{checkOrphanClaim}, orphanClaims},
 	{[]Check{checkOrphanReservation}, orphanReservations},
 	{[]Check{checkInboxUnparsed, checkInboxStale}, inboxState},
@@ -413,6 +412,27 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 // The ID is the primary key: branches claim by it, inbox lines block by it, and commits
 // cite it. Two docs sharing one makes all three ambiguous, and it is the one disagreement
 // git cannot surface — the filenames differ, so the merge is clean.
+func frozenDocs(s *repoState) []Finding {
+	trunk := s.r.trunkRef()
+	if trunk == "" {
+		return nil
+	}
+	changed, err := s.r.gitRun("diff", "--name-only", "-z", trunk, "--", s.r.FeaturesDir)
+	if err != nil || changed == "" {
+		return nil
+	}
+	statuses := s.r.statusesOn(trunk)
+	var out []Finding
+	for _, path := range gitPaths(changed) {
+		if statuses[path] == StatusShipped {
+			out = append(out, finding(checkFrozenDoc, path,
+				"this document is Shipped on the trunk and differs here",
+				"preserve the new work in a new feature, then restore the frozen document from the trunk"))
+		}
+	}
+	return out
+}
+
 func duplicateID(s *repoState) []Finding {
 	var out []Finding
 	for _, id := range duplicateIDs(s.r.Features) {
@@ -677,22 +697,6 @@ func idMismatch(s *docState) []Finding {
 	return []Finding{finding(checkIDMismatch, s.at,
 		fmt.Sprintf("id %q does not match filename %q", s.f.ID, prefix),
 		"make them match; the ID is how commits and branches cite this doc")}
-}
-
-// The Log records what changed this doc's plan. Past LogShareMax it is holding what is
-// true after the feature ships, which has one home and it is not here.
-//
-// Terminal docs are skipped: `ship` refuses this before it freezes a doc, so on a doc
-// already Shipped the only fix rule 17 leaves is an edit nobody may make.
-func logWeight(s *docState) []Finding {
-	log, doc, over := s.f.LogWeight()
-	if terminal(s.f.Status) || !over {
-		return nil
-	}
-	return []Finding{finding(checkLogOutweighsPlan, s.at,
-		fmt.Sprintf("## Log is %d%% of the doc (%d of %d words)", log*100/doc, log, doc),
-		"move what is true after this ships into "+techPath(s.r)+", one line each, and "+
-			"leave in ## Log only what changed the plan")}
 }
 
 func orphanClaims(s *repoState) []Finding {
@@ -970,6 +974,12 @@ func needsState(s *repoState) []Finding {
 				"leave it empty, or list only the four-digit ids that must ship first"))
 			continue
 		}
+		if s.r.needsCycle(f.ID, f.ID, map[string]bool{}) && !slices.Contains(f.Needs, f.ID) {
+			out = append(out, finding(checkNeedsUnknown, f.Rel,
+				f.Name()+": dependency cycle in needs:",
+				"remove the circular dependency before claiming"))
+		}
+
 		for _, id := range f.Needs {
 			dep := s.r.FeatureByID(id)
 			switch {

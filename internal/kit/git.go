@@ -266,7 +266,7 @@ func (r *Repo) remoteTip(remote, branch string) (string, bool) {
 // than provoking a call nobody needed.
 func (r *Repo) RemoteUnanswered() bool {
 	r.collectRemoteHeads()
-	return r.headsFailed
+	return r.headsFailed || (r.reservationsAsked && !r.reservationsFresh && !r.Offline && len(r.remotes()) > 0)
 }
 
 // branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
@@ -417,10 +417,10 @@ func (r *Repo) commitDate(rev string) time.Time {
 //
 // Unknown answers empty, the way every other git question here does. This one feeds a
 // refusal, so inventing files from a failed call would block a ship for no reason.
-func (r *Repo) DirtyFiles() []string {
+func (r *Repo) DirtyFiles() ([]string, error) {
 	out, err := r.gitRun("status", "--porcelain", "-z")
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	var paths []string
 	records := gitPaths(out)
@@ -436,7 +436,7 @@ func (r *Repo) DirtyFiles() []string {
 			i++
 		}
 	}
-	return paths
+	return paths, nil
 }
 
 // commitPaths commits exactly the paths named and nothing else.

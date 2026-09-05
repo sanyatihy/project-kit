@@ -165,7 +165,7 @@ func TestDropReportsALeftoverClaimRatherThanDeletingIt(t *testing.T) {
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] Something")
 	p.commitAll("the plan")
-	p.git("branch", "0001-shorten")
+	p.git("switch", "-c", "0001-shorten")
 
 	r := p.run("drop", "0001", "not worth it").ok()
 	r.has("still claimed", "0001-shorten")

@@ -14,17 +14,8 @@ type ResetResult struct {
 	Commit string // the commit the status landed in, empty when there is no history to commit onto
 }
 
-// Reset returns a doc to Draft.
-//
-// It exists because an unrecognised status wedges the doc that carries it: `claim` says it
-// is not open work, `ship` refuses while a box is open, and the only command that could
-// write over it was `drop`, which retires the feature rather than repairing it. Every
-// instruction left named an edit to `status:` — the thing that put the bad value there.
-//
-// So this is the third command that writes a status, and the field stays the kit's. Any
-// status but Shipped is accepted, which covers the unrecognised value and reviving a
-// retired plan under one rule. Shipped is refused for `drop`'s reason: the work is in the
-// repo, and a status saying otherwise would make the record say it was never done.
+// Reset repairs a status or returns unmerged work to Draft for review changes.
+// A Shipped document on the trunk is frozen history.
 func Reset(r *Repo, id, why string, today time.Time) (*ResetResult, error) {
 	target, err := r.WriteTarget(id)
 	if err != nil {
@@ -32,8 +23,9 @@ func Reset(r *Repo, id, why string, today time.Time) (*ResetResult, error) {
 	}
 	switch target.Status {
 	case StatusShipped:
-		return nil, fmt.Errorf("%s is Shipped — it is frozen history, and reopening it "+
-			"would make the record say the work was never done", target.Name())
+		if err := r.canReopen(target); err != nil {
+			return nil, err
+		}
 	case StatusDraft:
 		return nil, fmt.Errorf("%s is already Draft", target.Name())
 	}
@@ -58,6 +50,7 @@ func Reset(r *Repo, id, why string, today time.Time) (*ResetResult, error) {
 	if !ok {
 		return nil, fmt.Errorf("%s has no frontmatter to write a status into", target.Name())
 	}
+	updated, _ = AddField(updated, "shipped", "")
 	// `drop`'s argument: a status change nobody explained reads later as a mistake, and
 	// the doc is where every other durable decision lives.
 	if why != "" {
@@ -78,4 +71,32 @@ func Reset(r *Repo, id, why string, today time.Time) (*ResetResult, error) {
 		}
 	}
 	return res, nil
+}
+
+// canReopen reads the published trunk when there is one; a stale local copy cannot
+// authorize rewriting history that another checkout already merged.
+func (r *Repo) canReopen(f *Feature) error {
+	trunk := r.trunkRef()
+	if trunk == "" || r.HeadBranch() == "" || r.isTrunk(r.HeadBranch()) {
+		return fmt.Errorf("%s is Shipped — reopening it needs its unmerged working branch", f.Name())
+	}
+	remote, err := pickRemote(r)
+	if err != nil {
+		return err
+	}
+	if remote != "" {
+		tip, ok := r.remoteTip(remote, r.Trunk())
+		if !ok {
+			return fmt.Errorf("the remote trunk could not be read — fetch it before reopening %s", f.ID)
+		}
+		trunk = tip
+	}
+	statuses := r.statusesOn(trunk)
+	if statuses == nil {
+		return fmt.Errorf("the trunk's documents cannot be read — run git fetch before reopening %s", f.ID)
+	}
+	if statuses[f.Rel] == StatusShipped || r.reaches("HEAD", trunk) {
+		return fmt.Errorf("%s is Shipped on the trunk — it is frozen history; write a new feature", f.Name())
+	}
+	return nil
 }

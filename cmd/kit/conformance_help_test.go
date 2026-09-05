@@ -54,7 +54,7 @@ func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
 		needs:     []string{"one feature per checkout."},
 	}, {
 		concluded: "sequential IDs are handed out safely, so they cannot collide",
-		needs:     []string{"Where two agents can still collide", "duplicate-id"},
+		needs:     []string{"Duplicate ids from offline drafting"},
 	}, {
 		// The recipe this used to look for is now a command, so the fact it carried
 		// has to be in what the command says about itself.

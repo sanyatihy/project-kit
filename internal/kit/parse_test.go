@@ -216,3 +216,14 @@ func TestParseIDList(t *testing.T) {
 		}
 	}
 }
+
+func TestFencedExamplesCannotReplaceTheRealTaskSection(t *testing.T) {
+	for _, fence := range []string{"```", "~~~~", "````"} {
+		text := "## Tasks\n- [ ] Actual work\n\n" + fence + "markdown\n## Tasks\n- [x] Example\n" + fence + "\n"
+		sections := ParseSections(text)
+		open, total := CountTasks(sections["Tasks"])
+		if open != 1 || total != 1 {
+			t.Errorf("%q: got %d/%d, want one open real task", fence, open, total)
+		}
+	}
+}

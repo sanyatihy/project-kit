@@ -416,9 +416,9 @@ func runHarvest(args []string) int {
 			harvested.ID)
 		fmt.Printf("  this trunk right now can be handed the same id\n")
 	}
-	fmt.Printf("\n  answer ## Problem, ## Design and ## Log — they are the part the code\n")
+	fmt.Printf("\n  answer ## Problem and ## Design — they are the part the code\n")
 	fmt.Printf("  cannot say, and audit --strict refuses the doc until they are written.\n")
-	fmt.Printf("  then: kit ship %s, push the branch, and open the pull request.\n",
+	fmt.Printf("  then run the project gate, kit audit --strict, kit ship %s, and open the pull request.\n",
 		harvested.ID)
 
 	// The handoff. This is the moment the operator knows what is worth doing next and the
@@ -656,18 +656,8 @@ func runShip(args []string) int {
 	if res.TechCreated {
 		fmt.Printf("  created %s — the as-built doc. See: kit help as-built\n", res.TechDoc)
 	}
-	if res.TechDoc != "" {
-		fmt.Printf("  move durable facts into %s, one line each — this doc is frozen history now\n", res.TechDoc)
-	}
-	// The three destinations, printed where the routing is actually decided: the protocol
-	// states them at the start of a session and this is the end of one.
-	fmt.Printf("  leave in ## Log only what changed the plan — the rest of the work belongs in the PR\n")
-	// Worded to lead with what to keep, because the risk is an agent reading "compact" as
-	// "delete": the doc is the only record of why the code is like this.
-	fmt.Printf("  keep every decision, constraint and measurement — cut only what the code now says\n")
-	if res.OpenLogs {
-		fmt.Printf("  ## Log is empty; record what was decided and why\n")
-	}
+	fmt.Printf("  review changes before merge: kit reset %s \"<why>\"\n", id)
+	fmt.Printf("  once Shipped on the trunk, the doc is frozen; further work needs a new feature\n")
 	// Said here because this decision is made at the end of a session and the
 	// protocol is read at the start of one. An agent that reaches this point with
 	// no instruction fills the gap by merging its own work, which is what happened
@@ -680,7 +670,7 @@ func runShip(args []string) int {
 			res.Trunk, res.Merged)
 	}
 	if res.HasRemote {
-		fmt.Printf("  push the branch and stop — reviewing and merging are not yours\n")
+		fmt.Printf("  push the branch and stop — open the pull request; reviewing and merging are not yours\n")
 	} else {
 		fmt.Printf("  this project has no remote, so there is nowhere to hand this off.\n")
 		fmt.Printf("  say so rather than merging it yourself — merging is not yours\n")
@@ -970,7 +960,7 @@ func runAudit(args []string) int {
 	// A directory with no docs/features was not audited: nothing was read, so "no
 	// findings" is not a statement about it. Exit 2 — could not run — before --strict is
 	// consulted, so a CI gate cannot go green on a repo that has no plan at all.
-	if result.Error != "" {
+	if result.Error != "" || (*strict && result.RemoteUnanswered) {
 		return 2
 	}
 	if *strict {
@@ -1022,7 +1012,11 @@ func printFindings(repo *kit.Repo, result audited, color bool) {
 			"\n    did not run, and the claim checks read the last fetch", "33", color))
 	}
 	if len(result.Findings) == 0 {
-		fmt.Printf("  docs and repo agree\n\n")
+		if result.RemoteUnanswered || len(result.Skipped) > 0 {
+			fmt.Printf("  no findings in the checks that ran\n\n")
+		} else {
+			fmt.Printf("  docs and repo agree\n\n")
+		}
 		return
 	}
 	for _, severity := range kit.Severities {

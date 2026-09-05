@@ -59,13 +59,23 @@ func AppendQuestion(r *Repo, id, question string, fyi bool, today time.Time) (st
 	if err != nil {
 		return "", err
 	}
-	body := Normalise(string(raw))
-	if !strings.HasSuffix(body, "\n") {
-		body += "\n"
+	lead := ""
+	if len(raw) > 0 && raw[len(raw)-1] != '\n' {
+		lead = "\n"
 	}
-	if err := os.WriteFile(r.Inbox, []byte(body+line+"\n"), 0o644); err != nil {
+	file, err := os.OpenFile(r.Inbox, os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
 		return "", err
 	}
+	_, writeErr := file.WriteString(lead + line + "\n")
+	closeErr := file.Close()
+	if writeErr != nil {
+		return "", writeErr
+	}
+	if closeErr != nil {
+		return "", closeErr
+	}
+
 	return line, nil
 }
 

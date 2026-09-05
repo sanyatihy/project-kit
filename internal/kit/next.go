@@ -252,6 +252,9 @@ func Survey(r *Repo) Plan {
 		// question comes first because a human already has to answer it, so the
 		// dependency is not the thing standing in the way.
 		switch questions, unmet := r.BlockersFor(f.ID), r.UnmetNeeds(f); {
+		case (claim == "" || item.Mine) && r.PlanError(f) != nil:
+			item.WaitingOn = r.PlanError(f).Error()
+			plan.Blocked = append(plan.Blocked, item)
 		case len(questions) > 0:
 			item.WaitingOn = questions[0]
 			plan.Blocked = append(plan.Blocked, item)

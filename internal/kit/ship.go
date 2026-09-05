@@ -15,7 +15,6 @@ type ShipResult struct {
 	Was         string
 	TechDoc     string // the as-built doc to migrate facts into
 	TechCreated bool   // whether shipping is what created it
-	OpenLogs    bool   // whether ## Log looks like it was left untouched
 	HasRemote   bool   // whether there is anywhere to hand the work off to
 	Commit      string // the commit the stamp landed in, empty when there is no history to commit onto
 
@@ -47,6 +46,16 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 		return nil, fmt.Errorf("%s is %s — it is a retired plan, not work to finish",
 			target.Name(), target.Status)
 	}
+	if target.Status != StatusDraft {
+		return nil, fmt.Errorf("%s has unknown status %q — run kit reset %s before shipping",
+			target.Name(), target.Status, id)
+	}
+	if err := r.PlanError(target); err != nil {
+		return nil, err
+	}
+	if blockers := r.BlockersFor(id); len(blockers) > 0 {
+		return nil, fmt.Errorf("%s is blocked: %s", target.Name(), blockers[0])
+	}
 	if open, total := target.TaskCount(); total == 0 {
 		return nil, fmt.Errorf("%s has no ## Tasks boxes — there is nothing to have finished",
 			target.Name())
@@ -56,21 +65,19 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 			target.Name(), open, clip(target.OpenTasks()[0], 60))
 	}
 
-	// The same call `Survey` makes, so the board and the command cannot disagree.
-	// Shipping here freezes a doc whose plan is wrong, and the protocol then forbids
-	// anyone to correct it — prevent before detecting. An ordinary error and not
-	// `NotYours`: nobody else holds this, the work is done and the plan is wrong, so the
-	// operator has to look.
+	if unwritten := target.Unwritten(); len(unwritten) > 0 {
+		return nil, fmt.Errorf("%s has no plan to submit: ## %s",
+			target.Name(), strings.Join(unwritten, ", ## "))
+	}
+
+	// Completion requires the same prerequisites the board and claim enforce.
 	if unmet := r.UnmetNeeds(target); len(unmet) > 0 {
 		return nil, fmt.Errorf("%s waits on %s: not shipped yet\n"+
 			"ship those first, or correct needs: to what was actually required",
 			target.Name(), strings.Join(unmet, ", "))
 	}
 
-	// Shipping is the claim-holder's to do. From any other checkout it freezes work in
-	// flight: `status: Shipped` is history the protocol forbids anyone to edit, so the
-	// agent actually holding the branch can no longer touch its own doc. `Survey` calls
-	// the same question Mine, and reports what it answers as yours.
+	// Only the owning checkout may submit an active claim.
 	if claims := r.Claims(id); len(claims) > 0 && !r.Mine(id) {
 		return nil, fmt.Errorf("%s is claimed by %s, which is not this checkout\n"+
 			"ship it from that worktree. If the branch is a leftover of yours, release "+
@@ -81,7 +88,11 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	// is ticked in the commit that implements it, so a clean tree is the state the ship gate
 	// describes. Shipping over debris either commits it under a status change or leaves
 	// it for whoever works in this checkout next.
-	if dirty := r.DirtyFiles(); len(dirty) > 0 {
+	dirty, err := r.DirtyFiles()
+	if err != nil {
+		return nil, err
+	}
+	if len(dirty) > 0 {
 		shown := dirty
 		if len(shown) > 3 {
 			shown = append(shown[:3:3], fmt.Sprintf("and %d more", len(dirty)-3))
@@ -89,18 +100,6 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 		return nil, fmt.Errorf("this checkout has uncommitted or untracked files:\n  %s\n"+
 			"commit what belongs to the feature and remove the rest, then ship",
 			strings.Join(shown, "\n  "))
-	}
-
-	// The last moment the doc can be edited at all. A ## Log that outweighs the rest of
-	// the document is the as-built doc in disguise — decisions, constants and formats
-	// filed where nothing reads them — and freezing it puts them out of reach of the rule
-	// that would have routed them.
-	if log, doc, over := target.LogWeight(); over {
-		return nil, fmt.Errorf("%s is %d%% ## Log (%d of %d words), so the plan is mostly "+
-			"a record of the work\n"+
-			"move what is true after this ships into %s, one line each, and leave in "+
-			"## Log only what changed the plan",
-			target.Name(), log*100/doc, log, doc, techPath(r))
 	}
 
 	raw, err := os.ReadFile(target.Path)
@@ -170,17 +169,7 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 		}
 	}
 
-	res.OpenLogs = strings.TrimSpace(target.Section("Log")) == ""
 	return res, nil
-}
-
-// techPath names the as-built doc: where the project keeps it, or where shipping would
-// create it in a project that has none.
-func techPath(r *Repo) string {
-	if r.Tech == "" {
-		return "docs/TECH.md"
-	}
-	return r.Rel(r.Tech)
 }
 
 // createTechDoc writes the as-built template into a project that arrived without one.

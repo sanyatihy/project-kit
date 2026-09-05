@@ -366,22 +366,13 @@ func TestShipSaysTheWorkIsHandedOffNotFinished(t *testing.T) {
 	shipping(p, "0008").ok().has("push the branch and stop")
 }
 
-func TestShipPointsAtTheAsBuiltDoc(t *testing.T) {
+func TestShipDoesNotAskForEditsAfterSubmission(t *testing.T) {
 	t.Parallel()
-	// The protocol says move durable facts across; nothing enforced it, so the prompt
-	// is the enforcement.
-	// The creation case is TestShipCreatesTheAsBuiltDocOnce; this is the reminder
-	// when the doc is already there.
 	p := setUp(t)
 	feature(p, "0007", "done", "Done", "Draft", "- [x] One")
-	p.write("docs/TECH.md", "# As built\n")
-
 	r := shipping(p, "0007").ok()
-	r.has("move durable facts", "docs/TECH.md")
-	r.lacks("created docs/TECH.md")
-	// And the other two destinations, since this is where the routing is decided: a
-	// rule stated only in the protocol is read at the start of a session, not here.
-	r.has("only what changed the plan", "the PR")
+	r.has("kit reset 0007", "once Shipped on the trunk")
+	r.lacks("move durable facts", "record what was decided", "leave in ## Log")
 }
 
 func TestShipCreatesTheAsBuiltDocOnce(t *testing.T) {
@@ -428,18 +419,11 @@ func loggy(p *project, id string, entries int) {
 			"## Tasks\n- [x] One\n\n## Log\n%s", id, log))
 }
 
-func TestShipRefusesADocThatIsMostlyLog(t *testing.T) {
+func TestShipDoesNotJudgeThePlanByItsLogRatio(t *testing.T) {
 	t.Parallel()
-	// The state a real doc reached: 79% Log, holding the facts the project runs on.
-	// Shipping freezes it, so this is the last moment they can be moved at all.
 	p := setUp(t)
 	loggy(p, "0007", 6)
-
-	r := shipping(p, "0007").fails(2)
-	r.errHas("## Log", "docs/TECH.md", "one line each")
-	if strings.Contains(p.read("docs/features/0007-loggy.md"), "status: Shipped") {
-		t.Error("ship wrote the status despite refusing")
-	}
+	shipping(p, "0007").ok()
 }
 
 func TestShipAllowsALongLogUnderALongerPlan(t *testing.T) {

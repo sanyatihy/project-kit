@@ -99,7 +99,10 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 			"four-digit id anywhere in it", branch)
 	}
 
-	files := r.DirtyFiles()
+	files, err := r.DirtyFiles()
+	if err != nil {
+		return nil, err
+	}
 	// The boxes are the operator's: no order of work can be recovered from a tree, and a
 	// commit message is not an outcome. The refusal carries the files as the raw material
 	// for naming them, which is the one mechanical half of this there is.

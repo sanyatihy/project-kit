@@ -146,9 +146,10 @@ ticked there, and the trunk's copy of the doc would say `0/3` however far along 
     0002  1/3   Resolve a short link — 0002-resolve-a-short-link, 20 minutes ago
 ```
 
-Do one box, tick it in the commit that implements it, and open a PR. Run `kit next` again
-for the next one. When the last box is ticked, `kit ship 0001` verifies every box, stamps
-the date and freezes the doc.
+Do one box and tick it in its implementing commit, then continue through the tasks.
+When the last box is ticked, run the project gate, `kit audit --strict`, and `kit ship
+0001` to submit for review. For review changes, `kit reset 0001 "<why>"` reopens
+unmerged work. A Shipped doc on the trunk is frozen history.
 
 Then push and stop, because **you never merge your own work**. `kit next` closes with
 what is waiting on the other side of that handoff:
@@ -187,7 +188,7 @@ kit claim <id>                           push the branch; exit 1 means you lost 
 kit release <id> [--force]               give a claim back; refuses over work, and over
                                          a claim this clone never created
 kit block <id> "<question>" [--fyi]      park a decision only a human can make
-kit ship  <id>                           verify every box, stamp the date, freeze
+kit ship  <id>                           verify every box, stamp the date, submit
 kit drop  <id> "<why>"                   retire a feature that will not be built
 kit next  [--json] [--offline]           warns above 2 features in progress
 kit audit [--json] [--strict] [--offline]  --strict exits 1 on HIGH, for CI

@@ -45,6 +45,11 @@ func Drop(r *Repo, id, why string, today time.Time) (*DropResult, error) {
 		return nil, fmt.Errorf("%s is already Dropped", target.Name())
 	}
 
+	if claims := r.Claims(id); len(claims) > 0 && !r.Mine(id) {
+		return nil, fmt.Errorf("%s is claimed by %s, which is not this checkout\ndrop it from that worktree",
+			target.Name(), strings.Join(claims, " and "))
+	}
+
 	raw, err := os.ReadFile(target.Path)
 	if err != nil {
 		return nil, err

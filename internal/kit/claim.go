@@ -85,6 +85,10 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"make them match — rename the file, or fix the id: — then claim again"}
 	}
 
+	if err := r.PlanError(target); err != nil {
+		return nil, &NotYours{err.Error(), "repair the plan, or claim something kit next offers"}
+	}
+
 	// Draft is the only status work starts from. Shipped and Dropped are end states, and
 	// a claim on either reopens finished history. What else refuses a claim is an
 	// unwritten plan (below), a BLOCKING inbox line, and an unmet `needs:`.

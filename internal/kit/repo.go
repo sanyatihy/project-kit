@@ -294,6 +294,47 @@ func (r *Repo) WriteTarget(id string) (*Feature, error) {
 	return target, nil
 }
 
+// PlanError rejects ambiguous plans before routing or changing their lifecycle.
+func (r *Repo) PlanError(f *Feature) error {
+	if _, err := r.WriteTarget(f.ID); err != nil {
+		return err
+	}
+	if f.Unreadable {
+		return fmt.Errorf("%s cannot be read", f.Rel)
+	}
+	if !idListOnlyRe.MatchString(f.needsText) {
+		return fmt.Errorf("%s: needs: is not an id list", f.Name())
+	}
+	if r.needsCycle(f.ID, f.ID, map[string]bool{}) {
+		return fmt.Errorf("%s: dependency cycle in needs: — remove the circular dependency", f.Name())
+	}
+	for _, id := range f.Needs {
+		if dep := r.FeatureByID(id); dep != nil {
+			if _, err := r.WriteTarget(id); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *Repo) needsCycle(start, id string, seen map[string]bool) bool {
+	if seen[id] {
+		return false
+	}
+	seen[id] = true
+	f := r.FeatureByID(id)
+	if f == nil || terminal(f.Status) {
+		return false
+	}
+	for _, need := range f.Needs {
+		if need == start || r.needsCycle(start, need, seen) {
+			return true
+		}
+	}
+	return false
+}
+
 // UnmetNeeds lists the ids a feature is still waiting on, in declared order.
 //
 // Shipped is the bar rather than merged. `kit ship` is the moment the kit knows a
@@ -306,9 +347,6 @@ func (r *Repo) WriteTarget(id string) (*Feature, error) {
 func (r *Repo) UnmetNeeds(f *Feature) []string {
 	var unmet []string
 	for _, id := range f.Needs {
-		if id == f.ID {
-			continue // self-reference is a cycle, and audit says so
-		}
 		if dep := r.FeatureByID(id); dep == nil || dep.Status != StatusShipped {
 			unmet = append(unmet, id)
 		}
