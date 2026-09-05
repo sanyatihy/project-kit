@@ -96,7 +96,11 @@ and installation verification; Submitted alone never claims that outcome.
 - [x] Preserve actual legacy claim branch names in board JSON during the coordinated upgrade
 - [x] Record release-candidate evidence, remote enforcement verification or explicit pending conditions, and the exact post-merge v1.0.0 publication and installation procedure
 
+- [ ] Clarify the restoration cause, independent parser repairs and approved review scope
+- [ ] Restore unresolved backlog concerns and account for deliberate documentation removals
+
 ## Log
 
 - 2026-09-05 — Candidate JSON reported a canonical branch for the legacy checkout that owns this feature. Added a correction before final validation so the upgrade contract preserves usable branch references.
 - 2026-09-05 — reopen to Draft: Review: distinguish the house-rule editing failure from parser defects and preserve unresolved backlog concerns
+- 2026-09-05 — Added two review-correction tasks: distinguish the house-rule restoration from parser hardening, and retain backlog problems whose proposed mechanisms became obsolete but whose outcomes remain unresolved.
