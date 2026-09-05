@@ -33,6 +33,12 @@ The protocol states the sequence and ownership boundaries once. Remove 0074's Lo
 ratio gate: a short legitimate review reason can exceed half a short plan, so the metric
 cannot establish misplaced content. Durable facts still move to TECH before submission.
 
+Planned work has two human review points: the plan and the implementation. Exploration
+joins at implementation review, including an MVP with no commits. Dependencies become
+available only after integration; a submission stamp alone is not a foundation. The
+board distinguishes local completion, pushed review, requested revisions and integration,
+including squash merges. Each checkout holds one feature without a global agent limit.
+
 ## Tasks
 
 - [x] Harden lifecycle, claims, audit coverage and generated gates against reproduced failures
@@ -41,6 +47,10 @@ cannot establish misplaced content. Durable facts still move to TECH before subm
 - [x] Refuse reservation release when branch state is unreadable or changes concurrently
 
 - [x] Make harvested submissions visible to audit and the review board
+
+- [ ] Enforce current foundations and complete the review and integration handoffs
+- [ ] Keep an initial harvested MVP reviewable off the trunk
+- [ ] Document both workflows and remove the arbitrary global work limit
 
 ## Log
 
