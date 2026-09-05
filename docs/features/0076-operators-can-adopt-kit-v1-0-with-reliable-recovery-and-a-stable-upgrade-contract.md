@@ -92,7 +92,7 @@ and installation verification; Submitted alone never claims that outcome.
 - [x] Document and verify the v1 compatibility and coordinated upgrade contract using legacy history, in-flight work and customized project files
 - [x] Make release run the complete gate, bind publication to the validated commit, and safely resume failed tag pushes under failure-injection tests
 - [x] Make fresh Go and Python projects pass their actual gates on the declared supported environments and document reproducible tool requirements
-- [ ] Rehearse plan approval, independent claims, interruption and blocker recovery, review revisions, squash integration and dependency unlock across separate clones, plus initial MVP harvest and a disposable financials upgrade
+- [x] Rehearse plan approval, independent claims, interruption and blocker recovery, review revisions, squash integration and dependency unlock across separate clones, plus initial MVP harvest and a disposable financials upgrade
 - [ ] Record release-candidate evidence, remote enforcement verification or explicit pending conditions, and the exact post-merge v1.0.0 publication and installation procedure
 
 ## Log
