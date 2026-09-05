@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	StatusDraft   = "Draft"
-	StatusShipped = "Shipped"
-	StatusDropped = "Dropped"
+	StatusDraft         = "Draft"
+	StatusSubmitted     = "Submitted"
+	StatusLegacyShipped = "Shipped"
+	StatusDropped       = "Dropped"
 
 	gitLogLimit = "500"
 	gitTimeout  = 30 * time.Second
@@ -24,7 +25,7 @@ const (
 	//
 	// It was 5s, which a working remote did not fit inside: `git ls-remote --heads` to
 	// GitHub over SSH measured 5.58s on an ordinary connection, so the review board went
-	// blank and `shipped-not-pushed` never ran, with nothing on the page saying why. Tune
+	// blank and `submitted-not-pushed` never ran, with nothing on the page saying why. Tune
 	// it against that number, and against RemoteUnanswered — a bound that expires is now
 	// reported rather than printed as an empty board.
 	remoteTimeout = 15 * time.Second
@@ -87,7 +88,7 @@ type Repo struct {
 	refsAuthoritative bool
 
 	// The remote's branch list, asked once. It cannot change under a single command, and
-	// `audit` asks it per Shipped feature: unmemoised, one ls-remote per doc took this
+	// `audit` asks it per Submitted feature: unmemoised, one ls-remote per doc took this
 	// repo's audit from under a second to two minutes.
 	heads      []string
 	headsKnown bool
@@ -108,7 +109,7 @@ type Repo struct {
 	headsPending chan headsResult
 
 	// Every feature doc's status on the remote's trunk, read in one pass. Asked once: it
-	// cannot change while one command runs, and shipped-not-pushed needs it per doc.
+	// cannot change while one command runs, and submitted-not-pushed needs it per doc.
 	trunkDocs       map[string]string
 	trunkDocsAsked  bool
 	integratedDocs  map[string]string
@@ -237,8 +238,12 @@ func (r *Repo) readFeature(path string) *Feature {
 		f.Title = fields["title"]
 		f.Status = fields["status"]
 		f.Needs = ParseIDList(fields["needs"])
-		f.Shipped = ParseDate(fields["shipped"])
-		f.shippedText = strings.TrimSpace(fields["shipped"])
+		stamp, present := fields["submitted"]
+		if !present {
+			stamp = fields["shipped"]
+		}
+		f.Submitted = ParseDate(stamp)
+		f.submittedText = strings.TrimSpace(stamp)
 		f.needsText = strings.TrimSpace(fields["needs"])
 		f.Duplicates = DuplicateKeys(text)
 		f.sections = ParseSections(body)
@@ -259,11 +264,11 @@ func (r *Repo) FeatureByID(id string) *Feature {
 	return nil
 }
 
-// WriteTarget is FeatureByID for the commands that write — `ship`, `drop` and `block`.
+// WriteTarget is FeatureByID for the commands that write — `submit`, `drop` and `block`.
 //
 // Reading a doc tolerates an ambiguity that writing one cannot. A key declared twice makes
 // the read and the write different lines: ParseFrontmatter keeps the last occurrence and
-// SetField rewrites the first, so `ship` reported success, left two contradictory statuses
+// SetField rewrites the first, so `submit` reported success, left two contradictory statuses
 // behind and `audit` repeated the same finding with the same fix for ever. Which line the
 // author meant is not the kit's to guess.
 func (r *Repo) WriteTarget(id string) (*Feature, error) {
@@ -345,8 +350,8 @@ func (r *Repo) UnmetNeeds(f *Feature) []string {
 	var unmet []string
 	for _, id := range f.Needs {
 		dep := r.FeatureByID(id)
-		if dep == nil || dep.Status != StatusShipped ||
-			r.integratedStatuses()[dep.Rel] != StatusShipped || r.headStatuses()[dep.Rel] != StatusShipped {
+		if dep == nil || !IsSubmitted(dep.Status) ||
+			!IsSubmitted(r.integratedStatuses()[dep.Rel]) || !IsSubmitted(r.headStatuses()[dep.Rel]) {
 			unmet = append(unmet, id)
 		}
 	}

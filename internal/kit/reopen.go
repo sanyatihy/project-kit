@@ -7,34 +7,40 @@ import (
 	"time"
 )
 
-// ResetResult is what resetting changed, for reporting.
-type ResetResult struct {
+// ReopenResult is what reopening changed, for reporting.
+type ReopenResult struct {
 	Doc    string
 	Was    string
 	Commit string // the commit the status landed in, empty when there is no history to commit onto
 }
 
-// Reset repairs a status or returns unmerged work to Draft for review changes.
-// A Shipped document on the trunk is frozen history.
-func Reset(r *Repo, id, why string, today time.Time) (*ResetResult, error) {
+// Reopen repairs a status or returns unmerged work to Draft for review changes.
+// A Submitted document on the trunk is frozen history.
+func Reopen(r *Repo, id, why string, today time.Time, repair bool) (*ReopenResult, error) {
 	target, err := r.WriteTarget(id)
 	if err != nil {
 		return nil, err
 	}
 	switch target.Status {
-	case StatusShipped:
+	case StatusSubmitted, StatusLegacyShipped:
 		if err := r.canReopen(target); err != nil {
 			return nil, err
 		}
+	case StatusDropped:
+		return nil, fmt.Errorf("%s is Dropped — draft a new feature for human approval instead of reviving a retired plan", target.Name())
 	case StatusDraft:
 		return nil, fmt.Errorf("%s is already Draft", target.Name())
+	default:
+		if !repair {
+			return nil, fmt.Errorf("%s has invalid status %q — use kit reopen %s --repair \"<why>\" to repair it", target.Name(), target.Status, id)
+		}
 	}
 
-	// `ship`'s guard, for `ship`'s reason: a doc another checkout claims is work in
+	// `submit`'s guard, for `submit`'s reason: a doc another checkout claims is work in
 	// flight, and rewriting its status from here is the same interference.
 	if claims := r.Claims(id); len(claims) > 0 && !r.Mine(id) {
 		return nil, fmt.Errorf("%s is claimed by %s, which is not this checkout\n"+
-			"reset it from that worktree. If the branch is a leftover of yours, release "+
+			"reopen it from that worktree. If the branch is a leftover of yours, release "+
 			"the claim first: kit release "+target.ID, target.Name(), strings.Join(claims, " and "))
 	}
 
@@ -50,20 +56,21 @@ func Reset(r *Repo, id, why string, today time.Time) (*ResetResult, error) {
 	if !ok {
 		return nil, fmt.Errorf("%s has no frontmatter to write a status into", target.Name())
 	}
-	updated, _ = AddField(updated, "shipped", "")
+	updated = RemoveField(updated, "shipped")
+	updated, _ = AddField(updated, "submitted", "")
 	// `drop`'s argument: a status change nobody explained reads later as a mistake, and
 	// the doc is where every other durable decision lives.
 	if why != "" {
 		updated = appendLog(updated,
-			"- "+today.UTC().Format(DateLayout)+" — reset to Draft: "+why)
+			"- "+today.UTC().Format(DateLayout)+" — reopen to Draft: "+why)
 	}
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err
 	}
 
-	res := &ResetResult{Doc: target.Rel, Was: target.Status}
+	res := &ReopenResult{Doc: target.Rel, Was: target.Status}
 	if r.HasHistory() {
-		res.Commit = "Reset " + target.ID
+		res.Commit = "Reopen " + target.ID
 		if err := r.commitPaths(res.Commit, target.Path); err != nil {
 			return nil, fmt.Errorf("%s is back to Draft in %s, and committing it failed:\n%v\n"+
 				"commit that file yourself — the status is repaired only once the commit exists",
@@ -78,7 +85,7 @@ func Reset(r *Repo, id, why string, today time.Time) (*ResetResult, error) {
 func (r *Repo) canReopen(f *Feature) error {
 	trunk := r.trunkRef()
 	if trunk == "" || r.HeadBranch() == "" || r.isTrunk(r.HeadBranch()) {
-		return fmt.Errorf("%s is Shipped — reopening it needs its unmerged working branch", f.Name())
+		return fmt.Errorf("%s is Submitted — reopening it needs its unmerged working branch", f.Name())
 	}
 	remote, err := pickRemote(r)
 	if err != nil {
@@ -95,8 +102,8 @@ func (r *Repo) canReopen(f *Feature) error {
 	if statuses == nil {
 		return fmt.Errorf("the trunk's documents cannot be read — run git fetch before reopening %s", f.ID)
 	}
-	if statuses[f.Rel] == StatusShipped || r.reaches("HEAD", trunk) {
-		return fmt.Errorf("%s is Shipped on the trunk — it is frozen history; write a new feature", f.Name())
+	if IsSubmitted(statuses[f.Rel]) || r.reaches("HEAD", trunk) {
+		return fmt.Errorf("%s is Submitted on the trunk — it is frozen history; write a new feature", f.Name())
 	}
 	return nil
 }

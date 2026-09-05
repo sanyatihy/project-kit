@@ -3,7 +3,7 @@ id: NNNN
 title: <short imperative name>
 status: Draft
 created: YYYY-MM-DD
-shipped:
+submitted:
 needs:
 ---
 
@@ -11,7 +11,7 @@ needs:
      implementation is merged. Leave it empty for independent work.
      Depend on an API, schema or decision you must build on. Shared files alone do not
      create a dependency; incompatible decisions or a shared number allocation can.
-     `status: Shipped` on a working branch records a submission, not integration. -->
+     `status: Submitted` on a working branch records a submission, not integration. -->
 
 
 ## Problem

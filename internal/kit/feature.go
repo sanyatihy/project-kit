@@ -9,18 +9,18 @@ import (
 
 // The feature document: its fields, its sections, and the branch name it implies.
 
-// AllStatuses is every status a feature doc may declare.
-//
-// Three, and no more. There is no "In progress" because the claim branch says work has
-// started, and no "Accepted" because in 82 docs across five projects nothing ever reached
-// it: every feature went from Draft to Shipped. A doc carrying a status this does not
-// list is reported as `no-status`, which is the migration for both.
-var AllStatuses = []string{StatusDraft, StatusDropped, StatusShipped}
+// AllStatuses includes current statuses and the readable legacy submission stamp.
+var AllStatuses = []string{StatusDraft, StatusDropped, StatusSubmitted, StatusLegacyShipped}
 
 // terminal reports whether a status is an end state, after which a branch bearing the
 // feature's name is a merged leftover rather than somebody's work in progress.
 func terminal(status string) bool {
-	return status == StatusShipped || status == StatusDropped
+	return IsSubmitted(status) || status == StatusDropped
+}
+
+// IsSubmitted accepts the current review snapshot and the legacy completion stamp.
+func IsSubmitted(status string) bool {
+	return status == StatusSubmitted || status == StatusLegacyShipped
 }
 
 var notAFeature = map[string]bool{
@@ -31,23 +31,23 @@ var idPrefixRe = regexp.MustCompile(`^(\d+)`)
 
 // Feature is one feature document.
 type Feature struct {
-	Path    string
-	Rel     string
-	ID      string
-	Title   string
-	Status  string
-	Needs   []string // feature ids that must merge before this can start
-	Shipped time.Time
+	Path      string
+	Rel       string
+	ID        string
+	Title     string
+	Status    string
+	Needs     []string // feature ids that must merge before this can start
+	Submitted time.Time
 
 	// Duplicates are the frontmatter keys this doc declares more than once. Reading
 	// tolerates them — the last one wins — and writing cannot, so it is carried rather
 	// than dropped at parse time.
 	Duplicates []string
 
-	// shippedText is the frontmatter line as written. Shipped alone cannot tell a doc
-	// with no date from one whose date nothing could parse, and `shipped-no-date`
+	// submittedText is the frontmatter line as written. Submitted alone cannot tell a doc
+	// with no date from one whose date nothing could parse, and `submitted-no-date`
 	// reported the second as the first — on a doc that plainly had one.
-	shippedText string
+	submittedText string
 
 	// needsText is the same, for the same reason: Needs holds what parsed, and prose
 	// scans for four-digit runs like any other string. A doc nobody edited declared
@@ -75,7 +75,7 @@ func (f *Feature) Name() string {
 func (f *Feature) Section(heading string) string { return f.sections[heading] }
 
 // PlannedSections are what an agent needs in order to work a feature at all. `Log` is
-// not among them: it is written as the work happens, so it is checked at Shipped only.
+// not among them: a plan that never changed needs no Log entries.
 var PlannedSections = []string{"Problem", "Design", "Tasks"}
 
 // Unwritten lists the sections an agent would need and cannot read, in document order.

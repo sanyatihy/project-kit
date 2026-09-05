@@ -42,7 +42,7 @@ type Item struct {
 	Moved *time.Time `json:"moved,omitempty"`
 }
 
-// Waiting is one feature on the review board: shipped by its builder, pushed, and not
+// Waiting is one feature on the review board: submitted by its builder, pushed, and not
 // on the trunk. It carries no task and no claim — there is nothing left to build, and
 // what to do with it is somebody else's decision.
 type Waiting struct {
@@ -65,7 +65,7 @@ type Plan struct {
 	Taken   []Item `json:"taken"`
 	Blocked []Item `json:"blocked"`
 
-	// AwaitingReview is the far side of ship: work that has left its builder and
+	// AwaitingReview is the far side of submit: work that has left its builder and
 	// arrived nowhere. Not part of the board above — none of it is claimable, and
 	// nothing here is anybody's to build.
 	AwaitingReview []Waiting `json:"awaiting_review,omitempty"`
@@ -158,7 +158,7 @@ func Survey(r *Repo) Plan {
 	plan.Claiming = r.HeldClaim()
 	plan.Spike = spikeBranch(r, plan.Branch)
 	// Before the board, because the board is what this takes entries out of. A feature
-	// its builder has shipped is finished work waiting for a merge, not a claim somebody
+	// its builder has submitted is finished work waiting for a merge, not a claim somebody
 	// is holding, and it was reported as both — one feature under `taken` and again under
 	// `awaiting review`, which reads as two.
 	//
@@ -179,7 +179,7 @@ func Survey(r *Repo) Plan {
 		})
 	}
 	for _, f := range r.ActiveFeatures() {
-		if reviewing[f.ID] || r.integratedDocs[f.Rel] == StatusShipped {
+		if reviewing[f.ID] || IsSubmitted(r.integratedDocs[f.Rel]) {
 			continue
 		}
 		open, total := f.TaskCount()
@@ -260,9 +260,9 @@ func Survey(r *Repo) Plan {
 				// Naming the command rather than the edit, for `unfilled-template`'s
 				// reason: "set it to Draft" is an instruction to hand-edit the one field
 				// the kit owns, which is how the bad value got there.
-				item.WaitingOn = "unknown status " + f.Status + " — kit reset " + f.ID
+				item.WaitingOn = "unknown status " + f.Status + " — kit reopen " + f.ID + " --repair"
 				if f.Status == "" {
-					item.WaitingOn = "no status: — kit reset " + f.ID
+					item.WaitingOn = "no status: — kit reopen " + f.ID
 				}
 				plan.Blocked = append(plan.Blocked, item)
 			} else if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
@@ -290,7 +290,7 @@ func Survey(r *Repo) Plan {
 				if _, total := f.TaskCount(); total == 0 {
 					item.WaitingOn = "no task boxes yet — write the plan, or kit drop it"
 				} else {
-					item.WaitingOn = "every task is ticked — ship it or add the next task"
+					item.WaitingOn = "every task is ticked — submit it or add the next task"
 				}
 				plan.Blocked = append(plan.Blocked, item)
 			} else if !r.PlanLanded(f) {
@@ -330,7 +330,7 @@ func Survey(r *Repo) Plan {
 
 // waitingOnNeeds says what an unmet needs: is waiting for.
 //
-// A dependency that is Dropped can never ship, so a waiting instruction is a
+// A dependency that is Dropped can never submit, so a waiting instruction is a
 // promise the board cannot keep: the agent reads it as a wait that ends, and it does not.
 // The two need opposite answers — one ends on its own, the other only when somebody edits
 // the field — so the line has to say which. `audit` already tells them apart; this is the
@@ -351,7 +351,7 @@ func waitingOnNeeds(r *Repo, unmet []string) string {
 	}
 	if len(dead) > 0 {
 		parts = append(parts, "needs "+strings.Join(dead, ", ")+
-			", which can never ship — edit needs:")
+			", which can never submit — edit needs:")
 	}
 	return strings.Join(parts, "; ")
 }
@@ -382,7 +382,7 @@ func guidanceFor(r *Repo, plan Plan) string {
 		return plan.Checkout
 	case len(plan.Yours) > 0:
 		if plan.Yours[0].Task == "" {
-			return "all tasks are complete. Run the project gate, kit audit --strict, then kit ship " + plan.Yours[0].ID + "."
+			return "all tasks are complete. Run the project gate, kit audit --strict, then kit submit " + plan.Yours[0].ID + "."
 		}
 		return "work the box named under yours, in this checkout. It is already claimed by you."
 	case len(plan.Ready) > 0 && plan.Claiming != "":

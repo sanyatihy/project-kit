@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestInvalidPlansCannotBeClaimedOrShipped(t *testing.T) {
+func TestInvalidPlansCannotBeClaimedOrSubmitted(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
 		name, extra, want string
@@ -24,7 +24,7 @@ func TestInvalidPlansCannotBeClaimedOrShipped(t *testing.T) {
 			p.run("next").ok().has("blocked", tc.want)
 			p.run("claim", "0007").fails(1).errHas(tc.want)
 			p.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", tc.extra, "- [x] Build"))
-			shipping(p, "0007").fails(2).errHas(tc.want)
+			submitting(p, "0007").fails(2).errHas(tc.want)
 		})
 	}
 }
@@ -57,7 +57,7 @@ func TestShipRefusesBlockedUnwrittenAndUnknownPlans(t *testing.T) {
 				p.write("docs/features/0007-widget.md", strings.Replace(p.read("docs/features/0007-widget.md"), "status: Draft", "status: Surprise", 1))
 				want = "unknown status"
 			}
-			shipping(p, "0007").fails(2).errHas(want)
+			submitting(p, "0007").fails(2).errHas(want)
 		})
 	}
 }
@@ -131,10 +131,10 @@ func TestReviewBoardReadsTheAdvertisedTip(t *testing.T) {
 	b.git("fetch", "origin")
 	b.git("branch", "0007-widget", "origin/0007-widget")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
-	shipping(w, "0007").ok()
+	submitting(w, "0007").ok()
 	w.git("push", "origin", "HEAD")
 	b.git("fetch", "origin")
-	// b's local branch remains Draft while its remote-tracking branch is Shipped.
+	// b's local branch remains Draft while its remote-tracking branch is Submitted.
 	b.run("next").ok().has("awaiting review")
 }
 
@@ -152,15 +152,15 @@ func TestReviewFeedbackCanReopenOnlyUnmergedWork(t *testing.T) {
 	a.run("claim", "0007").ok()
 	w := a.claimWorktree("0007-widget")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
-	shipping(w, "0007").ok()
-	w.run("reset", "0007", "review requested another case").ok()
-	if got := w.read("docs/features/0007-widget.md"); !strings.Contains(got, "status: Draft") || strings.Contains(got, "shipped: 20") {
-		t.Fatalf("reset did not clear the submission: %s", got)
+	submitting(w, "0007").ok()
+	w.run("reopen", "0007", "review requested another case").ok()
+	if got := w.read("docs/features/0007-widget.md"); !strings.Contains(got, "status: Draft") || strings.Contains(got, "submitted: 20") {
+		t.Fatalf("reopen did not clear the submission: %s", got)
 	}
-	w.run("ship", "0007").ok()
+	w.run("submit", "0007").ok()
 	a.git("merge", "--no-ff", "-m", "reviewed", "0007-widget")
 	a.git("push", "origin", "HEAD")
-	w.run("reset", "0007", "try reopening history").fails(2).errHas("frozen history")
+	w.run("reopen", "0007", "try reopening history").fails(2).errHas("frozen history")
 }
 
 func TestInitPreservesDanglingUserSymlinks(t *testing.T) {
@@ -212,7 +212,10 @@ func TestFrozenDocumentEditsAndDeletionsFailTheGate(t *testing.T) {
 		t.Run(map[bool]string{false: "edit", true: "delete"}[remove], func(t *testing.T) {
 			p := setUp(t)
 			feature(p, "0007", "widget", "Widget", "Draft", "- [x] Done")
-			shipping(p, "0007").ok()
+			trunk := p.headBranch()
+			submitting(p, "0007").ok()
+			p.git("checkout", trunk)
+			p.git("merge", "0007-widget")
 			p.git("switch", "-c", "followup")
 			if remove {
 				if err := os.Remove(p.path("docs/features/0007-widget.md")); err != nil {
@@ -238,30 +241,30 @@ func TestShipDoesNotTreatAFailedGitStatusAsClean(t *testing.T) {
 	}
 	shim := t.TempDir()
 	writeExecutable(t, filepath.Join(shim, "git"), "#!/bin/sh\nif [ \"$3\" = status ]; then echo 'status unreadable' >&2; exit 9; fi\nexec "+shellQuote(realGit)+" \"$@\"\n")
-	cmd := exec.Command(kitBinary(t), "ship", "0007")
+	cmd := exec.Command(kitBinary(t), "submit", "0007")
 	cmd.Dir, cmd.Env = p.Root, gitEnv("PATH="+shim+string(os.PathListSeparator)+os.Getenv("PATH"))
 	out, err := cmd.CombinedOutput()
 	if err == nil || !strings.Contains(string(out), "status unreadable") {
-		t.Fatalf("unreadable state did not refuse shipping: %v, %s", err, out)
+		t.Fatalf("unreadable state did not refuse submitting: %v, %s", err, out)
 	}
-	if strings.Contains(p.read("docs/features/0007-widget.md"), "status: Shipped") {
+	if strings.Contains(p.read("docs/features/0007-widget.md"), "status: Submitted") {
 		t.Fatal("failed status read still submitted the feature")
 	}
 }
 
-func TestReviewResetRefusesAnUnreadablePublishedTrunk(t *testing.T) {
+func TestReviewReopenRefusesAnUnreadablePublishedTrunk(t *testing.T) {
 	t.Parallel()
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
 	w := a.claimWorktree("0007-widget")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
-	shipping(w, "0007").ok()
+	submitting(w, "0007").ok()
 	b.write("other.txt", "a new trunk commit")
 	b.commitAll("move trunk")
 	b.git("push", "origin", "HEAD")
-	w.run("reset", "0007", "review").fails(2).errHas("run git fetch")
+	w.run("reopen", "0007", "review").fails(2).errHas("run git fetch")
 	w.git("fetch", "origin")
-	w.run("reset", "0007", "review").ok()
+	w.run("reopen", "0007", "review").ok()
 }
 
 func TestConcurrentBlockingQuestionsAreAllPreserved(t *testing.T) {
@@ -303,9 +306,9 @@ func TestUnfetchedDraftCannotLoseItsReservation(t *testing.T) {
 	feature(b, "0009", "ninth", "Ninth", "Draft", "- [ ] Build")
 	b.commitAll("remote draft")
 	b.git("push", "origin", "HEAD")
-	a.run("drop", "0009", "looks unused").fails(2).errHas("git fetch")
+	a.run("drop", "0009", "--reservation", "looks unused").fails(2).errHas("git fetch")
 	a.git("fetch", "origin")
-	a.run("drop", "0009", "looks unused").fails(2).errHas("plan/remote-round")
+	a.run("drop", "0009", "--reservation", "looks unused").fails(2).errHas("plan/remote-round")
 	if !strings.Contains(a.gitOut(nil, "ls-remote", "origin", "refs/kit/ids/0009"), "refs/kit/ids/0009") {
 		t.Fatal("live draft lost its reservation")
 	}
@@ -321,9 +324,9 @@ func TestHarvestedSubmissionIsVisibleBeforeItsDocReachesTrunk(t *testing.T) {
 		t.Fatal("harvest left the submission on an unrouteable spike branch")
 	}
 	a.write("docs/features/0008-new-work.md", doc("0008", "New work", "Draft", "", "- [x] Finish the work"))
-	shipping(a, "0008").ok()
+	submitting(a, "0008").ok()
 	a.git("push", "-u", "origin", "HEAD")
-	a.run("audit", "--strict").ok().lacks("shipped-not-pushed")
+	a.run("audit", "--strict").ok().lacks("submitted-not-pushed")
 	b.git("fetch", "origin")
 	b.run("next").ok().has("awaiting review", "0008", "New work")
 }
@@ -345,17 +348,17 @@ func TestReviewLifecycleThroughSquashIntegration(t *testing.T) {
 	a.run("claim", "0007").ok()
 	w := a.claimWorktree("0007-widget")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
-	shipping(w, "0007").ok()
+	submitting(w, "0007").ok()
 	w.run("next").ok().has("local changes to submit").lacks("nothing is planned")
 	w.git("push", "origin", "HEAD")
-	w.run("next").ok().has("awaiting review", "kit reset 0007")
-	w.run("reset", "0007", "review requested another case").ok()
+	w.run("next").ok().has("awaiting review", "kit reopen 0007")
+	w.run("reopen", "0007", "review requested another case").ok()
 	w.write("docs/features/0007-widget.md", w.read("docs/features/0007-widget.md")+"\n")
 	w.write("docs/features/0007-widget.md", strings.Replace(w.read("docs/features/0007-widget.md"), "## Log", "- [ ] Handle the review case\n\n## Log", 1))
-	// The remote still says Shipped; this checkout has resumed implementation.
+	// The remote still says Submitted; this checkout has resumed implementation.
 	w.run("next").ok().has("yours", "Handle the review case").lacks("awaiting review")
 	w.write("docs/features/0007-widget.md", strings.Replace(w.read("docs/features/0007-widget.md"), "- [ ] Handle", "- [x] Handle", 1))
-	shipping(w, "0007").ok()
+	submitting(w, "0007").ok()
 	w.git("push", "origin", "HEAD")
 	reviewer.git("fetch", "origin")
 	reviewer.git("merge", "--squash", "origin/0007-widget")
@@ -365,7 +368,7 @@ func TestReviewLifecycleThroughSquashIntegration(t *testing.T) {
 	w.git("fetch", "origin")
 	// Local main is stale, and squash integration has no ancestry to the claim.
 	w.run("next").ok().has("0007 is integrated", "git pull --ff-only").lacks("awaiting review")
-	w.run("reset", "0007", "rewrite accepted history").fails(2).errHas("frozen history")
+	w.run("reopen", "0007", "rewrite accepted history").fails(2).errHas("frozen history")
 	a.run("next").ok().lacks("awaiting review")
 }
 
@@ -392,10 +395,10 @@ func TestUnmergedSubmissionCannotSatisfyNeeds(t *testing.T) {
 	a.run("claim", "0007").ok()
 	w := a.claimWorktree("0007-widget")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
-	shipping(w, "0007").ok()
+	submitting(w, "0007").ok()
 	w.write("docs/features/0008-dependent.md", doc("0008", "Dependent", "Draft", "needs: 0007", "- [x] Use widget"))
 	w.run("next").ok().has("needs 0007 to merge first")
-	shipping(w, "0008").fails(2).errHas("not integrated")
+	submitting(w, "0008").fails(2).errHas("not integrated")
 }
 
 func TestInitialHarvestKeepsStagedAndUnstagedProductOffTheTrunk(t *testing.T) {
@@ -416,7 +419,7 @@ func TestInitialHarvestKeepsStagedAndUnstagedProductOffTheTrunk(t *testing.T) {
 		t.Fatalf("review omits product files: %s", diff)
 	}
 	p.write("docs/features/0001-initial-mvp.md", doc("0001", "Initial MVP", "Draft", "", "- [x] Deliver the initial product"))
-	shipping(p, "0001").ok()
+	submitting(p, "0001").ok()
 	p.run("next").ok().has("ready for local review").lacks("nothing is planned")
 }
 
@@ -439,7 +442,7 @@ func TestFrozenAuditUsesPublishedHistoryAndRefusesUnfetchedObjects(t *testing.T)
 	a.run("claim", "0007").ok()
 	w := a.claimWorktree("0007-widget")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
-	shipping(w, "0007").ok()
+	submitting(w, "0007").ok()
 	w.git("push", "origin", "HEAD")
 	reviewer.git("fetch", "origin")
 	reviewer.git("merge", "--squash", "origin/0007-widget")

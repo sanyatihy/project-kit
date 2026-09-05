@@ -65,7 +65,8 @@ func run() int {
 		fmt.Println(overview)
 		return 0
 	}
-	switch cmd := os.Args[1]; cmd {
+	cmd := canonicalCommand(os.Args[1])
+	switch cmd {
 	case "-h", "--help", "help":
 		return runHelp(templates, os.Args[2:])
 	case "version", "--version":
@@ -83,12 +84,12 @@ func run() int {
 		return runRelease(os.Args[2:])
 	case "drop":
 		return runDrop(os.Args[2:])
-	case "reset":
-		return runReset(os.Args[2:])
+	case "reopen":
+		return runReopen(os.Args[2:])
 	case "block":
 		return runBlock(os.Args[2:])
-	case "ship":
-		return runShip(os.Args[2:])
+	case "submit":
+		return runSubmit(os.Args[2:])
 	case "next":
 		return runNext(os.Args[2:])
 	case "audit":
@@ -183,7 +184,7 @@ func runInit(args []string) int {
 	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
 	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
 	fmt.Printf("  each one a change a human can review in one sitting\n")
-	fmt.Printf("  leave them Draft — kit ship, kit drop and kit reset write a status\n")
+	fmt.Printf("  leave them Draft — kit submit, kit drop and kit reopen write a status\n")
 	// Said here because this is where a bootstrap run reads what to do next, and the
 	// omission is what let `kit claim` win a branch carrying no plan: a claim pushes
 	// HEAD, so a plan that is only in the working tree does not travel with it.
@@ -241,7 +242,7 @@ func runNew(args []string) int {
 	// The gate this described is gone: `Accepted` was removed after 82 docs reached it
 	// zero times, and `next` offers a written Draft the moment its round lands.
 	fmt.Printf("  kit next offers it after the plan merges and its needs are integrated.\n")
-	fmt.Printf("  kit ship, kit drop and kit reset are the only things that write a status.\n\n")
+	fmt.Printf("  kit submit, kit drop and kit reopen are the only things that write a status.\n\n")
 	return 0
 }
 
@@ -249,6 +250,7 @@ func runNew(args []string) int {
 
 func runDrop(args []string) int {
 	fs := newFlagSet("drop", args)
+	reservation := fs.Bool("reservation", false, "release an unused reserved id, without retiring a feature")
 	rest := parseArgs(fs, args)
 	if len(rest) < 1 {
 		fmt.Fprintf(os.Stderr, "kit drop: need one feature id\n\n%s\n", commandHelp["drop"])
@@ -260,12 +262,13 @@ func runDrop(args []string) int {
 		return 2
 	}
 	why := strings.TrimSpace(strings.Join(rest[1:], " "))
+	if *reservation {
+		return releaseReservation(repo, rest[0], why)
+	}
 	id, err := kit.ResolveID(repo, rest[0])
 	if err != nil {
-		// No doc holds the number, which used to end here. A reservation may hold it, and
-		// returning that to circulation is the disposal nothing else has: an id handed out
-		// for a draft that was then cut could be reached by no command at all.
-		return releaseReservation(repo, rest[0], why)
+		fmt.Fprintf(os.Stderr, "kit drop: %v; unused reservation cleanup requires --reservation\n", err)
+		return 2
 	}
 	res, err := kit.Drop(repo, id, why, time.Now().UTC())
 	if err != nil {
@@ -285,7 +288,7 @@ func runDrop(args []string) int {
 	// board went on promising them a wait that can never end, and audit reported
 	// needs-unknown once it was too late to ask why.
 	if len(res.Dependants) > 0 {
-		fmt.Printf("\n  still needed by %s — a Dropped feature can never ship, so\n",
+		fmt.Printf("\n  still needed by %s — a Dropped feature can never submit, so\n",
 			strings.Join(res.Dependants, ", "))
 		fmt.Printf("  those docs need their needs: edited or they wait for ever\n")
 	}
@@ -321,33 +324,34 @@ func releaseReservation(repo *kit.Repo, typed, why string) int {
 	return 0
 }
 
-// ---------------------------------------------------------------- reset
+// ---------------------------------------------------------------- reopen
 
-func runReset(args []string) int {
-	fs := newFlagSet("reset", args)
+func runReopen(args []string) int {
+	fs := newFlagSet("reopen", args)
+	repair := fs.Bool("repair", false, "repair an unknown or missing status; does not revive a retired plan")
 	rest := parseArgs(fs, args)
 	if len(rest) < 1 {
-		fmt.Fprintf(os.Stderr, "kit reset: need one feature id\n\n%s\n", commandHelp["reset"])
+		fmt.Fprintf(os.Stderr, "kit reopen: need one feature id\n\n%s\n", commandHelp["reopen"])
 		return 2
 	}
 	repo, err := kit.Open(kit.ProjectRoot("."))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit reset: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit reopen: %v\n", err)
 		return 2
 	}
 	id, err := kit.ResolveID(repo, rest[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit reset: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit reopen: %v\n", err)
 		return 2
 	}
 	why := strings.TrimSpace(strings.Join(rest[1:], " "))
-	res, err := kit.Reset(repo, id, why, time.Now().UTC())
+	res, err := kit.Reopen(repo, id, why, time.Now().UTC(), *repair)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit reset: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit reopen: %v\n", err)
 		return 2
 	}
 
-	fmt.Printf("\n  reset    %s  (was %s)\n", res.Doc, res.Was)
+	fmt.Printf("\n  reopen    %s  (was %s)\n", res.Doc, res.Was)
 	if res.Commit != "" {
 		fmt.Printf("  commit   %s — the status is committed, not left in the tree\n", res.Commit)
 	}
@@ -411,7 +415,7 @@ func runHarvest(args []string) int {
 	if harvested.Branch != "" {
 		fmt.Printf("  branch    %s — the feature now has its own submission branch\n", harvested.Branch)
 		if harvested.Remote != "" {
-			fmt.Printf("  push with git push -u %s HEAD after the gate and ship\n", harvested.Remote)
+			fmt.Printf("  push with git push -u %s HEAD after the gate and submit\n", harvested.Remote)
 		}
 	}
 	if harvested.Baseline != "" {
@@ -430,7 +434,7 @@ func runHarvest(args []string) int {
 	}
 	fmt.Printf("\n  answer ## Problem and ## Design — they are the part the code\n")
 	fmt.Printf("  cannot say, and audit --strict refuses the doc until they are written.\n")
-	fmt.Printf("  then run the project gate, kit audit --strict, kit ship %s, and open the pull request.\n",
+	fmt.Printf("  then run the project gate, kit audit --strict, kit submit %s, and open the pull request.\n",
 		harvested.ID)
 
 	// The handoff. This is the moment the operator knows what is worth doing next and the
@@ -551,7 +555,7 @@ func runClaim(args []string) int {
 
 func runRelease(args []string) int {
 	fs := newFlagSet("release", args)
-	force := fs.Bool("force", false, "delete the branch even though it carries work")
+	discard := fs.Bool("discard", false, "discard this clone’s committed work and surrender its claim; uncommitted work is preserved")
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
 		fmt.Fprintf(os.Stderr, "kit release: need one feature id\n\n%s\n", commandHelp["release"])
@@ -568,7 +572,7 @@ func runRelease(args []string) int {
 		return 2
 	}
 
-	res, err := kit.Release(repo, id, *force)
+	res, err := kit.Release(repo, id, *discard)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit release: %v\n", err)
 		return 2
@@ -614,7 +618,7 @@ func runBlock(args []string) int {
 		return 2
 	}
 	// A question blocks by id, so a doc whose frontmatter says two things about itself
-	// blocks nothing anyone can act on. Same refusal `ship` and `drop` make.
+	// blocks nothing anyone can act on. Same refusal `submit` and `drop` make.
 	if _, err := repo.WriteTarget(id); err != nil {
 		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
 		return 2
@@ -635,32 +639,32 @@ func runBlock(args []string) int {
 	return 0
 }
 
-// ---------------------------------------------------------------- ship
+// ---------------------------------------------------------------- submit
 
-func runShip(args []string) int {
-	fs := newFlagSet("ship", args)
+func runSubmit(args []string) int {
+	fs := newFlagSet("submit", args)
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
-		fmt.Fprintf(os.Stderr, "kit ship: need one feature id\n\n%s\n", commandHelp["ship"])
+		fmt.Fprintf(os.Stderr, "kit submit: need one feature id\n\n%s\n", commandHelp["submit"])
 		return 2
 	}
 	repo, err := kit.Open(kit.ProjectRoot("."))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit ship: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit submit: %v\n", err)
 		return 2
 	}
 	id, err := kit.ResolveID(repo, rest[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit ship: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit submit: %v\n", err)
 		return 2
 	}
-	res, err := kit.Ship(templates, repo, id, time.Now().UTC())
+	res, err := kit.Submit(templates, repo, id, time.Now().UTC())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit ship: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit submit: %v\n", err)
 		return 2
 	}
 
-	fmt.Printf("\n  ready for review  %s  (was %s; shipped stamp recorded)\n", res.Doc, res.Was)
+	fmt.Printf("\n  ready for review  %s  (was %s; submitted stamp recorded)\n", res.Doc, res.Was)
 	if res.Commit != "" {
 		fmt.Printf("  commit   %s — the stamp is committed, not left in the tree\n", res.Commit)
 	}
@@ -668,8 +672,8 @@ func runShip(args []string) int {
 	if res.TechCreated {
 		fmt.Printf("  created %s — the as-built doc. See: kit help as-built\n", res.TechDoc)
 	}
-	fmt.Printf("  review changes before merge: kit reset %s \"<why>\"\n", id)
-	fmt.Printf("  once Shipped on the trunk, the doc is frozen; further work needs a new feature\n")
+	fmt.Printf("  review changes before merge: kit reopen %s \"<why>\"\n", id)
+	fmt.Printf("  once Submitted on the trunk, the doc is frozen; further work needs a new feature\n")
 	// Said here because this decision is made at the end of a session and the
 	// protocol is read at the start of one. An agent that reaches this point with
 	// no instruction fills the gap by merging its own work, which is what happened
@@ -836,7 +840,7 @@ func printPlan(plan kit.Plan, color bool) {
 		}
 	}
 
-	// The far side of ship, below the board because none of it is claimable and above
+	// The far side of submit, below the board because none of it is claimable and above
 	// the guidance because the guidance may send the reader here. It is the same command
 	// everyone runs, so a coordinator has one place to look rather than a second tool.
 	if len(plan.AwaitingReview) > 0 {
@@ -992,7 +996,7 @@ type audited struct {
 	Error    string        `json:"error,omitempty"`
 
 	// RemoteUnanswered says the remote was asked and did not answer, so this is a
-	// weaker statement than it looks: shipped-not-pushed could not run at all, and the
+	// weaker statement than it looks: submitted-not-pushed could not run at all, and the
 	// claim checks read the last fetch. Without it a clean bill and an unreachable
 	// remote print the same page.
 	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
@@ -1066,7 +1070,7 @@ func printFindings(repo *kit.Repo, result audited, color bool) {
 	// A report whose findings are all LOW used to end with a blank line and no summary
 	// at all, which reads as a run that found nothing after printing something.
 	case low > 0:
-		fmt.Printf("%s. Nothing here gates a claim or a ship.\n\n", count(low, "LOW finding"))
+		fmt.Printf("%s. Nothing here gates a claim or a submit.\n\n", count(low, "LOW finding"))
 	}
 }
 

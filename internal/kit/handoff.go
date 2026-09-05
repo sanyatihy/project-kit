@@ -61,10 +61,10 @@ func (r *Repo) readFoundationProblem() string {
 
 func (r *Repo) checkoutHandoff(id string) string {
 	f := r.FeatureByID(id)
-	if f == nil || f.Status != StatusShipped {
+	if f == nil || !IsSubmitted(f.Status) {
 		return ""
 	}
-	if r.integratedStatuses()[f.Rel] == StatusShipped {
+	if IsSubmitted(r.integratedStatuses()[f.Rel]) {
 		return id + " is integrated. Return to a trunk checkout, run git pull --ff-only, then kit next. Leave this branch intact if it carries additional work."
 	}
 	if r.integratedStatuses() == nil && len(r.remotes()) > 0 {
@@ -73,7 +73,7 @@ func (r *Repo) checkoutHandoff(id string) string {
 	if files, err := r.DirtyFiles(); err != nil {
 		return err.Error()
 	} else if len(files) > 0 {
-		return id + " has changes after submission. Run kit reset " + id + " \"<why>\", record the review tasks, and repeat validation before resubmitting."
+		return id + " has changes after submission. Run kit reopen " + id + " \"<why>\", record the review tasks, and repeat validation before resubmitting."
 	}
 	remote, err := pickRemote(r)
 	if err != nil {
@@ -87,5 +87,5 @@ func (r *Repo) checkoutHandoff(id string) string {
 	if tip != head {
 		return id + " has local changes to submit. Run the project gate and kit audit --strict, push this branch, then open or update its pull request."
 	}
-	return id + " is awaiting review. For requested changes, run kit reset " + id + " \"<why>\", revise tasks, implement, and repeat the gate, ship and push. After the human merges, return to an updated trunk checkout."
+	return id + " is awaiting review. For requested changes, run kit reopen " + id + " \"<why>\", revise tasks, implement, and repeat the gate, submit and push. After the human merges, return to an updated trunk checkout."
 }

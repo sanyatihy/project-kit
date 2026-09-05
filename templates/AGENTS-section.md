@@ -34,7 +34,7 @@ Plan when asked. For work that began without a plan, use the spike route below.
    A branch citing a four-digit id is a claim; ordinary chores and spikes cite none.
 8. For a spike, work on a branch of its own. When done, `kit harvest "<title>"
    --box "<outcome>"` records the work and names its branch after the feature. Fill
-   Problem and Design before shipping. With no commits, harvest creates an empty trunk
+   Problem and Design before submitting. With no commits, harvest creates an empty trunk
    base; publish it for the
    first PR. `kit harvest --nothing "<what it showed>"` records a discarded spike.
 
@@ -55,21 +55,21 @@ Plan when asked. For work that began without a plan, use the spike route below.
     <id>` to surrender untouched work. To pause work with changes, commit and push it,
     open the pull request unfinished, and say what remains.
 14. Never put real secrets in docs. Name the variable and where its value lives.
-    Only `kit ship`, `kit drop` and `kit reset` write status and shipped fields.
+    Only `kit submit`, `kit drop` and `kit reopen` write status and submitted fields.
 
 ### Finishing and review
 
-15. Before shipping, move durable facts to `docs/TECH.md`; leave only changes to the
+15. Before submitting, move durable facts to `docs/TECH.md`; leave only changes to the
     plan in Log, which may be empty. Put validation and review context in the PR.
-16. Run the project's gate, then `kit audit --strict`, then `kit ship <id>`, in that
+16. Run the project's gate, then `kit audit --strict`, then `kit submit <id>`, in that
     order. A failed or incomplete check is not a pass. Explicit offline audits cover
     local checks only; complete the online audit before handing off to review.
 17. Push the branch, open the pull request, and hand it to the human reviewer.
-    `ship` records readiness for review; the feature is integrated only after merge.
+    `submit` records readiness for review; the feature is integrated only after merge.
     You never merge your own work.
     With no remote, say so and leave the work on the branch for local review.
-18. For review changes before merge, run `kit reset <id> "<why>"`, revise the tasks,
-    implement the changes, and repeat the gate and ship steps. A Shipped doc on the
+18. For review changes before merge, run `kit reopen <id> "<why>"`, revise the tasks,
+    implement the changes, and repeat the gate and submit steps. A Submitted doc on the
     trunk is frozen history; further changes need a new doc citing it.
 19. After any merge, return to a trunk checkout, pull with --ff-only, then run
     `kit audit` and `kit next`. Dependencies unlock only once their merged work is here.

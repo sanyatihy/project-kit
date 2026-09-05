@@ -8,8 +8,8 @@ import (
 func TestParseFrontmatter(t *testing.T) {
 	t.Parallel()
 	fields, body := ParseFrontmatter("---\nid: 0007\n" +
-		"status: Draft        # Draft | Shipped | Dropped\n" +
-		"# a comment line\nshipped:\n---\n\n## Problem\np\n")
+		"status: Draft        # Draft | Submitted | Dropped\n" +
+		"# a comment line\nsubmitted:\n---\n\n## Problem\np\n")
 
 	if got := fields["id"]; got != "0007" {
 		t.Errorf("id = %q, want 0007", got)
@@ -17,8 +17,8 @@ func TestParseFrontmatter(t *testing.T) {
 	if got := fields["status"]; got != "Draft" {
 		t.Errorf("status = %q, want Draft (trailing comment must be dropped)", got)
 	}
-	if got, ok := fields["shipped"]; !ok || got != "" {
-		t.Errorf("shipped = %q (%v), want empty and present", got, ok)
+	if got, ok := fields["submitted"]; !ok || got != "" {
+		t.Errorf("submitted = %q (%v), want empty and present", got, ok)
 	}
 	if _, ok := fields["# a comment line"]; ok {
 		t.Error("comment line was parsed as a field")
@@ -34,7 +34,7 @@ func TestParseFrontmatterKeepsAHashInsideAValue(t *testing.T) {
 	// part of the value: an issue number in a title used to truncate the title to the
 	// word before it, and every message naming the feature carried the stub.
 	fields, _ := ParseFrontmatter("---\ntitle: Fix #123 crash\n" +
-		"status: Draft        # Draft | Shipped | Dropped\n---\n")
+		"status: Draft        # Draft | Submitted | Dropped\n---\n")
 
 	if got := fields["title"]; got != "Fix #123 crash" {
 		t.Errorf("title = %q, want the whole line", got)
@@ -63,9 +63,9 @@ func TestParseFrontmatterClosesOnAWholeLine(t *testing.T) {
 
 func TestDuplicateKeys(t *testing.T) {
 	t.Parallel()
-	// The state `ship` used to produce: it rewrote the first status: and the parser reads
+	// The state `submit` used to produce: it rewrote the first status: and the parser reads
 	// the last, so the doc carries two and the kit and its author disagree about which.
-	text := "---\nid: 0007\nstatus: Shipped\nstatus: Draft\nshipped:\n---\n\n" +
+	text := "---\nid: 0007\nstatus: Submitted\nstatus: Draft\nsubmitted:\n---\n\n" +
 		"## Design\nstatus: Draft is a line in the body, not a second key\n"
 
 	if got := DuplicateKeys(text); len(got) != 1 || got[0] != "status" {

@@ -141,7 +141,7 @@ func SetField(text, key, value string) (string, bool) {
 // the doc does not already carry it. Reports false only when there is no frontmatter.
 //
 // Separate from SetField because inserting is wrong for the fields that must already be
-// there: a doc with no `status:` is malformed, and `accept` and `ship` say so rather than
+// there: a doc with no `status:` is malformed, and `accept` and `submit` say so rather than
 // quietly writing one in. A field added to the template later is the opposite case —
 // every doc written before it is fine, and it has to be settable on those.
 func AddField(text, key, value string) (string, bool) {
@@ -349,4 +349,20 @@ func AppendToSection(text, heading, line string) (string, bool) {
 	out := append([]string{}, lines[:at]...)
 	out = append(out, line)
 	return strings.Join(append(out, lines[at:]...), "\n"), true
+}
+
+// RemoveField deletes a legacy field only inside the frontmatter.
+func RemoveField(text, key string) string {
+	start, end, ok := FrontmatterBounds(text)
+	if !ok {
+		return text
+	}
+	var kept []string
+	for _, line := range strings.Split(text[start:end], "\n") {
+		if k, _, found := strings.Cut(line, ":"); found && strings.TrimSpace(k) == key {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	return text[:start] + strings.Join(kept, "\n") + text[end:]
 }

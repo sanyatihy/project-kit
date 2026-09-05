@@ -26,7 +26,7 @@ and frozen on trunk; ship/reset remain compatibility spellings. Routine review a
 explicit repair or disposal have distinct command contracts. This revises 0042 and 0067.
 
 Mutations require positive evidence for their safety. Release preserves every unmerged
-commit and leases the remote tip it inspected. The board, claim and ship share validation
+commit and leases the remote tip it inspected. The board, claim and submit share validation
 of ambiguous plans and dependencies. Unknown remote state fails strict online audit;
 an explicit offline request reports its narrower coverage.
 
@@ -62,7 +62,7 @@ that can be reviewed and integrated safely; implementation steps stay task boxes
 - [x] Verify frozen history against the published integration state
 
 - [x] Make gates fail correctly and test behavior rather than editorial proxies
-- [ ] Clarify submission, reopening and explicit disposal command contracts
+- [x] Clarify submission, reopening and explicit disposal command contracts
 - [ ] Teach substantial value-shaped features and align the workflow documentation
 
 ## Log

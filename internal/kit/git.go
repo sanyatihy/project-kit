@@ -347,7 +347,7 @@ func (r *Repo) TagDistance() (tag string, behind int, ok bool) {
 // outside printable ASCII — `"docs/features/0001-bl\303\240nk.md"` — and every one of
 // these answers is then compared against a name `os.ReadDir` produced, so the lookup
 // silently misses. One accented character disabled `unfilled-template` and
-// `done-not-shipped` on that doc, and made `shipped-not-pushed` fire at HIGH on work
+// `done-not-submitted` on that doc, and made `submitted-not-pushed` fire at HIGH on work
 // that was pushed. `-z` also settles a newline inside a filename, which no line-oriented
 // parse can.
 func gitPaths(out string) []string {
@@ -402,7 +402,7 @@ func (r *Repo) emptyTree() (string, error) {
 }
 
 // commitDate is when a revision was last committed, or the zero time. How long a branch
-// has waited is measured from here rather than from the doc's shipped:, which is a date
+// has waited is measured from here rather than from the doc's submitted:, which is a date
 // and so cannot tell an hour from a day.
 func (r *Repo) commitDate(rev string) time.Time {
 	if out := strings.TrimSpace(r.git("log", "-1", "--format=%cI", rev)); out != "" {
@@ -418,7 +418,7 @@ func (r *Repo) commitDate(rev string) time.Time {
 // which is what keeps build output and local settings out of the answer.
 //
 // Unknown answers empty, the way every other git question here does. This one feeds a
-// refusal, so inventing files from a failed call would block a ship for no reason.
+// refusal, so inventing files from a failed call would block a submit for no reason.
 func (r *Repo) DirtyFiles() ([]string, error) {
 	out, err := r.gitRun("status", "--porcelain", "-z")
 	if err != nil {

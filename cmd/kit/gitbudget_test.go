@@ -121,19 +121,19 @@ func budgetBoard(t *testing.T, base string, size int) *project {
 }
 
 // shipEverything puts the board in the state the claim checks work hardest in: every doc
-// Shipped, so every one of them asks where its work is.
+// Submitted, so every one of them asks where its work is.
 func shipEverything(t *testing.T, p *project, size int) {
 	t.Helper()
 	for i := 1; i <= size; i++ {
 		rel := fmt.Sprintf("docs/features/%04d-feature-%d.md", i, i)
 		doc := strings.NewReplacer(
-			"status: Draft", "status: Shipped",
+			"status: Draft", "status: Submitted",
 			"- [ ] One", "- [x] One",
 			"- [ ] Two", "- [x] Two",
 		).Replace(p.read(rel))
 		p.write(rel, doc)
 	}
-	p.commitAll("every feature shipped")
+	p.commitAll("every feature submitted")
 	p.git("push", "-q", "origin", "HEAD:refs/heads/main")
 	p.git("fetch", "-q", "origin")
 }

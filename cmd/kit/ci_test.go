@@ -90,7 +90,7 @@ func TestCIRunsExactlyTheMakefilesList(t *testing.T) {
 
 // The split is the point: `check` is everything a developer can run offline, and what
 // is left needs the network. A network step that crept into the gate would make the
-// documented pre-ship command fail on a plane.
+// documented pre-submit command fail on a plane.
 func TestTheGateIsCIMinusTheNetwork(t *testing.T) {
 	t.Parallel()
 	makefile := readOrFail(t, makefilePath)

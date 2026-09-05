@@ -17,5 +17,5 @@ continue without.
 
 The marker decides what `kit audit` says, too. An unanswered `BLOCKING` question
 is HIGH after two days, which fails `kit audit --strict` and so stops anything
-shipping. An `FYI` is never aged: it was cleared to wait, so nothing owes it an
+submitting. An `FYI` is never aged: it was cleared to wait, so nothing owes it an
 answer.

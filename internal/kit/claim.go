@@ -89,14 +89,14 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 		return nil, &NotYours{err.Error(), "repair the plan, or claim something kit next offers"}
 	}
 
-	// Draft is the only status work starts from. Shipped and Dropped are end states, and
+	// Draft is the only status work starts from. Submitted and Dropped are end states, and
 	// a claim on either reopens finished history. What else refuses a claim is an
 	// unwritten plan (below), a BLOCKING inbox line, and an unmet `needs:`.
 	switch target.Status {
 	case StatusDraft:
 	case "":
 		return nil, &NotYours{target.Name() + " has no status:, so there is no work to claim",
-			`run: kit reset ` + target.ID + ` "<why>"`}
+			`run: kit reopen ` + target.ID + ` --repair "<why>"`}
 	default:
 		return nil, &NotYours{
 			fmt.Sprintf("%s is %s — it is not open work", target.Name(), target.Status),

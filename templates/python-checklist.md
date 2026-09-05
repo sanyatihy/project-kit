@@ -210,7 +210,7 @@ For packages imported by other code.
 
 - **Minimal public surface** — `_`-prefixed by default, an explicit `__all__`, and no
   internal types leaking through signatures.
-- **Ship `py.typed`** (PEP 561), or the types you wrote are invisible to every caller.
+- **Submit `py.typed`** (PEP 561), or the types you wrote are invisible to every caller.
 - **Do not impose policy on the caller** — no logging configuration, no `sys.exit`, no
   global state, no import-time side effects.
 - **Dependency ranges, not pins.** Pinning is an application's job; a pinned library makes

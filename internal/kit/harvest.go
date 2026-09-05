@@ -31,7 +31,7 @@ id: {{id}}
 title: {{title}}
 status: Draft
 created: {{created}}
-shipped:
+submitted:
 needs:
 ---
 
@@ -65,7 +65,7 @@ needs:
 // It does not read history. A session that explored leaves a working tree rather than a
 // log — the project that prompted this had 2,090 lines and no commits at all — so harvest
 // takes the id, writes the doc, and commits the tree together with it. That single commit
-// is where the work becomes reviewable, and it is what makes `ship`'s clean-tree gate
+// is where the work becomes reviewable, and it is what makes `submit`'s clean-tree gate
 // reachable from a spike.
 func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested, error) {
 	if strings.TrimSpace(title) == "" {

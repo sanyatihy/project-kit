@@ -44,25 +44,29 @@ attempt — mutual exclusion defeated using only what the kit printed.
 One markdown file per feature, `docs/features/NNNN-name.md`, with `status:` canonical:
 
 ```
-Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
+Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
 ```
 
-- **Three statuses, written by ship, drop and reset.** Draft is open work; Shipped
-  submits completed work for review; Dropped retires a plan. Reset reopens an unmerged
-  submission for review changes and clears its date. A Shipped doc on the trunk is frozen.
+- **Three statuses, written by submit, drop and reopen.** Draft is open work; Submitted
+  submits completed work for review; Dropped retires a plan. Reopen reopens an unmerged
+  submission for review changes and clears its date. A Submitted doc on the trunk is frozen.
+  Legacy Shipped/shipped: snapshots remain readable without rewriting history; ship/reset
+  are aliases, while repair requires --repair and Dropped plans cannot be reopened.
+  The canonical audit codes are submitted-not-pushed, submitted-no-date and done-not-submitted.
+  Submission requires the feature's branch even when no claim exists.
 
 - **A write needs one unambiguous doc.** `WriteTarget` refuses an id two docs declare and a
   key one doc declares twice; the first match `FeatureByID` returns is for reads, where
   refusing to render would help nobody.
-- **Six frontmatter fields.** `id`, `title`, `status`, `created`, `shipped`, `needs`.
+- **Six frontmatter fields.** `id`, `title`, `status`, `created`, `submitted`, `needs`.
   `check:`, `checked:` and `review:` went with the commands that wrote them. `related:`
   went because 77 docs filled it in and no line of Go ever read it. The template writes no
   prose on any of them, and a test holds it to that: two spaces is all that separates a
   comment from a value, so guidance there is one keystroke from data. `needs-unparsed`
   reports what leaks anyway — a `needs:` is ids, commas and spaces, and anything else in
   it is not a dependency `needs-unknown` could ever have asked about.
-- **Plan validation is shared by next, claim and ship.** Duplicate keys or ids, malformed
-  dependencies and dependency cycles block work; ship also refuses unanswered blockers,
+- **Plan validation is shared by next, claim and submit.** Duplicate keys or ids, malformed
+  dependencies and dependency cycles block work; submit also refuses unanswered blockers,
   unknown statuses and unwritten sections. Command help carries the invocation refusals.
 
 - **The claim is a branch name, and the push is what decides.** Only a *created* ref is a
@@ -81,7 +85,7 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   tree asked of git because that value differs under SHA-256 — a backfilled one is the bare
   tree and records nothing. A project with no commits can still reserve; no remote means no
   reservation, and `kit new` says which guarantee it could not give.
-- **A reservation is accounted for, or released.** `kit drop` on an id no doc holds deletes
+- **A reservation is accounted for, or released.** `kit drop --reservation` on an id no doc holds deletes
   the ref instead of writing a status, and `audit` reports `orphan-reservation` at MEDIUM
   for one past the stalled horizon. Whether a doc holds it is asked of every branch's
   *tree*: a round that was drafted and reverted keeps its docs in `git log` for ever, and
@@ -93,7 +97,7 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 - **An initial harvest creates an empty trunk base.** Staged and unstaged product
   files are committed only on the new feature branch, so the first MVP has a PR diff.
 - **Review is a git handoff.** The board follows local revision, unpushed submission and
-  published review; a Shipped trunk doc proves integration even after a squash merge.
+  published review; a Submitted trunk doc proves integration even after a squash merge.
 - **The board offers only what a claim would accept.** `next` reported a feature as ready
   and `claim` exited 2 on it — where every new project stood at step 9. One condition read
   by both, `PlanLanded`, is what stops the two answers drifting apart again.
@@ -110,18 +114,19 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   draft is refused rather than `Claims` narrowed, which would shrink the guarantee; a
   feature's own claim branch is exempt, so a doc discovered mid-build still lands there.
 - **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks
-  whether HEAD *is* the claim branch, which is right for `ship` — shipping happens in the
+  whether HEAD *is* the claim branch, which is right for `submit` — shipping happens in the
   worktree doing the work — and wrong for `release`, which runs in the trunk the claim was
   made from rather than in the worktree it created. A local ref means this clone created the branch: the same answer for every
   worktree sharing it, a different one for an agent that only saw the claim over the wire.
 - **Release requires readable state and preserves work.** It refuses uncommitted files
   and every unmerged commit, including changes only to the plan; git errors cannot mean
-  no work. The remote delete uses the observed tip as a lease, including under --force.
+  no work. The remote delete uses the observed tip as a lease, including under --discard.
+  Explicit discard permits unmerged commits, never uncommitted files or foreign claims.
 
 - **Ordering needs no syntax.** Task order is dependency order and `next` returns the
   topmost unticked box. This replaced a dependency graph.
 - **`needs:` is the only cross-feature ordering, and it is declared.** Blocked until every
-  prerequisite is Shipped on the trunk and in HEAD; submission alone does not unlock it.
+  prerequisite is Submitted on the trunk and in HEAD; submission alone does not unlock it.
   Shared filenames alone do not order features. Each checkout owns one feature; there
   is no global concurrency cap.
 - **Awaiting review reads the advertised remote tip.** A stale local branch cannot hide
@@ -173,11 +178,11 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 
 - **The plan checks gate on *committed*, never on a terminal doc, and read a boxless
   `## Tasks` as unwritten** — so a doc out of `kit new` stays quiet, `claim` refuses what
-  the board declines, and a stub `drop` retired stops refusing every ship in the project.
+  the board declines, and a stub `drop` retired stops refusing every submit in the project.
 - **Three docs, three tenses:** VISION what the project is becoming, `features/` what is
   being done now, TECH what exists. **`kit init` writes the whole document layout and
   nothing else creates a project file**, so there is one answer to where a file came from;
-  `kit ship`'s as-built creation is a fallback for projects that predate it. Every document
+  `kit submit`'s as-built creation is a fallback for projects that predate it. Every document
   is the project's the moment it is placed, and only the protocol section is refreshed.
 - **`kit init` writes an `AGENTS.md` with a title and the marker note.** It used to write
   the bare protocol section, opening on an `##` heading with no project name and nothing
@@ -185,7 +190,7 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   marker reached nobody. `CLAUDE.md` is a symlink to it, because the kit reads either name
   and one git object cannot disagree with itself; a Windows checkout gets the target's path
   as text instead, and the protocol is in `AGENTS.md` either way.
-- **Every fact has one home, and the routing is decided at ship.** Still true afterwards and
+- **Every fact has one home, and the routing is decided at submit.** Still true afterwards and
   it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,
   naming the change; neither and it belongs in the pull request.
 - **A feature is one shipped change in what the project can do, can be trusted to do, or can
@@ -193,7 +198,7 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   stops happening, an exposure that closes, a number that crosses a line and a capability
   removed with its cost all qualify, each gated on the value and trigger `BACKLOG.md` asks
   of an entry before it is promoted. Removing what shipped is a new doc citing the frozen
-  one, since `kit drop` refuses a Shipped doc and the protocol refuses an edit to it.
+  one, since `kit drop` refuses a Submitted doc and the protocol refuses an edit to it.
   Named in one sentence an operator would recognise, or it is a task box or a chore commit.
   **A separate doc earns its place when it holds a decision someone must read before
   building, not recoverable from the code or the commit.** It has a cost on both sides; the
@@ -220,7 +225,7 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 - **`audit` has one job:** find where the docs disagree with the repo. It never writes — an
   auditor that fixes things stops being read — and it counts boxes rather than estimating.
 - **A check that reports a state nobody may fix is deleted, not tuned.** Nine went that
-  way: five demanded prose nobody owed, four reported a state `ship` refuses to create or
+  way: five demanded prose nobody owed, four reported a state `submit` refuses to create or
   a note `--fyi` cleared to wait. What a terminal doc is still asked is the frontmatter
   the kit writes — repairable without reopening the plan — and a leaked credential.
 - **One defect is one finding; the code names the category, not one member.** Seven pairs
@@ -240,10 +245,10 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 - **Every git read that yields a path asks for `-z`.** git C-quotes anything outside
   printable ASCII, and each reader compares the result against a name `os.ReadDir`
   produced: one accented character disabled the plan checks on that doc, reported pushed
-  work as unpushed, and named `ship`'s debris under a name nothing on disk has.
-- **A fix line has to be one the reader can run.** `done-not-shipped` wants boxes before it
-  calls a doc finished, and names the edit where there is no `id:` for `kit ship` to take.
-  `shipped:` is validated — absent, unparseable and not yet arrived are one finding — and
+  work as unpushed, and named `submit`'s debris under a name nothing on disk has.
+- **A fix line has to be one the reader can run.** `done-not-submitted` wants boxes before it
+  calls a doc finished, and names the edit where there is no `id:` for `kit submit` to take.
+  `submitted:` is validated — absent, unparseable and not yet arrived are one finding — and
   `tech-drift` ignores a day that has not happened, which nothing could be newer than.
 - **`exec.CommandContext` kills git and nothing git started.** `git-remote-https` outlives
   it holding the stdout pipe, so `cmd.Output()` blocks for ever: `next` against a
@@ -274,9 +279,9 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   rung with positive evidence: the project's CI directory, the remote's host, then the
   module path's host segment. Unknown writes **no CI file** and says so — a missing pipeline
   is visible, one for the wrong forge is not.
-- **Prevent before detecting.** `block`, `ship`, `release` and `drop` exist because writing
+- **Prevent before detecting.** `block`, `submit`, `release` and `drop` exist because writing
   an INBOX line, a status, or a branch deletion by hand each cost something a command makes
-  impossible. `ship` refuses a tree with anything uncommitted in it, the debris being the
+  impossible. `submit` refuses a tree with anything uncommitted in it, the debris being the
   feature's own.
 - **The commands refuse exactly what the board refuses** — `Survey`, `ClaimFeature` and
   `Ship` share `UnmetNeeds`, and `Ship` reuses `Repo.Mine`.
@@ -289,8 +294,8 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 - **Dates are passed in, never read inside** — a clock inside leaves tests unable to catch a
   UTC-midnight off-by-one.
 - **`kit init` writes the whole layout, and nothing else creates a project file.** One
-  command, one answer to where a file came from; `ship`'s lazy `TECH.md` path is a fallback
-  for projects that predate it. Splitting creation across `init`, `ship` and `block` was
+  command, one answer to where a file came from; `submit`'s lazy `TECH.md` path is a fallback
+  for projects that predate it. Splitting creation across `init`, `submit` and `block` was
   tried and reversed — it moved four files between three commands to silence one finding,
   and that finding was a gate: `unfilled-vision` now waits for features, as `no-protocol`
   already did, so a virgin project audits clean while carrying everything it will need.
@@ -305,16 +310,15 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   project plans own executable task boxes.
 - **Tests protect behavior.** Prose length, wording, numbering and error-statement counts
   are not blocking gates. Help reachability, parser contracts and refusal behavior are.
-- **The binary names nothing it does not have.** Tests hold `help.go` against the check
-  registry, against `main.go`'s dispatcher and against the topic map, both ways —
-  `kit ship --help` advertised `doc-bloat` for a release after the check was deleted.
+- **The binary names nothing it does not have.** Help commands and topics resolve through the binary; check help
+  comes from the registry. English hyphenation is not parsed as a check identifier.
 - **`--json` is a contract and its shape is pinned.** The board's four groups are `[]` when
   empty, `moved` is absent rather than a year-1 timestamp — `omitempty` does nothing for a
   struct — and a directory nothing surveyed reports through `error` at exit 2.
 - **A commit is not a fourth home for a fact.** The subject names the box and the body is
   empty: the diff shows what changed, the doc says why, and a body restating either is the
   routing rule broken at the one artifact it never named.
-- **The Shipped corpus was compacted once, under 0073.** What is frozen is the decision
+- **The Submitted corpus was compacted once, under 0073.** What is frozen is the decision
   record — status, boxes, and every decision, constraint and measurement. What was cut is
   narration of how a decision was reached, which no reader acts on. Rule 17 is unchanged and
   this is the exception it does not carry.
@@ -338,18 +342,18 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   and not worth gating: the check cannot tell a dependency from a comparison. It reads
   `## Problem` and `## Design` only and skips terminal docs — without that gate 41 of this
   repo's 65 docs fire, every one of them citing settled work.
-- **Reset checks the published trunk before reopening a Shipped doc.** It refuses on
+- **Reopen checks the published trunk before reopening a Submitted doc.** It refuses on
   the trunk, on detached HEAD, or when the remote tip or its documents cannot be read.
-  Reset, ship and drop refuse a feature claimed by another checkout.
+  Reopen, submit and drop refuse a feature claimed by another checkout.
 
-- **A status the kit writes is committed by the command that wrote it.** `ship`'s
+- **A status the kit writes is committed by the command that wrote it.** `submit`'s
   dirty-tree refusal makes that commit exactly the stamp; `drop` takes the doc's path
   alone, because a plan is often edited in the breath that retires it. `status-uncommitted`
   is the backstop and the only check that reads `HEAD` — every other one reads the working
   tree, which is why a stamp nobody committed reported as agreement. It reads the whole
   board in one `ls-tree` and one `cat-file --batch`.
 - **Log length is not a gate.** A valid review reason can outweigh a short plan; no word
-  ratio proves misplaced content. Move durable facts before ship, and allow an empty Log.
+  ratio proves misplaced content. Move durable facts before submit, and allow an empty Log.
 - **Frozen documents are checked against the published trunk online.** `frozen-doc`
   reports edits, deletions and unreadable integration evidence; --offline uses local
   history. Required remote checks must enforce this against raw git.
@@ -358,7 +362,7 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 - **Reservation disposal checks local and advertised branch tips and leases the ref.**
   An unreadable branch cannot establish that its id is unused.
 - **Harvest names an established repo's spike branch after its feature.** Review scans
-  unknown claim names for Shipped docs not yet on the trunk; an existing claim refuses harvest.
+  unknown claim names for Submitted docs not yet on the trunk; an existing claim refuses harvest.
 - **Concurrent blocking questions append without rewriting the inbox.** Each command
   writes its whole line once, so a second question cannot erase the first.
 - **Scaffolding creates user files exclusively and preserves dangling symlinks.** A
@@ -380,7 +384,7 @@ Each of these has already caused a bug.
   a parent directory from `cmd/kit/`.
 - **The frontmatter closes on a line of exactly three dashes, is written only inside those
   bounds, and takes a comment only after two spaces.** Each is a bug already had: a setext
-  underline closed the block early, a document-wide replace stamped the ship date into a
+  underline closed the block early, a document-wide replace stamped the submit date into a
   `title:` quoting a status, and `\s+#` cut `title: Fix #123 crash` down to `Fix`.
 - **Go's `flag` stops parsing at the first positional.** `parseArgs` loops it so a flag
   after an argument still parses. It also writes usage to the stream it writes a

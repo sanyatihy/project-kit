@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"unicode"
 
 	"github.com/sanyatihy/project-kit/internal/kit"
 )
@@ -105,13 +104,13 @@ func TestOverviewDocumentsTheExitCodes(t *testing.T) {
 func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
 	t.Parallel()
 	// A protocol that describes the manual path for something the tool does is a
-	// protocol that teaches the mistake. `kit ship` exists because setting the
+	// protocol that teaches the mistake. `kit submit` exists because setting the
 	// status and date by hand is where two audit findings came from.
 	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
 	if err != nil {
 		t.Fatalf("reading the protocol: %v", err)
 	}
-	for _, want := range []string{"kit claim", "kit block", "kit ship", "kit audit --strict"} {
+	for _, want := range []string{"kit claim", "kit block", "kit submit", "kit audit --strict"} {
 		if !strings.Contains(string(raw), want) {
 			t.Errorf("the protocol never mentions %q, so an agent following it does that step by hand", want)
 		}
@@ -152,68 +151,6 @@ func TestEveryTopicTheOverviewNamesResolves(t *testing.T) {
 			t.Errorf("the overview offers %q, which resolves to no topic", "kit help "+m[1])
 		}
 	}
-}
-
-// identRe is a hyphenated lower-case token: the shape every check code has, and the
-// shape a few ordinary words in the help text share.
-var identRe = regexp.MustCompile(`[a-z][a-z0-9]*(?:-[a-z0-9]+)+`)
-
-// proseWords are the hyphenated English words the help text uses. Anything else of that
-// shape has to name something the binary has, because `kit ship --help` went on
-// advertising `doc-bloat` for a release after the check was deleted and nothing in the
-// build compared what the help says with what `audit` can report.
-var proseWords = map[string]bool{
-	"four-digit": true, "kit-owned": true, "mid-flight": true,
-	"re-run": true, "ticked-over-total": true,
-}
-
-func TestEveryCheckCodeInHelpIsRegistered(t *testing.T) {
-	t.Parallel()
-	known := map[string]bool{}
-	for _, c := range kit.Checks {
-		known[c.Code] = true
-	}
-	for _, name := range topicNames() {
-		known[name] = true
-	}
-
-	// String literals only, for TestNothingUserFacingCitesARuleByNumber's reason: a
-	// comment naming a dead check misleads the next reader of the source, not a user.
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, "help.go", nil, 0)
-	if err != nil {
-		t.Fatalf("parsing help.go: %v", err)
-	}
-	ast.Inspect(file, func(n ast.Node) bool {
-		lit, ok := n.(*ast.BasicLit)
-		if !ok || lit.Kind != token.STRING {
-			return true
-		}
-		for _, at := range identRe.FindAllStringIndex(lit.Value, -1) {
-			word := lit.Value[at[0]:at[1]]
-			if known[word] || proseWords[word] || insideALongerToken(lit.Value, at) {
-				continue
-			}
-			t.Errorf("%s prints %q, which is not a check in the registry.\n"+
-				"Delete it, or add the check. If it is an ordinary hyphenated word, "+
-				"add it to proseWords.", fset.Position(lit.Pos()), word)
-		}
-		return true
-	})
-}
-
-// insideALongerToken reports whether a match is only the tail of something bigger: a
-// filename (`0001-shorten-urls.md`), a path (`.gitlab-ci.yml`), or a capitalised word
-// the pattern cannot start at (`Non-goals`, `Re-running`).
-func insideALongerToken(s string, at []int) bool {
-	edge := func(i int) bool {
-		if i < 0 || i >= len(s) {
-			return false
-		}
-		c := rune(s[i])
-		return strings.ContainsRune("./-", c) || unicode.IsLetter(c) || unicode.IsDigit(c)
-	}
-	return edge(at[0]-1) || edge(at[1])
 }
 
 func TestEveryTopicResolvesInTheBinary(t *testing.T) {

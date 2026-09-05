@@ -102,8 +102,8 @@ Tasks box is one implementing commit within it.
 | Plan | Ask for a complete feature round | Create `plan/<round>`, use `kit new`, fill designs, tasks and `needs:`, push one planning PR |
 | Approve the plan | Review and merge the planning PR | Address plan feedback on that branch |
 | Build | Let agents proceed | Update a trunk checkout, run `kit audit` and `kit next`, claim one feature, work in its worktree through every task |
-| Submit | Review the implementation PR | Run the project gate, `kit audit --strict`, `kit ship <id>`, push and open the PR |
-| Revise | Request changes if needed | On the same feature branch, `kit reset <id> "<why>"`, revise tasks, implement, validate, ship and push again |
+| Submit | Review the implementation PR | Run the project gate, `kit audit --strict`, `kit submit <id>`, push and open the PR |
+| Revise | Request changes if needed | On the same feature branch, `kit reopen <id> "<why>"`, revise tasks, implement, validate, submit and push again |
 | Integrate | Merge the implementation PR | Return to a trunk checkout, `git pull --ff-only`, then `kit audit` and `kit next` |
 
 For a new repository, initialize it with `kit init`. Before the planning branch, create
@@ -122,23 +122,30 @@ The agent continues through the current feature until it is ready for review or 
 A human decision goes to `kit block <id> "<question>"`; the agent may take independent
 work from another checkout. If none is available, it reports the blocker and stops.
 
-## What “shipped” means
+## Submission and integration
 
-`kit ship` submits a completion snapshot; it does not approve, merge, deploy or certify
-tests. The stored `Shipped` status and `shipped:` date are retained for compatibility.
+`kit submit` submits a completion snapshot; it does not approve, merge, deploy or certify
+tests. It records `status: Submitted` and a `submitted:` date.
 The branch's relationship to trunk determines the handoff:
 
 | State | Next action |
 | --- | --- |
 | Draft with unfinished tasks | Implement the next box |
-| All tasks complete | Gate, audit, ship |
+| All tasks complete | Gate, audit, submit |
 | Completion stamp still local | Push and open the implementation PR |
-| Submission pushed, unmerged | Human reviews; agent uses reset for requested changes |
+| Submission pushed, unmerged | Human reviews; agent uses reopen for requested changes |
 | Completion snapshot on trunk | Integrated and frozen; update trunk before taking more work |
 
 `kit next` prints that distinction, including a retained branch after a squash merge.
-An unmerged submission can be reset and revised; an integrated doc is frozen history.
+An unmerged submission can be reopen and revised; an integrated doc is frozen history.
 Later product changes use a new feature citing it. No post-merge status commit is needed.
+
+Legacy `Shipped`/`shipped:` documents remain readable and frozen after integration.
+`ship` and `reset` remain aliases for `submit` and `reopen`, with the same guards.
+Unknown or missing statuses require `reopen --repair`; Dropped plans need a new approved
+feature to return. `release --discard` permits deleting unmerged committed work from
+this clone's claim, and always preserves uncommitted files and foreign claims.
+`drop --reservation` explicitly releases an unused id; a missing doc alone deletes nothing.
 
 ## Exploring first
 
@@ -151,7 +158,7 @@ kit harvest "Shorten URLs" --box "A long URL comes back short"
 
 Harvest gives the existing work a feature doc and commits it on a branch named after
 that feature. Fill Problem and Design from the decisions actually made; the completed
-outcomes are already ticked. Then use the same gate, ship, review and revision sequence
+outcomes are already ticked. Then use the same gate, submit, review and revision sequence
 as planned work. Do not create retrospective plans pretending to precede the code.
 
 With no prior commits, harvest creates an empty trunk base and commits the entire MVP
@@ -170,12 +177,13 @@ approval for the human; an agent using the human's credentials has the same perm
 ```sh
 kit new   <title...>                     next free ID, date filled in, status Draft
 kit claim <id>                           push the branch; exit 1 means you lost it
-kit release <id> [--force]               give a claim back; refuses over work, and over
+kit release <id> [--discard]               give a claim back; refuses over work, and over
                                          a claim this clone never created
 kit block <id> "<question>" [--fyi]      park a decision only a human can make
-kit ship  <id>                           verify every box, stamp the date, submit
-kit drop  <id> "<why>"                   retire a feature that will not be built
-kit next  [--json] [--offline]           warns above 2 features in progress
+kit submit  <id>                           verify every box, stamp the date, submit
+kit reopen <id> "<why>" [--repair]       reopen review; explicit invalid-status repair
+kit drop  <id> "<why>" [--reservation]   retire a plan; explicit unused-id cleanup
+kit next  [--json] [--offline]           the next action for this checkout
 kit audit [--json] [--strict] [--offline]  --strict exits 1 on HIGH, for CI
                                          both exit 2 where there is no docs/features
 kit init  [PATH] [--stack S] [--forge F]
@@ -186,7 +194,7 @@ kit version
 The binary documents itself: `kit help` explains the model and the four rules, and
 `kit help checks` lists every finding from the same registry `audit` reports from. An
 agent never needs this repository to use the tool. `kit <command> --help` describes the
-command, not just its flags.
+command, not just its flags. `kit help <command>` prints its usage and recovery guidance.
 
 `kit help go-checklist` is standing engineering guidance rather than documentation of the
 kit — embedded rather than written into projects, because `audit` cannot check a word of
@@ -216,11 +224,11 @@ it cannot drift. Thresholds are constants in `internal/kit`.
 ## The feature doc
 
 One file per feature in `docs/features/`, named `NNNN-name.md`. The directory listing is
-the board. Frontmatter carries `id`, `title`, `status` (`Draft → Shipped`, exit
-`Dropped`), `created`, `shipped` and `needs`. Sections: `Problem`, `Non-goals`, `Design`,
+the board. Frontmatter carries `id`, `title`, `status` (`Draft → Submitted`, exit
+`Dropped`), `created`, `submitted` and `needs`. Sections: `Problem`, `Non-goals`, `Design`,
 `Tasks`, `Open questions` (optional), `Log`.
 
-Only `kit ship`, `kit drop` and `kit reset` write a status, and only `kit ship` writes a
+Only `kit submit`, `kit drop` and `kit reopen` write a status, and only `kit submit` writes a
 date. There is no status for work in flight — the claim branch says that, and a second
 copy in the doc could only disagree with it.
 

@@ -16,9 +16,9 @@ var testDate = time.Date(2026, 3, 14, 15, 9, 26, 0, time.UTC)
 const templateDoc = `---
 id: NNNN
 title: <short imperative name>
-status: Draft        # Draft | Shipped | Dropped
+status: Draft        # Draft | Submitted | Dropped
 created: YYYY-MM-DD
-shipped:
+submitted:
 ---
 
 ## Problem
