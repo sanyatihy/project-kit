@@ -1,9 +1,9 @@
 ---
 id: 0076
 title: Operators can adopt kit v1.0 with reliable recovery and a stable upgrade contract
-status: Draft
+status: Submitted
 created: 2026-09-05
-submitted:
+submitted: 2026-09-05
 needs: 0075
 ---
 
@@ -27,6 +27,8 @@ Publishing from the implementation branch. Release follows human review and inte
 0075 supplies the lifecycle. This feature makes its recovery, upgrade and publication
 contracts dependable enough to keep stable through v1.x. One implementation PR contains
 the fixes and release evidence; the human approves this plan before implementation starts.
+The review unit is the v1 adoption contract: claim recovery and coordinated migration
+must be settled before publication makes that contract available to other projects.
 
 Claim acquisition uses a canonical branch derived only from the immutable feature id,
 not its title or filename. A rename cannot create a second lock for the same feature.
@@ -55,13 +57,15 @@ history and ship/reset aliases remain supported through v1.x. The upgrade guide 
 writer coordination, renamed flags and check identifiers from 0075, supported tool
 versions, and how to verify the installed version before resuming work.
 
-The proposed v1.0 support scope is macOS and Linux with the existing Go and Python stacks;
+The v1.0 support scope is macOS and Linux with the existing Go and Python stacks;
 Windows is not a supported runtime in this release. Minimum tool versions are backed by
 executed checks. Upgrade rehearsals preserve feature history, house rules, application
 files and customized stack files. Restore this repo's truncated house rules from their
-last intact version, retaining current gate commands. Protocol refresh recognizes the
-actual heading, preserves the house-rule prefix, and tolerates quoted mentions of the
-marker. Remove obsolete current guidance and align VISION with approval of planned work.
+last intact version, retaining current gate commands. Independently harden protocol
+heading detection: an inline mention must not suppress installation, and headings inside
+fenced examples or HTML comments must not delimit replacement. Preserve the house-rule
+prefix and any following sections. Remove obsolete current guidance and align VISION
+with approval of planned work.
 
 Release uses the complete CI gate, including vulnerability scanning and strict online
 audit. Failed state reads refuse publication. Checks and tagging refer to the same clean,
@@ -86,13 +90,22 @@ and installation verification; Submitted alone never claims that outcome.
 
 ## Tasks
 
-- [ ] Restore and preserve house rules, remove obsolete workflow guidance, and align approval and documentation rules with regression coverage for protocol-section boundaries
-- [ ] Make claim identity survive renames and recover interrupted acquisitions, with deterministic competing-clone tests and legacy-claim migration coverage
-- [ ] Make offline and unavailable-remote handoffs report uncertainty without inventing progress or ownership, verified in text and JSON
-- [ ] Document and verify the v1 compatibility and coordinated upgrade contract using legacy history, in-flight work and customized project files
-- [ ] Make release run the complete gate, bind publication to the validated commit, and safely resume failed tag pushes under failure-injection tests
-- [ ] Make fresh Go and Python projects pass their actual gates on the declared supported environments and document reproducible tool requirements
-- [ ] Rehearse plan approval, independent claims, interruption and blocker recovery, review revisions, squash integration and dependency unlock across separate clones, plus initial MVP harvest and a disposable financials upgrade
-- [ ] Record release-candidate evidence, remote enforcement verification or explicit pending conditions, and the exact post-merge v1.0.0 publication and installation procedure
+- [x] Restore and preserve house rules, remove obsolete workflow guidance, and align approval and documentation rules with regression coverage for protocol-section boundaries
+- [x] Make claim identity survive renames and recover interrupted acquisitions, with deterministic competing-clone tests and legacy-claim migration coverage
+- [x] Make offline and unavailable-remote handoffs report uncertainty without inventing progress or ownership, verified in text and JSON
+- [x] Document and verify the v1 compatibility and coordinated upgrade contract using legacy history, in-flight work and customized project files
+- [x] Make release run the complete gate, bind publication to the validated commit, and safely resume failed tag pushes under failure-injection tests
+- [x] Make fresh Go and Python projects pass their actual gates on the declared supported environments and document reproducible tool requirements
+- [x] Rehearse plan approval, independent claims, interruption and blocker recovery, review revisions, squash integration and dependency unlock across separate clones, plus initial MVP harvest and a disposable financials upgrade
+- [x] Preserve actual legacy claim branch names in board JSON during the coordinated upgrade
+- [x] Record release-candidate evidence, remote enforcement verification or explicit pending conditions, and the exact post-merge v1.0.0 publication and installation procedure
+
+- [x] Clarify the restoration cause, independent parser repairs and approved review scope
+- [x] Restore unresolved backlog concerns and account for deliberate documentation removals
 
 ## Log
+
+- 2026-09-05 — Candidate JSON reported a canonical branch for the legacy checkout that owns this feature. Added a correction before final validation so the upgrade contract preserves usable branch references.
+- 2026-09-05 — reopen to Draft: Review: distinguish the house-rule editing failure from parser defects and preserve unresolved backlog concerns
+- 2026-09-05 — Added two review-correction tasks: distinguish the house-rule restoration from parser hardening, and retain backlog problems whose proposed mechanisms became obsolete but whose outcomes remain unresolved.
+- 2026-09-05 — Clarified that restoration repairs the ad-hoc AGENTS.md edit in b56f37c, not truncation by kit init. The parser work addresses independent heading-detection defects; the approved platform scope and coordinated upgrade requirement are unchanged.

@@ -46,7 +46,7 @@ func Release(r *Repo, id string, discard bool) (*Released, error) {
 	// a different one for the agent that only ever saw the claim over the wire.
 	//
 	// Explicit disposal still requires a branch owned by this clone.
-	if !r.hasRef("refs/heads/" + branch) {
+	if !r.hasRef("refs/heads/"+branch) || (branch == target.ClaimBranch() && r.attempt(id) == "") {
 		return nil, fmt.Errorf("%s is claimed by %s, a branch this clone never created\n"+
 			"releasing it frees a feature another agent may be working on — leave it "+
 			"alone and ask its owner to release it", target.Name(), branch)
@@ -55,6 +55,18 @@ func Release(r *Repo, id string, discard bool) (*Released, error) {
 	remote, err := pickRemote(r)
 	if err != nil {
 		return nil, err
+	}
+
+	if branch == target.ClaimBranch() && remote != "" && !r.hasRef(confirmedRef(id)) {
+		if _, ok := r.remoteHeads(); !ok {
+			return nil, fmt.Errorf("remote state is unreadable — retry release when it is reachable")
+		}
+		if tip, ok := r.remoteTip(remote, branch); ok {
+			attempt := r.attempt(id)
+			if tip != attempt && !r.reaches(attempt, tip) {
+				return nil, fmt.Errorf("%s does not carry this clone's claim receipt — run git fetch and reconcile with kit claim %s before releasing", branch, id)
+			}
+		}
 	}
 
 	// Whether a branch carries work cannot be read from its name, and "no work" is the
@@ -93,11 +105,16 @@ func Release(r *Repo, id string, discard bool) (*Released, error) {
 	}
 	work := false
 	if !discard {
-		unmerged, err := r.gitRun("rev-list", "--count", r.trunkRef()+".."+rev)
+		unmerged, err := r.gitRun("rev-list", r.trunkRef()+".."+rev)
 		if err != nil {
 			return nil, err
 		}
-		work = strings.TrimSpace(unmerged) != "0"
+		for _, commit := range strings.Fields(unmerged) {
+			if !r.claimOnly(id, commit) {
+				work = true
+				break
+			}
+		}
 	}
 	if path := r.worktreeFor(branch); path != "" {
 		checkout := &Repo{Root: path}
@@ -149,6 +166,18 @@ func Release(r *Repo, id string, discard bool) (*Released, error) {
 	if r.hasRef("refs/heads/" + branch) {
 		if _, err := r.gitRun("branch", "-D", branch); err != nil {
 			if res.Kept = r.worktreeFor(branch); res.Kept == "" {
+				res.Kept = err.Error()
+			}
+		}
+	}
+	if res.Kept == "" {
+		if confirmed := strings.TrimSpace(r.git("rev-parse", "--verify", "--quiet", confirmedRef(id))); confirmed != "" {
+			if _, err := r.gitRun("update-ref", "-d", confirmedRef(id), confirmed); err != nil {
+				res.Kept = err.Error()
+			}
+		}
+		if attempt := r.attempt(id); attempt != "" {
+			if _, err := r.gitRun("update-ref", "-d", attemptRef(id), attempt); err != nil {
 				res.Kept = err.Error()
 			}
 		}

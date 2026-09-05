@@ -317,7 +317,7 @@ func TestInitStackPythonScaffoldsTheCodeLayout(t *testing.T) {
 
 	for _, want := range []string{
 		"widget/Makefile", "widget/.gitignore", "widget/pyproject.toml", "widget/README.md",
-		"widget/src/widget/__init__.py", "widget/src/widget/__main__.py", "widget/tests/.gitkeep",
+		"widget/src/widget/__init__.py", "widget/src/widget/__main__.py", "widget/tests/test_main.py", "widget/.python-version",
 	} {
 		if !p.exists(want) {
 			t.Errorf("--stack python did not write %s", want)
@@ -369,6 +369,9 @@ func TestInitStackPythonDoesNotAddASecondEntryPoint(t *testing.T) {
 	p := newProject(t)
 	p.write("src/thing/__main__.py", "raise SystemExit(0)\n")
 	p.run("init", "--stack", "python").ok().has("already has an entry point")
+	if p.exists("tests/test_main.py") || p.exists(".python-version") {
+		t.Error("added a scaffold-specific test or interpreter pin to an existing application")
+	}
 	if p.read("src/thing/__main__.py") == "" {
 		t.Error("the existing entry point was emptied")
 	}
@@ -548,4 +551,35 @@ func TestInitReservesNothingTwiceAndNothingWithoutARemote(t *testing.T) {
 	local := setUp(t)
 	local.run("new", "Alone").ok()
 	local.run("init").ok().lacks("reserved")
+}
+
+func TestProtocolRefreshPreservesHouseRulesWithQuotedMarkers(t *testing.T) {
+	t.Parallel()
+	for _, existing := range []bool{false, true} {
+		t.Run(map[bool]string{false: "append", true: "refresh"}[existing], func(t *testing.T) {
+			p := setUp(t)
+			prefix := "# House rules\n\nUse `## Work protocol` below.\n\n```md\n## Work protocol\nExample only.\n```\n\n<!--\n## Work protocol\nComment only.\n-->\n\nDo not delete the application.\n\n"
+			current := prefix
+			if existing {
+				current += "## Work protocol\n\nOld rules.\n\n## Local appendix\n\nKeep this too.\n"
+			}
+			p.write("AGENTS.md", current)
+			if !existing {
+				p.run("audit").ok().has("no-protocol")
+			}
+			p.run("init").ok()
+			got := p.read("AGENTS.md")
+			if !strings.HasPrefix(got, prefix) {
+				t.Fatal("refresh damaged house rules:", got)
+			}
+			if existing && !strings.HasSuffix(got, "## Local appendix\n\nKeep this too.\n") {
+				t.Fatal("refresh damaged appendix:", got)
+			}
+			p.run("audit").ok().lacks("no-protocol", "protocol-stale")
+			p.run("init").ok()
+			if p.read("AGENTS.md") != got {
+				t.Fatal("second refresh changed the document")
+			}
+		})
+	}
 }

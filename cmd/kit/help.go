@@ -99,6 +99,7 @@ Topics:
   kit help template      the feature doc format, field by field
   kit help checks        every audit finding and what it means
   kit help inbox         the docs/INBOX.md format, and what BLOCKING means
+  kit help compatibility supported use, stable interfaces and coordinated upgrades
   kit help backlog       the docs/features/BACKLOG.md format, and what promotes an entry
   kit help vision        the docs/VISION.md shape, and what it is not for
   kit help as-built      the docs/TECH.md shape, section by section
@@ -110,6 +111,7 @@ Run "kit <command> --help" for a command's options.`
 // topics map a help topic to embedded content, so the binary carries its own
 // documentation and an agent never needs the kit's repository.
 var topics = map[string]string{
+	"compatibility":    "templates/compatibility.md",
 	"protocol":         "templates/AGENTS-section.md",
 	"template":         "templates/features-TEMPLATE.md",
 	"go-checklist":     "templates/go-checklist.md",
@@ -223,7 +225,7 @@ Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in
 
 	"claim": `kit claim <id>
 
-Take a feature. Creates the branch named after its doc and pushes it, and the push
+Take a feature on work/<id>, independent of its filename. The push
 is what decides: creating the branch on the remote either succeeds or it does not,
 so of any number of agents claiming at once exactly one wins.
 
@@ -258,7 +260,13 @@ says so — that claim is invisible to everyone else.
 
 The worktree is created at .worktrees/<branch>. A path already holding the claim branch is
 success and anything else there is left alone; making it cannot fail a claim the push has
-won. A won claim also writes .worktrees/ to .git/info/exclude — git clone does not carry it.
+won. Retrying a claim from the same clone resumes its recorded acquisition. A lost
+acknowledgement preserves a unique git receipt; retry after the remote is reachable.
+Confirmed ownership survives rebases. An empty claim receipt is not product work.
+Legacy filename-based claims stay usable and block a second claim of that id.
+Upgrade every writer sharing the remote before using the new claim namespace.
+
+A won claim also writes .worktrees/ to .git/info/exclude — git clone does not carry it.
 
 Claim reads the published trunk tip and requires this checkout to equal it. It does
 not fetch or pull a shared working tree. Update a trunk checkout first; the claim

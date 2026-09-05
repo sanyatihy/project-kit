@@ -45,6 +45,9 @@ func (r *Repo) foundationProblem() string {
 }
 
 func (r *Repo) readFoundationProblem() string {
+	if r.Offline && len(r.remotes()) > 0 {
+		return "remote ownership and foundation are unknown while offline — reconnect, fetch, then kit next before claiming"
+	}
 	if !r.HasHistory() {
 		return ""
 	}
@@ -63,6 +66,9 @@ func (r *Repo) checkoutHandoff(id string) string {
 	f := r.FeatureByID(id)
 	if f == nil || !IsSubmitted(f.Status) {
 		return ""
+	}
+	if r.Offline && len(r.remotes()) > 0 {
+		return id + " has a local submission; remote submission and integration state are unknown while offline. Reconnect, run git fetch, then kit next before deciding what to push or claim."
 	}
 	if IsSubmitted(r.integratedStatuses()[f.Rel]) {
 		return id + " is integrated. Return to a trunk checkout, run git pull --ff-only, then kit next. Leave this branch intact if it carries additional work."

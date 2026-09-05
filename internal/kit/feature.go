@@ -117,9 +117,7 @@ func (f *Feature) NextTask() string {
 	return ""
 }
 
-// Branch is the branch name that claims this feature: the doc's filename without
-// its extension. The doc names the branch and the branch cites the doc, so either
-// one gives you the other and there is no mapping to keep in sync.
+// Branch is the legacy filename-derived branch, retained for existing work.
 func (f *Feature) Branch() string {
 	return strings.TrimSuffix(filepath.Base(f.Path), ".md")
 }
@@ -131,3 +129,6 @@ func (f *Feature) FilenamePrefix() string {
 	}
 	return ""
 }
+
+// ClaimBranch is stable across title and filename changes.
+func (f *Feature) ClaimBranch() string { return "work/" + f.ID }

@@ -90,6 +90,13 @@ is waiting for.
 Once set up you never run anything yourself. `AGENTS.md` tells the agent to run
 `kit next` at the start of a session, so "what should I work on?" is enough.
 
+## Compatibility and upgrades
+
+Read `kit help compatibility` before upgrading a project with active work. The
+[compatibility contract](templates/compatibility.md) covers supported platforms, stable
+interfaces, legacy commands and coordinated upgrades across agent machines.
+[Publishing kit](docs/RELEASE.md) gives the post-merge release and installation checks.
+
 ## Developing a project
 
 There are two human review points for planned work: the plan and the implementation.
@@ -152,7 +159,7 @@ The branch's relationship to trunk determines the handoff:
 | Completion snapshot on trunk | Integrated and frozen; update trunk before taking more work |
 
 `kit next` prints that distinction, including a retained branch after a squash merge.
-An unmerged submission can be reopen and revised; an integrated doc is frozen history.
+An unmerged submission can be reopened and revised; an integrated doc is frozen history.
 Later product changes use a new feature citing it. No post-merge status commit is needed.
 
 Legacy `Shipped`/`shipped:` documents remain readable and frozen after integration.

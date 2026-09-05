@@ -678,11 +678,11 @@ func TestNextRefusesAPathArgument(t *testing.T) {
 func shipOnItsBranch(p *project, id, slug, title string) {
 	p.t.Helper()
 	p.run("claim", id).ok()
-	w := p.claimWorktree(id + "-" + slug)
+	w := p.claimWorktree("work/" + id)
 	w.write("thing.txt", "the work\n")
 	feature(w, id, slug, title, "Submitted", "- [x] Build it")
 	w.commitAll("build and submit " + id)
-	w.git("push", "-q", "origin", "HEAD:refs/heads/"+id+"-"+slug)
+	w.git("push", "-q", "origin", "HEAD:refs/heads/work/"+id)
 }
 
 func TestNextNamesASpikeRatherThanRefusingIt(t *testing.T) {
@@ -736,15 +736,15 @@ func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 	a, _ := twoAgents(t)
 	shipOnItsBranch(a, "0007", "widget", "A widget")
 
-	a.run("next").ok().has("awaiting review", "0007-widget", "waiting")
+	a.run("next").ok().has("awaiting review", "work/0007", "waiting")
 
 	plan := a.plan("next", "--json")
 	if len(plan.AwaitingReview) != 1 {
 		t.Fatalf("--json reports %d awaiting review, want 1: %+v", len(plan.AwaitingReview),
 			plan.AwaitingReview)
 	}
-	if got := plan.AwaitingReview[0]; got.ID != "0007" || got.Branch != "0007-widget" {
-		t.Errorf("awaiting review entry is %+v, want 0007 on 0007-widget", got)
+	if got := plan.AwaitingReview[0]; got.ID != "0007" || got.Branch != "work/0007" {
+		t.Errorf("awaiting review entry is %+v, want 0007 on work/0007", got)
 	}
 	if plan.AwaitingReview[0].Since.IsZero() {
 		t.Errorf("the entry says nothing about how long it has waited: %+v",
@@ -753,7 +753,7 @@ func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 
 	// The quiet half: once the work is on the trunk there is nothing to say, whether or
 	// not the branch was deleted afterwards.
-	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "work/0007")
 	a.git("push", "origin", "HEAD")
 	if got := a.plan("next", "--json").AwaitingReview; len(got) != 0 {
 		t.Errorf("after landing, %d still awaiting review: %+v", len(got), got)
@@ -798,7 +798,7 @@ func TestTheReviewBoardSaysWhoBuiltIt(t *testing.T) {
 	shipOnItsBranch(a, "0007", "widget", "A widget")
 
 	// The builder's own checkout, standing where the work was done.
-	a = a.claimWorktree("0007-widget")
+	a = a.claimWorktree("work/0007")
 	if got := a.plan("next", "--json").AwaitingReview; len(got) != 1 || !got[0].Mine {
 		t.Errorf("the builder's own board does not say it built 0007: %+v", got)
 	}
@@ -901,10 +901,10 @@ func TestTheBoardCountsTheBoxesTheRemoteHas(t *testing.T) {
 	a.run("claim", "0007").ok()
 	b.git("fetch", "-q", "origin")
 
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [ ] Submit it")
 	w.commitAll("0007: one box")
-	w.git("push", "-q", "origin", "0007-widget")
+	w.git("push", "-q", "origin", "work/0007")
 
 	stale := b.plan("next", "--json").Taken
 	if len(stale) != 1 {

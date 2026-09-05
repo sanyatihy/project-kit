@@ -5,11 +5,16 @@
 ## Development
 
 ```sh
-make sync      # install the locked environment
+make sync      # create uv.lock on first use; install its environment
 make check     # fmt, lint, type, test — the gate CI runs
 make run       # run it locally
 make help      # every target
 ```
+
+Use Python 3.12 and uv 0.12.10. Commit `uv.lock` after the first `make sync`; CI
+uses `uv sync --locked` and refuses a missing or stale lockfile. Review lockfile
+changes with dependency changes. The generated test checks both installed entry
+points from outside the source tree; update it when the command changes.
 
 ## How work is tracked
 

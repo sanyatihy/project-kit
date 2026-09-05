@@ -881,13 +881,13 @@ func TestSubmittedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	a, _ := twoAgents(t)
 	trunk := a.headBranch()
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("thing.txt", "the work\n")
 	feature(w, "0007", "widget", "A widget", "Submitted", "- [x] Build it")
 	w.commitAll("build and submit 0007")
 
 	// One: submitted here and pushed to its own branch.
-	w.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
+	w.git("push", "-q", "origin", "HEAD:refs/heads/work/0007")
 	if codes := w.auditCodes(); slices.Contains(codes, "submitted-not-pushed") {
 		t.Errorf("fired on work pushed to its own branch: %v", codes)
 	}
@@ -895,9 +895,9 @@ func TestSubmittedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	// Two: merged, and the branch deleted afterwards — the remote no longer has a
 	// branch naming the feature, and the work is on the trunk.
 	a.git("checkout", "-q", trunk)
-	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "work/0007")
 	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
-	a.git("push", "-q", "origin", "--delete", "0007-widget")
+	a.git("push", "-q", "origin", "--delete", "work/0007")
 	a.git("fetch", "-q", "--prune", "origin")
 	if codes := a.auditCodes(); slices.Contains(codes, "submitted-not-pushed") {
 		t.Errorf("fired on work that is on the trunk: %v", codes)
@@ -1547,7 +1547,7 @@ func TestABranchThatCannotBeResolvedIsNotJudged(t *testing.T) {
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
 
-	// Delete the doc in b, so 0007-widget cites an ID b knows nothing about and the
+	// Delete the doc in b, so work/0007 cites an ID b knows nothing about and the
 	// branch reaches the resolution path rather than being skipped as known.
 	if err := os.Remove(b.path("docs/features/0007-widget.md")); err != nil {
 		t.Fatalf("removing the doc: %v", err)
@@ -1556,7 +1556,7 @@ func TestABranchThatCannotBeResolvedIsNotJudged(t *testing.T) {
 
 	// b sees the branch exists on the remote — 0017 made claims authoritative — but has
 	// never fetched it, so there is no ref whose tree could be read.
-	if b.resolves("refs/remotes/origin/0007-widget") {
+	if b.resolves("refs/remotes/origin/work/0007") {
 		t.Skip("this clone already has the branch fetched, so it can be judged")
 	}
 	if codes := b.auditCodes(); slices.Contains(codes, "orphan-claim") {

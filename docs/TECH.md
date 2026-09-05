@@ -69,13 +69,13 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   dependencies and dependency cycles block work; submit also refuses unanswered blockers,
   unknown statuses and unwritten sections. Command help carries the invocation refusals.
 
-- **The claim is a branch name, and the push is what decides.** Only a *created* ref is a
-  win: pushing to a branch the remote already holds at that commit prints "Everything
-  up-to-date" and exits 0, which hands one feature to two agents. Ref creation is a
-  server-side compare-and-swap, so exactly one claimant wins. The local branch is made
-  before the push and deleted if it loses: a claim is held in both places or in neither.
-  A name is read **whole**, namespace included, and from `for-each-ref` — `git branch`
-  writes a page for a reader, and `(no branch, rebasing 0002-x)` read as a rival claim.
+- **New claims use work/<id>, independent of filenames.** The exclusive remote creation
+  carries a unique empty commit. Local refs/kit/claims/<id> retain the acquisition receipt;
+  refs/kit/owned/<id> record confirmed ownership, which survives rebasing the work.
+  Unknown push outcomes preserve the receipt and retry reconciles it with the remote.
+  A confirmed competing winner removes only the unchanged, unoccupied losing attempt.
+  Legacy filename-based branches remain owned and block new claims for the same id.
+  All writers sharing a remote must upgrade together before creating canonical claims.
 - **An id is handed out once, by the same compare-and-swap.** `kit new` pushes
   `refs/kit/ids/<id>` before writing the doc; only a *created* ref is the number, and the
   disk scan says where to start rather than what is free. The ref outlives the file, so
@@ -114,14 +114,15 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   draft is refused rather than `Claims` narrowed, which would shrink the guarantee; a
   feature's own claim branch is exempt, so a doc discovered mid-build still lands there.
 - **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks
-  whether HEAD *is* the claim branch, which is right for `submit` — shipping happens in the
+  whether HEAD *is* a canonical or legacy claim branch, which is right for `submit` — shipping happens in the
   worktree doing the work — and wrong for `release`, which runs in the trunk the claim was
   made from rather than in the worktree it created. A local ref means this clone created the branch: the same answer for every
   worktree sharing it, a different one for an agent that only saw the claim over the wire.
 - **Release requires readable state and preserves work.** It refuses uncommitted files
-  and every unmerged commit, including changes only to the plan; git errors cannot mean
+  and every unmerged work commit, including changes only to the plan; git errors cannot mean
   no work. The remote delete uses the observed tip as a lease, including under --discard.
   Explicit discard permits unmerged commits, never uncommitted files or foreign claims.
+  The exact claim receipt and its empty rebased equivalent are bookkeeping, not work.
 
 - **Ordering needs no syntax.** Task order is dependency order and `next` returns the
   topmost unticked box. This replaced a dependency graph.
@@ -203,6 +204,8 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   the right outcome when the work was to write the plan just created.
 - **`protocol-stale` compares the project's protocol section with the kit's**, because
   shipping a protocol change does not deliver one — `AGENTS.md` is rewritten only by `init`.
+  Protocol boundaries ignore quoted markers, fenced examples and HTML comments.
+  House rules before the real heading and sections after it survive refresh.
   It reports which side is behind: `kit init .` writes the binary's copy over the section,
   so offered to the newer side it reverts it, and the only project that can be the newer
   side is the one carrying `templates/AGENTS-section.md`. `no-protocol` covers a file whose
@@ -230,7 +233,7 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
 - **Severity is the damage.** `split-claim` is HIGH — two agents owning one feature is the
   worst failure here, and it gated nothing at MEDIUM. `id-mismatch` is HIGH because the
   branch comes from the filename and the claim is looked up by the id, so the board keeps
-  offering a feature somebody holds. Nothing is LOW, so no level prints empty.
+  offering a feature somebody holds. Empty severity groups are omitted.
 - **`audit` is silent only about what it checked.** A doc it cannot open is
   `unreadable-doc` at HIGH, carrying its filename and its still-reserved id, and no other
   feature check runs on it — they all fire on the empty struct. `--offline` names the
@@ -265,7 +268,8 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   `check:`/`checked:` pair that survived it was itself removed: zero of 82 docs used it.
 - **A stack declares its files, entry-point globs, keep directory and pipelines**, so `Init`
   names no language. Python's entry point is `src/*/__main__.py`, under a package name a
-  hyphenated repository name cannot be, and its keep directory is `tests/`.
+  hyphenated repository name cannot be. Generated Python entry-point tests run outside
+  the source tree; existing applications get neither those tests nor an interpreter pin.
 - **Deployment scaffolding is not generated**, and the topic that documented it is gone.
   A stack produces what you need to write and verify code; the rest is the fastest-rotting
   part, and no project ever read the topic.
@@ -351,6 +355,9 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
 - **Frozen documents are checked against the published trunk online.** `frozen-doc`
   reports edits, deletions and unreadable integration evidence; --offline uses local
   history. Required remote checks must enforce this against raw git.
+- **Offline board output labels cached claims and unknown remote handoffs.** Its JSON
+  carries offline: true; unreadable evidence cannot establish unpushed work or readiness
+  to acquire a new remote claim.
 - **Strict online audit fails on an unanswered remote.** Explicit --offline runs local
   checks and reports the omitted checks; neither path describes partial coverage as agreement.
 - **Reservation disposal checks local and advertised branch tips and leases the ref.**
@@ -363,8 +370,9 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   concurrent create cannot be overwritten by a later template write.
 
 - **A release is part of shipping, because `@latest` is whatever the newest tag says.**
-  `make release TAG=…` gates, cuts an annotated tag and pushes it, refusing a dirty tree or
-  a HEAD that is not `origin`'s default-branch tip; `audit` reports `tag-stale` when the
+  `make release TAG=…` runs CI_STEPS, binds checks and an annotated tag to one clean
+  published trunk commit, and verifies the remote tag object. Retry preserves the same
+  tag; conflicting local or remote tags are never overwritten. Failed state reads refuse; `audit` reports `tag-stale` when the
   newest tag falls further than `TagStaleCommits` behind the trunk.
 
 ## Gotchas
@@ -399,6 +407,12 @@ Each of these has already caused a bug.
 - **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.** Append
   to an existing company value; the `-w` write is inert when the variable is exported.
 
+## Compatibility
+
+`kit help compatibility` is the embedded v1 contract and upgrade procedure. Existing
+legacy work stays on its branch; new writers coordinate through immutable id branches.
+[RELEASE.md](RELEASE.md) owns the post-merge publication and installation procedure.
+
 ## Verifying
 
 ```sh
@@ -432,4 +446,4 @@ suite drives — 2.9% for a package covered end to end — and no threshold read
 
 ## State of play
 
-Private repo, tagged `v0.3.0`, `go install …/cmd/kit@latest`; four projects run it.
+Private Go module; install a published version with `go install …/cmd/kit@<tag>`.

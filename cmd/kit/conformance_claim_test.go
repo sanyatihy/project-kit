@@ -143,19 +143,19 @@ func TestClaimPushesTheBranchAndSaysSo(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 
-	a.run("claim", "0007").ok().has("claimed", "0007-widget", "worktree")
+	a.run("claim", "0007").ok().has("claimed", "work/0007", "worktree")
 
 	// The claim is the ref on the remote, so it is the remote that has to have it.
 	// A local branch alone is the state the old protocol could not distinguish from
 	// a claim nobody else can see.
-	cmd := exec.Command("git", "ls-remote", "--heads", "origin", "0007-widget")
+	cmd := exec.Command("git", "ls-remote", "--heads", "origin", "work/0007")
 	cmd.Dir, cmd.Env = a.Root, gitEnv()
 	out, err := cmd.Output()
 	if err != nil {
 		t.Fatalf("reading the remote: %v", err)
 	}
-	if !strings.Contains(string(out), "refs/heads/0007-widget") {
-		t.Errorf("claim exited 0 but the remote has no 0007-widget; got %q", out)
+	if !strings.Contains(string(out), "refs/heads/work/0007") {
+		t.Errorf("claim exited 0 but the remote has no work/0007; got %q", out)
 	}
 }
 
@@ -195,13 +195,13 @@ func TestLosingAClaimLeavesNoBranchBehind(t *testing.T) {
 	}
 }
 
-func TestClaimingTwiceFromTheSameCheckoutLosesTheSecondTime(t *testing.T) {
+func TestClaimingTwiceFromTheSameCloneResumesItsClaim(t *testing.T) {
 	t.Parallel()
 	// The same guarantee seen from one side: the second call did not take anything,
 	// and saying otherwise would make the command useless for deciding who works.
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	a.run("claim", "0007").fails(1).errHas("already claimed", "0007-widget")
+	a.run("claim", "0007").ok().has("already a checkout")
 }
 
 func TestClaimRefusalsThatAreNotRaces(t *testing.T) {
@@ -272,7 +272,7 @@ func TestClaimingFromAnUnmergedPlanRoundIsRefusedUntilItLands(t *testing.T) {
 	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
 	a.git("push", "origin", "HEAD")
 
-	a.run("claim", "0008").ok().has("claimed", "0008-later")
+	a.run("claim", "0008").ok().has("claimed", "work/0008")
 }
 
 func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
@@ -288,13 +288,13 @@ func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
 	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
 
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("widget.go", "package widget\n")
 	w.commitAll("0007: build it")
 
 	// Exit 2: the repository is in the wrong state, and every other id would carry the
 	// same commits, so "take something else" would send the agent into the same wall.
-	w.run("claim", "0008").fails(2).errHas("ahead of", "published trunk", "update a trunk checkout")
+	w.run("claim", "0008").fails(2).errHas("one feature per checkout", "trunk")
 
 	for _, name := range a.branches() {
 		if strings.HasPrefix(name, "0008") {
@@ -304,7 +304,7 @@ func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
 
 	// The quiet half: the same claim from a checkout that carries only the trunk.
 	a.git("checkout", "-q", trunk)
-	a.run("claim", "0008").ok().has("claimed", "0008-later")
+	a.run("claim", "0008").ok().has("claimed", "work/0008")
 }
 
 func TestClaimRefusesFromACheckoutThatAlreadyHoldsAClaim(t *testing.T) {
@@ -320,7 +320,7 @@ func TestClaimRefusesFromACheckoutThatAlreadyHoldsAClaim(t *testing.T) {
 	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
 
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 
 	// Exit 2: the feature may well be free, and the repository is in the wrong state
 	// for taking it here, so "take something else" would be the wrong instruction.
@@ -333,7 +333,7 @@ func TestClaimRefusesFromACheckoutThatAlreadyHoldsAClaim(t *testing.T) {
 	}
 
 	// The quiet half: the same claim from the trunk, which holds nothing.
-	a.run("claim", "0008").ok().has("claimed", "0008-later")
+	a.run("claim", "0008").ok().has("claimed", "work/0008")
 }
 
 func TestTheFirstClaimOfAFreshProjectIsNotRefused(t *testing.T) {
@@ -348,7 +348,7 @@ func TestTheFirstClaimOfAFreshProjectIsNotRefused(t *testing.T) {
 	p := cleanProject(t)
 	p.commitAll("the plan")
 
-	p.run("claim", "0001").ok().has("claimed", "0001-thing", "no remote")
+	p.run("claim", "0001").ok().has("claimed", "work/0001", "no remote")
 }
 
 func TestClaimRefusesAnIDTwoDocsShare(t *testing.T) {
@@ -396,7 +396,7 @@ func TestClaimRefusesADocWhoseIDAndFilenameDisagree(t *testing.T) {
 
 	// The quiet half: a matching doc on the published foundation still claims fine.
 	a.git("push", "origin", "HEAD")
-	a.run("claim", "0007").ok().has("claimed", "0007-widget")
+	a.run("claim", "0007").ok().has("claimed", "work/0007")
 }
 
 func TestAClaimMadeBeforeTheFixStaysVisible(t *testing.T) {
@@ -490,7 +490,7 @@ func TestClaimWithoutARemoteSaysNobodyElseCanSeeIt(t *testing.T) {
 	p.commitAll("the plan")
 
 	r := p.run("claim", "0001").ok()
-	r.has("claimed", "0001-thing", "no remote")
+	r.has("claimed", "work/0001", "no remote")
 	if !strings.Contains(r.out(), "no other agent can see it") {
 		t.Errorf("a local-only claim did not say it is invisible%s", r.context())
 	}
@@ -543,18 +543,18 @@ func TestAMergedAndDeletedBranchIsNotAClaim(t *testing.T) {
 	// b holds a fetched view of the branch; a is where the merge happens.
 	a.run("claim", "0007").ok()
 	b.git("fetch", "origin")
-	a.git("push", "origin", "--delete", "0007-widget")
+	a.git("push", "origin", "--delete", "work/0007")
 
 	// b pulls, as any agent would after a merge. `git pull` does not prune.
 	b.git("fetch", "origin")
-	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "0007-widget") {
+	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "work/0007") {
 		t.Skip("this git prunes on fetch, so the stale ref cannot be set up")
 	}
 
 	if r := b.run("next").ok(); strings.Contains(r.out(), "taken") {
 		t.Errorf("a deleted branch was still reported as a claim%s", r.context())
 	}
-	b.run("claim", "0007").ok().has("claimed", "0007-widget")
+	b.run("claim", "0007").ok().has("claimed", "work/0007")
 }
 
 func TestOfflineReadsTheMirrorAndAcceptsTheCost(t *testing.T) {
@@ -565,9 +565,9 @@ func TestOfflineReadsTheMirrorAndAcceptsTheCost(t *testing.T) {
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
 	b.git("fetch", "origin")
-	a.git("push", "origin", "--delete", "0007-widget")
+	a.git("push", "origin", "--delete", "work/0007")
 	b.git("fetch", "origin")
-	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "0007-widget") {
+	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "work/0007") {
 		t.Skip("this git prunes on fetch, so the stale ref cannot be set up")
 	}
 
@@ -588,9 +588,9 @@ func TestAnUnreachableRemoteRefusesAClaimOnUnknownFoundation(t *testing.T) {
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
 	b.git("fetch", "origin")
-	a.git("push", "origin", "--delete", "0007-widget")
+	a.git("push", "origin", "--delete", "work/0007")
 	b.git("fetch", "origin")
-	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "0007-widget") {
+	if !strings.Contains(strings.Join(b.remoteBranches(), " "), "work/0007") {
 		t.Skip("this git prunes on fetch, so the stale ref cannot be set up")
 	}
 	b.git("remote", "set-url", "origin", filepath.Join(b.Root, "does-not-exist.git"))
@@ -608,7 +608,7 @@ func TestClaimTakesADraft(t *testing.T) {
 	feature(p, "0004", "drafted", "Drafted", "Draft", "- [ ] Build it")
 	p.commitAll("a draft on the trunk")
 
-	p.run("claim", "0004").ok().has("claimed", "0004-drafted")
+	p.run("claim", "0004").ok().has("claimed", "work/0004")
 }
 
 func TestClaimRefusesADocNobodyWrote(t *testing.T) {
@@ -659,7 +659,7 @@ func TestClaimTakesAFeatureWhoseNeedsHaveSubmitted(t *testing.T) {
 		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
 	p.commitAll("one submitted, one waiting on it")
 
-	p.run("claim", "0002").ok().has("claimed", "0002-store")
+	p.run("claim", "0002").ok().has("claimed", "work/0002")
 }
 
 func TestNextAndClaimAgreeAboutAnUnwrittenDoc(t *testing.T) {
@@ -723,13 +723,13 @@ func TestABranchThatOnlyMentionsTheIDOwnsNothing(t *testing.T) {
 	t.Parallel()
 	// The state this feature is for, as measured: ownership was any branch mentioning the
 	// id, so the agent that lost the race put itself back in the winner's seat with
-	// `git checkout -b notes-0007-widget`. Its board said the feature was its own and
+	// `git checkout -b notes-work/0007`. Its board said the feature was its own and
 	// `submit` from there froze the winner's doc — history the protocol forbids anyone to
 	// edit, including the agent still building it.
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
 	b.run("claim", "0007").fails(1)
-	b.git("checkout", "-q", "-b", "notes-0007-widget")
+	b.git("checkout", "-q", "-b", "notes-work/0007")
 
 	if got := boardGroup(b.plan("next", "--json"), "0007"); got != "taken" {
 		t.Errorf("the losing agent's board says 0007 is %s, want taken", got)
@@ -737,7 +737,7 @@ func TestABranchThatOnlyMentionsTheIDOwnsNothing(t *testing.T) {
 	b.write("docs/features/0007-widget.md",
 		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
 
-	submitting(b, "0007").fails(2).errHas("0007-widget", "kit release 0007")
+	submitting(b, "0007").fails(2).errHas("work/0007", "kit release 0007")
 	if strings.Contains(b.read("docs/features/0007-widget.md"), "status: Submitted") {
 		t.Error("the losing agent submitted the winner's feature")
 	}
@@ -774,13 +774,13 @@ func TestAClaimTheLocalBranchCannotHoldIsNotLeftOnTheRemote(t *testing.T) {
 func TestARebaseLeavesTheFeatureWithTheAgentRebasing(t *testing.T) {
 	t.Parallel()
 	// A rebase detaches HEAD, and `git branch` named that `(no branch, rebasing
-	// 0007-widget)` — a second branch claiming the feature, as the kit read it. So
+	// work/0007)` — a second branch claiming the feature, as the kit read it. So
 	// `split-claim` fired at a name nobody could act on, the board reported the feature as
 	// taken by the branch this checkout was standing on, and `submit` sent the agent to submit
 	// from the worktree it was already in.
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	a = a.claimWorktree("0007-widget")
+	a = a.claimWorktree("work/0007")
 	a.write("docs/features/0007-widget.md",
 		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
 	a.commitAll("0007: build it")
@@ -808,9 +808,9 @@ func TestClaimNamesAWorktreeInsideTheProject(t *testing.T) {
 	a.git("worktree", "add", "--detach", "-q", side, "HEAD")
 	from := projectAt(t, side)
 
-	want := filepath.Join(a.Root, ".worktrees", "0007-widget")
+	want := filepath.Join(a.Root, ".worktrees", "work/0007")
 	from.run("claim", "0007").ok().has(want).lacks("git worktree add")
-	if got := projectAt(t, want).headBranch(); got != "0007-widget" {
+	if got := projectAt(t, want).headBranch(); got != "work/0007" {
 		t.Errorf("the claim left %s on %q, want the claim branch", want, got)
 	}
 }

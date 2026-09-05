@@ -22,7 +22,7 @@ variables:
 
 check:
   stage: check
-  image: ghcr.io/astral-sh/uv:debian
+  image: ghcr.io/astral-sh/uv:0.12.10-debian
   tags: []
   timeout: 15m
   rules:
@@ -33,7 +33,7 @@ check:
       files: [uv.lock]
     paths: [.cache/uv]
   script:
-    # The interpreter pyproject.toml pins, and a lockfile that does not match it fails
+    # The interpreter .python-version selects, and a lockfile that does not match it fails
     # here rather than resolving to something this run invented.
     - uv python install
     - uv sync --locked

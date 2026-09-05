@@ -85,6 +85,7 @@ type Plan struct {
 	// weaker statement than it looks: claims come from the last fetch, and anything
 	// awaiting review is missing rather than absent.
 	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
+	Offline          bool `json:"offline,omitempty"`
 
 	// ProtocolStale says the project's AGENTS.md and the binary reading it disagree, so
 	// the rules the agent is about to follow are not the rules this kit expects. Set by
@@ -189,7 +190,7 @@ func Survey(r *Repo) Plan {
 			Status: f.Status,
 			Doc:    f.Rel,
 			Task:   f.NextTask(),
-			Branch: f.Branch(),
+			Branch: f.ClaimBranch(),
 			Done:   total - open,
 			Total:  total,
 		}
@@ -204,9 +205,11 @@ func Survey(r *Repo) Plan {
 		claim := ""
 		if len(claims) > 0 {
 			claim = claims[0]
+			item.Branch = claim
 		}
 		if item.Mine = r.Mine(f.ID); item.Mine {
 			plan.Claiming = f.ID
+			item.Branch = r.HeadBranch()
 		}
 		// Boxes are ticked on the claim branch and stay there until it merges, so the
 		// checkout's copy reports 0/3 however far along somebody else is — which reads as
@@ -320,6 +323,7 @@ func Survey(r *Repo) Plan {
 	}
 	// After the work, so it reports what actually went unanswered.
 	plan.RemoteUnanswered = r.RemoteUnanswered()
+	plan.Offline = r.Offline && len(r.remotes()) > 0
 	plan.Checkout = r.checkoutHandoff(plan.Claiming)
 	if plan.Checkout == "" && plan.Claiming == "" && plan.Spike == "" && r.foundationAsked {
 		plan.Checkout = r.foundationIssue

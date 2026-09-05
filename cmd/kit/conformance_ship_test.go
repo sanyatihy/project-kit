@@ -278,7 +278,7 @@ func TestShipRefusesAFeatureAnotherCheckoutClaims(t *testing.T) {
 
 	r := submitting(a, "0007").fails(2)
 	// Naming the branch and the way out: refusing without one is how an agent gets stuck.
-	r.errHas("0007-widget", "kit release 0007")
+	r.errHas("work/0007", "kit release 0007")
 	if strings.Contains(a.read("docs/features/0007-widget.md"), "status: Submitted") {
 		t.Error("submit wrote the status despite refusing")
 	}
@@ -290,7 +290,7 @@ func TestShipFromTheCheckoutHoldingTheClaimIsFine(t *testing.T) {
 	// where the work was done and where it ships from.
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("docs/features/0007-widget.md",
 		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
 
@@ -305,12 +305,12 @@ func TestShipSaysWhenTheTrunkAlreadyHasTheWork(t *testing.T) {
 	a, _ := twoAgents(t)
 	trunk := a.headBranch()
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("widget.go", "package widget\n")
 	w.write("docs/features/0007-widget.md",
 		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
 	w.commitAll("0007: build it")
-	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "work/0007")
 
 	// Not `submitting`, which makes a commit first: the tree is already clean here, and
 	// the clean tree is what the merge-early case looks like.

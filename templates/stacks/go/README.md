@@ -5,10 +5,19 @@
 ## Development
 
 ```sh
-make check     # fmt, vet, lint, test — the gate CI runs
+make check     # fmt, lint (including vet), test — the gate CI runs
 make run       # run it locally
 make help      # every target
 ```
+
+Use the Go version recorded in `go.mod` and install golangci-lint v2.12.2
+before running the gate. CI installs that same linter version:
+
+```sh
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+```
+
+Put the Go binary directory on PATH so `make check` can find the linter.
 
 ## How work is tracked
 

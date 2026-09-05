@@ -126,7 +126,7 @@ func TestReopenRefusesAFeatureAnotherCheckoutClaims(t *testing.T) {
 	a.write("docs/features/0007-widget.md", doc("0007", "A widget", "In Progress", "", "- [ ] Build it"))
 
 	a.run("reopen", "0007", "--repair", "clearing it from the wrong checkout").fails(2).
-		errHas("0007-widget", "kit release 0007")
+		errHas("work/0007", "kit release 0007")
 	if strings.Contains(a.read("docs/features/0007-widget.md"), "status: Draft") {
 		t.Error("reopen wrote the status despite refusing")
 	}

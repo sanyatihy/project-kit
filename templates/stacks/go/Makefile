@@ -4,7 +4,7 @@ BIN := bin/{{name}}
 CMD := ./cmd/{{name}}
 FMT_DIRS := cmd internal
 
-# build runs the full gate (format, vet, lint, tests) before compiling.
+# build runs the full gate (format, lint including vet, tests) before compiling.
 .PHONY: build
 build: check
 	$(GO) build -o $(BIN) $(CMD)

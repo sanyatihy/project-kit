@@ -545,7 +545,7 @@ func submittedNotPushed(s *docState) []Finding {
 	}
 	return []Finding{finding(checkSubmittedNotPushed, s.at,
 		s.f.Name()+": Submitted, but no remote carries the work",
-		"push it: git push -u origin "+s.f.Branch())}
+		"push it from its owning checkout: git push -u origin HEAD")}
 }
 
 // Liveness comes from the claim rather than a status, which is set on the feature branch
@@ -872,7 +872,7 @@ func noProtocol(s *repoState) []Finding {
 	switch raw, err := os.ReadFile(s.r.Protocol); {
 	case s.r.Protocol == "":
 		missing = append(missing, "no AGENTS.md, so agents have no protocol and will invent one")
-	case err == nil && !strings.Contains(Normalise(string(raw)), ProtocolMarker):
+	case err == nil && !hasProtocol(Normalise(string(raw))):
 		missing = append(missing, "no "+ProtocolMarker+" section in "+s.r.Rel(s.r.Protocol)+
 			", so agents have no protocol and will invent one")
 	}
