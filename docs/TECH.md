@@ -359,6 +359,8 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   deletions before merge; required remote checks must enforce this against raw git.
 - **Strict online audit fails on an unanswered remote.** Explicit --offline runs local
   checks and reports the omitted checks; neither path describes partial coverage as agreement.
+- **Reservation disposal checks local and advertised branch tips and leases the ref.**
+  An unreadable branch cannot establish that its id is unused.
 - **Concurrent blocking questions append without rewriting the inbox.** Each command
   writes its whole line once, so a second question cannot erase the first.
 - **Scaffolding creates user files exclusively and preserves dangling symlinks.** A

@@ -144,7 +144,11 @@ func ReleaseID(r *Repo, typed string, today time.Time) (*ReleasedID, error) {
 		return nil, fmt.Errorf("no feature %s, and %s holds no reservation for it — the "+
 			"number is free already", id, remote)
 	}
-	if branches := r.DocBranches(id); len(branches) > 0 {
+	branches, err := r.DocBranches(id)
+	if err != nil {
+		return nil, err
+	}
+	if len(branches) > 0 {
 		return nil, fmt.Errorf("%s is held by a doc on %s, so it is a draft rather than a "+
 			"number nobody used.\nLand it or delete the branch, then release the id",
 			id, strings.Join(branches, " and "))
@@ -159,12 +163,12 @@ func ReleaseID(r *Repo, typed string, today time.Time) (*ReleasedID, error) {
 	}
 
 	ref := idRef(id)
-	if _, err := r.gitRun("push", "--porcelain", remote, "--delete", ref); err != nil {
+	if _, err := r.gitRun("push", "--porcelain", "--force-with-lease="+ref+":"+held.tip, remote, ":"+ref); err != nil {
 		return nil, err
 	}
 	// The mirror goes with it, or the next read here reports a reservation the remote no
 	// longer has.
-	_, _ = r.gitRun("update-ref", "-d", ref)
+	_, _ = r.gitRun("update-ref", "-d", ref, held.tip)
 	return &ReleasedID{ID: id, Title: held.Title, Remote: remote}, nil
 }
 

@@ -349,6 +349,9 @@ It also names any feature whose needs: cites the dropped one. A Dropped feature 
 never ship, so those docs wait for ever until their needs: is edited — and the board
 says so too, rather than promising a wait that will not end.
 
+Unreadable branch objects refuse id release: fetch before trying again.
+Reservation deletion leases the observed ref, so a concurrent replacement survives.
+
 Given an id no doc holds, it releases that id's reservation instead, deleting
 refs/kit/ids/<id> so the number goes back into circulation. A cut draft leaves one
 behind and nothing else can reach it. Three refusals: a doc for that id on any

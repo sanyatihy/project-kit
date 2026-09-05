@@ -294,3 +294,19 @@ func TestConcurrentBlockingQuestionsAreAllPreserved(t *testing.T) {
 		t.Fatalf("inbox has %d new questions, want %d", got-before, count)
 	}
 }
+
+func TestUnfetchedDraftCannotLoseItsReservation(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.reserve("0009", "Ninth", 30)
+	b.git("switch", "-c", "plan/remote-round")
+	feature(b, "0009", "ninth", "Ninth", "Draft", "- [ ] Build")
+	b.commitAll("remote draft")
+	b.git("push", "origin", "HEAD")
+	a.run("drop", "0009", "looks unused").fails(2).errHas("git fetch")
+	a.git("fetch", "origin")
+	a.run("drop", "0009", "looks unused").fails(2).errHas("plan/remote-round")
+	if !strings.Contains(a.gitOut(nil, "ls-remote", "origin", "refs/kit/ids/0009"), "refs/kit/ids/0009") {
+		t.Fatal("live draft lost its reservation")
+	}
+}

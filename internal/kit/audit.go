@@ -741,7 +741,7 @@ func orphanReservations(s *repoState) []Finding {
 		if !held.When.IsZero() && Days(held.When, s.today) < StalledDays {
 			continue
 		}
-		if len(s.r.DocBranches(held.ID)) > 0 {
+		if branches, err := s.r.DocBranches(held.ID); err != nil || len(branches) > 0 {
 			continue
 		}
 		out = append(out, finding(checkOrphanReservation, s.r.Name,

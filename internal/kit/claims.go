@@ -1,6 +1,7 @@
 package kit
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -589,7 +590,7 @@ func (r *Repo) OrphanClaims() []string {
 //
 // One `ls-tree` per branch, which no board read makes: this answers a refusal in `drop`,
 // where the alternative is handing out a number a draft in flight already holds.
-func (r *Repo) DocBranches(id string) []string {
+func (r *Repo) DocBranches(id string) ([]string, error) {
 	r.loadGit()
 	dir := "docs/features"
 	if r.FeaturesDir != "" {
@@ -603,20 +604,25 @@ func (r *Repo) DocBranches(id string) []string {
 			continue
 		}
 		seen[name] = true
-		rev := r.resolveBranch(name)
-		if rev == "" {
-			continue
-		}
-		for _, path := range gitPaths(
-			r.git("ls-tree", "-r", "-z", "--name-only", rev, "--", dir+"/")) {
-			if strings.HasPrefix(filepath.Base(path), id+"-") {
-				out = append(out, name)
-				break
+		revisions := []string{r.resolveBranch(name), r.claimRev(name)}
+		for i, rev := range revisions {
+			if rev == "" || (i > 0 && rev == revisions[0]) {
+				continue
+			}
+			listing, err := r.gitRun("ls-tree", "-r", "-z", "--name-only", rev, "--", dir+"/")
+			if err != nil {
+				return nil, fmt.Errorf("%s cannot be inspected — run git fetch before releasing an id: %w", name, err)
+			}
+			for _, path := range gitPaths(listing) {
+				if strings.HasPrefix(filepath.Base(path), id+"-") {
+					out = append(out, name)
+					break
+				}
 			}
 		}
 	}
 	sort.Strings(out)
-	return out
+	return out, nil
 }
 
 // BranchCarriesItsDoc reports whether a branch holds the feature doc it is named after.

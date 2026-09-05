@@ -38,7 +38,7 @@ cannot establish misplaced content. Durable facts still move to TECH before subm
 - [x] Harden lifecycle, claims, audit coverage and generated gates against reproduced failures
 - [x] Pin and bound the Go scaffold's CI gate
 
-- [ ] Refuse reservation release when branch state is unreadable or changes concurrently
+- [x] Refuse reservation release when branch state is unreadable or changes concurrently
 
 ## Log
 
