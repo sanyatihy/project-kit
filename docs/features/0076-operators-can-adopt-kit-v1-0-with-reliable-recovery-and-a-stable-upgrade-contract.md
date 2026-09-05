@@ -1,9 +1,9 @@
 ---
 id: 0076
 title: Operators can adopt kit v1.0 with reliable recovery and a stable upgrade contract
-status: Draft
+status: Submitted
 created: 2026-09-05
-submitted:
+submitted: 2026-09-05
 needs: 0075
 ---
 
