@@ -23,7 +23,7 @@ func TestSubmissionRequiresItsFeatureBranchIncludingLegacySpelling(t *testing.T)
 			if dirty := p.gitOut(nil, "status", "--porcelain"); dirty != "" {
 				t.Fatal("refusal changed files:", dirty)
 			}
-			p.git("checkout", "-b", "0007-widget")
+			p.git("checkout", "-b", "work/0007")
 			p.run(command, "0007").ok()
 			if got := p.read("docs/features/0007-widget.md"); !strings.Contains(got, "status: Submitted") || strings.Contains(got, "shipped:") {
 				t.Fatal(got)
@@ -38,7 +38,7 @@ func TestLegacySnapshotCanBeRevisedBeforeMergeAndIsFrozenAfterMerge(t *testing.T
 	feature(p, "0007", "widget", "Widget", "Draft", "- [x] Done")
 	p.commitAll("approved plan")
 	trunk := p.headBranch()
-	p.git("checkout", "-b", "0007-widget")
+	p.git("checkout", "-b", "work/0007")
 	path := "docs/features/0007-widget.md"
 	legacy := strings.Replace(p.read(path), "status: Draft", "status: Shipped\nshipped: "+time.Now().UTC().Format("2006-01-02"), 1)
 	p.write(path, legacy)
@@ -47,7 +47,7 @@ func TestLegacySnapshotCanBeRevisedBeforeMergeAndIsFrozenAfterMerge(t *testing.T
 	p.run("reset", "0007", "review feedback").ok()
 	p.run("ship", "0007").ok()
 	p.git("checkout", trunk)
-	p.git("merge", "0007-widget")
+	p.git("merge", "work/0007")
 	p.git("checkout", "-b", "followup")
 	p.run("reset", "0007", "rewrite history").fails(2).errHas("frozen")
 	// Legacy documents on trunk have the same frozen-history contract.
@@ -81,10 +81,10 @@ func TestDiscardPreservesForeignClaimsAndDirtyWork(t *testing.T) {
 	a.run("claim", "0007").ok()
 	b.git("fetch", "origin")
 	b.run("release", "0007", "--discard").fails(2).errHas("never created")
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("valuable.txt", "uncommitted work\n")
 	a.run("release", "0007", "--discard").fails(2).errHas("uncommitted work")
-	if !hasRemoteBranch(t, a, "0007-widget") || !w.exists("valuable.txt") {
+	if !hasRemoteBranch(t, a, "work/0007") || !w.exists("valuable.txt") {
 		t.Fatal("disposal bypassed preservation")
 	}
 }

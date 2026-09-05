@@ -196,7 +196,22 @@ func mentionsAny(text string, ids []string) bool {
 // anywhere else is one agent freezing another's work.
 func (r *Repo) Mine(id string) bool {
 	f := r.FeatureByID(id)
-	return f != nil && r.HeadBranch() == f.Branch()
+	if f == nil {
+		return false
+	}
+	head := r.HeadBranch()
+	if head == f.ClaimBranch() {
+		return true
+	}
+	if head != f.Branch() {
+		return false
+	}
+	for _, claim := range r.Claims(id) {
+		if claim == f.ClaimBranch() {
+			return false
+		}
+	}
+	return true
 }
 
 // HeldClaim is the four-digit id this checkout's branch cites, empty when it cites none.
@@ -606,8 +621,8 @@ func (r *Repo) OrphanClaims() []string {
 		if r.isTrunk(name) || seen[name] {
 			continue
 		}
-		m := idPrefixRe.FindStringSubmatch(name)
-		if m == nil || known[m[1]] {
+		id := idListRe.FindString(name)
+		if id == "" || known[id] {
 			continue
 		}
 		seen[name] = true
@@ -676,6 +691,18 @@ func (r *Repo) BranchCarriesItsDoc(branch string) bool {
 	dir := "docs/features"
 	if r.FeaturesDir != "" {
 		dir = r.Rel(r.FeaturesDir)
+	}
+	if strings.HasPrefix(branch, "work/") {
+		paths, err := r.gitRun("ls-tree", "-r", "-z", "--name-only", rev, "--", dir)
+		if err != nil {
+			return true
+		} // Unreadable is not proof that the doc is absent.
+		for _, path := range gitPaths(paths) {
+			if strings.HasPrefix(filepath.Base(path), strings.TrimPrefix(branch, "work/")+"-") {
+				return true
+			}
+		}
+		return false
 	}
 	_, err := r.gitRun("cat-file", "-e", rev+":"+dir+"/"+branch+".md")
 	return err == nil

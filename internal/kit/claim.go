@@ -40,21 +40,8 @@ type Claimed struct {
 	WorktreeErr     error
 }
 
-// ClaimFeature takes a feature by creating the branch that claims it and pushing
-// that branch to the remote.
-//
-// The push is the claim, and it is the only part of this that is atomic. Every
-// check before it is a courtesy that produces a better message in the common case;
-// none of them can close the window, because another agent can act between the
-// check and the push. What closes it is the remote: a ref update is a
-// compare-and-swap against the value the server advertised, so of any number of
-// simultaneous claimants exactly one creates the ref.
-//
-// The local branch is created first and deleted again if the push does not win, so a
-// claim is held here and on the remote or in neither place. The other order left the ref
-// on the remote when the local step failed — `git branch` rejects a name git accepts as
-// a refspec, `-0007-dashed` for one — and the claim was then nobody's: `claim` called the
-// feature taken and `release` called the branch one this clone never created.
+// ClaimFeature acquires an immutable ID branch with a unique, recoverable git receipt.
+// A confirmed competing winner returns NotYours; unreadable outcomes retain the attempt.
 func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	var target *Feature
 	sharing := 0
@@ -134,7 +121,14 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"claim something kit next offers"}
 	}
 
-	branch := target.Branch()
+	branch := target.ClaimBranch()
+	remote, err := pickRemote(r)
+	if err != nil {
+		return nil, err
+	}
+	if res, handled, err := r.resumeClaim(target, remote); handled {
+		return res, err
+	}
 	if !r.HasHistory() {
 		return nil, fmt.Errorf("this project has no commits, so a branch has nothing " +
 			"to point at — commit first, then claim")
@@ -163,10 +157,6 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"Land the round first through human review, then claim from an updated trunk checkout", target.Rel, r.Trunk())
 	}
 
-	if why := r.foundationProblem(); why != "" {
-		return nil, fmt.Errorf("cannot claim from this foundation: %s", why)
-	}
-
 	// One feature per checkout, which until now was a rule in prose and nothing else:
 	// the board prints "take one of those in a worktree of its own, never here" and
 	// `claim` took it anyway. Two units of work in one checkout share one branch, and
@@ -182,14 +172,13 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			r.HeadBranch(), held, r.WorktreePath(orTrunk(r.Trunk())), orTrunk(r.Trunk()))
 	}
 
-	remote, err := pickRemote(r)
-	if err != nil {
-		return nil, err
+	if why := r.foundationProblem(); why != "" {
+		return nil, fmt.Errorf("cannot claim from this foundation: %s", why)
 	}
 
 	// Cheap and fallible, and worth doing anyway: a claim already visible locally
 	// gets a message naming the branch instead of a push rejection naming a ref.
-	if claims := r.Claims(id); len(claims) > 0 {
+	if claims := r.otherClaims(id, branch); len(claims) > 0 {
 		// The branch that held a draft is named after the doc, which is also the
 		// claim. Before the draft merges the two differ — a draft branch carries the
 		// doc, a fresh claim carries nothing — but afterwards both are identical to
@@ -215,34 +204,32 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			then}
 	}
 
-	if _, err := r.gitRun("branch", branch, "HEAD"); err != nil {
+	attempt, err := r.prepareClaim(target)
+	if err != nil {
 		return nil, err
 	}
-
 	if remote != "" {
 		ref := "refs/heads/" + branch
-		out, pushErr := r.gitRun("push", "--porcelain",
-			"--force-with-lease="+ref+":", remote, "HEAD:"+ref)
-		switch flag := pushFlag(out, ref); {
-		case flag == pushCreated:
-		case flag != "":
-			return nil, r.unclaim(branch, &NotYours{
-				fmt.Sprintf("%s already has %s — another agent claimed %s first",
-					remote, branch, target.Name()),
-				"run kit next and take something else"})
-		// The push said nothing about our ref, so nothing is known about who owns it.
-		// This must never be reported as a lost race: an agent told it lost moves on
-		// for good, and a dropped connection or a rejected credential would quietly
-		// retire a feature that nobody actually has.
-		case pushErr != nil:
-			return nil, r.unclaim(branch, pushErr)
-		default:
-			return nil, r.unclaim(branch,
-				fmt.Errorf("git push reported nothing about %s:\n%s", ref, out))
+		out, pushErr := r.gitRun("push", "--porcelain", "--force-with-lease="+ref+":", remote, attempt+":"+ref)
+		if pushFlag(out, ref) != pushCreated {
+			fresh := &Repo{Root: r.Root}
+			if res, handled, err := fresh.resumeClaim(target, remote); handled {
+				return res, err
+			}
+			// Without a creation acknowledgement, retain the receipt until a new read
+			// can distinguish our accepted push from somebody else's acquisition.
+			return nil, fmt.Errorf("claim outcome for %s is unconfirmed; local attempt preserved — retry kit claim %s to reconcile it: %v", branch, id, pushErr)
 		}
-		// Best effort. The claim is the ref on the remote and it is already won; a
-		// missing upstream is a convenience this should not fail a claim over.
 		_, _ = r.gitRun("branch", "--set-upstream-to="+remote+"/"+branch, branch)
+	}
+	return r.finishClaim(branch, remote)
+}
+
+func (r *Repo) finishClaim(branch, remote string) (*Claimed, error) {
+	id := strings.TrimPrefix(branch, "work/")
+	attempt := r.attempt(id)
+	if _, err := r.gitRun("update-ref", confirmedRef(id), attempt); err != nil {
+		return nil, fmt.Errorf("claim won but confirmation could not be recorded — retry kit claim %s: %w", id, err)
 	}
 	claimed := &Claimed{Branch: branch, Remote: remote}
 	claimed.Excluded, claimed.ExcludeErr = r.excludeWorktrees()
@@ -344,22 +331,6 @@ func (r *Repo) excludeWorktrees() (string, error) {
 	return path, nil
 }
 
-// unclaim deletes the branch a claim created and hands back the reason it is stopping,
-// so a claim nobody won leaves nothing behind that reads as one.
-//
-// The delete's own failure is not reported: nothing is checked out on a branch made a
-// moment ago, and the caller's reason for stopping is the one worth printing.
-func (r *Repo) unclaim(branch string, cause error) error {
-	_, _ = r.gitRun("branch", "-D", branch)
-	return cause
-}
-
-// pickRemote names the remote a claim is made on and released from.
-//
-// A project with no remote is a real and normal thing and answers "", because refusing
-// there would make the kit unusable before the first push; the caller says plainly that
-// nobody else can see the claim. Several remotes and no origin refuses outright: a claim
-// must not guess which one the other agents read.
 func pickRemote(r *Repo) (string, error) {
 	remotes := r.remotes()
 	switch {

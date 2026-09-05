@@ -69,13 +69,13 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   dependencies and dependency cycles block work; submit also refuses unanswered blockers,
   unknown statuses and unwritten sections. Command help carries the invocation refusals.
 
-- **The claim is a branch name, and the push is what decides.** Only a *created* ref is a
-  win: pushing to a branch the remote already holds at that commit prints "Everything
-  up-to-date" and exits 0, which hands one feature to two agents. Ref creation is a
-  server-side compare-and-swap, so exactly one claimant wins. The local branch is made
-  before the push and deleted if it loses: a claim is held in both places or in neither.
-  A name is read **whole**, namespace included, and from `for-each-ref` — `git branch`
-  writes a page for a reader, and `(no branch, rebasing 0002-x)` read as a rival claim.
+- **New claims use work/<id>, independent of filenames.** The exclusive remote creation
+  carries a unique empty commit. Local refs/kit/claims/<id> retain the acquisition receipt;
+  refs/kit/owned/<id> record confirmed ownership, which survives rebasing the work.
+  Unknown push outcomes preserve the receipt and retry reconciles it with the remote.
+  A confirmed competing winner removes only the unchanged, unoccupied losing attempt.
+  Legacy filename-based branches remain owned and block new claims for the same id.
+  All writers sharing a remote must upgrade together before creating canonical claims.
 - **An id is handed out once, by the same compare-and-swap.** `kit new` pushes
   `refs/kit/ids/<id>` before writing the doc; only a *created* ref is the number, and the
   disk scan says where to start rather than what is free. The ref outlives the file, so
@@ -114,14 +114,15 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
   draft is refused rather than `Claims` narrowed, which would shrink the guarantee; a
   feature's own claim branch is exempt, so a doc discovered mid-build still lands there.
 - **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks
-  whether HEAD *is* the claim branch, which is right for `submit` — shipping happens in the
+  whether HEAD *is* a canonical or legacy claim branch, which is right for `submit` — shipping happens in the
   worktree doing the work — and wrong for `release`, which runs in the trunk the claim was
   made from rather than in the worktree it created. A local ref means this clone created the branch: the same answer for every
   worktree sharing it, a different one for an agent that only saw the claim over the wire.
 - **Release requires readable state and preserves work.** It refuses uncommitted files
-  and every unmerged commit, including changes only to the plan; git errors cannot mean
+  and every unmerged work commit, including changes only to the plan; git errors cannot mean
   no work. The remote delete uses the observed tip as a lease, including under --discard.
   Explicit discard permits unmerged commits, never uncommitted files or foreign claims.
+  The exact claim receipt and its empty rebased equivalent are bookkeeping, not work.
 
 - **Ordering needs no syntax.** Task order is dependency order and `next` returns the
   topmost unticked box. This replaced a dependency graph.

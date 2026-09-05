@@ -79,13 +79,13 @@ func TestReleasePreservesDirtyAndDocumentOnlyWork(t *testing.T) {
 		t.Run(map[bool]string{false: "dirty", true: "document commit"}[committed], func(t *testing.T) {
 			a, _ := twoAgents(t)
 			a.run("claim", "0007").ok()
-			w := a.claimWorktree("0007-widget")
+			w := a.claimWorktree("work/0007")
 			w.write("docs/features/0007-widget.md", w.read("docs/features/0007-widget.md")+"\nReview decision.\n")
 			if committed {
 				w.commitAll("revise plan")
 			}
 			a.run("release", "0007").fails(2).errHas("work")
-			if !hasRemoteBranch(t, a, "0007-widget") || !w.exists("docs/features/0007-widget.md") {
+			if !hasRemoteBranch(t, a, "work/0007") || !w.exists("docs/features/0007-widget.md") {
 				t.Fatal("release surrendered or removed unfinished work")
 			}
 		})
@@ -97,7 +97,7 @@ func TestReleaseCannotDeleteAPushThatArrivesAfterItsRead(t *testing.T) {
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
 	b.git("fetch", "origin")
-	b.git("switch", "-c", "0007-widget", "origin/0007-widget")
+	b.git("switch", "-c", "work/0007", "origin/work/0007")
 	b.write("work.txt", "concurrent progress")
 	b.commitAll("progress")
 	newTip := strings.TrimSpace(b.gitOut(nil, "rev-parse", "HEAD"))
@@ -110,7 +110,7 @@ func TestReleaseCannotDeleteAPushThatArrivesAfterItsRead(t *testing.T) {
 	// Change the remote just before the delete push, after kit's ls-remote completed.
 	script := "#!/bin/sh\nif [ \"$3\" = push ]; then\n" +
 		shellQuote(realGit) + " --git-dir=" + shellQuote(remote) + " fetch " + shellQuote(b.Root) +
-		" +refs/heads/0007-widget:refs/heads/0007-widget >/dev/null 2>&1 || exit 99\nfi\nexec " +
+		" +refs/heads/work/0007:refs/heads/work/0007 >/dev/null 2>&1 || exit 99\nfi\nexec " +
 		shellQuote(realGit) + " \"$@\"\n"
 	writeExecutable(t, filepath.Join(shim, "git"), script)
 	cmd := exec.Command(kitBinary(t), "release", "0007")
@@ -118,7 +118,7 @@ func TestReleaseCannotDeleteAPushThatArrivesAfterItsRead(t *testing.T) {
 	if out, err := cmd.CombinedOutput(); err == nil {
 		t.Fatalf("release deleted a concurrent push: %s", out)
 	}
-	if got := a.gitOut(nil, "ls-remote", "--heads", "origin", "0007-widget"); !strings.Contains(got, newTip) {
+	if got := a.gitOut(nil, "ls-remote", "--heads", "origin", "work/0007"); !strings.Contains(got, newTip) {
 		t.Fatalf("remote progress lost: %s", got)
 	}
 }
@@ -127,9 +127,9 @@ func TestReviewBoardReadsTheAdvertisedTip(t *testing.T) {
 	t.Parallel()
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	b.git("fetch", "origin")
-	b.git("branch", "0007-widget", "origin/0007-widget")
+	b.git("branch", "work/0007", "origin/work/0007")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
 	submitting(w, "0007").ok()
 	w.git("push", "origin", "HEAD")
@@ -150,7 +150,7 @@ func TestReviewFeedbackCanReopenOnlyUnmergedWork(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
 	submitting(w, "0007").ok()
 	w.run("reopen", "0007", "review requested another case").ok()
@@ -158,7 +158,7 @@ func TestReviewFeedbackCanReopenOnlyUnmergedWork(t *testing.T) {
 		t.Fatalf("reopen did not clear the submission: %s", got)
 	}
 	w.run("submit", "0007").ok()
-	a.git("merge", "--no-ff", "-m", "reviewed", "0007-widget")
+	a.git("merge", "--no-ff", "-m", "reviewed", "work/0007")
 	a.git("push", "origin", "HEAD")
 	w.run("reopen", "0007", "try reopening history").fails(2).errHas("frozen history")
 }
@@ -256,7 +256,7 @@ func TestReviewReopenRefusesAnUnreadablePublishedTrunk(t *testing.T) {
 	t.Parallel()
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
 	submitting(w, "0007").ok()
 	b.write("other.txt", "a new trunk commit")
@@ -335,7 +335,7 @@ func TestHarvestCannotPutAnotherFeatureInAnExistingClaim(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.run("harvest", "Unrelated", "--box", "Done").fails(2).errHas("branch of its own")
 	if w.exists("docs/features/0008-unrelated.md") {
 		t.Fatal("harvest added unrelated work to a claim")
@@ -346,7 +346,7 @@ func TestReviewLifecycleThroughSquashIntegration(t *testing.T) {
 	t.Parallel()
 	a, reviewer := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
 	submitting(w, "0007").ok()
 	w.run("next").ok().has("local changes to submit").lacks("nothing is planned")
@@ -361,7 +361,7 @@ func TestReviewLifecycleThroughSquashIntegration(t *testing.T) {
 	submitting(w, "0007").ok()
 	w.git("push", "origin", "HEAD")
 	reviewer.git("fetch", "origin")
-	reviewer.git("merge", "--squash", "origin/0007-widget")
+	reviewer.git("merge", "--squash", "origin/work/0007")
 	reviewer.commitAll("human accepts the feature")
 	reviewer.git("push", "origin", "HEAD")
 	w.run("next").ok().has("integration state is unreadable")
@@ -384,7 +384,7 @@ func TestClaimRequiresTheLatestPublishedFoundation(t *testing.T) {
 	a.run("claim", "0007").fails(2).errHas("published trunk")
 	a.git("pull", "--ff-only", "origin", "main")
 	a.run("claim", "0007").ok()
-	if !a.claimWorktree("0007-widget").exists("foundation.txt") {
+	if !a.claimWorktree("work/0007").exists("foundation.txt") {
 		t.Fatal("claim lacks the integrated foundation")
 	}
 }
@@ -393,7 +393,7 @@ func TestUnmergedSubmissionCannotSatisfyNeeds(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
 	submitting(w, "0007").ok()
 	w.write("docs/features/0008-dependent.md", doc("0008", "Dependent", "Draft", "needs: 0007", "- [x] Use widget"))
@@ -440,12 +440,12 @@ func TestFrozenAuditUsesPublishedHistoryAndRefusesUnfetchedObjects(t *testing.T)
 	t.Parallel()
 	a, reviewer := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
 	submitting(w, "0007").ok()
 	w.git("push", "origin", "HEAD")
 	reviewer.git("fetch", "origin")
-	reviewer.git("merge", "--squash", "origin/0007-widget")
+	reviewer.git("merge", "--squash", "origin/work/0007")
 	reviewer.commitAll("accept implementation")
 	reviewer.git("push", "origin", "HEAD")
 	w.run("audit", "--strict").fails(1).has("frozen-doc", "cannot verify")

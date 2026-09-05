@@ -39,10 +39,10 @@ func TestReleaseGivesTheFeatureBackToTheBoard(t *testing.T) {
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
 
-	a.run("release", "0007").ok().has("released", "0007-widget")
+	a.run("release", "0007").ok().has("released", "work/0007")
 
-	if hasRemoteBranch(t, a, "0007-widget") {
-		t.Error("release exited 0 but the remote still has 0007-widget, so the claim stands")
+	if hasRemoteBranch(t, a, "work/0007") {
+		t.Error("release exited 0 but the remote still has work/0007, so the claim stands")
 	}
 	for _, name := range a.branches() {
 		if strings.HasPrefix(name, "0007") {
@@ -57,11 +57,11 @@ func TestReleaseRefusesWhileTheBranchCarriesWork(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	workOn(t, a, "0007-widget")
+	workOn(t, a, "work/0007")
 
 	a.run("release", "0007").fails(2).errHas("carries work", "pull request")
 
-	if !hasRemoteBranch(t, a, "0007-widget") {
+	if !hasRemoteBranch(t, a, "work/0007") {
 		t.Error("the refusal deleted the claim anyway, which is the work it exists to keep")
 	}
 }
@@ -70,11 +70,11 @@ func TestReleaseForceDeletesWorkOnPurpose(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	workOn(t, a, "0007-widget")
+	workOn(t, a, "work/0007")
 
 	a.run("release", "0007", "--discard").ok()
 
-	if hasRemoteBranch(t, a, "0007-widget") {
+	if hasRemoteBranch(t, a, "work/0007") {
 		t.Error("--discard exited 0 and left the claim on the remote")
 	}
 }
@@ -87,13 +87,13 @@ func TestReleaseSaysWhatIsLeftWhenAWorktreeHoldsTheBranch(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 
 	// Released from inside the worktree it was working in. Git will not remove the
 	// checkout you are standing in, so the branch outlives the claim and release says so.
 	w.run("release", "0007").ok().has("still here")
 
-	if hasRemoteBranch(t, a, "0007-widget") {
+	if hasRemoteBranch(t, a, "work/0007") {
 		t.Error("the claim on the remote survived a release that reported success")
 	}
 }
@@ -120,7 +120,7 @@ func TestReleaseRefusesAClaimThisCloneNeverCreated(t *testing.T) {
 
 	b.run("release", "0007").fails(2).errHas("never created", "owner")
 
-	if !hasRemoteBranch(t, a, "0007-widget") {
+	if !hasRemoteBranch(t, a, "work/0007") {
 		t.Fatal("the refusal deleted the winner's claim anyway")
 	}
 	// And the winner still holds it: the loser cannot get in by claiming again.
@@ -150,12 +150,12 @@ func TestReleaseRefusesWhenNoTrunkResolves(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgentsOn(t, "trunk")
 	a.run("claim", "0007").ok()
-	workOn(t, a, "0007-widget")
-	a.git("push", "-q", "origin", "0007-widget")
+	workOn(t, a, "work/0007")
+	a.git("push", "-q", "origin", "work/0007")
 
 	a.run("release", "0007").fails(2)
 
-	if !hasRemoteBranch(t, a, "0007-widget") {
+	if !hasRemoteBranch(t, a, "work/0007") {
 		t.Fatal("release deleted a branch carrying work on a repo with no resolvable trunk")
 	}
 }
@@ -163,24 +163,24 @@ func TestReleaseRefusesWhenNoTrunkResolves(t *testing.T) {
 func TestATagNamedLikeTheClaimDoesNotStrandIt(t *testing.T) {
 	t.Parallel()
 	// A tag and a branch may share a name, and git then writes the branch as
-	// `heads/0007-widget` wherever it shortens a ref for a reader. Read as the claiming
+	// `heads/work/0007` wherever it shortens a ref for a reader. Read as the claiming
 	// branch, that name matches nothing: `release` said it was a branch this clone never
 	// created and refused for as long as the tag existed, so only `--discard` got out — and
 	// `--discard` is the flag for destroying an agent's live claim.
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
 	trunk := a.headBranch()
-	a.git("tag", "0007-widget", trunk)
+	a.git("tag", "work/0007", trunk)
 
 	// The claim is still the claim-holder's, read from the checkout standing on it.
-	w := a.claimWorktree("0007-widget")
+	w := a.claimWorktree("work/0007")
 	if got := boardGroup(w.plan("next", "--json"), "0007"); got != "yours" {
 		t.Errorf("under a tag of the same name the board says 0007 is %s, want yours", got)
 	}
 
-	a.run("release", "0007").ok().has("released", "0007-widget")
-	if hasRemoteBranch(t, a, "0007-widget") {
-		t.Error("release exited 0 but the remote still has 0007-widget, so the claim stands")
+	a.run("release", "0007").ok().has("released", "work/0007")
+	if hasRemoteBranch(t, a, "work/0007") {
+		t.Error("release exited 0 but the remote still has work/0007, so the claim stands")
 	}
 }
 
@@ -193,14 +193,14 @@ func TestReleaseRefusesWhenTheRemoteHasCommitsThisCheckoutHasNotSeen(t *testing.
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
 	b.git("fetch", "-q", "origin")
-	b.git("checkout", "-q", "-b", "0007-widget", "origin/0007-widget")
+	b.git("checkout", "-q", "-b", "work/0007", "origin/work/0007")
 	b.write("main.go", "package main\n")
 	b.commitAll("0007: build it")
-	b.git("push", "-q", "origin", "0007-widget")
+	b.git("push", "-q", "origin", "work/0007")
 
 	a.run("release", "0007").fails(2).errHas("git fetch")
 
-	if !hasRemoteBranch(t, a, "0007-widget") {
+	if !hasRemoteBranch(t, a, "work/0007") {
 		t.Fatal("release deleted a branch whose commits this checkout had never seen")
 	}
 }

@@ -545,7 +545,7 @@ func submittedNotPushed(s *docState) []Finding {
 	}
 	return []Finding{finding(checkSubmittedNotPushed, s.at,
 		s.f.Name()+": Submitted, but no remote carries the work",
-		"push it: git push -u origin "+s.f.Branch())}
+		"push it from its owning checkout: git push -u origin HEAD")}
 }
 
 // Liveness comes from the claim rather than a status, which is set on the feature branch

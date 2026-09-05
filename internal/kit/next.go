@@ -189,7 +189,7 @@ func Survey(r *Repo) Plan {
 			Status: f.Status,
 			Doc:    f.Rel,
 			Task:   f.NextTask(),
-			Branch: f.Branch(),
+			Branch: f.ClaimBranch(),
 			Done:   total - open,
 			Total:  total,
 		}
