@@ -181,10 +181,6 @@ var (
 		"no status: in the frontmatter, or one the kit does not recognise"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
 		"AGENTS.md and the installed kit disagree about the work protocol, so one side is superseded"}
-	// MEDIUM for done-not-shipped's reason: nothing here is untrue, and `ship` refuses
-	// the same doc anyway. What this adds is the warning while the fix is still legal —
-	// past `ship` the doc is frozen and rule 17 forbids the edit.
-
 	// LOW — worth saying, and not worth stopping for.
 	// The first check at this level, and it is here because it cannot tell a dependency
 	// from a comparison: a draft that contrasts itself with a sibling draft trips it, and
@@ -409,9 +405,7 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 	return found
 }
 
-// The ID is the primary key: branches claim by it, inbox lines block by it, and commits
-// cite it. Two docs sharing one makes all three ambiguous, and it is the one disagreement
-// git cannot surface — the filenames differ, so the merge is clean.
+// frozenDocs compares against integrated history, including deleted documents.
 func frozenDocs(s *repoState) []Finding {
 	trunk := s.r.trunkRef()
 	if trunk == "" {
@@ -433,6 +427,9 @@ func frozenDocs(s *repoState) []Finding {
 	return out
 }
 
+// The ID is the primary key: branches claim by it, inbox lines block by it, and commits
+// cite it. Two docs sharing one makes all three ambiguous, and it is the one disagreement
+// git cannot surface — the filenames differ, so the merge is clean.
 func duplicateID(s *repoState) []Finding {
 	var out []Finding
 	for _, id := range duplicateIDs(s.r.Features) {
