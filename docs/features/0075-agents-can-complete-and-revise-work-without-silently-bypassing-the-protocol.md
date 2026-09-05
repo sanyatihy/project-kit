@@ -9,24 +9,33 @@ needs:
 
 ## Problem
 
-<!-- What was this for? The tension that made it worth doing, in one to three sentences.
-     The diff says what was built and cannot say why it was worth building. -->
+Agents following the printed workflow can lose concurrent work, pass an incomplete
+gate, or need a forbidden hand edit to address review feedback. Passing the existing
+suite did not establish that the protocol's refusals were complete or consistent.
 
 ## Non-goals
 
-<!-- What this deliberately does not do, and where that lives instead. Delete the section
-     if nothing was ruled out. -->
+A new workflow engine or identity store. Markdown and git remain the state.
+Controlling raw git with prose. Merge authorization belongs on the remote.
 
 ## Design
 
-<!-- What was chosen and what it beat: an alternative rejected, a constraint that shaped
-     the answer, a cost accepted. Only what a reader cannot recover from the code. -->
+Shipped means submitted for review until it reaches the trunk. Reset supports review
+changes before integration; the integrated record stays frozen and audit checks edits
+and deletions against it. This revises 0042 and 0067 without another lifecycle status.
+
+Mutations require positive evidence for their safety. Release preserves every unmerged
+commit and leases the remote tip it inspected. The board, claim and ship share validation
+of ambiguous plans and dependencies. Unknown remote state fails strict online audit;
+an explicit offline request reports its narrower coverage.
+
+The protocol states the sequence and ownership boundaries once. Remove 0074's Log
+ratio gate: a short legitimate review reason can exceed half a short plan, so the metric
+cannot establish misplaced content. Durable facts still move to TECH before submission.
 
 ## Tasks
 
 - [x] Harden lifecycle, claims, audit coverage and generated gates against reproduced failures
+- [ ] Pin and bound the Go scaffold's CI gate
 
 ## Log
-
-<!-- What the doing taught that a plan would not have predicted: a premise falsified, an
-     approach abandoned, a measurement that changed the shape. -->
