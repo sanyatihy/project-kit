@@ -206,7 +206,7 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 	}
 	p.run("next").ok().has("needs 0001 to merge first")
 
-	// Shipped is the bar, not merged.
+	// With no remote, the submitted snapshot on local trunk is integrated.
 	p.write("docs/features/0001-base.md",
 		doc("0001", "Base", "Shipped", "shipped: 2026-01-02", "- [x] Do it"))
 	p.commitAll("ship 0001")

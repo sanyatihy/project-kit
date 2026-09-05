@@ -432,3 +432,47 @@ func TestDetachedHarvestRefusesBeforeWritingAnything(t *testing.T) {
 		t.Fatalf("refused harvest mutated the checkout: before %s; after %s", before, after)
 	}
 }
+
+func TestFrozenAuditUsesPublishedHistoryAndRefusesUnfetchedObjects(t *testing.T) {
+	t.Parallel()
+	a, reviewer := twoAgents(t)
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("0007-widget")
+	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
+	shipping(w, "0007").ok()
+	w.git("push", "origin", "HEAD")
+	reviewer.git("fetch", "origin")
+	reviewer.git("merge", "--squash", "origin/0007-widget")
+	reviewer.commitAll("accept implementation")
+	reviewer.git("push", "origin", "HEAD")
+	w.run("audit", "--strict").fails(1).has("frozen-doc", "cannot verify")
+	w.git("fetch", "origin")
+	w.run("audit", "--strict").ok()
+	w.write("docs/features/0007-widget.md", w.read("docs/features/0007-widget.md")+"\nRewrite accepted history.\n")
+	w.run("audit", "--strict").fails(1).has("frozen-doc", "differs here")
+}
+
+func TestDetachedCurrentTrunkCanClaimWithAStaleLocalMain(t *testing.T) {
+	t.Parallel()
+	a, reviewer := twoAgents(t)
+	feature(reviewer, "0008", "later", "Later", "Draft", "- [ ] Build later")
+	reviewer.commitAll("accept the next plan")
+	reviewer.git("push", "origin", "HEAD")
+	a.git("fetch", "origin")
+	a.git("switch", "--detach", "origin/main")
+	// Local main still predates the plan. A current detached checkout is sufficient.
+	a.run("next").ok().has("0008")
+	a.run("claim", "0008").ok()
+}
+
+func TestAFirstPlanningBranchCannotServeAsItsOwnTrunk(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.git("switch", "-c", "plan/initial-round")
+	feature(p, "0001", "first", "First", "Draft", "- [ ] Build")
+	p.commitAll("initial plan without a trunk")
+	p.run("claim", "0001").fails(2).errHas("cannot read the published trunk")
+	if p.exists(".worktrees/0001-first") {
+		t.Fatal("unreviewed initial plan was handed out for implementation")
+	}
+}

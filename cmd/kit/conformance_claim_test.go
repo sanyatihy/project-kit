@@ -294,7 +294,7 @@ func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
 
 	// Exit 2: the repository is in the wrong state, and every other id would carry the
 	// same commits, so "take something else" would send the agent into the same wall.
-	w.run("claim", "0008").fails(2).errHas("ahead of "+trunk, filepath.Join(a.Root, ".worktrees", trunk))
+	w.run("claim", "0008").fails(2).errHas("ahead of", "published trunk", "update a trunk checkout")
 
 	for _, name := range a.branches() {
 		if strings.HasPrefix(name, "0008") {

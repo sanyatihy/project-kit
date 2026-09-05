@@ -302,7 +302,7 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 - **Standing guidance is embedded, never copied into projects.** `go-checklist` is practice,
   not documentation of the kit, and `audit` cannot check a word of it — a copy per repo
   would be drift with nothing to notice it. It must never use `- [ ]`, which in a kit
-  project means a PR-sized unit of work; a test pins that.
+  project means an implementing task commit; a test pins that.
 - **Shipped text has line ceilings** (`cmd/kit/budget_test.go`), because nothing else stops
   a doc growing and no reviewer counts lines. Tiered by how long the reader is expected to
   sit with it: command help tightest, then the protocol, then topics, then the two whole
@@ -356,8 +356,9 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   board in one `ls-tree` and one `cat-file --batch`.
 - **Log length is not a gate.** A valid review reason can outweigh a short plan; no word
   ratio proves misplaced content. Move durable facts before ship, and allow an empty Log.
-- **Frozen documents are checked against the trunk.** `frozen-doc` reports edits and
-  deletions before merge; required remote checks must enforce this against raw git.
+- **Frozen documents are checked against the published trunk online.** `frozen-doc`
+  reports edits, deletions and unreadable integration evidence; --offline uses local
+  history. Required remote checks must enforce this against raw git.
 - **Strict online audit fails on an unanswered remote.** Explicit --offline runs local
   checks and reports the omitted checks; neither path describes partial coverage as agreement.
 - **Reservation disposal checks local and advertised branch tips and leases the ref.**

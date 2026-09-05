@@ -365,7 +365,9 @@ func (r *Repo) UnmetNeeds(f *Feature) []string {
 // answering otherwise would block the first claim of every project that has one branch
 // and no remote.
 func (r *Repo) PlanLanded(f *Feature) bool {
-	return r.trunkRef() == "" || r.trackedOnTrunk(f.Rel)
+	// Unknown landing state is handled by foundationProblem, which names the fetch.
+	// It must not be reported as a plan known to be absent from the trunk.
+	return r.trackedOnTrunk(f.Rel) || r.trunkPaths == nil
 }
 
 // Rel makes a path relative to the project root, for display.

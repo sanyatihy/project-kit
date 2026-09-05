@@ -70,7 +70,8 @@ Plan when asked. For work that began without a plan, use the spike route below.
    sitting. Prefer the larger coherent change under that ceiling. A separate doc earns
    its place through a decision the code or commit cannot explain; otherwise use a task
    box or a chore commit. Do not create a feature for every implementation step.
-3. Draft the whole round with `kit new "<title>"` on one `plan/<round>` branch whose
+3. With no commits, commit setup on the trunk before creating the planning branch.
+   Draft the whole round with `kit new "<title>"` on one `plan/<round>` branch whose
    name contains no four-digit id. Fill `needs:` with prerequisite feature ids; leave
    it empty when work can start independently. Keep every draft `status: Draft`.
 4. Push the planning branch and open one pull request for human review. After the human

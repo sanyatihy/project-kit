@@ -36,7 +36,7 @@ type Feature struct {
 	ID      string
 	Title   string
 	Status  string
-	Needs   []string // feature ids that must ship before this can start
+	Needs   []string // feature ids that must merge before this can start
 	Shipped time.Time
 
 	// Duplicates are the frontmatter keys this doc declares more than once. Reading

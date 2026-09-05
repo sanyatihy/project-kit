@@ -52,7 +52,7 @@ including squash merges. Each checkout holds one feature without a global agent 
 - [x] Keep an initial harvested MVP reviewable off the trunk
 - [x] Document both workflows and remove the arbitrary global work limit
 
-- [ ] Verify frozen history against the published integration state
+- [x] Verify frozen history against the published integration state
 
 ## Log
 

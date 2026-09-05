@@ -407,7 +407,7 @@ branches and worktrees all count, so a stale fetch hides someone else's claim. T
 one exception is the branch this checkout is on: that claim is yours, and it is
 reported as "yours" and offered as the work to do. A feature is reported as blocked
 when a BLOCKING docs/INBOX.md line carries its id in the id field, or when something
-in its "needs:" has not merged yet.
+in its "needs:" has not merged into this checkout yet.
 
 Below the board, "awaiting review" is the far side of ship: a branch the remote has,
 carrying a doc that says Shipped, not yet on the trunk, and off the board above while

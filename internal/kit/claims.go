@@ -58,7 +58,7 @@ func (r *Repo) findTrunk() string {
 	// checkout is on, but only when it is not claim-shaped. A claim branch leads with its
 	// feature's ID, so refusing those is what stops a worktree deciding it is the trunk —
 	// and a wrong answer here would report every branch as carrying no work.
-	if head := r.HeadBranch(); head != "" && idPrefixRe.FindString(head) == "" {
+	if head := r.HeadBranch(); head != "" && idPrefixRe.FindString(head) == "" && !strings.HasPrefix(head, "plan/") {
 		return head
 	}
 	return ""
@@ -417,7 +417,14 @@ func (r *Repo) trunkStatuses() (map[string]string, bool) {
 	}
 	var found map[string]string
 	for _, ref := range r.remoteTrunkRefs() {
-		for rel, status := range r.statusesOn(ref) {
+		var statuses map[string]string
+		remote, branch, _ := strings.Cut(ref, "/")
+		if tip, ok := r.remoteTip(remote, branch); ok && tip == r.integrationRef() {
+			statuses = r.integratedStatuses()
+		} else {
+			statuses = r.statusesOn(ref)
+		}
+		for rel, status := range statuses {
 			if found == nil {
 				found = map[string]string{}
 			}

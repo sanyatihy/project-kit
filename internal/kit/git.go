@@ -369,10 +369,12 @@ func gitPaths(out string) []string {
 func (r *Repo) trackedOnTrunk(rel string) bool {
 	if !r.trunkPathsAsked {
 		r.trunkPathsAsked = true
-		r.trunkPaths = map[string]bool{}
-		if ref := r.trunkRef(); ref != "" {
-			for _, path := range gitPaths(r.git("ls-tree", "-r", "-z", "--name-only", ref)) {
-				r.trunkPaths[path] = true
+		if ref := r.integrationRef(); ref != "" {
+			if out, err := r.gitRun("ls-tree", "-r", "-z", "--name-only", ref); err == nil {
+				r.trunkPaths = map[string]bool{}
+				for _, path := range gitPaths(out) {
+					r.trunkPaths[path] = true
+				}
 			}
 		}
 	}

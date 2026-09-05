@@ -85,7 +85,7 @@ var (
 	checkDuplicateKey = Check{"duplicate-key", High,
 		"a doc declares one frontmatter key twice, so the value the kit reads is not the line a write would change"}
 	checkFrozenDoc = Check{"frozen-doc", High,
-		"a feature already Shipped on the trunk was changed or deleted"}
+		"a feature already Shipped on the trunk was changed or deleted, or that history could not be verified"}
 	checkStalled = Check{"stalled", High,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
@@ -407,21 +407,38 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 
 // frozenDocs compares against integrated history, including deleted documents.
 func frozenDocs(s *repoState) []Finding {
-	trunk := s.r.trunkRef()
+	if !s.r.HasHistory() {
+		return nil
+	}
+	unreadable := func() []Finding {
+		return []Finding{finding(checkFrozenDoc, s.r.Rel(s.r.FeaturesDir),
+			"cannot verify frozen documents against the published trunk",
+			"run git fetch and update the checkout before auditing again")}
+	}
+	trunk := s.r.integrationRef()
 	if trunk == "" {
+		if !s.r.Offline && len(s.r.remotes()) > 0 {
+			return unreadable()
+		}
 		return nil
 	}
 	changed, err := s.r.gitRun("diff", "--name-only", "-z", trunk, "--", s.r.FeaturesDir)
-	if err != nil || changed == "" {
+	if err != nil {
+		return unreadable()
+	}
+	if changed == "" {
 		return nil
 	}
-	statuses := s.r.statusesOn(trunk)
+	statuses := s.r.integratedStatuses()
+	if statuses == nil {
+		return unreadable()
+	}
 	var out []Finding
 	for _, path := range gitPaths(changed) {
 		if statuses[path] == StatusShipped {
 			out = append(out, finding(checkFrozenDoc, path,
 				"this document is Shipped on the trunk and differs here",
-				"preserve the new work in a new feature, then restore the frozen document from the trunk"))
+				"preserve new work, update the checkout, and restore this document from the trunk"))
 		}
 	}
 	return out
@@ -968,7 +985,7 @@ func needsState(s *repoState) []Finding {
 		if !idListOnlyRe.MatchString(f.needsText) {
 			out = append(out, finding(checkNeedsUnparsed, f.Rel,
 				fmt.Sprintf("%s: needs: %q is not an id list", f.Name(), clip(f.needsText, 40)),
-				"leave it empty, or list only the four-digit ids that must ship first"))
+				"leave it empty, or list only the four-digit ids that must merge first"))
 			continue
 		}
 		if s.r.needsCycle(f.ID, f.ID, map[string]bool{}) && !slices.Contains(f.Needs, f.ID) {

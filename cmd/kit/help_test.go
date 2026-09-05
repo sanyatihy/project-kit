@@ -313,7 +313,7 @@ var showsTaskSyntax = map[string]bool{
 	"inbox":    true,
 }
 
-// In kit, `- [ ]` means "a PR-sized unit of work, do the topmost one". Guidance that
+// In kit, `- [ ]` means "an implementing task commit, do the topmost one". Guidance that
 // uses the same syntax for "a property to verify" would be read as a task list by an
 // agent following the protocol, and it would work through it.
 func TestNoTopicLooksLikeATaskList(t *testing.T) {
