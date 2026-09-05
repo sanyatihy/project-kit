@@ -90,6 +90,12 @@ is waiting for.
 Once set up you never run anything yourself. `AGENTS.md` tells the agent to run
 `kit next` at the start of a session, so "what should I work on?" is enough.
 
+## Compatibility and upgrades
+
+Read `kit help compatibility` before upgrading a project with active work. The
+[compatibility contract](templates/compatibility.md) covers supported platforms, stable
+interfaces, legacy commands and coordinated upgrades across agent machines.
+
 ## Developing a project
 
 There are two human review points for planned work: the plan and the implementation.

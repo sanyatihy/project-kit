@@ -99,6 +99,7 @@ Topics:
   kit help template      the feature doc format, field by field
   kit help checks        every audit finding and what it means
   kit help inbox         the docs/INBOX.md format, and what BLOCKING means
+  kit help compatibility supported use, stable interfaces and coordinated upgrades
   kit help backlog       the docs/features/BACKLOG.md format, and what promotes an entry
   kit help vision        the docs/VISION.md shape, and what it is not for
   kit help as-built      the docs/TECH.md shape, section by section
@@ -110,6 +111,7 @@ Run "kit <command> --help" for a command's options.`
 // topics map a help topic to embedded content, so the binary carries its own
 // documentation and an agent never needs the kit's repository.
 var topics = map[string]string{
+	"compatibility":    "templates/compatibility.md",
 	"protocol":         "templates/AGENTS-section.md",
 	"template":         "templates/features-TEMPLATE.md",
 	"go-checklist":     "templates/go-checklist.md",

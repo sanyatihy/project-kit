@@ -405,6 +405,11 @@ Each of these has already caused a bug.
 - **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.** Append
   to an existing company value; the `-w` write is inert when the variable is exported.
 
+## Compatibility
+
+`kit help compatibility` is the embedded v1 contract and upgrade procedure. Existing
+legacy work stays on its branch; new writers coordinate through immutable id branches.
+
 ## Verifying
 
 ```sh
