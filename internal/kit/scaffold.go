@@ -63,6 +63,7 @@ var stackLayout = map[string]stack{
 		files: [][2]string{
 			{"Makefile", "Makefile"},
 			{"gomod", "go.mod"},
+			{"golangci.yml", ".golangci.yml"},
 			{"main.go.tmpl", "cmd/{{name}}/main.go"},
 			{"README.md", "README.md"},
 		},
@@ -281,7 +282,7 @@ func place(templates fs.FS, src, dest, root string, values map[string]string, re
 		rel = dest
 	}
 	rel = filepath.ToSlash(rel)
-	if _, err := os.Stat(dest); err == nil {
+	if _, err := os.Lstat(dest); err == nil {
 		res.Kept = append(res.Kept, rel)
 		return nil
 	}
@@ -292,8 +293,21 @@ func place(templates fs.FS, src, dest, root string, values map[string]string, re
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(dest, []byte(fill(string(raw), values)), 0o644); err != nil {
+	file, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if os.IsExist(err) {
+		res.Kept = append(res.Kept, rel)
+		return nil
+	}
+	if err != nil {
 		return err
+	}
+	_, writeErr := file.WriteString(fill(string(raw), values))
+	closeErr := file.Close()
+	if writeErr != nil {
+		return writeErr
+	}
+	if closeErr != nil {
+		return closeErr
 	}
 	res.Created = append(res.Created, rel)
 	return nil

@@ -221,10 +221,10 @@ func TestClaimRefusalsThatAreNotRaces(t *testing.T) {
 			unwritten(p, "0008", "unwritten")
 			p.commitAll("an empty doc")
 		}, "no plan to build"},
-		{"a feature that already shipped", func(p *project) {
-			feature(p, "0008", "done", "Done", "Shipped", "- [x] Finished")
-			p.commitAll("shipped work")
-		}, "Shipped"},
+		{"a feature that already submitted", func(p *project) {
+			feature(p, "0008", "done", "Done", "Submitted", "- [x] Finished")
+			p.commitAll("submitted work")
+		}, "Submitted"},
 		{"a feature a human has to unblock", func(p *project) {
 			feature(p, "0008", "stuck", "Stuck", "Draft", "- [ ] Something")
 			p.commitAll("the plan")
@@ -270,6 +270,7 @@ func TestClaimingFromAnUnmergedPlanRoundIsRefusedUntilItLands(t *testing.T) {
 	// The quiet half: the same feature, once the round has landed.
 	a.git("checkout", "-q", trunk)
 	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
+	a.git("push", "origin", "HEAD")
 
 	a.run("claim", "0008").ok().has("claimed", "0008-later")
 }
@@ -277,7 +278,7 @@ func TestClaimingFromAnUnmergedPlanRoundIsRefusedUntilItLands(t *testing.T) {
 func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
 	t.Parallel()
 	// The mirror of the check above, on HEAD. Reproduced in the worktree that had just
-	// shipped 0001: `kit claim 0002` exited 0 and the branch it pushed logged 0001's
+	// submitted 0001: `kit claim 0002` exited 0 and the branch it pushed logged 0001's
 	// commits against the trunk, so that pull request carried another feature's work and
 	// only its own author could merge it.
 	a, _ := twoAgents(t)
@@ -293,7 +294,7 @@ func TestClaimRefusesFromACheckoutAheadOfTheTrunk(t *testing.T) {
 
 	// Exit 2: the repository is in the wrong state, and every other id would carry the
 	// same commits, so "take something else" would send the agent into the same wall.
-	w.run("claim", "0008").fails(2).errHas("ahead of "+trunk, filepath.Join(a.Root, ".worktrees", trunk))
+	w.run("claim", "0008").fails(2).errHas("ahead of", "published trunk", "update a trunk checkout")
 
 	for _, name := range a.branches() {
 		if strings.HasPrefix(name, "0008") {
@@ -393,7 +394,8 @@ func TestClaimRefusesADocWhoseIDAndFilenameDisagree(t *testing.T) {
 		t.Errorf("a refused claim pushed a branch anyway: %q", out)
 	}
 
-	// The quiet half, in the same project: a doc whose two agree still claims fine.
+	// The quiet half: a matching doc on the published foundation still claims fine.
+	a.git("push", "origin", "HEAD")
 	a.run("claim", "0007").ok().has("claimed", "0007-widget")
 }
 
@@ -577,7 +579,7 @@ func TestOfflineReadsTheMirrorAndAcceptsTheCost(t *testing.T) {
 	}
 }
 
-func TestAnUnreachableRemoteNamesPruneRatherThanAPhantomDelete(t *testing.T) {
+func TestAnUnreachableRemoteRefusesAClaimOnUnknownFoundation(t *testing.T) {
 	t.Parallel()
 	// When the remote cannot be asked, claims fall back to the mirror — and the mirror is
 	// what names branches nobody holds. The refusal has to say so, because the advice it
@@ -593,7 +595,7 @@ func TestAnUnreachableRemoteNamesPruneRatherThanAPhantomDelete(t *testing.T) {
 	}
 	b.git("remote", "set-url", "origin", filepath.Join(b.Root, "does-not-exist.git"))
 
-	b.run("claim", "0007").fails(1).errHas("fetch --prune")
+	b.run("claim", "0007").fails(2).errHas("published trunk", "git fetch")
 }
 
 func TestClaimTakesADraft(t *testing.T) {
@@ -625,7 +627,7 @@ func TestClaimRefusesADocNobodyWrote(t *testing.T) {
 	r.errHas("Problem")
 }
 
-func TestClaimRefusesWhatItsNeedsHaveNotShipped(t *testing.T) {
+func TestClaimRefusesWhatItsNeedsHaveNotSubmitted(t *testing.T) {
 	t.Parallel()
 	// Measured on a fresh project: `kit next` said 0002 was waiting on 0001 and
 	// `kit claim 0002` took it anyway, so an agent claiming by ID built on a foundation
@@ -646,16 +648,16 @@ func TestClaimRefusesWhatItsNeedsHaveNotShipped(t *testing.T) {
 	}
 }
 
-func TestClaimTakesAFeatureWhoseNeedsHaveShipped(t *testing.T) {
+func TestClaimTakesAFeatureWhoseNeedsHaveSubmitted(t *testing.T) {
 	t.Parallel()
-	// The quiet half. A dependency that has shipped is not an obstacle, and refusing
+	// The quiet half. A dependency that has submitted is not an obstacle, and refusing
 	// here would make `needs:` a field that never releases anything.
 	p := cleanProject(t)
 	p.write("docs/features/0001-thing.md",
-		doc("0001", "A thing", "Shipped", "shipped: 2026-01-02", "- [x] Do the thing"))
+		doc("0001", "A thing", "Submitted", "submitted: 2026-01-02", "- [x] Do the thing"))
 	p.write("docs/features/0002-store.md",
 		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
-	p.commitAll("one shipped, one waiting on it")
+	p.commitAll("one submitted, one waiting on it")
 
 	p.run("claim", "0002").ok().has("claimed", "0002-store")
 }
@@ -722,7 +724,7 @@ func TestABranchThatOnlyMentionsTheIDOwnsNothing(t *testing.T) {
 	// The state this feature is for, as measured: ownership was any branch mentioning the
 	// id, so the agent that lost the race put itself back in the winner's seat with
 	// `git checkout -b notes-0007-widget`. Its board said the feature was its own and
-	// `ship` from there froze the winner's doc — history the protocol forbids anyone to
+	// `submit` from there froze the winner's doc — history the protocol forbids anyone to
 	// edit, including the agent still building it.
 	a, b := twoAgents(t)
 	a.run("claim", "0007").ok()
@@ -735,9 +737,9 @@ func TestABranchThatOnlyMentionsTheIDOwnsNothing(t *testing.T) {
 	b.write("docs/features/0007-widget.md",
 		doc("0007", "A widget", "Draft", "", "- [x] Build it"))
 
-	shipping(b, "0007").fails(2).errHas("0007-widget", "kit release 0007")
-	if strings.Contains(b.read("docs/features/0007-widget.md"), "status: Shipped") {
-		t.Error("the losing agent shipped the winner's feature")
+	submitting(b, "0007").fails(2).errHas("0007-widget", "kit release 0007")
+	if strings.Contains(b.read("docs/features/0007-widget.md"), "status: Submitted") {
+		t.Error("the losing agent submitted the winner's feature")
 	}
 }
 
@@ -774,7 +776,7 @@ func TestARebaseLeavesTheFeatureWithTheAgentRebasing(t *testing.T) {
 	// A rebase detaches HEAD, and `git branch` named that `(no branch, rebasing
 	// 0007-widget)` — a second branch claiming the feature, as the kit read it. So
 	// `split-claim` fired at a name nobody could act on, the board reported the feature as
-	// taken by the branch this checkout was standing on, and `ship` sent the agent to ship
+	// taken by the branch this checkout was standing on, and `submit` sent the agent to submit
 	// from the worktree it was already in.
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
@@ -792,14 +794,14 @@ func TestARebaseLeavesTheFeatureWithTheAgentRebasing(t *testing.T) {
 			t.Error("the rebase is reported as a second agent claiming the feature")
 		}
 	}
-	a.run("ship", "0007").ok().has("shipped")
+	a.run("submit", "0007").ok().has("submitted")
 }
 
 func TestClaimNamesAWorktreeInsideTheProject(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 
-	// A detached checkout of the trunk, which is where an agent that has just shipped
+	// A detached checkout of the trunk, which is where an agent that has just submitted
 	// stands: the path used to be relative to here, so it named a sibling of this
 	// directory rather than anything under the project.
 	side := filepath.Join(a.Root, "..", "side")

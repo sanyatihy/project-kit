@@ -11,7 +11,7 @@ import (
 const DateLayout = "2006-01-02"
 
 var (
-	headingRe  = regexp.MustCompile(`(?m)^##\s+(.+?)\s*$`)
+	headingRe  = regexp.MustCompile(`(?m)^##[ \t]+(.+?)[ \t]*$`)
 	commentRe  = regexp.MustCompile(`(?s)<!--.*?-->`)
 	untickedRe = regexp.MustCompile(`^\s*[-*]\s*\[ \]\s*(.*)$`)
 	tickedRe   = regexp.MustCompile(`^\s*[-*]\s*\[[xX]\]\s*(.*)$`)
@@ -141,7 +141,7 @@ func SetField(text, key, value string) (string, bool) {
 // the doc does not already carry it. Reports false only when there is no frontmatter.
 //
 // Separate from SetField because inserting is wrong for the fields that must already be
-// there: a doc with no `status:` is malformed, and `accept` and `ship` say so rather than
+// there: a doc with no `status:` is malformed, and `accept` and `submit` say so rather than
 // quietly writing one in. A field added to the template later is the opposite case —
 // every doc written before it is fine, and it has to be settable on those.
 func AddField(text, key, value string) (string, bool) {
@@ -174,7 +174,7 @@ func SetStatus(text, status string) (string, bool) { return SetField(text, "stat
 func ParseSections(body string) map[string]string {
 	body = commentRe.ReplaceAllString(body, "")
 	sections := map[string]string{}
-	matches := headingRe.FindAllStringSubmatchIndex(body, -1)
+	matches := headingRe.FindAllStringSubmatchIndex(maskFences(body), -1)
 	for i, m := range matches {
 		end := len(body)
 		if i+1 < len(matches) {
@@ -216,15 +216,7 @@ func CountTasks(text string) (open, total int) {
 
 // forEachBox walks the task boxes outside fenced blocks.
 func forEachBox(text string, visit func(line string, done bool)) {
-	fenced := false
-	for _, line := range strings.Split(text, "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "```") {
-			fenced = !fenced
-			continue
-		}
-		if fenced {
-			continue
-		}
+	for _, line := range strings.Split(maskFences(text), "\n") {
 		switch {
 		case untickedRe.MatchString(line):
 			visit(line, false)
@@ -232,6 +224,35 @@ func forEachBox(text string, visit func(line string, done bool)) {
 			visit(line, true)
 		}
 	}
+}
+
+// maskFences hides fenced examples while preserving byte offsets for section slicing.
+func maskFences(text string) string {
+	lines := strings.Split(text, "\n")
+	var mark byte
+	width := 0
+	for i, line := range lines {
+		trim := strings.TrimLeft(line, " ")
+		indent := len(line) - len(trim)
+		run := 0
+		if indent <= 3 && len(trim) > 0 && (trim[0] == '`' || trim[0] == '~') {
+			for run < len(trim) && trim[run] == trim[0] {
+				run++
+			}
+		}
+		inside := width > 0
+		if !inside && run >= 3 {
+			mark, width = trim[0], run
+			inside = true
+		} else if inside && run >= width && trim[0] == mark &&
+			strings.TrimSpace(trim[run:]) == "" {
+			width = 0
+		}
+		if inside {
+			lines[i] = strings.Repeat(" ", len(line))
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // ParseIDList reads a frontmatter list of feature ids — "0002, 0003" or "0002 0003"
@@ -328,4 +349,20 @@ func AppendToSection(text, heading, line string) (string, bool) {
 	out := append([]string{}, lines[:at]...)
 	out = append(out, line)
 	return strings.Join(append(out, lines[at:]...), "\n"), true
+}
+
+// RemoveField deletes a legacy field only inside the frontmatter.
+func RemoveField(text, key string) string {
+	start, end, ok := FrontmatterBounds(text)
+	if !ok {
+		return text
+	}
+	var kept []string
+	for _, line := range strings.Split(text[start:end], "\n") {
+		if k, _, found := strings.Cut(line, ":"); found && strings.TrimSpace(k) == key {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	return text[:start] + strings.Join(kept, "\n") + text[end:]
 }

@@ -9,13 +9,12 @@ import (
 	"time"
 )
 
-// ShipResult is what shipping changed, for reporting.
-type ShipResult struct {
+// SubmitResult is what submitting changed, for reporting.
+type SubmitResult struct {
 	Doc         string
 	Was         string
 	TechDoc     string // the as-built doc to migrate facts into
-	TechCreated bool   // whether shipping is what created it
-	OpenLogs    bool   // whether ## Log looks like it was left untouched
+	TechCreated bool   // whether submitting is what created it
 	HasRemote   bool   // whether there is anywhere to hand the work off to
 	Commit      string // the commit the stamp landed in, empty when there is no history to commit onto
 
@@ -25,27 +24,37 @@ type ShipResult struct {
 	Trunk  string
 }
 
-// Ship marks a feature shipped: it verifies every box is ticked, sets the status
+// Submit marks a feature submitted: it verifies every box is ticked, sets the status
 // and stamps the date.
 //
-// The verification is the point. `shipped-no-date` is an audit finding that comes from
+// The verification is the point. `submitted-no-date` is an audit finding that comes from
 // doing this by hand, so doing it by command removes the mistake rather than reporting
 // it afterwards — and the two findings that reported the other hand-edits are deleted,
-// because a Shipped doc is the one thing nobody is allowed to correct.
-func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, error) {
+// because a Submitted doc is the one thing nobody is allowed to correct.
+func Submit(templates fs.FS, r *Repo, id string, today time.Time) (*SubmitResult, error) {
 	target, err := r.WriteTarget(id)
 	if err != nil {
 		return nil, err
 	}
-	// A terminal status is terminal in both directions. `drop` refuses a Shipped doc as
-	// frozen history; this refused only Shipped, so `kit ship` on a retired feature exited
+	// A terminal status is terminal in both directions. `drop` refuses a Submitted doc as
+	// frozen history; this refused only Submitted, so `kit submit` on a retired feature exited
 	// 0 and reported `(was Dropped)` — the kit itself reopening an end state.
 	switch {
-	case target.Status == StatusShipped:
-		return nil, fmt.Errorf("%s is already Shipped", target.Name())
+	case IsSubmitted(target.Status):
+		return nil, fmt.Errorf("%s is already Submitted", target.Name())
 	case terminal(target.Status):
 		return nil, fmt.Errorf("%s is %s — it is a retired plan, not work to finish",
 			target.Name(), target.Status)
+	}
+	if target.Status != StatusDraft {
+		return nil, fmt.Errorf("%s has unknown status %q — run kit reopen %s --repair before submitting",
+			target.Name(), target.Status, id)
+	}
+	if err := r.PlanError(target); err != nil {
+		return nil, err
+	}
+	if blockers := r.BlockersFor(id); len(blockers) > 0 {
+		return nil, fmt.Errorf("%s is blocked: %s", target.Name(), blockers[0])
 	}
 	if open, total := target.TaskCount(); total == 0 {
 		return nil, fmt.Errorf("%s has no ## Tasks boxes — there is nothing to have finished",
@@ -56,51 +65,45 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 			target.Name(), open, clip(target.OpenTasks()[0], 60))
 	}
 
-	// The same call `Survey` makes, so the board and the command cannot disagree.
-	// Shipping here freezes a doc whose plan is wrong, and the protocol then forbids
-	// anyone to correct it — prevent before detecting. An ordinary error and not
-	// `NotYours`: nobody else holds this, the work is done and the plan is wrong, so the
-	// operator has to look.
+	if unwritten := target.Unwritten(); len(unwritten) > 0 {
+		return nil, fmt.Errorf("%s has no plan to submit: ## %s",
+			target.Name(), strings.Join(unwritten, ", ## "))
+	}
+
+	// Completion requires the same prerequisites the board and claim enforce.
 	if unmet := r.UnmetNeeds(target); len(unmet) > 0 {
-		return nil, fmt.Errorf("%s waits on %s: not shipped yet\n"+
-			"ship those first, or correct needs: to what was actually required",
+		return nil, fmt.Errorf("%s waits on %s: not integrated into this checkout yet\n"+
+			"integrate those first, or correct needs: to what was actually required",
 			target.Name(), strings.Join(unmet, ", "))
 	}
 
-	// Shipping is the claim-holder's to do. From any other checkout it freezes work in
-	// flight: `status: Shipped` is history the protocol forbids anyone to edit, so the
-	// agent actually holding the branch can no longer touch its own doc. `Survey` calls
-	// the same question Mine, and reports what it answers as yours.
+	// Only the owning checkout may submit an active claim.
 	if claims := r.Claims(id); len(claims) > 0 && !r.Mine(id) {
 		return nil, fmt.Errorf("%s is claimed by %s, which is not this checkout\n"+
-			"ship it from that worktree. If the branch is a leftover of yours, release "+
+			"submit it from that worktree. If the branch is a leftover of yours, release "+
 			"the claim first: kit release "+target.ID, target.Name(), strings.Join(claims, " and "))
 	}
 
-	// Whatever is still lying around here was made on the way to shipping: the last box
-	// is ticked in the commit that implements it, so a clean tree is the state the ship gate
-	// describes. Shipping over debris either commits it under a status change or leaves
+	// Whatever is still lying around here was made on the way to submitting: the last box
+	// is ticked in the commit that implements it, so a clean tree is the state the submit gate
+	// describes. Submitting over debris either commits it under a status change or leaves
 	// it for whoever works in this checkout next.
-	if dirty := r.DirtyFiles(); len(dirty) > 0 {
+	dirty, err := r.DirtyFiles()
+	if err != nil {
+		return nil, err
+	}
+	if len(dirty) > 0 {
 		shown := dirty
 		if len(shown) > 3 {
 			shown = append(shown[:3:3], fmt.Sprintf("and %d more", len(dirty)-3))
 		}
 		return nil, fmt.Errorf("this checkout has uncommitted or untracked files:\n  %s\n"+
-			"commit what belongs to the feature and remove the rest, then ship",
+			"commit what belongs to the feature and remove the rest, then submit",
 			strings.Join(shown, "\n  "))
 	}
 
-	// The last moment the doc can be edited at all. A ## Log that outweighs the rest of
-	// the document is the as-built doc in disguise — decisions, constants and formats
-	// filed where nothing reads them — and freezing it puts them out of reach of the rule
-	// that would have routed them.
-	if log, doc, over := target.LogWeight(); over {
-		return nil, fmt.Errorf("%s is %d%% ## Log (%d of %d words), so the plan is mostly "+
-			"a record of the work\n"+
-			"move what is true after this ships into %s, one line each, and leave in "+
-			"## Log only what changed the plan",
-			target.Name(), log*100/doc, log, doc, techPath(r))
+	if !r.Mine(id) {
+		return nil, fmt.Errorf("submit %s from its feature branch %s — submission on the trunk or a detached checkout bypasses review", id, target.Branch())
 	}
 
 	raw, err := os.ReadFile(target.Path)
@@ -110,22 +113,23 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	body := Normalise(string(raw))
 	stamped := today.UTC().Format(DateLayout)
 
-	updated, ok := SetStatus(body, StatusShipped)
+	updated, ok := SetStatus(body, StatusSubmitted)
 	if !ok {
 		return nil, fmt.Errorf("%s has no status: line in its frontmatter to set",
 			target.Name())
 	}
 	// AddField writes inside the frontmatter, including the insert for a doc carrying no
-	// shipped: key at all. That insert was a document-wide strings.Replace on the first
-	// `status: Shipped`, which is a frontmatter *value* before it is the status line — a
+	// submitted: key at all. That insert was a document-wide strings.Replace on the first
+	// `status: Submitted`, which is a frontmatter *value* before it is the status line — a
 	// doc whose title quotes a status had the date spliced into its title.
 	// SetStatus above has already proved there is a frontmatter, so this cannot fail.
-	updated, _ = AddField(updated, "shipped", stamped)
+	updated = RemoveField(updated, "shipped")
+	updated, _ = AddField(updated, "submitted", stamped)
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err
 	}
 
-	res := &ShipResult{Doc: target.Rel, Was: target.Status, HasRemote: len(r.remotes()) > 0}
+	res := &SubmitResult{Doc: target.Rel, Was: target.Status, HasRemote: len(r.remotes()) > 0}
 	// The trunk already holding the claim branch is the merge-early case: the work landed
 	// before the stamp, so the commit made below is not in the trunk and the instruction
 	// to push and wait means something different. Containment rather than authorship —
@@ -150,43 +154,33 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 	}
 
 	// The stamp is committed here rather than left for whoever ships to notice. A doc
-	// carrying `status: Shipped` only in the working tree is one session away from being
+	// carrying `status: Submitted` only in the working tree is one session away from being
 	// read as debris and discarded, and `audit` reads the tree, so it reports agreement
 	// while `HEAD` still says Draft. The dirty-tree refusal above is what makes this
 	// safe: nothing else is in the tree, so the commit is the stamp and the as-built doc
-	// in the one case where shipping created it.
+	// in the one case where submitting created it.
 	paths := []string{target.Path}
 	if res.TechCreated {
 		paths = append(paths, filepath.Join(r.Root, res.TechDoc))
 	}
 	if r.HasHistory() {
-		res.Commit = "Ship " + target.ID
+		res.Commit = "Submit " + target.ID
 		if err := r.commitPaths(res.Commit, paths...); err != nil {
 			// The write already happened, so the error says where the stamp is. Silence
 			// here would leave the loss this closes, one layer down.
-			return nil, fmt.Errorf("%s is stamped Shipped in %s, and committing it failed:\n%v\n"+
-				"commit that file yourself — the doc is shipped only once the commit exists",
+			return nil, fmt.Errorf("%s is stamped Submitted in %s, and committing it failed:\n%v\n"+
+				"commit that file yourself — the doc is submitted only once the commit exists",
 				target.Name(), target.Rel, err)
 		}
 	}
 
-	res.OpenLogs = strings.TrimSpace(target.Section("Log")) == ""
 	return res, nil
-}
-
-// techPath names the as-built doc: where the project keeps it, or where shipping would
-// create it in a project that has none.
-func techPath(r *Repo) string {
-	if r.Tech == "" {
-		return "docs/TECH.md"
-	}
-	return r.Rel(r.Tech)
 }
 
 // createTechDoc writes the as-built template into a project that arrived without one.
 //
 // Callers reach this only when the project has no as-built doc, so the O_EXCL is
-// not a second guard on that: it covers two agents shipping different features at
+// not a second guard on that: it covers two agents submitting different features at
 // once, both finding none and both trying to create it. The loser fails the create
 // and simply does not report having made one.
 func createTechDoc(templates fs.FS, r *Repo) (string, error) {

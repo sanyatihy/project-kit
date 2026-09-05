@@ -1,7 +1,7 @@
 package main
 
 // A file the protocol tells an agent to write is a file the kit has to write or
-// describe. `BACKLOG.md` was named by rule 14 and by `kit ship` while nothing created
+// describe. `BACKLOG.md` was named by rule 14 and by `kit submit` while nothing created
 // it and no topic printed its format, so an agent told to add a line had to invent one
 // — the binary naming something it does not have.
 //
@@ -114,7 +114,7 @@ func TestTheTemplatesFrontmatterCarriesNoProse(t *testing.T) {
 	if !found {
 		t.Fatalf("the template has no frontmatter block:\n%s", raw)
 	}
-	want := []string{"id", "title", "status", "created", "shipped", "needs"}
+	want := []string{"id", "title", "status", "created", "submitted", "needs"}
 	var keys []string
 	for _, line := range strings.Split(front, "\n") {
 		key, value, isField := strings.Cut(line, ":")

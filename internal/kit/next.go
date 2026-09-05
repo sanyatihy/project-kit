@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-// WIPLimit is how many features may be In progress before finishing beats
-// starting.
-const WIPLimit = 2
-
 // Backticks and asterisks are markup here; underscores are identifiers.
 var markupRe = regexp.MustCompile("[`*]")
 
@@ -46,7 +42,7 @@ type Item struct {
 	Moved *time.Time `json:"moved,omitempty"`
 }
 
-// Waiting is one feature on the review board: shipped by its builder, pushed, and not
+// Waiting is one feature on the review board: submitted by its builder, pushed, and not
 // on the trunk. It carries no task and no claim — there is nothing left to build, and
 // what to do with it is somebody else's decision.
 type Waiting struct {
@@ -69,7 +65,7 @@ type Plan struct {
 	Taken   []Item `json:"taken"`
 	Blocked []Item `json:"blocked"`
 
-	// AwaitingReview is the far side of ship: work that has left its builder and
+	// AwaitingReview is the far side of submit: work that has left its builder and
 	// arrived nowhere. Not part of the board above — none of it is claimable, and
 	// nothing here is anybody's to build.
 	AwaitingReview []Waiting `json:"awaiting_review,omitempty"`
@@ -78,6 +74,7 @@ type Plan struct {
 	// claims, empty when it claims none.
 	Branch   string `json:"branch,omitempty"`
 	Claiming string `json:"claiming,omitempty"`
+	Checkout string `json:"checkout,omitempty"` // next handoff for the current checkout
 
 	// Spike is the branch this checkout is on when the board is not routing it: neither
 	// a claim nor a plan round, which is what work that started without a doc looks like.
@@ -110,20 +107,6 @@ type Plan struct {
 	// --json — the output documented for agents — got a board and no instruction,
 	// and worked a feature the text output would have told it to leave alone.
 	Guidance string `json:"guidance"`
-}
-
-// InProgress counts the features somebody is holding, for the WIP warning. A claim is
-// what says work has started; there is no status for it to disagree with.
-func (p Plan) InProgress() int {
-	n := 0
-	for _, group := range [][]Item{p.Yours, p.Ready, p.Taken, p.Blocked} {
-		for _, item := range group {
-			if item.Mine || item.ClaimedBy != "" {
-				n++
-			}
-		}
-	}
-	return n
 }
 
 // unplanned names the first doc that is blocked only because nobody wrote it, and "" when
@@ -172,9 +155,10 @@ func NewPlan() Plan {
 func Survey(r *Repo) Plan {
 	plan := NewPlan()
 	plan.Branch = r.HeadBranch()
+	plan.Claiming = r.HeldClaim()
 	plan.Spike = spikeBranch(r, plan.Branch)
 	// Before the board, because the board is what this takes entries out of. A feature
-	// its builder has shipped is finished work waiting for a merge, not a claim somebody
+	// its builder has submitted is finished work waiting for a merge, not a claim somebody
 	// is holding, and it was reported as both — one feature under `taken` and again under
 	// `awaiting review`, which reads as two.
 	//
@@ -195,7 +179,7 @@ func Survey(r *Repo) Plan {
 		})
 	}
 	for _, f := range r.ActiveFeatures() {
-		if reviewing[f.ID] {
+		if reviewing[f.ID] || IsSubmitted(r.integratedDocs[f.Rel]) {
 			continue
 		}
 		open, total := f.TaskCount()
@@ -252,6 +236,9 @@ func Survey(r *Repo) Plan {
 		// question comes first because a human already has to answer it, so the
 		// dependency is not the thing standing in the way.
 		switch questions, unmet := r.BlockersFor(f.ID), r.UnmetNeeds(f); {
+		case (claim == "" || item.Mine) && r.PlanError(f) != nil:
+			item.WaitingOn = r.PlanError(f).Error()
+			plan.Blocked = append(plan.Blocked, item)
 		case len(questions) > 0:
 			item.WaitingOn = questions[0]
 			plan.Blocked = append(plan.Blocked, item)
@@ -273,9 +260,9 @@ func Survey(r *Repo) Plan {
 				// Naming the command rather than the edit, for `unfilled-template`'s
 				// reason: "set it to Draft" is an instruction to hand-edit the one field
 				// the kit owns, which is how the bad value got there.
-				item.WaitingOn = "unknown status " + f.Status + " — kit reset " + f.ID
+				item.WaitingOn = "unknown status " + f.Status + " — kit reopen " + f.ID + " --repair"
 				if f.Status == "" {
-					item.WaitingOn = "no status: — kit reset " + f.ID
+					item.WaitingOn = "no status: — kit reopen " + f.ID
 				}
 				plan.Blocked = append(plan.Blocked, item)
 			} else if prefix := f.FilenamePrefix(); prefix != "" && f.ID != "" && prefix != f.ID {
@@ -303,7 +290,7 @@ func Survey(r *Repo) Plan {
 				if _, total := f.TaskCount(); total == 0 {
 					item.WaitingOn = "no task boxes yet — write the plan, or kit drop it"
 				} else {
-					item.WaitingOn = "every task is ticked — ship it or add the next task"
+					item.WaitingOn = "every task is ticked — submit it or add the next task"
 				}
 				plan.Blocked = append(plan.Blocked, item)
 			} else if !r.PlanLanded(f) {
@@ -314,6 +301,9 @@ func Survey(r *Repo) Plan {
 				// it could be merged by anyone but its own author.
 				item.WaitingOn = waitingOnLanding(r, f)
 				item.Unlanded = true
+				plan.Blocked = append(plan.Blocked, item)
+			} else if why := r.foundationProblem(); why != "" {
+				item.WaitingOn = why
 				plan.Blocked = append(plan.Blocked, item)
 			} else {
 				plan.Ready = append(plan.Ready, item)
@@ -330,13 +320,17 @@ func Survey(r *Repo) Plan {
 	}
 	// After the work, so it reports what actually went unanswered.
 	plan.RemoteUnanswered = r.RemoteUnanswered()
+	plan.Checkout = r.checkoutHandoff(plan.Claiming)
+	if plan.Checkout == "" && plan.Claiming == "" && plan.Spike == "" && r.foundationAsked {
+		plan.Checkout = r.foundationIssue
+	}
 	plan.Guidance = guidanceFor(r, plan)
 	return plan
 }
 
 // waitingOnNeeds says what an unmet needs: is waiting for.
 //
-// A dependency that is Dropped can never ship, so "to ship first" is a
+// A dependency that is Dropped can never submit, so a waiting instruction is a
 // promise the board cannot keep: the agent reads it as a wait that ends, and it does not.
 // The two need opposite answers — one ends on its own, the other only when somebody edits
 // the field — so the line has to say which. `audit` already tells them apart; this is the
@@ -353,11 +347,11 @@ func waitingOnNeeds(r *Repo, unmet []string) string {
 	}
 	var parts []string
 	if len(pending) > 0 {
-		parts = append(parts, "needs "+strings.Join(pending, ", ")+" to ship first")
+		parts = append(parts, "needs "+strings.Join(pending, ", ")+" to merge first")
 	}
 	if len(dead) > 0 {
 		parts = append(parts, "needs "+strings.Join(dead, ", ")+
-			", which can never ship — edit needs:")
+			", which can never submit — edit needs:")
 	}
 	return strings.Join(parts, "; ")
 }
@@ -384,8 +378,15 @@ func waitingOnLanding(r *Repo, f *Feature) string {
 // documented path, found nothing, and decided for itself.
 func guidanceFor(r *Repo, plan Plan) string {
 	switch {
+	case plan.Checkout != "":
+		return plan.Checkout
 	case len(plan.Yours) > 0:
+		if plan.Yours[0].Task == "" {
+			return "all tasks are complete. Run the project gate, kit audit --strict, then kit submit " + plan.Yours[0].ID + "."
+		}
 		return "work the box named under yours, in this checkout. It is already claimed by you."
+	case len(plan.Ready) > 0 && plan.Claiming != "":
+		return "finish this checkout’s claim first. Start another feature from a separate, updated trunk checkout."
 	case len(plan.Ready) > 0:
 		return "take one with kit claim <id>, then work it in the worktree it prints."
 	// Before every arm below, all of which say some version of "there is nothing for you
@@ -411,8 +412,8 @@ func guidanceFor(r *Repo, plan Plan) string {
 	// on a round the trunk does not have, so telling the agent to stop here leaves the
 	// round sitting where nobody can build on it.
 	case plan.unlanded():
-		return "land the plan round on " + orTrunk(r.Trunk()) + " — a pull or merge " +
-			"request, if the default branch is protected — then run kit next again. " +
+		return "push the plan round and open a pull request for human review on " + orTrunk(r.Trunk()) + ". " +
+			"After it merges, update a trunk checkout and run kit next again. " +
 			"Nothing on a round can be claimed until the round is on the trunk."
 	case !plan.Empty():
 		return "nothing is free: every feature is claimed or waiting on something. " +
@@ -457,8 +458,8 @@ func reviewing(n int) string {
 	if n == 1 {
 		what = "One feature is"
 	}
-	return what + " awaiting review, listed above. Reviewing and merging one somebody " +
-		"else built is the work here; your own is never yours to merge."
+	return what + " awaiting review, listed above. Hand the pull requests to the human reviewer. " +
+		"Review comments may be addressed on their existing branches; your own work is never yours to merge."
 }
 
 // Progress is "3/6", or "" for a feature with no boxes to count. It reports what

@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	StatusDraft   = "Draft"
-	StatusShipped = "Shipped"
-	StatusDropped = "Dropped"
+	StatusDraft         = "Draft"
+	StatusSubmitted     = "Submitted"
+	StatusLegacyShipped = "Shipped"
+	StatusDropped       = "Dropped"
 
 	gitLogLimit = "500"
 	gitTimeout  = 30 * time.Second
@@ -24,7 +25,7 @@ const (
 	//
 	// It was 5s, which a working remote did not fit inside: `git ls-remote --heads` to
 	// GitHub over SSH measured 5.58s on an ordinary connection, so the review board went
-	// blank and `shipped-not-pushed` never ran, with nothing on the page saying why. Tune
+	// blank and `submitted-not-pushed` never ran, with nothing on the page saying why. Tune
 	// it against that number, and against RemoteUnanswered — a bound that expires is now
 	// reported rather than printed as an empty board.
 	remoteTimeout = 15 * time.Second
@@ -87,7 +88,7 @@ type Repo struct {
 	refsAuthoritative bool
 
 	// The remote's branch list, asked once. It cannot change under a single command, and
-	// `audit` asks it per Shipped feature: unmemoised, one ls-remote per doc took this
+	// `audit` asks it per Submitted feature: unmemoised, one ls-remote per doc took this
 	// repo's audit from under a second to two minutes.
 	heads      []string
 	headsKnown bool
@@ -108,11 +109,15 @@ type Repo struct {
 	headsPending chan headsResult
 
 	// Every feature doc's status on the remote's trunk, read in one pass. Asked once: it
-	// cannot change while one command runs, and shipped-not-pushed needs it per doc.
-	trunkDocs      map[string]string
-	trunkDocsAsked bool
-	headDocs       map[string]string
-	headDocsAsked  bool
+	// cannot change while one command runs, and submitted-not-pushed needs it per doc.
+	trunkDocs       map[string]string
+	trunkDocsAsked  bool
+	integratedDocs  map[string]string
+	integratedAsked bool
+	foundationAsked bool
+	foundationIssue string
+	headDocs        map[string]string
+	headDocsAsked   bool
 
 	// The branch this checkout is on and the remotes it has, asked once each. Neither can
 	// change while one command runs, and both were being asked per feature: 62 of the 116
@@ -233,8 +238,12 @@ func (r *Repo) readFeature(path string) *Feature {
 		f.Title = fields["title"]
 		f.Status = fields["status"]
 		f.Needs = ParseIDList(fields["needs"])
-		f.Shipped = ParseDate(fields["shipped"])
-		f.shippedText = strings.TrimSpace(fields["shipped"])
+		stamp, present := fields["submitted"]
+		if !present {
+			stamp = fields["shipped"]
+		}
+		f.Submitted = ParseDate(stamp)
+		f.submittedText = strings.TrimSpace(stamp)
 		f.needsText = strings.TrimSpace(fields["needs"])
 		f.Duplicates = DuplicateKeys(text)
 		f.sections = ParseSections(body)
@@ -255,11 +264,11 @@ func (r *Repo) FeatureByID(id string) *Feature {
 	return nil
 }
 
-// WriteTarget is FeatureByID for the commands that write — `ship`, `drop` and `block`.
+// WriteTarget is FeatureByID for the commands that write — `submit`, `drop` and `block`.
 //
 // Reading a doc tolerates an ambiguity that writing one cannot. A key declared twice makes
 // the read and the write different lines: ParseFrontmatter keeps the last occurrence and
-// SetField rewrites the first, so `ship` reported success, left two contradictory statuses
+// SetField rewrites the first, so `submit` reported success, left two contradictory statuses
 // behind and `audit` repeated the same finding with the same fix for ever. Which line the
 // author meant is not the kit's to guess.
 func (r *Repo) WriteTarget(id string) (*Feature, error) {
@@ -294,22 +303,55 @@ func (r *Repo) WriteTarget(id string) (*Feature, error) {
 	return target, nil
 }
 
-// UnmetNeeds lists the ids a feature is still waiting on, in declared order.
-//
-// Shipped is the bar rather than merged. `kit ship` is the moment the kit knows a
-// feature's work is done; merging is a human's and follows. Reading merge state
-// instead would make the board's answer depend on how quickly somebody clicked.
-//
-// An id that names nothing, or names a feature that was Dropped, counts
-// as unmet: it can never be satisfied, so the work genuinely cannot start. `audit`
-// reports why; `next` only has to refuse to hand it out.
+// PlanError rejects ambiguous plans before routing or changing their lifecycle.
+func (r *Repo) PlanError(f *Feature) error {
+	if _, err := r.WriteTarget(f.ID); err != nil {
+		return err
+	}
+	if f.Unreadable {
+		return fmt.Errorf("%s cannot be read", f.Rel)
+	}
+	if !idListOnlyRe.MatchString(f.needsText) {
+		return fmt.Errorf("%s: needs: is not an id list", f.Name())
+	}
+	if r.needsCycle(f.ID, f.ID, map[string]bool{}) {
+		return fmt.Errorf("%s: dependency cycle in needs: — remove the circular dependency", f.Name())
+	}
+	for _, id := range f.Needs {
+		if dep := r.FeatureByID(id); dep != nil {
+			if _, err := r.WriteTarget(id); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *Repo) needsCycle(start, id string, seen map[string]bool) bool {
+	if seen[id] {
+		return false
+	}
+	seen[id] = true
+	f := r.FeatureByID(id)
+	if f == nil || terminal(f.Status) {
+		return false
+	}
+	for _, need := range f.Needs {
+		if need == start || r.needsCycle(start, need, seen) {
+			return true
+		}
+	}
+	return false
+}
+
+// UnmetNeeds requires a submitted prerequisite on the trunk and in this checkout.
+// A stamp on an unmerged branch is a review request, not an available foundation.
 func (r *Repo) UnmetNeeds(f *Feature) []string {
 	var unmet []string
 	for _, id := range f.Needs {
-		if id == f.ID {
-			continue // self-reference is a cycle, and audit says so
-		}
-		if dep := r.FeatureByID(id); dep == nil || dep.Status != StatusShipped {
+		dep := r.FeatureByID(id)
+		if dep == nil || !IsSubmitted(dep.Status) ||
+			!IsSubmitted(r.integratedStatuses()[dep.Rel]) || !IsSubmitted(r.headStatuses()[dep.Rel]) {
 			unmet = append(unmet, id)
 		}
 	}
@@ -328,7 +370,9 @@ func (r *Repo) UnmetNeeds(f *Feature) []string {
 // answering otherwise would block the first claim of every project that has one branch
 // and no remote.
 func (r *Repo) PlanLanded(f *Feature) bool {
-	return r.trunkRef() == "" || r.trackedOnTrunk(f.Rel)
+	// Unknown landing state is handled by foundationProblem, which names the fetch.
+	// It must not be reported as a plan known to be absent from the trunk.
+	return r.trackedOnTrunk(f.Rel) || r.trunkPaths == nil
 }
 
 // Rel makes a path relative to the project root, for display.

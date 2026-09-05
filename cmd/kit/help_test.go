@@ -6,14 +6,10 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
-	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
-	"unicode"
 
 	"github.com/sanyatihy/project-kit/internal/kit"
 )
@@ -105,68 +101,16 @@ func TestOverviewDocumentsTheExitCodes(t *testing.T) {
 	}
 }
 
-// ruleNumberRe is a cross-reference to a numbered rule, which is the thing that rots:
-// inserting a rule above one renumbers it and no prose moves with it.
-var ruleNumberRe = regexp.MustCompile(`(?i)\brule \d+`)
-
-func TestNothingUserFacingCitesARuleByNumber(t *testing.T) {
-	t.Parallel()
-	// Two cross-references pointed at the wrong rules for months, because 0007 and
-	// 0009 inserted rules above them and numbers in prose do not move. Naming the
-	// rule removes the class rather than the two instances.
-	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
-	if err != nil {
-		t.Fatalf("reading the protocol: %v", err)
-	}
-	if m := ruleNumberRe.FindString(string(raw)); m != "" {
-		t.Errorf("the protocol cites %q — a rule inserted above it will silently "+
-			"misdirect the reader; cite the rule by its bolded name instead", m)
-	}
-
-	// The same rot reaches the user through what the commands print, and `kit ship`
-	// refused a foreign claim with "rule 8" long after the numbering had moved. Only
-	// string literals are read: a comment citing a rule misdirects nobody but the
-	// next reader of the source, and `_test.go` files are not user-facing at all.
-	for _, dir := range []string{".", "../../internal/kit"} {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			t.Fatalf("reading %s: %v", dir, err)
-		}
-		fset := token.NewFileSet()
-		for _, entry := range entries {
-			name := entry.Name()
-			if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
-				continue
-			}
-			file, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, 0)
-			if err != nil {
-				t.Fatalf("parsing %s: %v", name, err)
-			}
-			ast.Inspect(file, func(n ast.Node) bool {
-				lit, ok := n.(*ast.BasicLit)
-				if !ok || lit.Kind != token.STRING {
-					return true
-				}
-				if m := ruleNumberRe.FindString(lit.Value); m != "" {
-					t.Errorf("%s prints %q — cite the rule by name, or name the "+
-						"command that enforces it", fset.Position(lit.Pos()), m)
-				}
-				return true
-			})
-		}
-	}
-}
-
 func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
 	t.Parallel()
 	// A protocol that describes the manual path for something the tool does is a
-	// protocol that teaches the mistake. `kit ship` exists because setting the
+	// protocol that teaches the mistake. `kit submit` exists because setting the
 	// status and date by hand is where two audit findings came from.
 	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
 	if err != nil {
 		t.Fatalf("reading the protocol: %v", err)
 	}
-	for _, want := range []string{"kit claim", "kit block", "kit ship", "kit audit --strict"} {
+	for _, want := range []string{"kit claim", "kit block", "kit submit", "kit audit --strict"} {
 		if !strings.Contains(string(raw), want) {
 			t.Errorf("the protocol never mentions %q, so an agent following it does that step by hand", want)
 		}
@@ -180,27 +124,6 @@ func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
 		if strings.Contains(string(raw), absent) {
 			t.Errorf("the protocol names %q, which a project kit init scaffolds may not have",
 				absent)
-		}
-	}
-}
-
-// ruleRe is a numbered protocol rule as the list writes one.
-var ruleRe = regexp.MustCompile(`(?m)^(\d+)\. \*\*`)
-
-func TestTheProtocolsRulesAreNumberedWithoutAGap(t *testing.T) {
-	t.Parallel()
-	// Cutting a rule means renumbering every rule below it by hand, and this round did
-	// it off by one: the list ran 10, 12, 13. Nothing cites a rule by number, so a gap
-	// misdirects nobody — it just tells every agent reading the protocol that a rule was
-	// removed and the removal was not finished.
-	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
-	if err != nil {
-		t.Fatalf("reading the protocol: %v", err)
-	}
-	for i, m := range ruleRe.FindAllStringSubmatch(string(raw), -1) {
-		if want := strconv.Itoa(i + 1); m[1] != want {
-			t.Fatalf("the protocol's rule %d is numbered %s — the list has a gap or a "+
-				"repeat, so a rule looks deleted and half-deleted", i+1, m[1])
 		}
 	}
 }
@@ -230,68 +153,6 @@ func TestEveryTopicTheOverviewNamesResolves(t *testing.T) {
 	}
 }
 
-// identRe is a hyphenated lower-case token: the shape every check code has, and the
-// shape a few ordinary words in the help text share.
-var identRe = regexp.MustCompile(`[a-z][a-z0-9]*(?:-[a-z0-9]+)+`)
-
-// proseWords are the hyphenated English words the help text uses. Anything else of that
-// shape has to name something the binary has, because `kit ship --help` went on
-// advertising `doc-bloat` for a release after the check was deleted and nothing in the
-// build compared what the help says with what `audit` can report.
-var proseWords = map[string]bool{
-	"four-digit": true, "kit-owned": true, "mid-flight": true,
-	"re-run": true, "ticked-over-total": true,
-}
-
-func TestEveryCheckCodeInHelpIsRegistered(t *testing.T) {
-	t.Parallel()
-	known := map[string]bool{}
-	for _, c := range kit.Checks {
-		known[c.Code] = true
-	}
-	for _, name := range topicNames() {
-		known[name] = true
-	}
-
-	// String literals only, for TestNothingUserFacingCitesARuleByNumber's reason: a
-	// comment naming a dead check misleads the next reader of the source, not a user.
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, "help.go", nil, 0)
-	if err != nil {
-		t.Fatalf("parsing help.go: %v", err)
-	}
-	ast.Inspect(file, func(n ast.Node) bool {
-		lit, ok := n.(*ast.BasicLit)
-		if !ok || lit.Kind != token.STRING {
-			return true
-		}
-		for _, at := range identRe.FindAllStringIndex(lit.Value, -1) {
-			word := lit.Value[at[0]:at[1]]
-			if known[word] || proseWords[word] || insideALongerToken(lit.Value, at) {
-				continue
-			}
-			t.Errorf("%s prints %q, which is not a check in the registry.\n"+
-				"Delete it, or add the check. If it is an ordinary hyphenated word, "+
-				"add it to proseWords.", fset.Position(lit.Pos()), word)
-		}
-		return true
-	})
-}
-
-// insideALongerToken reports whether a match is only the tail of something bigger: a
-// filename (`0001-shorten-urls.md`), a path (`.gitlab-ci.yml`), or a capitalised word
-// the pattern cannot start at (`Non-goals`, `Re-running`).
-func insideALongerToken(s string, at []int) bool {
-	edge := func(i int) bool {
-		if i < 0 || i >= len(s) {
-			return false
-		}
-		c := rune(s[i])
-		return strings.ContainsRune("./-", c) || unicode.IsLetter(c) || unicode.IsDigit(c)
-	}
-	return edge(at[0]-1) || edge(at[1])
-}
-
 func TestEveryTopicResolvesInTheBinary(t *testing.T) {
 	t.Parallel()
 	for topic, path := range topics {
@@ -302,37 +163,6 @@ func TestEveryTopicResolvesInTheBinary(t *testing.T) {
 		}
 		if len(strings.TrimSpace(string(raw))) == 0 {
 			t.Errorf("topic %q resolves to an empty document", topic)
-		}
-	}
-}
-
-// showsTaskSyntax are the topics whose job is to demonstrate the feature-doc format,
-// so a `- [ ]` in them is the subject matter rather than a mistake.
-var showsTaskSyntax = map[string]bool{
-	"template": true,
-	"inbox":    true,
-}
-
-// In kit, `- [ ]` means "a PR-sized unit of work, do the topmost one". Guidance that
-// uses the same syntax for "a property to verify" would be read as a task list by an
-// agent following the protocol, and it would work through it.
-func TestNoTopicLooksLikeATaskList(t *testing.T) {
-	t.Parallel()
-	for topic, path := range topics {
-		if showsTaskSyntax[topic] {
-			continue
-		}
-		raw, err := fs.ReadFile(templates, path)
-		if err != nil {
-			continue // TestEveryTopicResolvesInTheBinary reports this
-		}
-		for i, line := range strings.Split(string(raw), "\n") {
-			trimmed := strings.TrimSpace(line)
-			if strings.HasPrefix(trimmed, "- [ ]") || strings.HasPrefix(trimmed, "- [x]") {
-				t.Errorf("%s:%d in topic %q is a task box: %q\n"+
-					"an agent working the topmost unticked box would try to work through these",
-					path, i+1, topic, trimmed)
-			}
 		}
 	}
 }

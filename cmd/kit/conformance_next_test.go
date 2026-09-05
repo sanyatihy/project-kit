@@ -204,16 +204,16 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 	if !slices.Contains(plan.Blocked[0].Needs, "0001") {
 		t.Errorf("blocked 0002 needs = %v, want it to name 0001", plan.Blocked[0].Needs)
 	}
-	p.run("next").ok().has("needs 0001 to ship first")
+	p.run("next").ok().has("needs 0001 to merge first")
 
-	// Shipped is the bar, not merged.
+	// With no remote, the submitted snapshot on local trunk is integrated.
 	p.write("docs/features/0001-base.md",
-		doc("0001", "Base", "Shipped", "shipped: 2026-01-02", "- [x] Do it"))
-	p.commitAll("ship 0001")
+		doc("0001", "Base", "Submitted", "submitted: 2026-01-02", "- [x] Do it"))
+	p.commitAll("submit 0001")
 
 	plan = p.plan("next", "--json")
 	if len(plan.Blocked) != 0 {
-		t.Errorf("blocked = %+v, want nothing once the dependency shipped", plan.Blocked)
+		t.Errorf("blocked = %+v, want nothing once the dependency submitted", plan.Blocked)
 	}
 	if len(plan.Ready) != 1 || plan.Ready[0].ID != "0002" {
 		t.Errorf("ready = %+v, want 0002 released", plan.Ready)
@@ -222,7 +222,7 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 
 func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 	t.Parallel()
-	// The board promised a wait that never ends: "waiting on: needs 0001 to ship first"
+	// The board promised a wait that never ends: "waiting on: needs 0001 to merge first"
 	// about a feature that is Dropped. The two states need opposite fixes — one ends on
 	// its own, the other only when somebody edits needs: — so the line has to say which.
 	dead := setUp(t)
@@ -231,8 +231,8 @@ func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
 
 	r := dead.run("next").ok()
-	r.has("blocked", "0002", "can never ship")
-	r.lacks("to ship first")
+	r.has("blocked", "0002", "can never submit")
+	r.lacks("to merge first")
 
 	// The whole sentence, read from --json rather than the page: the printed line is
 	// clipped for a narrow terminal, and agents read this format.
@@ -241,16 +241,16 @@ func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 		t.Fatalf("blocked = %+v, want just 0002", blocked)
 	}
 	if !strings.Contains(blocked[0].WaitingOn, "Dropped") {
-		t.Errorf("waiting_on = %q, want it to name the status that can never ship",
+		t.Errorf("waiting_on = %q, want it to name the status that can never submit",
 			blocked[0].WaitingOn)
 	}
 
-	// And a dependency that simply has not shipped yet keeps the wait that does end.
+	// And a dependency that simply has not submitted yet keeps the wait that does end.
 	pending := setUp(t)
 	feature(pending, "0001", "base", "Base", "Draft", "- [ ] Do it")
 	pending.write("docs/features/0002-store.md",
 		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
-	pending.run("next").ok().has("needs 0001 to ship first").lacks("can never ship")
+	pending.run("next").ok().has("needs 0001 to merge first").lacks("can never submit")
 }
 
 func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
@@ -350,7 +350,7 @@ func TestNextIsNotBlockedByAnFYIQuestion(t *testing.T) {
 
 func TestNextBlocksAFeatureWithEveryBoxTicked(t *testing.T) {
 	t.Parallel()
-	// Nothing left to do is not the same as ready to work: it needs shipping or a
+	// Nothing left to do is not the same as ready to work: it needs submitting or a
 	// next task, and silently offering nothing would hide that.
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [x] Done\n- [x] Also done")
@@ -372,7 +372,7 @@ func TestNextOffersADraftAsWork(t *testing.T) {
 	r.lacks("waiting on a human")
 }
 
-func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
+func TestNextDoesNotLimitIndependentAgents(t *testing.T) {
 	t.Parallel()
 	// Counted from claims, which is the only record that somebody started something.
 	const warning = "in progress at once"
@@ -393,7 +393,7 @@ func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
 
 	over := setUp(t)
 	claimed(over, "0001", "0002", "0003")
-	over.run("next").ok().has(warning)
+	over.run("next").ok().lacks(warning)
 }
 
 func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
@@ -440,13 +440,14 @@ func TestNextNeverOffersAClaimThatWouldBeRefused(t *testing.T) {
 	}
 	// And the closing line is the reader's own next action. "Stopping here is the right
 	// outcome" would leave the round sitting where nobody can build on it.
-	if !strings.Contains(plan.Guidance, "land the plan round on main") {
-		t.Errorf("guidance says %q, which never says to land the round", plan.Guidance)
+	if !strings.Contains(plan.Guidance, "open a pull request for human review on main") {
+		t.Errorf("guidance says %q, which never names the planning review handoff", plan.Guidance)
 	}
 
 	// The quiet half: the same feature, once the round has landed.
 	a.git("checkout", "-q", trunk)
 	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
+	a.git("push", "origin", "HEAD")
 
 	a.run("next").ok().has("start here", "0008", "kit claim 0008")
 }
@@ -455,7 +456,7 @@ func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
 	t.Parallel()
 	// Measured before this existed: standing in 0001's checkout, `next` offered 0002
 	// under "start here". Followed literally that begins a second feature in the
-	// first one's branch, and the two ship as one.
+	// first one's branch, and the two submit as one.
 	p := setUp(t)
 	feature(p, "0001", "mine", "Mine", "Draft", "- [ ] Finish this")
 	feature(p, "0002", "other", "Other", "Draft", "- [ ] A different thing")
@@ -493,7 +494,7 @@ func TestAClaimedCheckoutIsNotOfferedOtherWorkEvenWhenItsOwnIsBlocked(t *testing
 func TestNextOnAnUnsetUpProjectSaysHowToFixItAndExitsTwo(t *testing.T) {
 	t.Parallel()
 	// Nothing was surveyed, so an empty board is not a report that there is nothing to
-	// do. It exited 0, which is the same answer a project with every feature shipped
+	// do. It exited 0, which is the same answer a project with every feature submitted
 	// gets — and the one a script cannot tell apart from it.
 	p := newProject(t)
 	p.run("next").fails(2).has("not set up yet", "kit init")
@@ -529,7 +530,7 @@ func TestNextStillBlocksOnAMalformedLineThatNamesTheFeature(t *testing.T) {
 func TestNextTellsAnEmptyPlanApartFromAFinishedOne(t *testing.T) {
 	t.Parallel()
 	// Both leave nothing to do, and the fixes are opposite: one needs the plan
-	// written, the other needs shipping.
+	// written, the other needs submitting.
 	never := setUp(t)
 	feature(never, "0001", "empty", "Empty", "Draft", "")
 	never.run("next").ok().has("no task boxes yet")
@@ -679,8 +680,8 @@ func shipOnItsBranch(p *project, id, slug, title string) {
 	p.run("claim", id).ok()
 	w := p.claimWorktree(id + "-" + slug)
 	w.write("thing.txt", "the work\n")
-	feature(w, id, slug, title, "Shipped", "- [x] Build it")
-	w.commitAll("build and ship " + id)
+	feature(w, id, slug, title, "Submitted", "- [x] Build it")
+	w.commitAll("build and submit " + id)
 	w.git("push", "-q", "origin", "HEAD:refs/heads/"+id+"-"+slug)
 }
 
@@ -707,7 +708,7 @@ func TestNextNamesASpikeRatherThanRefusingIt(t *testing.T) {
 	a.run("next").ok().lacks("not routing it")
 }
 
-func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
+func TestGuidanceHandsReviewToTheHuman(t *testing.T) {
 	t.Parallel()
 	// 0013's rule: never leave an agent without an instruction. A board with nothing
 	// free and a feature pushed and unmerged has work on it, so "stopping here is the
@@ -715,7 +716,7 @@ func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
 	a, _ := twoAgents(t)
 	shipOnItsBranch(a, "0007", "widget", "A widget")
 
-	r := a.run("next").ok().has("awaiting review", "is the work here")
+	r := a.run("next").ok().has("awaiting review", "human reviewer")
 	if strings.Contains(r.Stdout, "Stopping here is the right outcome") {
 		t.Errorf("next told the agent to stop while a feature waits for review%s", r.context())
 	}
@@ -729,9 +730,9 @@ func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
 
 func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 	t.Parallel()
-	// The blind spot this closes: from the trunk, a feature shipped on its branch and
+	// The blind spot this closes: from the trunk, a feature submitted on its branch and
 	// never merged is invisible. The doc here still says Draft — the status that
-	// matters is the one on the branch, which is the only place the ship happened.
+	// matters is the one on the branch, which is the only place the submit happened.
 	a, _ := twoAgents(t)
 	shipOnItsBranch(a, "0007", "widget", "A widget")
 
@@ -753,12 +754,13 @@ func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 	// The quiet half: once the work is on the trunk there is nothing to say, whether or
 	// not the branch was deleted afterwards.
 	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+	a.git("push", "origin", "HEAD")
 	if got := a.plan("next", "--json").AwaitingReview; len(got) != 0 {
 		t.Errorf("after landing, %d still awaiting review: %+v", len(got), got)
 	}
 }
 
-func TestAShippedButUnmergedFeatureAppearsOnceOnTheBoard(t *testing.T) {
+func TestASubmittedButUnmergedFeatureAppearsOnceOnTheBoard(t *testing.T) {
 	t.Parallel()
 	// It was listed under `taken` and again under `awaiting review`, which reads as two
 	// features. The second is the true one: nothing is left to build, and the claim is
@@ -768,7 +770,7 @@ func TestAShippedButUnmergedFeatureAppearsOnceOnTheBoard(t *testing.T) {
 
 	plan := a.plan("next", "--json")
 	if !plan.Empty() {
-		t.Errorf("a shipped-and-unmerged feature is still on the board: %+v", plan)
+		t.Errorf("a submitted-and-unmerged feature is still on the board: %+v", plan)
 	}
 	if len(plan.AwaitingReview) != 1 {
 		t.Fatalf("awaiting review = %+v, want just 0007", plan.AwaitingReview)
@@ -900,7 +902,7 @@ func TestTheBoardCountsTheBoxesTheRemoteHas(t *testing.T) {
 	b.git("fetch", "-q", "origin")
 
 	w := a.claimWorktree("0007-widget")
-	feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [ ] Ship it")
+	feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [ ] Submit it")
 	w.commitAll("0007: one box")
 	w.git("push", "-q", "origin", "0007-widget")
 

@@ -90,7 +90,7 @@ func TestCIRunsExactlyTheMakefilesList(t *testing.T) {
 
 // The split is the point: `check` is everything a developer can run offline, and what
 // is left needs the network. A network step that crept into the gate would make the
-// documented pre-ship command fail on a plane.
+// documented pre-submit command fail on a plane.
 func TestTheGateIsCIMinusTheNetwork(t *testing.T) {
 	t.Parallel()
 	makefile := readOrFail(t, makefilePath)
@@ -107,13 +107,31 @@ func TestTheGateIsCIMinusTheNetwork(t *testing.T) {
 		}
 	}
 
-	// `make lint` skips with a notice when golangci-lint is absent — that skip is
-	// what keeps a fresh clone green, and it is only safe while CI installs it.
+	// CI provides the required linter before running the gate.
 	if !strings.Contains(workflow, "golangci/golangci-lint-action@") {
-		t.Errorf("%s installs no linter, so `make check` there skips the lint in silence", workflowPath)
+		t.Errorf("%s installs no linter, so `make check` there cannot run", workflowPath)
 	}
 	if strings.Contains(workflow, "version: latest") {
 		t.Errorf("%s takes whatever golangci-lint released today, which turns the trunk "+
 			"red with no commit behind it", workflowPath)
+	}
+}
+
+func TestGoScaffoldProvidesTheLinterItsGateRequires(t *testing.T) {
+	t.Parallel()
+	github := readOrFail(t, "../../templates/stacks/go/check.yml")
+	gitlab := readOrFail(t, "../../templates/stacks/go/gitlab-ci.yml")
+	for _, want := range []string{"version: v2.12.2", "install-only: true", "timeout-minutes: 15"} {
+		if !strings.Contains(github, want) {
+			t.Errorf("Go GitHub gate lacks %q", want)
+		}
+	}
+	for _, want := range []string{"golangci-lint@v2.12.2", "timeout: 15m"} {
+		if !strings.Contains(gitlab, want) {
+			t.Errorf("Go GitLab gate lacks %q", want)
+		}
+	}
+	if !strings.Contains(readOrFail(t, workflowPath), "fetch-depth: 0") {
+		t.Error("the kit audit needs trunk history to protect frozen documents")
 	}
 }

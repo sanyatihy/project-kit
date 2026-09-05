@@ -266,7 +266,7 @@ func (r *Repo) remoteTip(remote, branch string) (string, bool) {
 // than provoking a call nobody needed.
 func (r *Repo) RemoteUnanswered() bool {
 	r.collectRemoteHeads()
-	return r.headsFailed
+	return r.headsFailed || (r.reservationsAsked && !r.reservationsFresh && !r.Offline && len(r.remotes()) > 0)
 }
 
 // branchName drops a remote prefix, so origin/0009-thing and 0009-thing are
@@ -347,7 +347,7 @@ func (r *Repo) TagDistance() (tag string, behind int, ok bool) {
 // outside printable ASCII — `"docs/features/0001-bl\303\240nk.md"` — and every one of
 // these answers is then compared against a name `os.ReadDir` produced, so the lookup
 // silently misses. One accented character disabled `unfilled-template` and
-// `done-not-shipped` on that doc, and made `shipped-not-pushed` fire at HIGH on work
+// `done-not-submitted` on that doc, and made `submitted-not-pushed` fire at HIGH on work
 // that was pushed. `-z` also settles a newline inside a filename, which no line-oriented
 // parse can.
 func gitPaths(out string) []string {
@@ -369,10 +369,12 @@ func gitPaths(out string) []string {
 func (r *Repo) trackedOnTrunk(rel string) bool {
 	if !r.trunkPathsAsked {
 		r.trunkPathsAsked = true
-		r.trunkPaths = map[string]bool{}
-		if ref := r.trunkRef(); ref != "" {
-			for _, path := range gitPaths(r.git("ls-tree", "-r", "-z", "--name-only", ref)) {
-				r.trunkPaths[path] = true
+		if ref := r.integrationRef(); ref != "" {
+			if out, err := r.gitRun("ls-tree", "-r", "-z", "--name-only", ref); err == nil {
+				r.trunkPaths = map[string]bool{}
+				for _, path := range gitPaths(out) {
+					r.trunkPaths[path] = true
+				}
 			}
 		}
 	}
@@ -400,7 +402,7 @@ func (r *Repo) emptyTree() (string, error) {
 }
 
 // commitDate is when a revision was last committed, or the zero time. How long a branch
-// has waited is measured from here rather than from the doc's shipped:, which is a date
+// has waited is measured from here rather than from the doc's submitted:, which is a date
 // and so cannot tell an hour from a day.
 func (r *Repo) commitDate(rev string) time.Time {
 	if out := strings.TrimSpace(r.git("log", "-1", "--format=%cI", rev)); out != "" {
@@ -416,11 +418,11 @@ func (r *Repo) commitDate(rev string) time.Time {
 // which is what keeps build output and local settings out of the answer.
 //
 // Unknown answers empty, the way every other git question here does. This one feeds a
-// refusal, so inventing files from a failed call would block a ship for no reason.
-func (r *Repo) DirtyFiles() []string {
+// refusal, so inventing files from a failed call would block a submit for no reason.
+func (r *Repo) DirtyFiles() ([]string, error) {
 	out, err := r.gitRun("status", "--porcelain", "-z")
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	var paths []string
 	records := gitPaths(out)
@@ -436,7 +438,7 @@ func (r *Repo) DirtyFiles() []string {
 			i++
 		}
 	}
-	return paths
+	return paths, nil
 }
 
 // commitPaths commits exactly the paths named and nothing else.

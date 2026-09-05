@@ -72,10 +72,10 @@ func TestReleaseForceDeletesWorkOnPurpose(t *testing.T) {
 	a.run("claim", "0007").ok()
 	workOn(t, a, "0007-widget")
 
-	a.run("release", "0007", "--force").ok()
+	a.run("release", "0007", "--discard").ok()
 
 	if hasRemoteBranch(t, a, "0007-widget") {
-		t.Error("--force exited 0 and left the claim on the remote")
+		t.Error("--discard exited 0 and left the claim on the remote")
 	}
 }
 
@@ -118,7 +118,7 @@ func TestReleaseRefusesAClaimThisCloneNeverCreated(t *testing.T) {
 	a.run("claim", "0007").ok()
 	b.git("fetch", "-q", "origin")
 
-	b.run("release", "0007").fails(2).errHas("never created", "--force")
+	b.run("release", "0007").fails(2).errHas("never created", "owner")
 
 	if !hasRemoteBranch(t, a, "0007-widget") {
 		t.Fatal("the refusal deleted the winner's claim anyway")
@@ -165,8 +165,8 @@ func TestATagNamedLikeTheClaimDoesNotStrandIt(t *testing.T) {
 	// A tag and a branch may share a name, and git then writes the branch as
 	// `heads/0007-widget` wherever it shortens a ref for a reader. Read as the claiming
 	// branch, that name matches nothing: `release` said it was a branch this clone never
-	// created and refused for as long as the tag existed, so only `--force` got out — and
-	// `--force` is the flag for destroying an agent's live claim.
+	// created and refused for as long as the tag existed, so only `--discard` got out — and
+	// `--discard` is the flag for destroying an agent's live claim.
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
 	trunk := a.headBranch()
@@ -186,7 +186,7 @@ func TestATagNamedLikeTheClaimDoesNotStrandIt(t *testing.T) {
 
 // The deleted-commit case, reproduced: one checkout's copy of the claim was left behind
 // while another pushed real work to the same branch. `release` read the copy, called the
-// branch empty, and deleted the ref carrying the commits — exit 0, no `--force`, and the
+// branch empty, and deleted the ref carrying the commits — exit 0, no `--discard`, and the
 // work unreachable.
 func TestReleaseRefusesWhenTheRemoteHasCommitsThisCheckoutHasNotSeen(t *testing.T) {
 	t.Parallel()

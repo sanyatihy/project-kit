@@ -119,6 +119,12 @@ var auditCases = []struct {
 	code  string
 	setUp func(p *project)
 }{
+	{"frozen-doc", func(p *project) {
+		feature(p, "0007", "frozen", "Frozen", "Submitted", "- [x] Done")
+		p.commitAll("submitted on trunk")
+		p.git("switch", "-c", "change-history")
+		p.write("docs/features/0007-frozen.md", doc("0007", "Reopened", "Draft", "", "- [ ] Again"))
+	}},
 	{"duplicate-id", func(p *project) {
 		// Set up the way the race actually produces it: two agents off the same base
 		// each take the next free ID, and the differing slugs mean the two files have
@@ -131,33 +137,33 @@ var auditCases = []struct {
 		// One doc, two statuses. The parser keeps the last and every writer rewrote the
 		// first, so the finding used to survive its own fix.
 		p.write("docs/features/0002-twice.md",
-			"---\nid: 0002\ntitle: Twice\nstatus: Shipped\nstatus: Draft\n"+
+			"---\nid: 0002\ntitle: Twice\nstatus: Submitted\nstatus: Draft\n"+
 				"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n\n"+
 				"## Tasks\n- [ ] Do it\n\n## Log\n- 2026-01-01 — started.\n")
 	}},
 	{"stalled", func(p *project) {
 		abandonedClaim(p, "0002", "stuck", 40)
 	}},
-	{"shipped-not-pushed", func(p *project) {
-		// The state four features reached in one session: Shipped in the doc, committed
+	{"submitted-not-pushed", func(p *project) {
+		// The state four features reached in one session: Submitted in the doc, committed
 		// here, and on no remote. A remote has to exist for the question to have an
 		// answer at all — with none, the kit says nothing about where work is not.
 		origin := p.t.TempDir()
 		gitIn(p.t, origin, "init", "-q", "--bare", ".")
 		p.git("remote", "add", "origin", origin)
-		p.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
-			"shipped: "+daysAgo(1), "- [x] Built it"))
-		p.commitAll("ship 0002 and tell nobody")
+		p.write("docs/features/0002-done.md", doc("0002", "Done", "Submitted",
+			"submitted: "+daysAgo(1), "- [x] Built it"))
+		p.commitAll("submit 0002 and tell nobody")
 	}},
 	{"status-uncommitted", func(p *project) {
 		// The loss this closes: the stamp is in the file and HEAD still carries the doc
 		// as open work, which the session after this one reads as a stray edit and
-		// discards. `ship` commits its own stamp now, so this is what an older binary,
+		// discards. `submit` commits its own stamp now, so this is what an older binary,
 		// a rebase, or a hand-edit leaves behind.
 		p.write("docs/features/0002-done.md", doc("0002", "Done", "Draft", "", "- [x] Built it"))
 		p.commitAll("the work, and the doc as it was")
-		p.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
-			"shipped: "+daysAgo(1), "- [x] Built it"))
+		p.write("docs/features/0002-done.md", doc("0002", "Done", "Submitted",
+			"submitted: "+daysAgo(1), "- [x] Built it"))
 	}},
 	{"inbox-stale", func(p *project) {
 		p.write("docs/INBOX.md", fmt.Sprintf(
@@ -167,7 +173,7 @@ var auditCases = []struct {
 		p.write("docs/INBOX.md",
 			"# Inbox\n\n- [ ] we should decide about 0001 at some point\n")
 	}},
-	{"done-not-shipped", func(p *project) {
+	{"done-not-submitted", func(p *project) {
 		// Committed, because the gate is now whether HEAD carries the doc: a plan still
 		// being written in a working tree is nobody's defect.
 		feature(p, "0002", "done", "Done", "Draft", "- [x] All finished")
@@ -176,16 +182,16 @@ var auditCases = []struct {
 	{"tech-drift", func(p *project) {
 		p.write("docs/TECH.md", "# As built\n\nThe old description.\n")
 		p.commitAllAt("describe the system", daysAgo(60))
-		p.write("docs/features/0002-newer.md", doc("0002", "Newer", "Shipped",
-			"shipped: "+daysAgo(2), "- [x] Done"))
+		p.write("docs/features/0002-newer.md", doc("0002", "Newer", "Submitted",
+			"submitted: "+daysAgo(2), "- [x] Done"))
 	}},
 	{"tag-stale", func(p *project) {
 		// Released once and kept merging. An install still resolves to the tag, so the
 		// distance is exactly the work it does not carry.
 		tagThenCommits(p, "v0.1.0", kit.TagStaleCommits+1)
 	}},
-	{"shipped-no-date", func(p *project) {
-		feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
+	{"submitted-no-date", func(p *project) {
+		feature(p, "0002", "undated", "Undated", "Submitted", "- [x] Done")
 	}},
 	{"id-mismatch", func(p *project) {
 		p.write("docs/features/0002-confused.md", doc("0009", "Confused", "Draft",
@@ -220,14 +226,14 @@ var auditCases = []struct {
 	{"needs-unparsed", func(p *project) {
 		// One space where the template pads with many, so `trailingRe` leaves the comment
 		// as the value and "e.g. 0002, 0003" scans as two ids. Both exist here and both
-		// have shipped, so `needs-unknown` sees a wait already satisfied and says nothing —
+		// have submitted, so `needs-unknown` sees a wait already satisfied and says nothing —
 		// which is the blind spot, not an oversight: it can only ask about ids that parsed.
 		p.write("docs/features/0002-first.md",
-			doc("0002", "First", "Shipped", "shipped: "+daysAgo(9), "- [x] Done"))
+			doc("0002", "First", "Submitted", "submitted: "+daysAgo(9), "- [x] Done"))
 		p.write("docs/features/0003-second.md",
-			doc("0003", "Second", "Shipped", "shipped: "+daysAgo(8), "- [x] Done"))
+			doc("0003", "Second", "Submitted", "submitted: "+daysAgo(8), "- [x] Done"))
 		p.write("docs/features/0004-untouched.md", doc("0004", "Untouched", "Draft",
-			"needs: # feature ids that must ship first, e.g. 0002, 0003", "- [ ] Do it"))
+			"needs: # feature ids that must submit first, e.g. 0002, 0003", "- [ ] Do it"))
 	}},
 	{"orphan-reservation", func(p *project) {
 		// A number handed out for a round that was then cut. The ref outlives the doc by
@@ -273,16 +279,7 @@ var auditCases = []struct {
 		// and nothing inside the project can tell.
 		p.write("AGENTS.md", "# House rules\n\n## Work protocol\n\nAn older protocol.\n")
 	}},
-	{"log-outweighs-plan", func(p *project) {
-		// A Draft partway through the work, whose Log has become the design: the
-		// decisions are stated where the routing rule sends nothing and nobody reads.
-		// Written out rather than through doc(), whose Log is one line by construction.
-		p.write("docs/features/0002-loggy.md",
-			"---\nid: 0002\ntitle: Loggy\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
-				"## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n"+
-				"## Tasks\n- [ ] Do it\n\n## Log\n"+strings.Repeat(
-				"- 2026-01-02 — the currency comes from the merchant account.\n", 5))
-	}},
+
 	{"unfilled-vision", func(p *project) {
 		// A fresh `kit init` and nothing else. The template's guidance is all
 		// comments, so every section under its headings reads as empty.
@@ -343,7 +340,7 @@ func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
 	// almost every project that used the field at all.
 	p := cleanProject(t)
 	p.write("docs/features/0001-thing.md",
-		doc("0001", "A thing", "Shipped", "shipped: "+daysAgo(2), "- [x] Done"))
+		doc("0001", "A thing", "Submitted", "submitted: "+daysAgo(2), "- [x] Done"))
 	p.write("docs/features/0002-left.md",
 		doc("0002", "Left", "Draft", "needs: 0001", "- [ ] Do it"))
 	p.write("docs/features/0003-right.md",
@@ -362,7 +359,7 @@ func TestNeedsChecksStayQuietOnAValidGraph(t *testing.T) {
 
 func TestAPlanNamingSettledWorkIsNotADependency(t *testing.T) {
 	t.Parallel()
-	// The gate that keeps this check from being noise. A doc citing a shipped feature is
+	// The gate that keeps this check from being noise. A doc citing a submitted feature is
 	// giving the reader history, and 41 of this repo's 65 docs do it — an ungated version
 	// fires on two docs in three. The same doc is silent once the id is declared, and a
 	// citation in ## Log is never read at all.
@@ -373,7 +370,7 @@ func TestAPlanNamingSettledWorkIsNotADependency(t *testing.T) {
 			"## Design\nSame as 0003's.\n\n## Tasks\n- [ ] Do it\n\n"+
 			"## Log\n- 2026-01-01 — unlike 0004, which is still open.\n")
 	p.write("docs/features/0003-settled.md",
-		doc("0003", "Settled", "Shipped", "shipped: 2026-01-02", "- [x] Done"))
+		doc("0003", "Settled", "Submitted", "submitted: 2026-01-02", "- [x] Done"))
 	p.write("docs/features/0004-open.md",
 		doc("0004", "Open", "Draft", "", "- [ ] Do it"))
 
@@ -536,13 +533,13 @@ func TestNeedsUnparsedStaysQuietOnAValueSomebodyWrote(t *testing.T) {
 	// almost every project that declared a dependency at all.
 	p := cleanProject(t)
 	p.write("docs/features/0002-done.md",
-		doc("0002", "Done", "Shipped", "shipped: "+daysAgo(4), "- [x] Done"))
+		doc("0002", "Done", "Submitted", "submitted: "+daysAgo(4), "- [x] Done"))
 	p.write("docs/features/0003-commas.md",
 		doc("0003", "Commas", "Draft", "needs: 0001, 0002", "- [ ] Do it"))
 	p.write("docs/features/0004-spaces.md",
 		doc("0004", "Spaces", "Draft", "needs: 0002 0003", "- [ ] Do it"))
 	p.write("docs/features/0005-padded.md", doc("0005", "Padded", "Draft",
-		"needs:               # feature ids that must ship first, e.g. 0002, 0003",
+		"needs:               # feature ids that must submit first, e.g. 0002, 0003",
 		"- [ ] Do it"))
 	// Terminal, and carrying the worst value there is. The only fix would be an edit to
 	// frozen history, which is why needsState skips these at all.
@@ -677,7 +674,7 @@ func TestAnUnreadableDocIsReportedOnceAndKeepsItsID(t *testing.T) {
 	}
 	// Nothing else may speak for it. Every content check fires on the empty struct, and
 	// not one of those findings is a fact about the file.
-	for _, guess := range []string{"no-status", "unfilled-template", "done-not-shipped"} {
+	for _, guess := range []string{"no-status", "unfilled-template", "done-not-submitted"} {
 		if slices.Contains(codes, guess) {
 			t.Errorf("%s was reported on a doc whose content nobody has: %v", guess, codes)
 		}
@@ -711,7 +708,7 @@ func TestANonASCIIFilenameDoesNotDisableThePlanChecks(t *testing.T) {
 
 func TestATerminalDocIsAskedNothingAboutItsPlan(t *testing.T) {
 	t.Parallel()
-	// The state that refused every ship in the project. `unfilled-template` is HIGH and
+	// The state that refused every submit in the project. `unfilled-template` is HIGH and
 	// `--strict` is project-wide, so one stub retired before anybody wrote it failed the
 	// gate in front of every other feature, permanently — and its fixes were to write a
 	// plan for work that will never happen, or to set the status back to Draft, which
@@ -722,42 +719,21 @@ func TestATerminalDocIsAskedNothingAboutItsPlan(t *testing.T) {
 	dropped.run("drop", "0002", "not worth building").ok()
 	dropped.run("audit", "--strict").ok().lacks("unfilled-template")
 
-	// Shipped is the other terminal status, and rule 21 freezes it harder: a doc written
+	// Submitted is the other terminal status, and rule 21 freezes it harder: a doc written
 	// under a kit that did not have these headings is history, not work.
-	shipped := cleanProject(t)
-	shipped.write("docs/features/0002-frozen.md",
-		"---\nid: 0002\ntitle: Frozen\nstatus: Shipped\ncreated: 2026-01-01\nshipped: "+
+	submitted := cleanProject(t)
+	submitted.write("docs/features/0002-frozen.md",
+		"---\nid: 0002\ntitle: Frozen\nstatus: Submitted\ncreated: 2026-01-01\nsubmitted: "+
 			daysAgo(1)+"\n---\n\n## Problem\n\n## Design\n\n## Tasks\n- [x] Done\n")
-	shipped.commitAll("a doc from an older kit")
-	shipped.run("audit", "--strict").ok().lacks("unfilled-template")
+	submitted.commitAll("a doc from an older kit")
+	submitted.run("audit", "--strict").ok().lacks("unfilled-template")
 
 	// The half that pays for it: an open doc nobody wrote is still HIGH, and its fix is
-	// now a command rather than an edit to the field only `ship` and `drop` may write.
+	// now a command rather than an edit to the field only `submit` and `drop` may write.
 	open := cleanProject(t)
 	open.run("new", "Also never written").ok()
 	open.commitAll("commit a doc nobody wrote")
 	open.run("audit", "--strict").fails(1).has("unfilled-template", "kit drop 0002")
-}
-
-func TestLogOutweighsPlanIsQuietOnceTheDocIsFrozen(t *testing.T) {
-	t.Parallel()
-	// 0049 deleted five checks for firing where rule 17 forbids the fix. A Shipped doc
-	// whose Log ran away is exactly that: `ship` is what refuses this, and past it the
-	// only repair is an edit to frozen history.
-	p := cleanProject(t)
-	heavy := "## Problem\nSomething needs doing.\n\n## Design\nThis way.\n\n" +
-		"## Tasks\n- [x] Done\n\n## Log\n" +
-		strings.Repeat("- 2026-01-02 — the currency comes from the merchant account.\n", 5)
-	p.write("docs/features/0002-frozen.md",
-		"---\nid: 0002\ntitle: Frozen\nstatus: Shipped\ncreated: 2026-01-01\nshipped: "+
-			daysAgo(1)+"\n---\n\n"+heavy)
-	p.write("docs/features/0003-retired.md",
-		"---\nid: 0003\ntitle: Retired\nstatus: Dropped\ncreated: 2026-01-01\n---\n\n"+heavy)
-	p.commitAll("two docs nobody may edit")
-
-	if codes := p.auditCodes(); slices.Contains(codes, "log-outweighs-plan") {
-		t.Errorf("log-outweighs-plan fired on a terminal doc: %v", codes)
-	}
 }
 
 func TestTagStaleIsQuietUntilTheDistanceCouldMislead(t *testing.T) {
@@ -853,7 +829,7 @@ func TestTheDocumentsKitInitWritesAreOneFinding(t *testing.T) {
 
 func TestTechDriftCoversTheMissingAsBuiltDocAndTheStaleOne(t *testing.T) {
 	t.Parallel()
-	// One gap measured two ways: what shipped is not what a reader is told. It was two
+	// One gap measured two ways: what submitted is not what a reader is told. It was two
 	// findings at two severities, and writing the file answers both.
 	// A project that predates `kit init` placing the as-built doc: the layout writes one
 	// now, so having none is a project the layout never ran on.
@@ -861,14 +837,14 @@ func TestTechDriftCoversTheMissingAsBuiltDocAndTheStaleOne(t *testing.T) {
 	if err := os.Remove(missing.path("docs/TECH.md")); err != nil {
 		t.Fatalf("removing TECH.md: %v", err)
 	}
-	missing.write("docs/features/0002-shipped.md", doc("0002", "Shipped thing", "Shipped",
-		"shipped: "+daysAgo(1), "- [x] Done"))
+	missing.write("docs/features/0002-submitted.md", doc("0002", "Submitted thing", "Submitted",
+		"submitted: "+daysAgo(1), "- [x] Done"))
 	missing.run("audit").ok().has("tech-drift", "nothing describes the as-built system")
 
-	// The quiet half: nothing has shipped, so there is nothing to describe yet.
+	// The quiet half: nothing has submitted, so there is nothing to describe yet.
 	fresh := cleanProject(t)
 	if codes := fresh.auditCodes(); slices.Contains(codes, "tech-drift") {
-		t.Errorf("tech-drift fired before anything shipped: %v", codes)
+		t.Errorf("tech-drift fired before anything submitted: %v", codes)
 	}
 }
 
@@ -898,7 +874,7 @@ func TestNoProtocolFiresOnAFileWithNoProtocolSection(t *testing.T) {
 	}
 }
 
-func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
+func TestSubmittedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	t.Parallel()
 	// Three ways for the work to be somewhere, and the check has to be silent in all of
 	// them. A HIGH that fires on work already pushed is one nobody reads for long.
@@ -907,12 +883,12 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	a.run("claim", "0007").ok()
 	w := a.claimWorktree("0007-widget")
 	w.write("thing.txt", "the work\n")
-	feature(w, "0007", "widget", "A widget", "Shipped", "- [x] Build it")
-	w.commitAll("build and ship 0007")
+	feature(w, "0007", "widget", "A widget", "Submitted", "- [x] Build it")
+	w.commitAll("build and submit 0007")
 
-	// One: shipped here and pushed to its own branch.
+	// One: submitted here and pushed to its own branch.
 	w.git("push", "-q", "origin", "HEAD:refs/heads/0007-widget")
-	if codes := w.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
+	if codes := w.auditCodes(); slices.Contains(codes, "submitted-not-pushed") {
 		t.Errorf("fired on work pushed to its own branch: %v", codes)
 	}
 
@@ -923,18 +899,18 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	a.git("push", "-q", "origin", "HEAD:refs/heads/"+trunk)
 	a.git("push", "-q", "origin", "--delete", "0007-widget")
 	a.git("fetch", "-q", "--prune", "origin")
-	if codes := a.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
+	if codes := a.auditCodes(); slices.Contains(codes, "submitted-not-pushed") {
 		t.Errorf("fired on work that is on the trunk: %v", codes)
 	}
 
-	// Three: merged, and then the doc edited here — the compaction `kit ship` asks for,
+	// Three: merged, and then the doc edited here — the compaction `kit submit` asks for,
 	// or any later correction. The work landed weeks ago and the only thing this checkout
 	// holds that the remote does not is a line of prose. Reading the age of the commit
 	// that last wrote the doc reported this at HIGH, with a fix line that would recreate
 	// the merged claim branch.
 	a.write("docs/features/0007-widget.md", a.read("docs/features/0007-widget.md")+"\n")
 	a.commitAll("compact 0007 after the fact")
-	if codes := a.auditCodes(); slices.Contains(codes, "shipped-not-pushed") {
+	if codes := a.auditCodes(); slices.Contains(codes, "submitted-not-pushed") {
 		t.Errorf("fired on a local edit to a doc whose work is on the trunk: %v", codes)
 	}
 
@@ -944,15 +920,15 @@ func TestShippedNotPushedIsQuietWhereverTheWorkExists(t *testing.T) {
 	origin := t.TempDir()
 	gitIn(t, origin, "init", "-q", "--bare", ".")
 	b.git("remote", "add", "origin", origin)
-	b.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
-		"shipped: "+daysAgo(1), "- [x] Built it"))
-	b.commitAll("ship 0002 and tell nobody")
-	if codes := b.auditCodes("--offline"); slices.Contains(codes, "shipped-not-pushed") {
+	b.write("docs/features/0002-done.md", doc("0002", "Done", "Submitted",
+		"submitted: "+daysAgo(1), "- [x] Built it"))
+	b.commitAll("submit 0002 and tell nobody")
+	if codes := b.auditCodes("--offline"); slices.Contains(codes, "submitted-not-pushed") {
 		t.Errorf("fired with --offline, where nothing about the remote is known: %v", codes)
 	}
 	// And the same project, asked properly, still reports it — otherwise the case above
 	// proves nothing.
-	if codes := b.auditCodes(); !slices.Contains(codes, "shipped-not-pushed") {
+	if codes := b.auditCodes(); !slices.Contains(codes, "submitted-not-pushed") {
 		t.Errorf("stopped firing on work that is on no remote: %v", codes)
 	}
 }
@@ -981,17 +957,17 @@ func TestAuditNamesTheFileTheProblemAndTheFix(t *testing.T) {
 	t.Parallel()
 	// A finding nobody can act on is noise.
 	p := cleanProject(t)
-	feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
+	feature(p, "0002", "undated", "Undated", "Submitted", "- [x] Done")
 
 	r := p.run("audit").ok()
-	r.has("shipped-no-date", "docs/features/0002-undated.md", "fix:")
+	r.has("submitted-no-date", "docs/features/0002-undated.md", "fix:")
 }
 
 func TestAuditNeverWrites(t *testing.T) {
 	t.Parallel()
 	// An auditor that fixes things stops being read.
 	p := cleanProject(t)
-	feature(p, "0002", "undated", "Undated", "Shipped", "- [x] Done")
+	feature(p, "0002", "undated", "Undated", "Submitted", "- [x] Done")
 	before := p.read("docs/features/0002-undated.md")
 
 	p.run("audit").ok()
@@ -1001,7 +977,7 @@ func TestAuditNeverWrites(t *testing.T) {
 	}
 }
 
-func TestTheShippedDateIsReadAsWrittenOrReportedAsWrong(t *testing.T) {
+func TestTheSubmittedDateIsReadAsWrittenOrReportedAsWrong(t *testing.T) {
 	t.Parallel()
 	// Three states of one field, and only the first was told apart from the others.
 	for _, tc := range []struct {
@@ -1009,15 +985,15 @@ func TestTheShippedDateIsReadAsWrittenOrReportedAsWrong(t *testing.T) {
 	}{
 		// One field, one code, three problems — the middle used to be reported as the
 		// first, on a doc that plainly had a date written in it.
-		{"absent", "", "Shipped with no shipped: date"},
-		{"unparseable", "shipped: last Tuesday", `shipped: "last Tuesday" is not a date`},
-		{"in the future", "shipped: 2099-01-01", "has not arrived yet"},
+		{"absent", "", "Submitted with no submitted: date"},
+		{"unparseable", "submitted: last Tuesday", `submitted: "last Tuesday" is not a date`},
+		{"in the future", "submitted: 2099-01-01", "has not arrived yet"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := cleanProject(t)
 			p.write("docs/features/0002-odd.md",
-				doc("0002", "Odd", "Shipped", tc.line, "- [x] Done"))
-			p.run("audit").ok().has("shipped-no-date", tc.want)
+				doc("0002", "Odd", "Submitted", tc.line, "- [x] Done"))
+			p.run("audit").ok().has("submitted-no-date", tc.want)
 		})
 	}
 
@@ -1026,18 +1002,18 @@ func TestTheShippedDateIsReadAsWrittenOrReportedAsWrong(t *testing.T) {
 	p := cleanProject(t)
 	p.write("docs/TECH.md", "# As built\n\nThe description.\n")
 	p.write("docs/features/0002-early.md",
-		doc("0002", "Early", "Shipped", "shipped: 2099-01-01", "- [x] Done"))
+		doc("0002", "Early", "Submitted", "submitted: 2099-01-01", "- [x] Done"))
 	p.commitAll("describe the system")
 	if codes := p.auditCodes(); slices.Contains(codes, "tech-drift") {
 		t.Errorf("tech-drift measured against a day that has not happened: %v", codes)
 	}
 }
 
-func TestDoneNotShippedNeedsBoxesToCallDone(t *testing.T) {
+func TestDoneNotSubmittedNeedsBoxesToCallDone(t *testing.T) {
 	t.Parallel()
 	// "every task is ticked" on a doc with no ## Tasks section at all, whose fix —
-	// `kit ship` — refuses it for having no boxes. A zero-byte doc got the same finding
-	// with `run: kit ship ` and no id in it.
+	// `kit submit` — refuses it for having no boxes. A zero-byte doc got the same finding
+	// with `run: kit submit ` and no id in it.
 	for _, tc := range []struct{ name, body string }{
 		{"no Tasks section", "---\nid: 0002\ntitle: Sectionless\nstatus: Draft\n" +
 			"created: 2026-01-01\n---\n\n## Problem\nx\n\n## Design\nx\n"},
@@ -1049,7 +1025,7 @@ func TestDoneNotShippedNeedsBoxesToCallDone(t *testing.T) {
 			p.commitAll("a doc with no boxes anywhere in it")
 
 			r := p.run("audit").ok()
-			r.lacks("done-not-shipped")
+			r.lacks("done-not-submitted")
 			// unfilled-template already says what is wrong with it, and its fix works.
 			r.has("unfilled-template")
 		})
@@ -1060,16 +1036,16 @@ func TestDoneNotShippedNeedsBoxesToCallDone(t *testing.T) {
 	p := cleanProject(t)
 	p.write("docs/features/0002-done.md", doc("0002", "Done", "Draft", "", "- [x] Finished"))
 	p.commitAll("every box ticked")
-	p.run("audit").ok().has("done-not-shipped", "kit ship 0002")
+	p.run("audit").ok().has("done-not-submitted", "kit submit 0002")
 
 	// And with no id: there is no such command, so the fix names the edit instead of
-	// printing `run: kit ship ` with nothing after it.
+	// printing `run: kit submit ` with nothing after it.
 	nameless := cleanProject(t)
 	nameless.write("docs/features/0002-nameless.md",
 		"---\ntitle: Nameless\nstatus: Draft\ncreated: 2026-01-01\n---\n\n"+
 			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [x] Done\n\n## Log\n- x\n")
 	nameless.commitAll("a doc with no id in it")
-	nameless.run("audit").ok().has("done-not-shipped").lacks("run: kit ship  ")
+	nameless.run("audit").ok().has("done-not-submitted").lacks("run: kit submit  ")
 }
 
 func TestAuditOnAnUnsetUpProjectExitsTwo(t *testing.T) {
@@ -1091,8 +1067,8 @@ func TestOfflineNamesTheCheckItDidNotRun(t *testing.T) {
 	// rather than passed.
 	p := cleanProject(t)
 	r := p.run("audit", "--offline").ok()
-	r.outHas("--offline", "shipped-not-pushed", "did not run")
-	p.run("audit", "--json", "--offline").ok().outHas(`"skipped"`, "shipped-not-pushed")
+	r.outHas("--offline", "submitted-not-pushed", "did not run")
+	p.run("audit", "--json", "--offline").ok().outHas(`"skipped"`, "submitted-not-pushed")
 
 	// And nothing of the sort when the kit was allowed to ask.
 	p.run("audit").ok().lacks("--offline")
@@ -1107,11 +1083,11 @@ func TestAuditStrictExitsOnHighOnly(t *testing.T) {
 		"Draft", "", "- [ ] Something"))
 	high.run("audit", "--strict").fails(1)
 
-	// shipped-no-date is MEDIUM: reported, but not a build failure.
+	// submitted-no-date is MEDIUM: reported, but not a build failure.
 	medium := cleanProject(t)
-	feature(medium, "0002", "undated", "Undated", "Shipped", "- [x] Done")
+	feature(medium, "0002", "undated", "Undated", "Submitted", "- [x] Done")
 	r := medium.run("audit", "--strict").ok()
-	if !strings.Contains(r.Stdout, "shipped-no-date") {
+	if !strings.Contains(r.Stdout, "submitted-no-date") {
 		t.Error("--strict swallowed a MEDIUM finding instead of reporting it")
 	}
 
@@ -1123,7 +1099,7 @@ func TestIDMismatchFailsStrict(t *testing.T) {
 	// Raised from MEDIUM. A doc whose id: and filename disagree is not untidy: the
 	// branch comes from the filename and the board looks for the id, so the feature's
 	// own claim is invisible and it keeps being handed out. --strict is the gate in
-	// front of `kit ship`, so this is what stops it being left sitting while agents run.
+	// front of `kit submit`, so this is what stops it being left sitting while agents run.
 	mismatched := cleanProject(t)
 	mismatched.write("docs/features/0002-confused.md",
 		doc("0009", "Confused", "Draft", "", "- [ ] Something"))
@@ -1131,14 +1107,14 @@ func TestIDMismatchFailsStrict(t *testing.T) {
 
 	// No id: at all is the same defect and the same code: the id every command takes
 	// finds nothing. `no-status` fires beside it and names the file, because the fix it
-	// prints otherwise is `kit reset  "<why>"`, which nobody can type.
+	// prints otherwise is `kit reopen  "<why>"`, which nobody can type.
 	missing := cleanProject(t)
 	missing.write("docs/features/0002-nameless.md",
 		"---\ntitle: Nameless\n---\n\n"+
 			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [ ] y\n\n## Log\n- 2026-01-01 — x.\n")
 	missing.run("audit", "--strict").fails(1).
 		has("id-mismatch", "no id:", "0002-nameless.md").
-		lacks(`kit reset  "<why>"`)
+		lacks(`kit reopen  "<why>"`)
 
 	// The quiet half: agreeing is the normal case and must not fail anything.
 	agreed := cleanProject(t)
@@ -1151,7 +1127,7 @@ func TestSplitClaimFailsStrict(t *testing.T) {
 	t.Parallel()
 	// Raised from MEDIUM. Two branches on one feature is the worst failure the kit has —
 	// two agents building it, each about to open a pull request the other's branch cannot
-	// merge beside — and at MEDIUM it gated nothing, while a missing shipped: date could
+	// merge beside — and at MEDIUM it gated nothing, while a missing submitted: date could
 	// not fail --strict either. What it costs is real and intended: nothing ships out of a
 	// project holding a stray claim until `kit release` takes it back.
 	contested := cleanProject(t)
@@ -1312,12 +1288,13 @@ func TestAnFYIIsNeverAgedAtAll(t *testing.T) {
 	}
 	p.run("audit", "--strict").ok()
 
-	// And the blocking case still fails the gate, or the marker means nothing.
+	// An old decision stays visible and blocks its feature, not the whole gate.
 	blocking := cleanProject(t)
 	blocking.write("docs/INBOX.md", fmt.Sprintf(
 		"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Which host runs this?\n",
 		daysAgo(kit.InboxStaleDays)))
-	blocking.run("audit", "--strict").fails(1)
+	blocking.run("audit", "--strict").ok().has("inbox-stale")
+	blocking.run("claim", "0001").fails(1)
 }
 
 // The claim checks read branch names, which is the one place this tool can
@@ -1383,22 +1360,22 @@ func TestClaimChecksDoNotFireOnOrdinaryWork(t *testing.T) {
 	})
 }
 
-func TestSplitClaimIgnoresAShippedFeaturesLeftoverBranches(t *testing.T) {
+func TestSplitClaimIgnoresASubmittedFeaturesLeftoverBranches(t *testing.T) {
 	t.Parallel()
 	// Found by running the check against this repo: 0001-publish-the-kit and
-	// 0001-ship both cite 0001, which is Shipped. Those are merged leftovers, not
+	// 0001-submit both cite 0001, which is Submitted. Those are merged leftovers, not
 	// two agents competing, and most projects never delete merged branches.
 	p := cleanProject(t)
-	p.write("docs/features/0002-done.md", doc("0002", "Done", "Shipped",
-		"shipped: "+daysAgo(2), "- [x] Finished"))
+	p.write("docs/features/0002-done.md", doc("0002", "Done", "Submitted",
+		"submitted: "+daysAgo(2), "- [x] Finished"))
 	p.write("docs/TECH.md", "# As built\n")
-	p.commitAll("ship it")
+	p.commitAll("submit it")
 	p.git("branch", "0002-done")
 	p.git("branch", "0002-done-follow-up")
 
 	for _, code := range p.auditCodes() {
 		if code == "split-claim" {
-			t.Error("merged branches on a Shipped feature were reported as a split claim")
+			t.Error("merged branches on a Submitted feature were reported as a split claim")
 		}
 	}
 }
@@ -1646,7 +1623,7 @@ func TestTheAuditSummaryCountsBySeverity(t *testing.T) {
 
 	// No HIGH, so nothing is told to fix the HIGH first.
 	medium := cleanProject(t)
-	feature(medium, "0002", "undated", "Undated", "Shipped", "- [x] Done")
+	feature(medium, "0002", "undated", "Undated", "Submitted", "- [x] Done")
 	r := medium.run("audit").ok()
 	r.outHas("1 MEDIUM finding to fix.")
 	r.lacks("HIGH first")

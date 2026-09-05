@@ -36,7 +36,7 @@ func TestDropRetiresAFeatureAndRecordsWhy(t *testing.T) {
 
 func TestDropCommitsTheStatusItWrites(t *testing.T) {
 	t.Parallel()
-	// `ship`'s reason: a status only the working tree carries is one session from being
+	// `submit`'s reason: a status only the working tree carries is one session from being
 	// read as debris. The doc's path is the whole commit — a retired plan is often edited
 	// in the same breath, and nothing else in the tree is this command's to take.
 	p := setUp(t)
@@ -65,12 +65,12 @@ func TestDropSaysWhenNoReasonWasGiven(t *testing.T) {
 	p.run("drop", "0001").ok().has("no reason recorded")
 }
 
-func TestDropRefusesAShippedDoc(t *testing.T) {
+func TestDropRefusesASubmittedDoc(t *testing.T) {
 	t.Parallel()
 	// Frozen history, and the work is in the repo. Retiring it would make the record
 	// say the feature was never built.
 	p := setUp(t)
-	feature(p, "0001", "done", "Done", "Shipped", "- [x] Finished")
+	feature(p, "0001", "done", "Done", "Submitted", "- [x] Finished")
 
 	p.run("drop", "0001", "changed my mind").fails(2).errHas("frozen history")
 }
@@ -165,7 +165,7 @@ func TestDropReportsALeftoverClaimRatherThanDeletingIt(t *testing.T) {
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] Something")
 	p.commitAll("the plan")
-	p.git("branch", "0001-shorten")
+	p.git("switch", "-c", "0001-shorten")
 
 	r := p.run("drop", "0001", "not worth it").ok()
 	r.has("still claimed", "0001-shorten")
@@ -207,7 +207,7 @@ func TestDropReleasesAReservationNoDocHolds(t *testing.T) {
 	// by no doc anywhere, and reachable by no command — `drop` needs a doc to write into.
 	a.reserve("0009", "Ninth", 30)
 
-	a.run("drop", "0009", "the round was cut and pivoted into 0007").
+	a.run("drop", "0009", "--reservation", "the round was cut and pivoted into 0007").
 		ok().has("released", "0009", "Ninth")
 
 	if got := a.reservedIDs(); slices.Contains(got, "0009") {
@@ -227,7 +227,7 @@ func TestDropRefusesAReservationYoungerThanTheHorizon(t *testing.T) {
 
 	// A reservation made a moment ago is an ordinary draft being written somewhere else,
 	// and a release that fires on those hands out a number two people are using.
-	a.run("drop", "0009", "looks unused").fails(2).errHas("draft in flight")
+	a.run("drop", "0009", "--reservation", "looks unused").fails(2).errHas("draft in flight")
 
 	if got := a.reservedIDs(); !slices.Contains(got, "0009") {
 		t.Errorf("the remote holds %v — the reservation was released anyway", got)
@@ -247,7 +247,7 @@ func TestDropRefusesToReleaseAnIDADraftStillHolds(t *testing.T) {
 	a.commitAll("the round")
 	a.git("switch", "-q", trunk)
 
-	a.run("drop", "0009", "looks unused").fails(2).errHas("plan/round")
+	a.run("drop", "0009", "--reservation", "looks unused").fails(2).errHas("plan/round")
 
 	if got := a.reservedIDs(); !slices.Contains(got, "0009") {
 		t.Errorf("the remote holds %v — the draft's number was released under it", got)
@@ -260,5 +260,5 @@ func TestDropSaysWhenAnIDIsFreeAlready(t *testing.T) {
 
 	// No doc and no reservation. The old answer was "no feature 0009", which reads as a
 	// typo rather than as the number already being available.
-	a.run("drop", "0009", "tidying").fails(2).errHas("free already")
+	a.run("drop", "0009", "--reservation", "tidying").fails(2).errHas("free already")
 }

@@ -2,7 +2,6 @@ package kit
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 )
 
@@ -13,20 +12,12 @@ type Released struct {
 	Kept   string // where the local branch still is, when deleting it could not run
 }
 
-// Release hands a claimed feature back to the board by deleting the branch that claims it.
-//
-// The remote ref goes first, because that ref is the claim. Deleting only the local copy
-// leaves the feature taken for good, which prose could only warn about.
-//
-// It refuses while the branch carries work, and that refusal is the reason this exists.
-// The protocol named `git push --delete` for every kind of stopping, so an agent pausing
-// with reviewed commits on the branch followed it and discarded them.
-// `BranchBuildsOn` already separates a claim nobody has built on from work in flight, and
-// `--force` is the way past it for commits that are genuinely worth nothing.
-func Release(r *Repo, id string, force bool) (*Released, error) {
-	target := r.FeatureByID(id)
-	if target == nil {
-		return nil, fmt.Errorf("no feature %s", id)
+// Release surrenders a claim. Without discard, every unmerged commit and every
+// uncommitted file is work to preserve. The remote deletion leases its observed tip.
+func Release(r *Repo, id string, discard bool) (*Released, error) {
+	target, err := r.WriteTarget(id)
+	if err != nil {
+		return nil, err
 	}
 
 	claims := r.Claims(id)
@@ -43,24 +34,22 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 	branch := claims[0]
 
 	// Releasing somebody else's claim frees a feature a live agent is holding, and the
-	// board then hands it to a second one. `Ship` has asked this question since 0023 and
+	// board then hands it to a second one. `Submit` has asked this question since 0023 and
 	// `Release` did not, which let a losing claimant take the winner's branch by following
 	// the line `claim` printed.
 	//
 	// The test is a local head, not `Mine`. `Mine` asks whether HEAD is the claim branch,
-	// which is right for `ship` — shipping happens in the worktree doing the work — and
+	// which is right for `submit` — submitting happens in the worktree doing the work — and
 	// wrong here: `claim` tells you to make that worktree, so between claiming and moving
 	// there you would be unable to release what you had just taken. A local ref means this
 	// clone created the branch, which is the same answer for every worktree sharing it and
 	// a different one for the agent that only ever saw the claim over the wire.
 	//
-	// `--force` is the way past, because clearing up after a dead agent is real work — the
-	// flag is what makes destroying another agent's claim deliberate.
-	if !force && !r.hasRef("refs/heads/"+branch) {
+	// Explicit disposal still requires a branch owned by this clone.
+	if !r.hasRef("refs/heads/" + branch) {
 		return nil, fmt.Errorf("%s is claimed by %s, a branch this clone never created\n"+
 			"releasing it frees a feature another agent may be working on — leave it "+
-			"alone,\nor if that agent is gone: kit release %s --force",
-			target.Name(), branch, id)
+			"alone and ask its owner to release it", target.Name(), branch)
 	}
 
 	remote, err := pickRemote(r)
@@ -87,7 +76,7 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 	// too. Anything else — behind, diverged, or an object this clone has never had — is
 	// unreadable, and unreadable must not be the permissive answer in a command that
 	// deletes.
-	if !force && remote != "" {
+	if !discard && remote != "" {
 		if tip, ok := r.remoteTip(remote, branch); ok && !r.reaches(tip, rev) {
 			return nil, fmt.Errorf("%s/%s is not the copy of %s this checkout has, so what "+
 				"the remote carries cannot be read — and it is the remote's branch this "+
@@ -97,27 +86,47 @@ func Release(r *Repo, id string, force bool) (*Released, error) {
 	// The same reasoning one level up: with no trunk to diff against, `BranchBuildsOn`
 	// answers "carries no work" for a branch full of commits. Silence must not be the
 	// permissive answer in the one command that destroys.
-	if !force && r.trunkRef() == "" {
+	if !discard && r.trunkRef() == "" {
 		return nil, fmt.Errorf("no default branch resolves here, so whether %s carries work "+
 			"cannot be read\nname it: git remote set-head origin --auto\nor if those commits "+
-			"are worth nothing: kit release %s --force", branch, id)
+			"are worth nothing: kit release %s --discard", branch, id)
 	}
-	if !force && r.BranchBuildsOn(rev, target.Rel) {
+	work := false
+	if !discard {
+		unmerged, err := r.gitRun("rev-list", "--count", r.trunkRef()+".."+rev)
+		if err != nil {
+			return nil, err
+		}
+		work = strings.TrimSpace(unmerged) != "0"
+	}
+	if path := r.worktreeFor(branch); path != "" {
+		checkout := &Repo{Root: path}
+		dirty, err := checkout.DirtyFiles()
+		if err != nil {
+			return nil, err
+		}
+		if len(dirty) > 0 {
+			return nil, fmt.Errorf("%s has uncommitted work in %s — commit or preserve it before releasing", branch, path)
+		}
+	}
+	if work {
 		return nil, fmt.Errorf("%s carries work that is not on %s, and releasing deletes "+
 			"it\nthat is a pause rather than an abandon: push the branch, open the pull "+
 			"request unfinished, and say why there\nif those commits are worth nothing: "+
-			"kit release %s --force", branch, orTrunk(r.Trunk()), id)
+			"kit release %s --discard", branch, orTrunk(r.Trunk()), id)
 	}
 
 	res := &Released{Branch: branch}
 	if remote != "" {
-		heads, ok := r.remoteHeads()
+		_, ok := r.remoteHeads()
 		if !ok {
 			return nil, fmt.Errorf("%s did not answer, and the branch there is the claim "+
 				"— release again when it does", remote)
 		}
-		if slices.Contains(heads, branch) {
-			if _, err := r.gitRun("push", remote, "--delete", branch); err != nil {
+		if tip, exists := r.remoteTip(remote, branch); exists {
+			ref := "refs/heads/" + branch
+			if _, err := r.gitRun("push", "--force-with-lease="+ref+":"+tip,
+				remote, ":"+ref); err != nil {
 				return nil, err
 			}
 			res.Remote = remote

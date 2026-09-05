@@ -1,24 +1,23 @@
 ---
 id: NNNN
-title: <short imperative name>
+title: <observable improvement>
 status: Draft
 created: YYYY-MM-DD
-shipped:
+submitted:
 needs:
 ---
 
-<!-- `needs:` is the only field that changes what `kit next` offers, so it earns care.
-     One question decides it, asked of every feature in the round: could this START
-     before that one ships? List the id of each whose answer is no, and leave it empty
-     when there is none — empty ones are what let agents work in parallel.
+<!-- A feature is one coherent, reviewable improvement. Addition, removal, security,
+     reliability, performance and cost reductions all qualify. Prefer a substantial
+     outcome with implementation steps as tasks. Split for independent value, distinct
+     approval decisions or reviewability, not by code layer or agent count.
+     Name the benefit and an observable result before choosing implementation tasks. -->
 
-     Ask it of the work, not of what it touches — clean boundaries hide couplings
-     that make a feature dependent anyway:
-       - a shared composition root or wiring function both features must edit
-       - a shared router, registry, or dispatch table both add an entry to
-       - numbered files in one sequence — migrations above all. Two features each
-         adding "the next number" merge cleanly and break at runtime.
-     Any of those means the second feature needs the first, however separate they look. -->
+<!-- List prerequisite ids in `needs:` only when this work cannot start until their
+     implementation is merged. Leave it empty for independent work.
+     Depend on an API, schema or decision you must build on. Shared files alone do not
+     create a dependency; incompatible decisions or a shared number allocation can.
+     `status: Submitted` on a working branch records a submission, not integration. -->
 
 
 ## Problem
@@ -55,8 +54,8 @@ needs:
      sitting is describing a feature that is too big, not a design worth the length. -->
 
 ## Tasks
-<!-- Each box is one PR-sized outcome you can verify without asking anyone, in the
-     order they should be done:
+<!-- Each box is one commit with an outcome you can verify, in execution order.
+     The feature is one pull request containing those commits:
        - [ ] the outcome, not the activity
 
      Guidance lives in comments here on purpose. A box written inside one is invisible

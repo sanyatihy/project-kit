@@ -85,14 +85,18 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"make them match — rename the file, or fix the id: — then claim again"}
 	}
 
-	// Draft is the only status work starts from. Shipped and Dropped are end states, and
+	if err := r.PlanError(target); err != nil {
+		return nil, &NotYours{err.Error(), "repair the plan, or claim something kit next offers"}
+	}
+
+	// Draft is the only status work starts from. Submitted and Dropped are end states, and
 	// a claim on either reopens finished history. What else refuses a claim is an
 	// unwritten plan (below), a BLOCKING inbox line, and an unmet `needs:`.
 	switch target.Status {
 	case StatusDraft:
 	case "":
 		return nil, &NotYours{target.Name() + " has no status:, so there is no work to claim",
-			`run: kit reset ` + target.ID + ` "<why>"`}
+			`run: kit reopen ` + target.ID + ` --repair "<why>"`}
 	default:
 		return nil, &NotYours{
 			fmt.Sprintf("%s is %s — it is not open work", target.Name(), target.Status),
@@ -125,7 +129,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	// meant to take something else — the same instruction a lost race carries.
 	if unmet := r.UnmetNeeds(target); len(unmet) > 0 {
 		return nil, &NotYours{
-			fmt.Sprintf("%s waits on %s: not shipped yet", target.Name(),
+			fmt.Sprintf("%s waits on %s: not integrated into this checkout yet", target.Name(),
 				strings.Join(unmet, ", ")),
 			"claim something kit next offers"}
 	}
@@ -142,8 +146,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	// every step exiting 0 while the agent loses the plan it was sent to build.
 	if !r.TrackedAtHEAD(target.Rel) {
 		return nil, fmt.Errorf("%s is not committed on %s, so the branch this would push "+
-			"carries no plan.\nLand the plan first — a pull or merge request, if the default branch "+
-			"is protected — then claim", target.Rel, orTrunk(r.Trunk()))
+			"carries no plan.\nLand the plan first through human review, then claim from an updated trunk checkout", target.Rel, orTrunk(r.Trunk()))
 	}
 
 	// The trunk is where a claim has to branch from, and the check above does not say so:
@@ -157,21 +160,11 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	if !r.PlanLanded(target) {
 		return nil, fmt.Errorf("%s is not on %s, so this claim would branch off the plan "+
 			"round instead of the trunk, and only its own author could merge it.\n"+
-			"Land the round first — a pull or merge request, if the default branch is "+
-			"protected — then claim", target.Rel, r.Trunk())
+			"Land the round first through human review, then claim from an updated trunk checkout", target.Rel, r.Trunk())
 	}
 
-	// The same question asked of HEAD rather than of the doc. The claim pushes HEAD, so
-	// every commit the trunk does not have travels under the new feature's name:
-	// reproduced in the worktree that had just shipped 0001, where `kit claim 0002`
-	// exited 0 and the branch it pushed logged 0001's commits against the trunk. That
-	// pull request contains another feature, and only its author could merge it.
-	if trunk := r.trunkRef(); trunk != "" && !r.reaches("HEAD", trunk) {
-		return nil, fmt.Errorf("this checkout is ahead of %s, so the branch this would "+
-			"push carries commits that are not %s's — another feature's work, which only "+
-			"its own author could merge.\nClaim from a checkout of the trunk: git worktree "+
-			"add --detach %s %s, then claim there", r.Trunk(), target.ID,
-			r.WorktreePath(r.Trunk()), r.Trunk())
+	if why := r.foundationProblem(); why != "" {
+		return nil, fmt.Errorf("cannot claim from this foundation: %s", why)
 	}
 
 	// One feature per checkout, which until now was a rule in prose and nothing else:

@@ -151,8 +151,8 @@ func TestNewTakesTheHighestIDNotTheFirstGap(t *testing.T) {
 	// Filling a gap would reuse the number of a dropped feature, and every branch
 	// and commit citing it would then point at the wrong doc.
 	p := setUp(t)
-	p.write("docs/features/0001-first.md", "---\nid: 0001\nstatus: Shipped\n---\n")
-	p.write("docs/features/0003-third.md", "---\nid: 0003\nstatus: Shipped\n---\n")
+	p.write("docs/features/0001-first.md", "---\nid: 0001\nstatus: Submitted\n---\n")
+	p.write("docs/features/0003-third.md", "---\nid: 0003\nstatus: Submitted\n---\n")
 
 	p.run("new", "Fourth").ok().has("0004-fourth.md")
 	if p.exists("docs/features/0002-fourth.md") {
@@ -392,7 +392,7 @@ func TestHarvestMakesTheCommitOnARepoWithNoCommits(t *testing.T) {
 	}
 
 	// The commit is the point: the work and the doc arrive together, and the tree is
-	// clean afterwards, which is what `kit ship` refuses to run without.
+	// clean afterwards, which is what `kit submit` refuses to run without.
 	if dirty := p.run("audit").out(); strings.Contains(dirty, "status-uncommitted") {
 		t.Errorf("harvest left the doc uncommitted:\n%s", dirty)
 	}

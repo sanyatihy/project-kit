@@ -44,21 +44,6 @@ touch it. Most forges do not delete a source branch on merge, and nothing says t
 **Promote when:** a merged feature is seen holding a slot, or a second machine reads a board
 this one has already cleaned.
 
-## A scaffolded project's CI has the flaws 0053 fixed here
-
-`templates/stacks/go/check.yml` is where the kit's own workflow came from, so it carries
-both: `golangci-lint-action` at `version: latest`, and no `timeout-minutes` under a
-six-hour default. Every project `kit init --stack go` has written holds a copy, and
-nothing updates a workflow after the first run.
-
-Pinning in a template means the template names a version that ages, which is the reason
-this is not simply the same two-line fix.
-
-**Value:** a scaffolded project stops going red on a release nobody made, and a hung job
-stops costing six hours.
-**Promote when:** a scaffolded project's CI turns red with no commit behind it, or a job
-there hangs.
-
 ## A comment citing a rule by number misdirects the next reader
 
 `TestNothingUserFacingCitesARuleByNumber` reads string literals only, and says why: a

@@ -1,6 +1,7 @@
 package kit
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -10,7 +11,7 @@ import (
 )
 
 // The claim: which branch holds which feature, what the trunk is, and what is waiting on
-// the far side of ship. A claim is a branch name and nothing else, so all of this is ref
+// the far side of submit. A claim is a branch name and nothing else, so all of this is ref
 // reading.
 
 // Trunk is the project's default branch: whatever `origin/HEAD` points at, then `main`,
@@ -57,7 +58,7 @@ func (r *Repo) findTrunk() string {
 	// checkout is on, but only when it is not claim-shaped. A claim branch leads with its
 	// feature's ID, so refusing those is what stops a worktree deciding it is the trunk —
 	// and a wrong answer here would report every branch as carrying no work.
-	if head := r.HeadBranch(); head != "" && idPrefixRe.FindString(head) == "" {
+	if head := r.HeadBranch(); head != "" && idPrefixRe.FindString(head) == "" && !strings.HasPrefix(head, "plan/") {
 		return head
 	}
 	return ""
@@ -116,7 +117,7 @@ func (r *Repo) HeadBranch() string {
 //
 // A rebase detaches HEAD, so `symbolic-ref` names nothing and every ownership question
 // answers "somebody else's": tidying your own branch made the board report the feature as
-// taken by the branch you were standing on, and `ship` told you to go and ship it from
+// taken by the branch you were standing on, and `submit` told you to go and submit it from
 // the worktree you were already in. Git keeps the name it is replaying onto beside HEAD;
 // `git branch` renders it as `(no branch, rebasing 0002-beta)`, which is a sentence.
 func (r *Repo) rebasingBranch() string {
@@ -187,11 +188,11 @@ func mentionsAny(text string, ids []string) bool {
 // Equality, not membership in `Claims`. `Claims` matches every branch mentioning the id,
 // which is what a second claimant looks like and not what ownership is: after losing the
 // race, `git checkout -b notes-0001-alpha` made the board print the feature as yours and
-// let `ship` freeze the winner's doc. `review-0001` and `fix-0001` qualified too, so it
+// let `submit` freeze the winner's doc. `review-0001` and `fix-0001` qualified too, so it
 // needed no malice. The claim is the branch the push created, so only that name is it.
 //
-// One definition for two callers: `next` reports it as yours, and `ship` requires it.
-// Shipping from the worktree holding the claim is the documented path; shipping from
+// One definition for two callers: `next` reports it as yours, and `submit` requires it.
+// Submitting from the worktree holding the claim is the documented path; submitting from
 // anywhere else is one agent freezing another's work.
 func (r *Repo) Mine(id string) bool {
 	f := r.FeatureByID(id)
@@ -274,7 +275,7 @@ type Review struct {
 }
 
 // AwaitingReview lists the features waiting for somebody other than their builder: a
-// claim branch the remote has, carrying a copy of the doc that says Shipped, and not yet
+// claim branch the remote has, carrying a copy of the doc that says Submitted, and not yet
 // reachable from the trunk.
 //
 // The status is read from the branch rather than from this checkout, because the branch
@@ -291,16 +292,19 @@ func (r *Repo) AwaitingReview() []Review {
 	if !ok {
 		return nil
 	}
-	trunk := r.trunkRef()
+	trunk := r.integrationRef()
 	var out []Review
-	for _, f := range r.Features {
+	for _, f := range r.reviewFeatures(heads) {
+		if IsSubmitted(r.integratedStatuses()[f.Rel]) || (r.Mine(f.ID) && f.Status == StatusDraft) {
+			continue
+		}
 		ids := claimIDs(f)
 		for _, name := range heads {
 			if r.isTrunk(name) || !mentionsAny(name, ids) {
 				continue
 			}
-			rev := r.resolveBranch(name)
-			if rev == "" || r.statusOn(rev, f.Rel) != StatusShipped {
+			rev := r.claimRev(name)
+			if rev == "" || !IsSubmitted(r.statusOn(rev, f.Rel)) {
 				continue
 			}
 			// A merged branch the remote still carries is not waiting for anybody. The
@@ -317,20 +321,50 @@ func (r *Repo) AwaitingReview() []Review {
 	return out
 }
 
+// reviewFeatures includes harvested documents that have never been on this trunk.
+// Only unknown claim names need an extra read; ordinary planned features use the board.
+func (r *Repo) reviewFeatures(heads []string) []*Feature {
+	features := append([]*Feature(nil), r.Features...)
+	seen := map[string]bool{}
+	for _, f := range features {
+		seen[f.ID] = true
+	}
+	dir := r.Rel(r.FeaturesDir)
+	for _, name := range heads {
+		id := idPrefixRe.FindString(name)
+		if id == "" || seen[id] || r.isTrunk(name) {
+			continue
+		}
+		rel := dir + "/" + name + ".md"
+		raw, err := r.gitRun("show", r.claimRev(name)+":"+rel)
+		if err != nil {
+			continue
+		}
+		fields, _ := ParseFrontmatter(Normalise(raw))
+		if fields["id"] != id || !IsSubmitted(fields["status"]) {
+			continue
+		}
+		features = append(features, &Feature{ID: id, Title: fields["title"],
+			Status: StatusSubmitted, Rel: rel, Path: filepath.Join(r.Root, rel)})
+		seen[id] = true
+	}
+	return features
+}
+
 // OnlyHere reports whether a feature's work exists nowhere but this checkout: no branch
 // the remote has claims it, and the trunk on the remote carries no copy of its doc saying
-// Shipped.
+// Submitted.
 //
 // Two independent negatives, because either alone misfires. A branch the remote has is
 // the awaiting-review state and must not report; the trunk's copy is the merged one, and
-// a Shipped status on it is the proof the handoff happened.
+// a Submitted status on it is the proof the handoff happened.
 //
 // The status is the test and presence is not. A doc reaches the trunk when it is
 // *drafted* — plan rounds merge Drafts — so "the trunk has the file" is true for every
 // feature before a line of work exists, and testing that would silence this check
 // completely. Reading the age of the commit that last wrote the doc was the earlier
-// answer and it misfired the other way: once 0038 had `kit ship` ask for compaction,
-// editing a shipped doc became routine, and one blank line appended to a doc merged weeks
+// answer and it misfired the other way: once 0038 had `kit submit` ask for compaction,
+// editing a submitted doc became routine, and one blank line appended to a doc merged weeks
 // ago reported at HIGH with a fix line that recreated a stale claim branch.
 //
 // Unknown answers false throughout: offline, no remote, a remote that did not answer, or
@@ -355,7 +389,7 @@ func (r *Repo) OnlyHere(f *Feature) bool {
 		// and has said so; a trunk that exists and has not been fetched is ignorance.
 		return !trunked
 	}
-	return statuses[f.Rel] != StatusShipped
+	return !IsSubmitted(statuses[f.Rel])
 }
 
 // trunkStatuses is every feature doc's status on the remote's trunk, read in one pass and
@@ -366,9 +400,9 @@ func (r *Repo) OnlyHere(f *Feature) bool {
 // anybody else, and a local trunk holding a merge nobody has seen answers a different one.
 //
 // Every branch this repo counts as a trunk, not only the one `origin/HEAD` names, and
-// Shipped anywhere wins. A stale `origin/HEAD` — the ordinary state of a clone made before
+// Submitted anywhere wins. A stale `origin/HEAD` — the ordinary state of a clone made before
 // a default branch was renamed — points at a branch nothing merges to any more, and one
-// that fires this HIGH on every shipped feature is worse than no check at all.
+// that fires this HIGH on every submitted feature is worse than no check at all.
 //
 // Two processes per trunk — `ls-tree` names the blobs, one `cat-file --batch` reads them —
 // where asking per feature cost a `log` each plus a `branch --contains` per revision: 63
@@ -383,11 +417,18 @@ func (r *Repo) trunkStatuses() (map[string]string, bool) {
 	}
 	var found map[string]string
 	for _, ref := range r.remoteTrunkRefs() {
-		for rel, status := range r.statusesOn(ref) {
+		var statuses map[string]string
+		remote, branch, _ := strings.Cut(ref, "/")
+		if tip, ok := r.remoteTip(remote, branch); ok && tip == r.integrationRef() {
+			statuses = r.integratedStatuses()
+		} else {
+			statuses = r.statusesOn(ref)
+		}
+		for rel, status := range statuses {
 			if found == nil {
 				found = map[string]string{}
 			}
-			if found[rel] != StatusShipped {
+			if !IsSubmitted(found[rel]) {
 				found[rel] = status
 			}
 		}
@@ -415,7 +456,7 @@ func (r *Repo) statusesOn(ref string) map[string]string {
 	if err != nil {
 		return nil
 	}
-	paths := map[string]string{} // blob sha -> path
+	paths := map[string][]string{} // blob sha -> paths
 	var wanted strings.Builder
 	for _, entry := range gitPaths(listing) {
 		meta, path, found := strings.Cut(entry, "\t")
@@ -426,11 +467,11 @@ func (r *Repo) statusesOn(ref string) map[string]string {
 		if len(fields) < 3 || fields[1] != "blob" {
 			continue
 		}
-		paths[fields[2]] = path
+		paths[fields[2]] = append(paths[fields[2]], path)
 		wanted.WriteString(fields[2] + "\n")
 	}
 	if len(paths) == 0 {
-		return nil
+		return map[string]string{}
 	}
 	batch, err := r.gitFed(wanted.String(), "cat-file", "--batch")
 	if err != nil {
@@ -454,9 +495,11 @@ func (r *Repo) statusesOn(ref string) map[string]string {
 		if err != nil || size > len(body) {
 			break
 		}
-		if path, ok := paths[fields[0]]; ok {
+		if names, ok := paths[fields[0]]; ok {
 			doc, _ := ParseFrontmatter(Normalise(body[:size]))
-			out[path] = doc["status"]
+			for _, path := range names {
+				out[path] = doc["status"]
+			}
 		}
 		rest = strings.TrimPrefix(body[size:], "\n")
 	}
@@ -491,7 +534,7 @@ func (r *Repo) remoteTrunkRefs() []string {
 // operator's, and it separated none of them. That is an argument for giving agents
 // identities, not for deleting the arm that pays off when they have them. Unknown answers
 // false: this makes the invariant legible, and legibility is what a well-behaved agent
-// needs. Bounded by the number of shipped-and-unmerged features, which is small.
+// needs. Bounded by the number of submitted-and-unmerged features, which is small.
 func (r *Repo) BuiltHere(id, rev string) bool {
 	if r.Mine(id) {
 		return true
@@ -587,7 +630,7 @@ func (r *Repo) OrphanClaims() []string {
 //
 // One `ls-tree` per branch, which no board read makes: this answers a refusal in `drop`,
 // where the alternative is handing out a number a draft in flight already holds.
-func (r *Repo) DocBranches(id string) []string {
+func (r *Repo) DocBranches(id string) ([]string, error) {
 	r.loadGit()
 	dir := "docs/features"
 	if r.FeaturesDir != "" {
@@ -601,20 +644,25 @@ func (r *Repo) DocBranches(id string) []string {
 			continue
 		}
 		seen[name] = true
-		rev := r.resolveBranch(name)
-		if rev == "" {
-			continue
-		}
-		for _, path := range gitPaths(
-			r.git("ls-tree", "-r", "-z", "--name-only", rev, "--", dir+"/")) {
-			if strings.HasPrefix(filepath.Base(path), id+"-") {
-				out = append(out, name)
-				break
+		revisions := []string{r.resolveBranch(name), r.claimRev(name)}
+		for i, rev := range revisions {
+			if rev == "" || (i > 0 && rev == revisions[0]) {
+				continue
+			}
+			listing, err := r.gitRun("ls-tree", "-r", "-z", "--name-only", rev, "--", dir+"/")
+			if err != nil {
+				return nil, fmt.Errorf("%s cannot be inspected — run git fetch before releasing an id: %w", name, err)
+			}
+			for _, path := range gitPaths(listing) {
+				if strings.HasPrefix(filepath.Base(path), id+"-") {
+					out = append(out, name)
+					break
+				}
 			}
 		}
 	}
 	sort.Strings(out)
-	return out
+	return out, nil
 }
 
 // BranchCarriesItsDoc reports whether a branch holds the feature doc it is named after.

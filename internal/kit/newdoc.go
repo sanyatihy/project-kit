@@ -58,6 +58,7 @@ func idRef(id string) string { return "refs/kit/ids/" + id }
 
 // Reservation is an id the remote has handed out, and what its record says it was for.
 type Reservation struct {
+	tip   string
 	ID    string
 	Title string    // "" for one made before a reservation recorded anything
 	When  time.Time // zero for the same reason
@@ -97,18 +98,18 @@ func (r *Repo) fetchReservations() bool {
 // carries no date and no subject, and answers the zero value for both.
 func (r *Repo) readReservations() []Reservation {
 	const sep = "\x1f"
-	format := "%(refname)" + sep + "%(committerdate:unix)" + sep + "%(contents:subject)"
+	format := "%(refname)" + sep + "%(committerdate:unix)" + sep + "%(contents:subject)" + sep + "%(objectname)"
 	var out []Reservation
 	for _, line := range strings.Split(r.git("for-each-ref", "--format="+format, idRef("")), "\n") {
 		fields := strings.Split(strings.TrimSpace(line), sep)
-		if len(fields) != 3 {
+		if len(fields) != 4 {
 			continue
 		}
 		id := strings.TrimPrefix(fields[0], idRef(""))
 		if id == "" {
 			continue
 		}
-		held := Reservation{ID: id,
+		held := Reservation{ID: id, tip: fields[3],
 			Title: strings.TrimSpace(strings.TrimPrefix(fields[2], id+" "))}
 		if secs, err := strconv.ParseInt(fields[1], 10, 64); err == nil && secs > 0 {
 			held.When = time.Unix(secs, 0).UTC()

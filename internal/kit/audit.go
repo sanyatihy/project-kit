@@ -11,7 +11,7 @@ import (
 
 // Thresholds, tuned to the cadence of the thing being watched rather than to an
 // operator's calendar. Both were an order of magnitude larger when the assumption
-// was one person shipping weekly.
+// was one person submitting weekly.
 //
 // A claimed feature is held by something that commits in minutes, so days of
 // silence mean the agent died or the work was abandoned, not that it is going
@@ -80,25 +80,27 @@ var (
 	checkDuplicateID = Check{"duplicate-id", High,
 		"two feature docs share one id:, so one branch claims both and one inbox line blocks both"}
 	// HIGH, and next to duplicate-id for the same reason: the doc says two things about
-	// itself, and every command that reads one of them believes it. `ship` used to write
+	// itself, and every command that reads one of them believes it. `submit` used to write
 	// the line nothing reads, so the finding survived its own fix.
 	checkDuplicateKey = Check{"duplicate-key", High,
 		"a doc declares one frontmatter key twice, so the value the kit reads is not the line a write would change"}
-	checkStalled = Check{"stalled", High,
+	checkFrozenDoc = Check{"frozen-doc", High,
+		"a feature already Submitted on the trunk was changed or deleted, or that history could not be verified"}
+	checkStalled = Check{"stalled", Medium,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
-	checkInboxStale = Check{"inbox-stale", High,
+	checkInboxStale = Check{"inbox-stale", Medium,
 		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkSecretInDoc = Check{"secret-in-doc", High,
 		"a doc contains something shaped like a real credential"}
 	// HIGH for stalled's reasons: it is silent — every command exits 0, the doc says
 	// finished, and the board has nothing to add — and the fix is one push. Four features
-	// were shipped and never pushed with `audit --strict` green throughout.
-	checkShippedNotPushed = Check{"shipped-not-pushed", High,
-		"Shipped, but the work is on no remote — it exists on one machine"}
+	// were submitted and never pushed with `audit --strict` green throughout.
+	checkSubmittedNotPushed = Check{"submitted-not-pushed", High,
+		"Submitted, but the work is on no remote — it exists on one machine"}
 	// HIGH for the same reasons one step earlier: a status the working tree alone carries
 	// is silent — every command exits 0 and the doc reads as finished — and the committed
-	// record says the feature was never finished at all. `ship` and `drop` commit what they
+	// record says the feature was never finished at all. `submit` and `drop` commit what they
 	// write, so what this catches is a doc they stamped before they did, a stamp lost in a
 	// rebase, and a commit that failed and was never made by hand afterwards.
 	checkStatusUncommitted = Check{"status-uncommitted", High,
@@ -109,7 +111,7 @@ var (
 	// empty section means the section was never written.
 	checkUnfilledTemplate = Check{"unfilled-template", High,
 		"a committed doc has an empty ## Problem or ## Design, or a ## Tasks with no boxes — nobody wrote the plan"}
-	// HIGH for shipped-not-pushed's reason: it was silent by construction. A doc the kit
+	// HIGH for submitted-not-pushed's reason: it was silent by construction. A doc the kit
 	// could not open was dropped on the floor, so no command ever mentioned it again —
 	// and every plan check it should have failed simply did not run.
 	checkUnreadableDoc = Check{"unreadable-doc", High,
@@ -122,16 +124,16 @@ var (
 	// strips, so an empty section means the section was never written.
 	checkUnfilledVision = Check{"unfilled-vision", Medium,
 		"docs/VISION.md is still the stub, and features are being drafted against it"}
-	checkDoneNotShipped = Check{"done-not-shipped", Medium,
+	checkDoneNotSubmitted = Check{"done-not-submitted", Medium,
 		"every task is ticked but the status is still open"}
 	// One question with two answers, because a missing as-built doc and a stale one are
-	// the same gap measured differently: what shipped is not what a reader is told. It
+	// the same gap measured differently: what submitted is not what a reader is told. It
 	// was two findings at two severities, and the fix for both is to write the file.
 	checkTechDrift = Check{"tech-drift", Medium,
-		"nothing describes the as-built system, or it predates the most recent shipped: date"}
-	// MEDIUM for tech-drift's reason: the drift is between what shipped and what a reader
+		"nothing describes the as-built system, or it predates the most recent submitted: date"}
+	// MEDIUM for tech-drift's reason: the drift is between what submitted and what a reader
 	// gets, and no agent is misled about state. HIGH would be worse than the defect —
-	// `audit --strict` runs before every ship, so it would refuse every feature between
+	// `audit --strict` runs before every submit, so it would refuse every feature between
 	// one release and the next.
 	checkTagStale = Check{"tag-stale", Medium,
 		fmt.Sprintf("the newest tag is more than %d commits behind the trunk, so an "+
@@ -139,8 +141,8 @@ var (
 	// One field with three ways to be wrong: absent, unparseable, or a day that has not
 	// happened. `tech-drift` reads the value, so a date in the future made that finding
 	// unfixable for as long as the date said — which is why the field is checked at all.
-	checkShippedNoDate = Check{"shipped-no-date", Medium,
-		"Shipped with no shipped: date, or one that is not a date, or one still to come"}
+	checkSubmittedNoDate = Check{"submitted-no-date", Medium,
+		"Submitted with no submitted: date, or one that is not a date, or one still to come"}
 	// HIGH, not tidiness: the branch is named from the filename and `Claims` matches
 	// the id, so a doc in this state makes its own claim invisible and the board goes
 	// on handing the feature out. It has to fail --strict — it cannot be left sitting
@@ -153,11 +155,11 @@ var (
 	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
 		"an INBOX.md line the kit cannot resolve to a feature: out of format, or naming an id nobody wrote"}
 	checkNeedsUnknown = Check{"needs-unknown", Medium,
-		"a needs: names a feature that does not exist or can never ship, so the wait never ends"}
+		"a needs: names a feature that does not exist or can never submit, so the wait never ends"}
 	// HIGH: it names the worst failure the kit has — two agents building one feature,
 	// each about to open a pull request the other's branch cannot be merged beside — and
 	// at MEDIUM it gated nothing while `--strict` refused work over a missing date. The
-	// cost is that a project with a stray claim branch cannot ship until it is deleted,
+	// cost is that a project with a stray claim branch cannot submit until it is deleted,
 	// which is the intent: `release` is one command and the branch is the whole claim.
 	checkSplitClaim = Check{"split-claim", High,
 		"two branches claim one feature — two agents believe they own it"}
@@ -179,13 +181,6 @@ var (
 		"no status: in the frontmatter, or one the kit does not recognise"}
 	checkProtocolStale = Check{"protocol-stale", Medium,
 		"AGENTS.md and the installed kit disagree about the work protocol, so one side is superseded"}
-	// MEDIUM for done-not-shipped's reason: nothing here is untrue, and `ship` refuses
-	// the same doc anyway. What this adds is the warning while the fix is still legal —
-	// past `ship` the doc is frozen and rule 17 forbids the edit.
-	checkLogOutweighsPlan = Check{"log-outweighs-plan", Medium,
-		fmt.Sprintf("more than %d%% of a doc is ## Log, so the facts the project runs "+
-			"on are filed in a plan nothing reads", int(LogShareMax*100))}
-
 	// LOW — worth saying, and not worth stopping for.
 	// The first check at this level, and it is here because it cannot tell a dependency
 	// from a comparison: a draft that contrasts itself with a sibling draft trips it, and
@@ -194,7 +189,7 @@ var (
 	// an id their needs: omits and every one is a reference to settled work, so an
 	// ungated version fires on two docs in three; with the gate, none.
 	checkNeedsUnstated = Check{"needs-unstated", Low,
-		"a plan names a feature that has not shipped, and needs: does not list it"}
+		"a plan names a feature that has not submitted, and needs: does not list it"}
 	// One command writes all three of these files and overwrites none of them, so a
 	// project missing more than one is one defect with one fix. It was three findings
 	// telling the reader to run `kit init .` three times.
@@ -206,7 +201,7 @@ var (
 // `--offline`, or when the remote is asked and does not answer, they are not evaluated at
 // all. Named here rather than written into the command, so a check that grows a network
 // question cannot fall out of the notice that says what did not run.
-var OfflineChecks = []Check{checkShippedNotPushed}
+var OfflineChecks = []Check{checkSubmittedNotPushed}
 
 // CheckCodes is a check list as codes, for a message that names what did not run.
 func CheckCodes(checks []Check) []string {
@@ -220,13 +215,13 @@ func CheckCodes(checks []Check) []string {
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
-	checkDuplicateID, checkDuplicateKey, checkIDMismatch, checkSplitClaim, checkStalled,
+	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled,
 	checkInboxStale,
-	checkStatusUncommitted, checkShippedNotPushed,
-	checkUnfilledVision, checkDoneNotShipped, checkTechDrift, checkTagStale,
-	checkShippedNoDate, checkInboxUnparsed,
+	checkStatusUncommitted, checkSubmittedNotPushed,
+	checkUnfilledVision, checkDoneNotSubmitted, checkTechDrift, checkTagStale,
+	checkSubmittedNoDate, checkInboxUnparsed,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
-	checkNoStatus, checkNoProtocol, checkProtocolStale, checkLogOutweighsPlan,
+	checkNoStatus, checkNoProtocol, checkProtocolStale,
 	checkNeedsUnstated,
 }
 
@@ -344,20 +339,20 @@ var featureChecks = []featureCheck{
 	// Before every check that reads a frontmatter field: a repeated key means the field
 	// they read is not the field the author edits.
 	{[]Check{checkDuplicateKey}, duplicateKey},
-	{[]Check{checkShippedNoDate}, shippedDate},
+	{[]Check{checkSubmittedNoDate}, submittedDate},
 	{[]Check{checkStatusUncommitted}, statusUncommitted},
-	{[]Check{checkShippedNotPushed}, shippedNotPushed},
+	{[]Check{checkSubmittedNotPushed}, submittedNotPushed},
 	{[]Check{checkStalled}, stalled},
-	{[]Check{checkDoneNotShipped}, doneNotShipped},
+	{[]Check{checkDoneNotSubmitted}, doneNotSubmitted},
 	{[]Check{checkNoStatus}, statusState},
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
 	{[]Check{checkSplitClaim}, claimState},
 	{[]Check{checkIDMismatch}, idMismatch},
-	{[]Check{checkLogOutweighsPlan}, logWeight},
 }
 
 // repoChecks run after every feature has been through the list above.
 var repoChecks = []repoCheck{
+	{[]Check{checkFrozenDoc}, frozenDocs},
 	{[]Check{checkOrphanClaim}, orphanClaims},
 	{[]Check{checkOrphanReservation}, orphanReservations},
 	{[]Check{checkInboxUnparsed, checkInboxStale}, inboxState},
@@ -393,7 +388,7 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		for _, c := range featureChecks {
 			// A doc nobody could read gets that one finding and no other. Every check
 			// below reads content, and on the empty struct they all fire — no-status,
-			// three unfilled-templates, done-not-shipped — none of which is a fact
+			// three unfilled-templates, done-not-submitted — none of which is a fact
 			// about the file.
 			if f.Unreadable != (c.Codes[0] == checkUnreadableDoc) {
 				continue
@@ -408,6 +403,45 @@ func Audit(r *Repo, today time.Time, protocol string) []Finding {
 		found = append(found, c.Run(rs)...)
 	}
 	return found
+}
+
+// frozenDocs compares against integrated history, including deleted documents.
+func frozenDocs(s *repoState) []Finding {
+	if !s.r.HasHistory() {
+		return nil
+	}
+	unreadable := func() []Finding {
+		return []Finding{finding(checkFrozenDoc, s.r.Rel(s.r.FeaturesDir),
+			"cannot verify frozen documents against the published trunk",
+			"run git fetch and update the checkout before auditing again")}
+	}
+	trunk := s.r.integrationRef()
+	if trunk == "" {
+		if !s.r.Offline && len(s.r.remotes()) > 0 {
+			return unreadable()
+		}
+		return nil
+	}
+	changed, err := s.r.gitRun("diff", "--name-only", "-z", trunk, "--", s.r.FeaturesDir)
+	if err != nil {
+		return unreadable()
+	}
+	if changed == "" {
+		return nil
+	}
+	statuses := s.r.integratedStatuses()
+	if statuses == nil {
+		return unreadable()
+	}
+	var out []Finding
+	for _, path := range gitPaths(changed) {
+		if IsSubmitted(statuses[path]) {
+			out = append(out, finding(checkFrozenDoc, path,
+				"this document is Submitted on the trunk and differs here",
+				"preserve new work, update the checkout, and restore this document from the trunk"))
+		}
+	}
+	return out
 }
 
 // The ID is the primary key: branches claim by it, inbox lines block by it, and commits
@@ -450,39 +484,39 @@ func duplicateKey(s *docState) []Finding {
 
 // One decision with three outcomes, because the field is one thing: absent, unparseable,
 // or a day that has not happened. Reading only the parsed value collapsed the middle into
-// the first and reported "no shipped: date" on a doc that had one written in it. All
+// the first and reported "no submitted: date" on a doc that had one written in it. All
 // three report under one code: it is one field, and correcting it is one edit.
 //
-// Asked of a Shipped doc, whose plan is frozen — the field is not. `ship` stamps it, so a
+// Asked of a Submitted doc, whose plan is frozen — the field is not. `submit` stamps it, so a
 // wrong one is the wreckage of a hand edit, and `tech-drift` reads the value.
-func shippedDate(s *docState) []Finding {
-	if s.f.Status != StatusShipped {
+func submittedDate(s *docState) []Finding {
+	if !IsSubmitted(s.f.Status) {
 		return nil
 	}
 	switch {
-	case s.f.shippedText == "":
-		return []Finding{finding(checkShippedNoDate, s.at,
-			s.f.Name()+": Shipped with no shipped: date",
-			"add the date it actually shipped")}
-	case s.f.Shipped.IsZero():
-		return []Finding{finding(checkShippedNoDate, s.at,
-			fmt.Sprintf("%s: shipped: %q is not a date", s.f.Name(), clip(s.f.shippedText, 40)),
+	case s.f.submittedText == "":
+		return []Finding{finding(checkSubmittedNoDate, s.at,
+			s.f.Name()+": Submitted with no submitted: date",
+			"add the date it actually submitted")}
+	case s.f.Submitted.IsZero():
+		return []Finding{finding(checkSubmittedNoDate, s.at,
+			fmt.Sprintf("%s: submitted: %q is not a date", s.f.Name(), clip(s.f.submittedText, 40)),
 			"write it as "+DateLayout)}
-	case s.f.Shipped.After(s.today):
-		return []Finding{finding(checkShippedNoDate, s.at,
-			fmt.Sprintf("%s: shipped: %s has not arrived yet",
-				s.f.Name(), s.f.Shipped.Format(DateLayout)),
-			"correct it to the day it actually shipped")}
+	case s.f.Submitted.After(s.today):
+		return []Finding{finding(checkSubmittedNoDate, s.at,
+			fmt.Sprintf("%s: submitted: %s has not arrived yet",
+				s.f.Name(), s.f.Submitted.Format(DateLayout)),
+			"correct it to the day it actually submitted")}
 	}
 	return nil
 }
 
-// Shipping is a handoff, and this is the far side of it: the doc says the builder is
+// Submitting is a handoff, and this is the far side of it: the doc says the builder is
 // finished and the work reached nobody. Silent by construction — the feature has left the
 // board, so nothing else would ever mention it again.
 // The one check that reads HEAD rather than the working tree. Everything else here asks
 // what the files say, which is why a stamp nobody committed read as agreement: the doc on
-// disk said Shipped and no check looked anywhere else. A doc HEAD does not carry at all
+// disk said Submitted and no check looked anywhere else. A doc HEAD does not carry at all
 // counts as absent — an uncommitted terminal doc is the same loss.
 func statusUncommitted(s *docState) []Finding {
 	if !terminal(s.f.Status) || !s.r.HasHistory() {
@@ -496,7 +530,7 @@ func statusUncommitted(s *docState) []Finding {
 	if was == "" {
 		carries = "carries no copy of it"
 	}
-	verb := "Ship"
+	verb := "Submit"
 	if s.f.Status == StatusDropped {
 		verb = "Drop"
 	}
@@ -505,12 +539,12 @@ func statusUncommitted(s *docState) []Finding {
 		fmt.Sprintf("commit it: git commit %s -m %q", s.f.Rel, verb+" "+s.f.ID))}
 }
 
-func shippedNotPushed(s *docState) []Finding {
-	if s.f.Status != StatusShipped || !s.r.OnlyHere(s.f) {
+func submittedNotPushed(s *docState) []Finding {
+	if !IsSubmitted(s.f.Status) || !s.r.OnlyHere(s.f) {
 		return nil
 	}
-	return []Finding{finding(checkShippedNotPushed, s.at,
-		s.f.Name()+": Shipped, but no remote carries the work",
+	return []Finding{finding(checkSubmittedNotPushed, s.at,
+		s.f.Name()+": Submitted, but no remote carries the work",
 		"push it: git push -u origin "+s.f.Branch())}
 }
 
@@ -556,10 +590,10 @@ func stalled(s *docState) []Finding {
 }
 
 // Boxes, not the absence of open ones. A doc with no ## Tasks section at all has none
-// open either, and was reported as finished — with a fix, `kit ship`, that refuses it for
+// open either, and was reported as finished — with a fix, `kit submit`, that refuses it for
 // exactly that reason. A section with no boxes in it, however it got that way, is
 // unfilled-template's: nobody wrote a plan an agent can work.
-func doneNotShipped(s *docState) []Finding {
+func doneNotSubmitted(s *docState) []Finding {
 	if !s.tracked || terminal(s.f.Status) {
 		return nil
 	}
@@ -567,14 +601,14 @@ func doneNotShipped(s *docState) []Finding {
 	switch {
 	case total > 0 && open == 0:
 		// Naming the command, not the edit: hand-stamping the status and date is what
-		// `shipped-no-date` is the wreckage of. With no id: there is
-		// no command to name — `kit ship` takes one — so the fix says what has to be
-		// true first rather than printing `run: kit ship ` and stopping.
-		fix := "run: kit ship " + s.f.ID + " — or add the next task"
+		// `submitted-no-date` is the wreckage of. With no id: there is
+		// no command to name — `kit submit` takes one — so the fix says what has to be
+		// true first rather than printing `run: kit submit ` and stopping.
+		fix := "run: kit submit " + s.f.ID + " — or add the next task"
 		if s.f.ID == "" {
-			fix = "give it an id: matching its filename, then run kit ship"
+			fix = "give it an id: matching its filename, then run kit submit"
 		}
-		return []Finding{finding(checkDoneNotShipped, s.at,
+		return []Finding{finding(checkDoneNotSubmitted, s.at,
 			fmt.Sprintf("%s: every task is ticked but status is %s", s.f.Name(), s.f.Status),
 			fix)}
 	}
@@ -585,17 +619,17 @@ func doneNotShipped(s *docState) []Finding {
 // Reported under one code because the fix is the same either way, and the doc is in one
 // state or the other, never both.
 func statusState(s *docState) []Finding {
-	// Both fixes name the command. "use one of: Draft, Dropped, Shipped" was an
+	// Both fixes name the command. "use one of: Draft, Dropped, Submitted" was an
 	// instruction to hand-edit `status:`, which is what put the unrecognised value there
 	// and what rule 6 forbids — the one finding a 27-session chain repaired by breaking
-	// the rule it was told to follow. `reset` writes the field, including into a doc that
+	// the rule it was told to follow. `reopen` writes the field, including into a doc that
 	// carries no `status:` line at all.
-	fix := `run: kit reset ` + s.f.ID + ` "<why>"`
-	// `kit reset  "<why>"` is a command nobody can type. A doc with no id: has no key to
+	fix := `run: kit reopen ` + s.f.ID + ` --repair "<why>"`
+	// `kit reopen  "<why>"` is a command nobody can type. A doc with no id: has no key to
 	// name it by, so the fix names the file — and `id-mismatch` is already reporting the
 	// missing id at HIGH beside this.
 	if s.f.ID == "" {
-		fix = "add an id: to " + s.f.Rel + " — kit reset takes the id, not the filename"
+		fix = "add an id: to " + s.f.Rel + " — kit reopen takes the id, not the filename"
 	}
 	switch {
 	case s.f.Status == "":
@@ -612,7 +646,7 @@ func statusState(s *docState) []Finding {
 // A terminal doc is asked nothing about its plan. A stub retired with `kit drop` before
 // anybody wrote it reported three HIGH findings whose fixes were to write a plan for work
 // that will never happen, or to set a status back to Draft — the edit rule 21 forbids. It
-// is HIGH and `--strict` is project-wide, so one such doc refused every ship in the
+// is HIGH and `--strict` is project-wide, so one such doc refused every submit in the
 // project for ever.
 //
 // An untracked doc is exempt for the other reason: `kit new` writes the headings and
@@ -623,7 +657,7 @@ func unfilledTemplate(s *docState) []Finding {
 	}
 	// Naming the command rather than the edit: the only status work starts from is Draft,
 	// so "set it to Draft" was advice to leave a doc exactly as it already was.
-	fix := `write the plan, or retire it: kit drop ` + s.f.ID + ` "<why>"`
+	fix := `write the plan, or retire it: kit drop ` + s.f.ID + ` --repair "<why>"`
 	if s.f.ID == "" {
 		fix = "write the plan, or give it an id: and retire it with kit drop"
 	}
@@ -642,7 +676,7 @@ func unfilledTemplate(s *docState) []Finding {
 }
 
 // The claim is a branch name and nothing else, so branches are the only place a claim can
-// disagree with a doc — and only for a feature still being worked: once it is Shipped its
+// disagree with a doc — and only for a feature still being worked: once it is Submitted its
 // branches are merged leftovers, which every project has.
 //
 // Building on a Draft is the normal flow. What is still a defect is building on questions
@@ -677,22 +711,6 @@ func idMismatch(s *docState) []Finding {
 	return []Finding{finding(checkIDMismatch, s.at,
 		fmt.Sprintf("id %q does not match filename %q", s.f.ID, prefix),
 		"make them match; the ID is how commits and branches cite this doc")}
-}
-
-// The Log records what changed this doc's plan. Past LogShareMax it is holding what is
-// true after the feature ships, which has one home and it is not here.
-//
-// Terminal docs are skipped: `ship` refuses this before it freezes a doc, so on a doc
-// already Shipped the only fix rule 17 leaves is an edit nobody may make.
-func logWeight(s *docState) []Finding {
-	log, doc, over := s.f.LogWeight()
-	if terminal(s.f.Status) || !over {
-		return nil
-	}
-	return []Finding{finding(checkLogOutweighsPlan, s.at,
-		fmt.Sprintf("## Log is %d%% of the doc (%d of %d words)", log*100/doc, log, doc),
-		"move what is true after this ships into "+techPath(s.r)+", one line each, and "+
-			"leave in ## Log only what changed the plan")}
 }
 
 func orphanClaims(s *repoState) []Finding {
@@ -737,7 +755,7 @@ func orphanReservations(s *repoState) []Finding {
 		if !held.When.IsZero() && Days(held.When, s.today) < StalledDays {
 			continue
 		}
-		if len(s.r.DocBranches(held.ID)) > 0 {
+		if branches, err := s.r.DocBranches(held.ID); err != nil || len(branches) > 0 {
 			continue
 		}
 		out = append(out, finding(checkOrphanReservation, s.r.Name,
@@ -794,30 +812,30 @@ func inboxState(s *repoState) []Finding {
 	return out
 }
 
-// Missing and stale are one gap: what shipped is not what a reader is told. Two findings
+// Missing and stale are one gap: what submitted is not what a reader is told. Two findings
 // at two severities said that twice, and the fix is the same file either way.
 func techState(s *repoState) []Finding {
 	newestShip := time.Time{}
 	for _, f := range s.r.Features {
-		// A date that has not arrived is shipped-no-date's finding, and letting it set
+		// A date that has not arrived is submitted-no-date's finding, and letting it set
 		// the bar here makes this one unsilenceable: no edit to the as-built doc can be
 		// newer than a day that has not happened.
-		if f.Shipped.After(newestShip) && !f.Shipped.After(s.today) {
-			newestShip = f.Shipped
+		if f.Submitted.After(newestShip) && !f.Submitted.After(s.today) {
+			newestShip = f.Submitted
 		}
 	}
 	switch {
 	case s.r.Tech != "" && !newestShip.IsZero():
 		if touched := s.r.LastTouched(s.r.Tech); !touched.IsZero() && touched.Before(newestShip) {
 			return []Finding{finding(checkTechDrift, s.r.Rel(s.r.Tech),
-				fmt.Sprintf("last updated %s, but a feature shipped %s",
+				fmt.Sprintf("last updated %s, but a feature submitted %s",
 					touched.Format(DateLayout), newestShip.Format(DateLayout)),
 				"update it to describe what the system is now")}
 		}
 	case s.r.Tech == "" && !newestShip.IsZero():
 		return []Finding{finding(checkTechDrift, s.r.Name,
-			"features have shipped but nothing describes the as-built system",
-			"kit ship writes one; for an existing project see: kit help as-built")}
+			"features have submitted but nothing describes the as-built system",
+			"kit submit writes one; for an existing project see: kit help as-built")}
 	}
 	return nil
 }
@@ -934,7 +952,7 @@ func needsUnstated(s *repoState) []Finding {
 		}
 		named := strings.Join(unstated, " and ")
 		out = append(out, finding(checkNeedsUnstated, f.Rel,
-			fmt.Sprintf("%s: its plan names %s, which has not shipped and needs: does not list",
+			fmt.Sprintf("%s: its plan names %s, which has not submitted and needs: does not list",
 				f.Name(), named),
 			"add "+named+" to needs: if this cannot start until it ships"))
 	}
@@ -963,13 +981,19 @@ func needsState(s *repoState) []Finding {
 		// A value that is not an id list has no dependencies in it to check, so this is
 		// reported instead of the ids scanned out of it rather than beside them. The
 		// template's own guidance was the case: "e.g. 0002, 0003" parsed as two ids that
-		// both exist and have shipped, so every check downstream agreed the wait was met.
+		// both exist and have submitted, so every check downstream agreed the wait was met.
 		if !idListOnlyRe.MatchString(f.needsText) {
 			out = append(out, finding(checkNeedsUnparsed, f.Rel,
 				fmt.Sprintf("%s: needs: %q is not an id list", f.Name(), clip(f.needsText, 40)),
-				"leave it empty, or list only the four-digit ids that must ship first"))
+				"leave it empty, or list only the four-digit ids that must merge first"))
 			continue
 		}
+		if s.r.needsCycle(f.ID, f.ID, map[string]bool{}) && !slices.Contains(f.Needs, f.ID) {
+			out = append(out, finding(checkNeedsUnknown, f.Rel,
+				f.Name()+": dependency cycle in needs:",
+				"remove the circular dependency before claiming"))
+		}
+
 		for _, id := range f.Needs {
 			dep := s.r.FeatureByID(id)
 			switch {
@@ -986,7 +1010,7 @@ func needsState(s *repoState) []Finding {
 					"fix the id, or remove it from needs:"))
 			case dep.Status == StatusDropped:
 				out = append(out, finding(checkNeedsUnknown, f.Rel,
-					fmt.Sprintf("%s: needs %s, which is %s and will never ship", f.Name(), id, dep.Status),
+					fmt.Sprintf("%s: needs %s, which is %s and will never submit", f.Name(), id, dep.Status),
 					"point at what replaced it, or remove it from needs:"))
 			}
 		}

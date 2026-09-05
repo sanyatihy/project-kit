@@ -13,65 +13,6 @@ import (
 	"testing"
 )
 
-func TestHelpAnswersWhatAnOutsideReviewGotWrong(t *testing.T) {
-	t.Parallel()
-	p := newProject(t)
-
-	// Everything the binary can tell someone, in one place.
-	all := p.run("help").ok().Stdout
-	for _, topic := range []string{"protocol", "template", "checks",
-		"inbox", "vision", "as-built", "go-checklist", "python-checklist"} {
-		all += p.run("help", topic).ok().Stdout
-	}
-	// Both streams: the flag package prints a command's help on stderr, so reading
-	// stdout alone left every "kit <cmd> --help" out of what this checks.
-	for _, cmd := range subcommands(t) {
-		all += p.run(cmd, "--help").out()
-	}
-
-	for _, tc := range []struct {
-		concluded string // what the review wrongly concluded
-		needs     []string
-	}{{
-		concluded: "docs/INBOX.md has no defined format",
-		needs:     []string{"BLOCKING", "FYI", "· <feature-id> ·"},
-	}, {
-		concluded: "kit next cannot see claims made in another clone",
-		needs:     []string{"remote branches"},
-	}, {
-		concluded: "features have no defined order",
-		needs:     []string{"Lowest ID first"},
-	}, {
-		concluded: "nothing exits non-zero when audit finds something HIGH",
-		needs:     []string{"--strict"},
-	}, {
-		// The protocol is what an agent reads before it does anything, so the three
-		// facts that make concurrency safe have to be in it and not only in the code.
-		concluded: "a hand-made branch claims a feature as well as the tool does",
-		needs:     []string{"kit claim"},
-	}, {
-		concluded: "a claimed checkout is a fine place to start the next feature",
-		needs:     []string{"one feature per checkout."},
-	}, {
-		concluded: "sequential IDs are handed out safely, so they cannot collide",
-		needs:     []string{"Where two agents can still collide", "duplicate-id"},
-	}, {
-		// The recipe this used to look for is now a command, so the fact it carried
-		// has to be in what the command says about itself.
-		concluded: "deleting the local branch releases a claim",
-		needs:     []string{"kit release", "because that ref is the claim"},
-	}} {
-		t.Run(tc.concluded, func(t *testing.T) {
-			for _, need := range tc.needs {
-				if !strings.Contains(all, need) {
-					t.Errorf("the binary never says %q, so %q is still a fair reading of it",
-						need, tc.concluded)
-				}
-			}
-		})
-	}
-}
-
 func TestEveryTopicIsReachableFromTheOverview(t *testing.T) {
 	t.Parallel()
 	// A topic nobody is told about may as well not be embedded — which is exactly

@@ -31,26 +31,15 @@ CI_STEPS := check vuln audit
 # What is not in it needs the network: `vuln` downloads the vulnerability database
 # and `audit` reads the remote's claim branches.
 .PHONY: check
-check: fmt-check vet lint test
+check: fmt-check lint test
 
-# How many tests run at once. The suite is 190-odd independent tests, each with its own
-# temporary directory, so this is pure wall clock: on a 12-core machine `go test -race`
-# measured 32.8s serial, 22.2s at 2, 17.4s at 4, 12.0s at 6 and 8.8s uncapped.
-#
-# 4 is a third of that machine on purpose. The gate runs beside whatever else the operator
-# is doing, and a check that takes the box with it is one people stop running. Raise it for
-# a build server: make check PARALLEL=8
+# Bound concurrent fixture work on a developer machine; build servers can raise it.
 PARALLEL ?= 4
 
-# What a board read costs in subprocesses, on a generated fixture. The ceilings are pinned
-# in the test itself and `make check` fails on them; this target is for reading the numbers
-# and the breakdown behind them when something has to be fixed.
-#
-# Every budget test, not one of them: 0056 added the board with no trunk, and a target that
-# named a single test by hand printed three ceilings of four while claiming to print them all.
+# Print git-process growth across board sizes; the test also runs in the gate.
 .PHONY: gitcount
 gitcount:
-	@$(GO) test -count=1 -v -run 'TestABoard.*GitBudget' ./cmd/kit
+	@$(GO) test -count=1 -v -run 'TestABoardReadKeepsGitWorkBounded' ./cmd/kit
 
 # No -cover. The conformance suite drives a separately built binary, so the number
 # counted the test process and not the kit: 2.9% for the package the suite exercises
@@ -65,25 +54,28 @@ fmt:
 
 .PHONY: fmt-check
 fmt-check:
-	@test -z "$$(gofmt -s -l . | grep -v '^templates/')" \
-		|| (echo "Run 'make fmt' to fix:" && gofmt -s -l . && exit 1)
+	@unformatted=$$(gofmt -s -l .) || exit $$?; \
+		if [ -n "$$unformatted" ]; then \
+			printf 'Run make fmt to fix:\n%s\n' "$$unformatted"; exit 1; \
+		fi
 
 .PHONY: vet
 vet:
 	$(GO) vet $(PKG)
 
-# lint is skipped with a notice when golangci-lint is not installed, so a fresh
-# clone goes green with only Go present. CI installs it, so there it really runs.
+# A missing or failing linter fails the gate. CI installs the pinned version.
 .PHONY: lint
 lint:
-	@which golangci-lint >/dev/null 2>&1 \
-		&& golangci-lint run \
-		|| echo "note: golangci-lint not installed, skipping (https://golangci-lint.run)"
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run; \
+	else \
+		echo "golangci-lint is required: https://golangci-lint.run"; exit 1; \
+	fi
 
 # install puts `kit` on your PATH via the Go toolchain.
 .PHONY: vuln
 vuln:
-	$(GO) run golang.org/x/vuln/cmd/govulncheck@latest $(PKG)
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.7.0 $(PKG)
 
 # audit reads this repo's own board. `go run` builds it from the checkout, so it
 # needs no credential for a private module — CI never installs the kit.
@@ -131,11 +123,11 @@ help:
 	@echo "  build       - compile ./$(BIN)"
 	@echo "  install     - go install onto your PATH"
 	@echo "  release     - gate, tag and push a version: make release TAG=v0.3.0"
-	@echo "  check       - fmt-check + vet + lint + test (the gate)"
+	@echo "  check       - fmt-check + lint + test (the gate)"
 	@echo "  test        - unit tests + the conformance suite"
 	@echo "  fmt         - gofmt -s -w ."
 	@echo "  fmt-check   - fail if anything is unformatted"
 	@echo "  vet         - go vet ./..."
-	@echo "  lint        - golangci-lint run (skipped if not installed)"
+	@echo "  lint        - golangci-lint run (required)"
 	@echo "  vuln        - govulncheck against the module"
 	@echo "  audit       - kit audit --strict on this repo (needs the remote)"

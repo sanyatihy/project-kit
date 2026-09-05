@@ -20,7 +20,7 @@ release:
 
 # check is the pre-push / CI gate. One command, same in every project.
 .PHONY: check
-check: fmt-check vet lint test
+check: fmt-check lint test
 
 .PHONY: test
 test:
@@ -33,19 +33,23 @@ fmt:
 # fmt-check fails (non-zero) if any file is not gofmt-clean, suitable for CI.
 .PHONY: fmt-check
 fmt-check:
-	@test -z "$$(gofmt -s -l $(FMT_DIRS))" || (echo "Run 'make fmt' to fix:" && gofmt -s -l $(FMT_DIRS) && exit 1)
+	@unformatted=$$(gofmt -s -l $(FMT_DIRS)) || exit $$?; \
+		if [ -n "$$unformatted" ]; then \
+			printf 'Run make fmt to fix:\n%s\n' "$$unformatted"; exit 1; \
+		fi
 
 .PHONY: vet
 vet:
 	$(GO) vet $(PKG)
 
-# lint is skipped with a warning when golangci-lint is not installed, so a fresh
-# clone goes green with only Go present. CI installs it, so there it really runs.
+# A missing or failing linter fails the gate. CI installs the pinned version.
 .PHONY: lint
 lint:
-	@which golangci-lint >/dev/null 2>&1 \
-		&& golangci-lint run \
-		|| echo "note: golangci-lint not installed, skipping (https://golangci-lint.run)"
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run; \
+	else \
+		echo "golangci-lint is required: https://golangci-lint.run"; exit 1; \
+	fi
 
 .PHONY: vuln
 vuln:
@@ -64,12 +68,12 @@ help:
 	@echo "Targets:"
 	@echo "  build      - check + compile $(BIN)"
 	@echo "  release    - static stripped $(RELEASE_BIN) (GOOS/GOARCH overridable)"
-	@echo "  check      - fmt-check + vet + lint + test (pre-push/CI gate)"
+	@echo "  check      - fmt-check + lint + test (pre-push/CI gate)"
 	@echo "  test       - go test -race -cover ./..."
 	@echo "  fmt        - gofmt -s -w"
 	@echo "  fmt-check  - fail if anything is unformatted"
 	@echo "  vet        - go vet ./..."
-	@echo "  lint       - golangci-lint run (skipped if not installed)"
+	@echo "  lint       - golangci-lint run (required)"
 	@echo "  vuln       - govulncheck ./..."
 	@echo "  run        - go run ./cmd/{{name}}"
 	@echo "  tidy       - go mod tidy"

@@ -41,10 +41,10 @@ func TestAnUnparseableDateIsReportedNotFatal(t *testing.T) {
 	// Rather than crashing, or worse, being read as some other date.
 	p := setUp(t)
 	p.write("docs/features/0001-odd.md",
-		"---\nid: 0001\ntitle: Odd\nstatus: Shipped\nshipped: sometime last spring\n---\n\n"+
+		"---\nid: 0001\ntitle: Odd\nstatus: Submitted\nsubmitted: sometime last spring\n---\n\n"+
 			"## Problem\nx\n\n## Design\nx\n\n## Tasks\n- [x] Done\n\n## Log\n- 2026-01-01 — x.\n")
 
-	p.run("audit").ok().has("shipped-no-date", "is not a date")
+	p.run("audit").ok().has("submitted-no-date", "is not a date")
 }
 
 func TestExamplesInFencedBlocksAreNotRealTasks(t *testing.T) {
@@ -217,7 +217,7 @@ func TestARemoteThatDoesNotAnswerIsSaidRatherThanShownAsNothing(t *testing.T) {
 	}
 	// The check that could not run at all is named, and the ones that ran on a stale
 	// mirror are qualified. A clean bill here would be the worst of the three outputs.
-	p.run("audit").ok().has("the remote did not answer", "shipped-not-pushed")
+	p.run("audit").ok().has("the remote did not answer", "submitted-not-pushed")
 
 	// --offline is the reader's own instruction, not a failure, so it stays quiet.
 	for _, args := range [][]string{{"next", "--offline"}, {"audit", "--offline"}} {

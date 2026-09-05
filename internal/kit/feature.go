@@ -9,18 +9,18 @@ import (
 
 // The feature document: its fields, its sections, and the branch name it implies.
 
-// AllStatuses is every status a feature doc may declare.
-//
-// Three, and no more. There is no "In progress" because the claim branch says work has
-// started, and no "Accepted" because in 82 docs across five projects nothing ever reached
-// it: every feature went from Draft to Shipped. A doc carrying a status this does not
-// list is reported as `no-status`, which is the migration for both.
-var AllStatuses = []string{StatusDraft, StatusDropped, StatusShipped}
+// AllStatuses includes current statuses and the readable legacy submission stamp.
+var AllStatuses = []string{StatusDraft, StatusDropped, StatusSubmitted, StatusLegacyShipped}
 
 // terminal reports whether a status is an end state, after which a branch bearing the
 // feature's name is a merged leftover rather than somebody's work in progress.
 func terminal(status string) bool {
-	return status == StatusShipped || status == StatusDropped
+	return IsSubmitted(status) || status == StatusDropped
+}
+
+// IsSubmitted accepts the current review snapshot and the legacy completion stamp.
+func IsSubmitted(status string) bool {
+	return status == StatusSubmitted || status == StatusLegacyShipped
 }
 
 var notAFeature = map[string]bool{
@@ -31,23 +31,23 @@ var idPrefixRe = regexp.MustCompile(`^(\d+)`)
 
 // Feature is one feature document.
 type Feature struct {
-	Path    string
-	Rel     string
-	ID      string
-	Title   string
-	Status  string
-	Needs   []string // feature ids that must ship before this can start
-	Shipped time.Time
+	Path      string
+	Rel       string
+	ID        string
+	Title     string
+	Status    string
+	Needs     []string // feature ids that must merge before this can start
+	Submitted time.Time
 
 	// Duplicates are the frontmatter keys this doc declares more than once. Reading
 	// tolerates them — the last one wins — and writing cannot, so it is carried rather
 	// than dropped at parse time.
 	Duplicates []string
 
-	// shippedText is the frontmatter line as written. Shipped alone cannot tell a doc
-	// with no date from one whose date nothing could parse, and `shipped-no-date`
+	// submittedText is the frontmatter line as written. Submitted alone cannot tell a doc
+	// with no date from one whose date nothing could parse, and `submitted-no-date`
 	// reported the second as the first — on a doc that plainly had one.
-	shippedText string
+	submittedText string
 
 	// needsText is the same, for the same reason: Needs holds what parsed, and prose
 	// scans for four-digit runs like any other string. A doc nobody edited declared
@@ -75,7 +75,7 @@ func (f *Feature) Name() string {
 func (f *Feature) Section(heading string) string { return f.sections[heading] }
 
 // PlannedSections are what an agent needs in order to work a feature at all. `Log` is
-// not among them: it is written as the work happens, so it is checked at Shipped only.
+// not among them: a plan that never changed needs no Log entries.
 var PlannedSections = []string{"Problem", "Design", "Tasks"}
 
 // Unwritten lists the sections an agent would need and cannot read, in document order.
@@ -130,31 +130,4 @@ func (f *Feature) FilenamePrefix() string {
 		return m[1]
 	}
 	return ""
-}
-
-// LogShareMax is the largest share of a document its ## Log may be. Past it the Log is
-// the as-built doc in disguise, and `ship` refuses rather than freezing it there.
-//
-// Half. Measured 2026-09-04 over 147 docs in three projects: the Log is 12% of a doc at
-// the median here and 28% at its worst, 23% and 55% in the second project, 20% and 55%
-// in the third. Half fires on 0 of the 74 here and on 2 of each of the others, which are
-// the four docs whose Log is the as-built doc in disguise. A ceiling at 45% fires on
-// nine, which is more than double.
-const LogShareMax = 0.5
-
-// LogWeight is the ## Log's word count, the whole document's, and whether the first
-// is more than LogShareMax of the second.
-//
-// Section content only: the frontmatter and the headings are not what either number is
-// about. A ratio rather than a word count, so it needs no recalibration as a corpus
-// matures and a doc with a long ## Design is not punished for it.
-func (f *Feature) LogWeight() (log, doc int, over bool) {
-	for heading, text := range f.sections {
-		words := len(strings.Fields(text))
-		doc += words
-		if heading == "Log" {
-			log = words
-		}
-	}
-	return log, doc, doc > 0 && float64(log) > LogShareMax*float64(doc)
 }
