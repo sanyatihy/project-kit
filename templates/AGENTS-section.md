@@ -17,14 +17,14 @@ Plan when asked. For work that began without a plan, use the spike route below.
 3. Draft the whole round with `kit new "<title>"` on one `plan/<round>` branch whose
    name contains no four-digit id. Fill `needs:` with prerequisite feature ids; leave
    it empty when work can start independently. Keep every draft `status: Draft`.
-4. Push the planning branch and open one pull request. Once the round is reviewed and
-   on the trunk, claim its work. The builder does not merge their own planning round.
+4. Push the planning branch and open one pull request for human review. After the human
+   merges, return to a trunk checkout, pull with --ff-only, and run kit audit and kit next.
 5. Put uncertainty in `## Open questions`. Use `kit block <id> "<question>"` for a
    decision only the human can make. Never invent a product decision to unblock yourself.
 
 ### Taking work
 
-6. Take a feature with `kit claim <id>`. Read the exit code:
+6. From an updated trunk checkout, take a feature with `kit claim <id>`. Read the exit code:
    - **0**: the claim is yours; work in the worktree the command names.
    - **1**: it is not yours; run `kit next` and choose different work.
    - **2**: the command could not run; fix the reported cause before retrying.
@@ -32,8 +32,10 @@ Plan when asked. For work that began without a plan, use the spike route below.
 7. Each agent works in its own checkout. Do not share a working tree, index or claim.
    A branch citing a four-digit id is a claim; ordinary chores and spikes cite none.
 8. For a spike, work on a branch of its own. When done, `kit harvest "<title>"
-   --box "<outcome>"` records the work and names its branch after the feature. Fill Problem and Design before
-   shipping. `kit harvest --nothing "<what it showed>"` records a discarded spike.
+   --box "<outcome>"` records the work and names its branch after the feature. Fill
+   Problem and Design before shipping. With no commits, harvest creates an empty trunk
+   base; publish it for the
+   first PR. `kit harvest --nothing "<what it showed>"` records a discarded spike.
 
 ### Doing the work
 
@@ -61,12 +63,15 @@ Plan when asked. For work that began without a plan, use the spike route below.
 16. Run the project's gate, then `kit audit --strict`, then `kit ship <id>`, in that
     order. A failed or incomplete check is not a pass. Explicit offline audits cover
     local checks only; complete the online audit before handing off to review.
-17. Push the branch, open the pull request, and stop. You never merge your own work.
+17. Push the branch, open the pull request, and hand it to the human reviewer.
+    `ship` records readiness for review; the feature is integrated only after merge.
+    You never merge your own work.
     With no remote, say so and leave the work on the branch for local review.
 18. For review changes before merge, run `kit reset <id> "<why>"`, revise the tasks,
     implement the changes, and repeat the gate and ship steps. A Shipped doc on the
     trunk is frozen history; further changes need a new doc citing it.
-19. After integrating a planning round, run `kit audit` before claiming from it.
+19. After any merge, return to a trunk checkout, pull with --ff-only, then run
+    `kit audit` and `kit next`. Dependencies unlock only once their merged work is here.
     Duplicate ids from offline drafting must be resolved before either doc is claimed.
 
 ### Writing

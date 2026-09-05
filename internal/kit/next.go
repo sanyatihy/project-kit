@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-// WIPLimit is how many features may be In progress before finishing beats
-// starting.
-const WIPLimit = 2
-
 // Backticks and asterisks are markup here; underscores are identifiers.
 var markupRe = regexp.MustCompile("[`*]")
 
@@ -111,20 +107,6 @@ type Plan struct {
 	// --json — the output documented for agents — got a board and no instruction,
 	// and worked a feature the text output would have told it to leave alone.
 	Guidance string `json:"guidance"`
-}
-
-// InProgress counts the features somebody is holding, for the WIP warning. A claim is
-// what says work has started; there is no status for it to disagree with.
-func (p Plan) InProgress() int {
-	n := 0
-	for _, group := range [][]Item{p.Yours, p.Ready, p.Taken, p.Blocked} {
-		for _, item := range group {
-			if item.Mine || item.ClaimedBy != "" {
-				n++
-			}
-		}
-	}
-	return n
 }
 
 // unplanned names the first doc that is blocked only because nobody wrote it, and "" when
@@ -348,7 +330,7 @@ func Survey(r *Repo) Plan {
 
 // waitingOnNeeds says what an unmet needs: is waiting for.
 //
-// A dependency that is Dropped can never ship, so "to ship first" is a
+// A dependency that is Dropped can never ship, so a waiting instruction is a
 // promise the board cannot keep: the agent reads it as a wait that ends, and it does not.
 // The two need opposite answers — one ends on its own, the other only when somebody edits
 // the field — so the line has to say which. `audit` already tells them apart; this is the
@@ -430,8 +412,8 @@ func guidanceFor(r *Repo, plan Plan) string {
 	// on a round the trunk does not have, so telling the agent to stop here leaves the
 	// round sitting where nobody can build on it.
 	case plan.unlanded():
-		return "land the plan round on " + orTrunk(r.Trunk()) + " — a pull or merge " +
-			"request, if the default branch is protected — then run kit next again. " +
+		return "push the plan round and open a pull request for human review on " + orTrunk(r.Trunk()) + ". " +
+			"After it merges, update a trunk checkout and run kit next again. " +
 			"Nothing on a round can be claimed until the round is on the trunk."
 	case !plan.Empty():
 		return "nothing is free: every feature is claimed or waiting on something. " +
@@ -476,8 +458,8 @@ func reviewing(n int) string {
 	if n == 1 {
 		what = "One feature is"
 	}
-	return what + " awaiting review, listed above. Reviewing and merging one somebody " +
-		"else built is the work here; your own is never yours to merge."
+	return what + " awaiting review, listed above. Hand the pull requests to the human reviewer. " +
+		"Review comments may be addressed on their existing branches; your own work is never yours to merge."
 }
 
 // Progress is "3/6", or "" for a feature with no boxes to count. It reports what

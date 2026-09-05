@@ -90,8 +90,6 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   not be refreshed reports nothing and releases nothing.
 - **Claims require the current foundation.** HEAD must equal the advertised trunk tip
   online; offline it must equal the local trunk. The plan must already be committed.
-- **Dependencies require integration.** Prerequisite docs must be Shipped on the trunk
-  and in HEAD; a stamp on an unmerged branch does not make its code available.
 - **An initial harvest creates an empty trunk base.** Staged and unstaged product
   files are committed only on the new feature branch, so the first MVP has a PR diff.
 - **Review is a git handoff.** The board follows local revision, unpushed submission and
@@ -123,9 +121,9 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 - **Ordering needs no syntax.** Task order is dependency order and `next` returns the
   topmost unticked box. This replaced a dependency graph.
 - **`needs:` is the only cross-feature ordering, and it is declared.** Blocked until every
-  id listed is `Shipped` — not merged, which would make the board depend on how fast
-  somebody clicked. ID order was rejected: a prerequisite found late already has a higher
-  id. The ready set is therefore the parallelism answer, and nothing declares it separately.
+  prerequisite is Shipped on the trunk and in HEAD; submission alone does not unlock it.
+  Shared filenames alone do not order features. Each checkout owns one feature; there
+  is no global concurrency cap.
 - **Awaiting review reads the advertised remote tip.** A stale local branch cannot hide
   a submission or keep a reopened submission in the review group. Unfetched objects
   remain unknown until fetched.

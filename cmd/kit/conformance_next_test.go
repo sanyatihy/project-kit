@@ -372,7 +372,7 @@ func TestNextOffersADraftAsWork(t *testing.T) {
 	r.lacks("waiting on a human")
 }
 
-func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
+func TestNextDoesNotLimitIndependentAgents(t *testing.T) {
 	t.Parallel()
 	// Counted from claims, which is the only record that somebody started something.
 	const warning = "in progress at once"
@@ -393,7 +393,7 @@ func TestNextWarnsOnlyAboveTheWIPLimit(t *testing.T) {
 
 	over := setUp(t)
 	claimed(over, "0001", "0002", "0003")
-	over.run("next").ok().has(warning)
+	over.run("next").ok().lacks(warning)
 }
 
 func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
@@ -440,8 +440,8 @@ func TestNextNeverOffersAClaimThatWouldBeRefused(t *testing.T) {
 	}
 	// And the closing line is the reader's own next action. "Stopping here is the right
 	// outcome" would leave the round sitting where nobody can build on it.
-	if !strings.Contains(plan.Guidance, "land the plan round on main") {
-		t.Errorf("guidance says %q, which never says to land the round", plan.Guidance)
+	if !strings.Contains(plan.Guidance, "open a pull request for human review on main") {
+		t.Errorf("guidance says %q, which never names the planning review handoff", plan.Guidance)
 	}
 
 	// The quiet half: the same feature, once the round has landed.
@@ -708,7 +708,7 @@ func TestNextNamesASpikeRatherThanRefusingIt(t *testing.T) {
 	a.run("next").ok().lacks("not routing it")
 }
 
-func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
+func TestGuidanceHandsReviewToTheHuman(t *testing.T) {
 	t.Parallel()
 	// 0013's rule: never leave an agent without an instruction. A board with nothing
 	// free and a feature pushed and unmerged has work on it, so "stopping here is the
@@ -716,7 +716,7 @@ func TestGuidanceNamesReviewingRatherThanStopping(t *testing.T) {
 	a, _ := twoAgents(t)
 	shipOnItsBranch(a, "0007", "widget", "A widget")
 
-	r := a.run("next").ok().has("awaiting review", "is the work here")
+	r := a.run("next").ok().has("awaiting review", "human reviewer")
 	if strings.Contains(r.Stdout, "Stopping here is the right outcome") {
 		t.Errorf("next told the agent to stop while a feature waits for review%s", r.context())
 	}

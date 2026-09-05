@@ -240,8 +240,8 @@ func runNew(args []string) int {
 	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
 	// The gate this described is gone: `Accepted` was removed after 82 docs reached it
 	// zero times, and `next` offers a written Draft the moment its round lands.
-	fmt.Printf("  kit next offers it as soon as the plan is written, and kit ship,\n")
-	fmt.Printf("  kit drop and kit reset are the only things that write a status.\n\n")
+	fmt.Printf("  kit next offers it after the plan merges and its needs are integrated.\n")
+	fmt.Printf("  kit ship, kit drop and kit reset are the only things that write a status.\n\n")
 	return 0
 }
 
@@ -660,7 +660,7 @@ func runShip(args []string) int {
 		return 2
 	}
 
-	fmt.Printf("\n  shipped  %s  (was %s)\n", res.Doc, res.Was)
+	fmt.Printf("\n  ready for review  %s  (was %s; shipped stamp recorded)\n", res.Doc, res.Was)
 	if res.Commit != "" {
 		fmt.Printf("  commit   %s — the stamp is committed, not left in the tree\n", res.Commit)
 	}
@@ -771,10 +771,6 @@ func printPlan(plan kit.Plan, color bool) {
 	case plan.ProtocolStale:
 		fmt.Println(paint("  ! AGENTS.md is older than this kit, so the protocol below it "+
 			"is superseded — run kit init . before following it", "33", color))
-	}
-	if n := plan.InProgress(); n > kit.WIPLimit {
-		fmt.Println(paint(fmt.Sprintf("  %d features in progress at once — "+
-			"finish one before starting another", n), "33", color))
 	}
 
 	// What this checkout already holds comes first: it is the answer to "what should

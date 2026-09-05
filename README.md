@@ -90,95 +90,80 @@ is waiting for.
 Once set up you never run anything yourself. `AGENTS.md` tells the agent to run
 `kit next` at the start of a session, so "what should I work on?" is enough.
 
-## Starting from nothing
+## Developing a project
 
-Say the job is a URL shortener and no code exists.
+There are two human review points for planned work: the plan and the implementation.
+The agent handles the commands between them. One feature is one pull request; each
+Tasks box is one implementing commit within it.
+
+| Step | Human | Agent |
+| --- | --- | --- |
+| Decide | Discuss the outcome and settle product choices | Record the vision and unresolved questions |
+| Plan | Ask for a complete feature round | Create `plan/<round>`, use `kit new`, fill designs, tasks and `needs:`, push one planning PR |
+| Approve the plan | Review and merge the planning PR | Address plan feedback on that branch |
+| Build | Let agents proceed | Update a trunk checkout, run `kit audit` and `kit next`, claim one feature, work in its worktree through every task |
+| Submit | Review the implementation PR | Run the project gate, `kit audit --strict`, `kit ship <id>`, push and open the PR |
+| Revise | Request changes if needed | On the same feature branch, `kit reset <id> "<why>"`, revise tasks, implement, validate, ship and push again |
+| Integrate | Merge the implementation PR | Return to a trunk checkout, `git pull --ff-only`, then `kit audit` and `kit next` |
+
+For a new repository, initialize it with `kit init`. Before the planning branch, create
+an initial trunk commit containing setup only; keep product implementation on a feature
+branch. Add a shared remote before parallel drafting so ids and claims can be reserved.
+With no remote, review is local and independent clones cannot coordinate ids or claims.
+
+Claims must start from the current published trunk. Kit refuses a stale checkout and
+prints the repair; it does not pull into a working tree another agent may be using.
+Each agent owns a separate checkout. Independent features can proceed together without
+a global agent limit. `needs:` waits for merged prerequisites present in the checkout;
+shared filenames alone do not require serial execution.
+
+A task discovered during implementation becomes another box, feature or backlog entry.
+The agent continues through the current feature until it is ready for review or blocked.
+A human decision goes to `kit block <id> "<question>"`; the agent may take independent
+work from another checkout. If none is available, it reports the blocker and stops.
+
+## What “shipped” means
+
+`kit ship` submits a completion snapshot; it does not approve, merge, deploy or certify
+tests. The stored `Shipped` status and `shipped:` date are retained for compatibility.
+The branch's relationship to trunk determines the handoff:
+
+| State | Next action |
+| --- | --- |
+| Draft with unfinished tasks | Implement the next box |
+| All tasks complete | Gate, audit, ship |
+| Completion stamp still local | Push and open the implementation PR |
+| Submission pushed, unmerged | Human reviews; agent uses reset for requested changes |
+| Completion snapshot on trunk | Integrated and frozen; update trunk before taking more work |
+
+`kit next` prints that distinction, including a retained branch after a squash merge.
+An unmerged submission can be reset and revised; an integrated doc is frozen history.
+Later product changes use a new feature citing it. No post-merge status commit is needed.
+
+## Exploring first
+
+For an MVP or experiment, work on an ordinary branch with no four-digit id in its name.
+When the result is worth keeping:
 
 ```sh
-kit init ~/code/github.com/you/url-shortener --stack go
-cd ~/code/github.com/you/url-shortener
-kit next                         # nothing planned — start a feature
-kit new "Shorten URLs"           # writes docs/features/0001-shorten-urls.md
+kit harvest "Shorten URLs" --box "A long URL comes back short"
 ```
 
-Fill the doc in:
+Harvest gives the existing work a feature doc and commits it on a branch named after
+that feature. Fill Problem and Design from the decisions actually made; the completed
+outcomes are already ticked. Then use the same gate, ship, review and revision sequence
+as planned work. Do not create retrospective plans pretending to precede the code.
 
-- **Problem** — one or two sentences.
-- **Non-goals** — where scope goes to die. *Custom domains, click analytics, accounts.*
-- **Design** — the decisions. `POST /` stores a URL and returns a code; `GET /<code>`
-  redirects. Postgres, base62 of the row id.
-- **Open questions** — anything you cannot answer yet. *Do codes expire?* What only a
-  human can settle goes to `docs/INBOX.md` via `kit block`.
-- **Tasks** — the part that matters, in the order they should be done:
+With no prior commits, harvest creates an empty trunk base and commits the entire MVP
+on the feature branch. Publish the empty base before opening the first PR. Staged product
+files stay off trunk, so the reviewer can see the entire implementation diff.
 
-```markdown
-- [ ] Schema + migration for `links(id, url, created_at)`
-- [ ] POST / — validate the URL, insert, return base62 code
-- [ ] GET /<code> — look up and 301, 404 when missing
-```
+If the spike is discarded, `kit harvest --nothing "<what it showed>"` records the lesson
+without creating a feature. Promote follow-up backlog entries on a later planning branch.
 
-Each box is one PR you can finish and verify without asking anyone. `- [ ] Build the
-backend` is not a task. If you cannot say how you would check a box is done, split it.
-
-A drafting session is one **plan round**: every doc it produces goes on a single branch
-named `plan/<something>` — never one citing a feature id, since a branch that names one
-*is* a claim — and merges once.
-
-Land the round, and `kit next` hands you the first box and the command to start:
-
-```
-  start here
-    0001  0/3   Shorten URLs
-    → Schema + migration for links(id, url, created_at)
-       docs/features/0001-shorten-urls.md
-       kit claim 0001
-```
-
-`kit claim` pushes the branch that takes the feature and prints the worktree to work in.
-Creating that ref on the remote is a compare-and-swap, so exactly one agent wins; exit 1
-means you lost and should take something else.
-
-While an agent works, the board reads its progress off the claim branch — the boxes are
-ticked there, and the trunk's copy of the doc would say `0/3` however far along it is:
-
-```
-  taken
-    0002  1/3   Resolve a short link — 0002-resolve-a-short-link, 20 minutes ago
-```
-
-Do one box and tick it in its implementing commit, then continue through the tasks.
-When the last box is ticked, run the project gate, `kit audit --strict`, and `kit ship
-0001` to submit for review. For review changes, `kit reset 0001 "<why>"` reopens
-unmerged work. A Shipped doc on the trunk is frozen history.
-
-Then push and stop, because **you never merge your own work**. `kit next` closes with
-what is waiting on the other side of that handoff:
-
-```
-  awaiting review
-    0001  Shorten URLs
-          0001-shorten-urls · waiting 2 days · you built this — not yours to merge
-```
-
-Shipped on the branch, pushed, and not on the trunk. The status is read from the branch,
-since on the trunk it still says what it said when the round landed — so a coordinator
-standing on the trunk sees the whole queue in the command everyone else already runs.
-
-Both that and `shipped-not-pushed` ask the remote which branches exist, bounded at 15
-seconds, and **both say so when it does not answer** rather than printing a page with
-nothing on it. An unreachable remote and a project with nothing waiting look identical
-otherwise, and the board is read as good news. `--offline` is an instruction rather than
-a failure, so `next` stays quiet about it; `audit` names the checks it dropped, since a
-skipped check and a passing one print the same page.
-
-Branch protection on the trunk is the only thing an agent cannot route around. What the
-kit does is make the invariant legible; agents also need git identities of their own,
-since one pushing with the operator's credential *is* the operator to every check that
-exists.
-
-**When you get stuck on something only a human can decide**, run
-`kit block 0001 "Should codes expire? Leaning: no."` and move on. That marks 0001 blocked,
-so `kit next` stops offering it and points you elsewhere.
+Kit can enforce its own commands. Required CI checks and remote merge permissions must
+protect trunk against raw git bypasses. Use distinct agent identities and reserve final
+approval for the human; an agent using the human's credentials has the same permissions.
 
 ## Commands
 
@@ -239,10 +224,9 @@ Only `kit ship`, `kit drop` and `kit reset` write a status, and only `kit ship` 
 date. There is no status for work in flight — the claim branch says that, and a second
 copy in the doc could only disagree with it.
 
-`needs:` lists the feature ids that must ship before this one can start, and is the only
-field that changes what `kit next` offers. Empty means it can start now, which is the
-common case — and several empty ones at once is what lets agents work in parallel.
-`kit help template` says how to judge it.
+`needs:` lists the feature ids whose implementation must merge before this one can
+start. Empty means no prerequisite, so independent features can proceed together once
+their plans are merged and other blockers are resolved. `kit help template` explains it.
 
 Two things keep a doc honest. Every fact has one home: still true after the feature ships
 and it belongs in `docs/TECH.md`, one line; a change to this doc's plan and it belongs in

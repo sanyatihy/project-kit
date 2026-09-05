@@ -21,7 +21,7 @@ Commands:
   kit claim <id>                      take a feature: push the branch, win or lose
   kit release <id> [--force]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
-  kit ship  <id>                      tick the last box: verify, stamp, submit for review
+  kit ship  <id>                      verify completed boxes, stamp, submit for review
   kit drop  <id> "<why>"              retire a feature that will not be built
   kit reset <id> "<why>"              put a doc back to Draft: the one repair
   kit next  [--json] [--offline]      what should I work on?
@@ -35,17 +35,17 @@ How it works:
   The directory listing is the board. There is no database and no queue: the docs
   and the git branches are the state.
 
-    Draft -> Shipped   (exits: Dropped)
+    Draft -> ready for review -> integrated on trunk   (exit: Dropped)
 
-  Three statuses, and only "kit ship", "kit drop" and "kit reset" write them. Work
-  starts when a claim branch is pushed, so there is no status for it and nothing to
-  set by hand.
+  The stored statuses remain Draft, Shipped and Dropped. Shipped is a completion
+  stamp; git distinguishes submission from integration. Only ship, drop and reset
+  write status fields. A claim branch records who has started work.
 
   Two routes in. Plan first — draft a round, land it, claim from it — which is what
   agents that never speak to each other need, because "needs:" is what orders them.
   Or work first on a branch that claims nothing, and run "kit harvest" at the end: it
   takes an id, writes the doc and commits the tree in one commit. Both end in a Draft
-  somebody else reviews.
+  to finish, validate and submit; the human reviews and merges the implementation.
 
   "kit next" and "kit audit" read the project you are in. For several projects:
     for d in ~/code/*; do (cd $d && kit next); done
@@ -61,7 +61,7 @@ The four rules:
      worktrees all count as claims. A won claim makes the worktree to work in;
      go there, not here.
   4. A feature named by a BLOCKING line in docs/INBOX.md is blocked until it is
-     answered, and so is one whose "needs:" has not shipped. "Named" means the id
+     answered, and so is one whose "needs:" has not merged. "Named" means the id
      field of the line, not a mention in the question text. FYI lines never block.
      See "kit help inbox" for the format.
 
@@ -72,7 +72,7 @@ names every one.
 
 Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
 which writes docs/INBOX.md in the format the tool parses, then move to another
-feature. Never guess, and never idle.
+free feature from another trunk checkout. If none is free, report the blocker and stop.
 
 Exit codes, so a script can tell these apart:
   0  it worked
@@ -310,11 +310,12 @@ State a leaning. It turns most questions into a yes/no.
 
 Submit finished work for review. Refuses unless every "## Tasks" box is ticked,
 sets status: Shipped, stamps shipped: with today's date, and commits that stamp.
+That is a submission snapshot; it becomes integrated only when merged into trunk.
 
 Exit 2 when the doc is already Shipped or Dropped, has an unknown status or
 no status: line, no ## Tasks boxes, an unwritten Problem or Design, a BLOCKING
 question, ambiguous fields or ids, or invalid dependencies. If needs: has not
-shipped, finish the prerequisites first. If it is claimed by a branch other than
+merged into this checkout, integrate the prerequisites first. If it is claimed by a branch other than
 this checkout's, use the owning worktree.
 
 The command also refuses uncommitted or untracked files and an unreadable git
@@ -406,7 +407,7 @@ branches and worktrees all count, so a stale fetch hides someone else's claim. T
 one exception is the branch this checkout is on: that claim is yours, and it is
 reported as "yours" and offered as the work to do. A feature is reported as blocked
 when a BLOCKING docs/INBOX.md line carries its id in the id field, or when something
-in its "needs:" has not shipped yet.
+in its "needs:" has not merged yet.
 
 Below the board, "awaiting review" is the far side of ship: a branch the remote has,
 carrying a doc that says Shipped, not yet on the trunk, and off the board above while

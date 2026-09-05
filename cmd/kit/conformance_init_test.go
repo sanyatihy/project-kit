@@ -272,7 +272,7 @@ Below the section.
 			t.Errorf("refreshing the protocol destroyed %q, which is not kit-owned", keep)
 		}
 	}
-	if !strings.Contains(got, "Take a feature with `kit claim <id>`") {
+	if !strings.Contains(got, "take a feature with `kit claim <id>`") {
 		t.Error("the refreshed section does not contain the current protocol")
 	}
 }
