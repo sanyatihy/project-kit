@@ -10,6 +10,7 @@ package main
 
 import (
 	"bytes"
+	"debug/buildinfo"
 	"errors"
 	"fmt"
 	"os"
@@ -53,7 +54,11 @@ func kitBinary(t *testing.T) string {
 			return
 		}
 		path := filepath.Join(binDir, "kit")
-		if out, err := exec.Command("go", "build", "-o", path, ".").CombinedOutput(); err != nil {
+		args := []string{"build", "-o", path}
+		if raceEnabled {
+			args = append(args, "-race")
+		}
+		if out, err := exec.Command("go", append(args, ".")...).CombinedOutput(); err != nil {
 			buildErr = fmt.Errorf("go build: %w\n%s", err, out)
 			return
 		}
@@ -122,6 +127,7 @@ func gitEnv(extra ...string) []string {
 	return append(append(os.Environ(),
 		// GIT_CONFIG_COUNT is a third mechanism that the two /dev/null settings do
 		// not cover, so it needs zeroing separately.
+		"GORACE=atexit_sleep_ms=0",
 		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null", "GIT_CONFIG_COUNT=0",
 		"GIT_AUTHOR_NAME=kit tests", "GIT_AUTHOR_EMAIL=kit@example.invalid",
 		"GIT_COMMITTER_NAME=kit tests", "GIT_COMMITTER_EMAIL=kit@example.invalid",
@@ -289,5 +295,22 @@ func TestHarness(t *testing.T) {
 	p.git("init", "-q")
 	if !p.exists(".git") {
 		t.Error("the git helper did not produce a repository")
+	}
+}
+
+func TestConformanceBinaryUsesTheSuitesRaceMode(t *testing.T) {
+	t.Parallel()
+	info, err := buildinfo.ReadFile(kitBinary(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	instrumented := false
+	for _, setting := range info.Settings {
+		if setting.Key == "-race" {
+			instrumented = setting.Value == "true"
+		}
+	}
+	if instrumented != raceEnabled {
+		t.Fatalf("CLI race mode = %v, suite = %v", instrumented, raceEnabled)
 	}
 }

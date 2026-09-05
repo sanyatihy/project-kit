@@ -27,108 +27,42 @@ import (
 	"testing"
 )
 
-const (
-	// The fixture: big enough that per-feature growth is obvious against fixed costs,
-	// small enough to build in a moment.
-	budgetFeatures = 30
-	budgetClaims   = 10
+const budgetClaims = 10
 
-	// `kit next --offline`, where nothing may be asked of the remote. 116 before 0035
-	// memoised the branch and the remotes, then 28. It is 29 here for a fixture reason
-	// rather than a regression: this project has a remote, so resolving the trunk asks
-	// `symbolic-ref refs/remotes/origin/HEAD`, and the harness this replaced measured a
-	// project with no remote at all. One fixture serves both runs, which is worth a
-	// process.
-	//
-	// 30 since 0059: whether a feature's plan has reached the trunk is a new question,
-	// and the board has to ask it or it goes on offering claims that exit 2. One
-	// `ls-tree` reads the trunk's whole tree, so the cost is fixed rather than one
-	// `cat-file` per feature — the shape this ceiling exists to catch.
-	offlineBudget = 31 // One cached revision comparison verifies the checkout equals the trunk.
-
-	// `kit audit` against a local bare remote. The remote is on disk, so the round trip
-	// is one cheap process and what grows with the board is the fan-out. 67 before 0039
-	// read the trunk's statuses in one pass, 10 after.
-	//
-	// 11 since 0048: the plan checks gate on whether a doc is committed, which is a new
-	// question and so costs a process — one `ls-tree` for the whole tree. It was 40 for a
-	// day, one `cat-file` per feature, which is exactly the shape this ceiling exists to
-	// catch, and it caught it.
-	//
-	// 12 since 0054: how far the newest tag is behind the trunk is a new question, and one
-	// `describe --long` answers all of it. Fixed, not per feature — the distance is a fact
-	// about the project and is asked once.
-	// 14 since 0064: an id the remote has handed out is a new question, and it has to be
-	// asked of the remote or the check reports numbers that may already be free. One
-	// `fetch` mirrors the whole namespace and one `for-each-ref` reads it, both fixed —
-	// the `ls-tree` per branch that follows is spent only on a candidate that survives
-	// the docs on disk, and on a project where nothing has drifted there is none.
-	// 16 since 0066: what status HEAD carries is a new question, and the working tree
-	// cannot answer it — that is the whole reason a stamp nobody committed read as
-	// agreement. One `ls-tree` names the board's blobs and one `cat-file --batch` reads
-	// them, both fixed, which is the shape `trunkStatuses` already uses for the trunk.
-	// One repository-wide diff checks frozen documents; no per-feature processes.
-	onlineBudget = 17
-
-	// The same board where no trunk resolves. `Trunk()` answered "" there, and "" was
-	// also its "not asked yet" sentinel, so `findTrunk` ran the whole ladder again for
-	// every caller: 747 processes on this fixture, 721 of them one `symbolic-ref`, and
-	// growing with the board. The fixture above always resolves a trunk, which is the
-	// only reason the ceiling never caught it. One `show` under the offline number
-	// because this checkout stands on a claim, and its own boxes are read from the tree.
-	noTrunkBudget = 28
-)
-
-func TestABoardReadStaysWithinItsGitBudget(t *testing.T) {
+func TestABoardReadKeepsGitWorkBoundedAsFeaturesGrow(t *testing.T) {
 	t.Parallel()
-	p := budgetFixture(t)
-
-	offline, breakdown := countGit(t, p, "next", "--offline")
-	// Logged whether or not it fails: `make gitcount` is how the numbers are read, and a
-	// count that has quietly halved is worth knowing about too.
-	t.Logf("%d features, %d claims: %d git processes offline (ceiling %d)\n%s",
-		budgetFeatures, budgetClaims, offline, offlineBudget, breakdown)
-	if offline > offlineBudget {
-		t.Errorf("`kit next --offline` spawned %d git processes, over its %d ceiling.\n"+
-			"An answer that cannot change inside one command is asked once. If this is a "+
-			"genuinely new question rather than a repeat, raise the ceiling and say why.\n%s",
-			offline, offlineBudget, breakdown)
-	}
-
-	shipEverything(t, p)
-
-	online, breakdown := countGit(t, p, "audit")
-	t.Logf("%d features, %d claims: %d git processes online (ceiling %d)\n%s",
-		budgetFeatures, budgetClaims, online, onlineBudget, breakdown)
-	if online > onlineBudget {
-		t.Errorf("`kit audit` spawned %d git processes, over its %d ceiling.\n"+
-			"The checks that need the remote are the half a `--offline` measurement cannot "+
-			"see. If this is a new question rather than a repeat, raise the ceiling and say "+
-			"why.\n%s", online, onlineBudget, breakdown)
-	}
-}
-
-func TestABoardWithNoTrunkStaysWithinItsGitBudget(t *testing.T) {
-	t.Parallel()
-	p := noTrunkFixture(t)
-
-	n, breakdown := countGit(t, p, "next", "--offline")
-	t.Logf("%d features, %d claims, no trunk: %d git processes (ceiling %d)\n%s",
-		budgetFeatures, budgetClaims, n, noTrunkBudget, breakdown)
-	if n > noTrunkBudget {
-		t.Errorf("`kit next --offline` spawned %d git processes on a board with no trunk, "+
-			"over its %d ceiling.\nAn answer that cannot change inside one command is asked "+
-			"once, and that includes the answer \"there is none\".\n%s",
-			n, noTrunkBudget, breakdown)
+	for _, mode := range []string{"next", "audit", "no trunk"} {
+		t.Run(mode, func(t *testing.T) {
+			counts := []int{}
+			for _, size := range []int{30, 130} {
+				var p *project
+				args := []string{"next", "--offline"}
+				if mode == "no trunk" {
+					p = noTrunkFixture(t, size)
+				} else {
+					p = budgetFixture(t, size)
+				}
+				if mode == "audit" {
+					shipEverything(t, p, size)
+					args = []string{"audit"}
+				}
+				n, breakdown := countGit(t, p, args...)
+				t.Logf("%s, %d features: %d git calls\n%s", mode, size, n, breakdown)
+				counts = append(counts, n)
+			}
+			if counts[1] > counts[0] {
+				t.Fatalf("100 unclaimed features added %d git calls; batch repository reads", counts[1]-counts[0])
+			}
+		})
 	}
 }
 
 // budgetFixture is a project with a board to walk, claim branches to resolve, and a bare
 // remote on disk to ask.
-func budgetFixture(t *testing.T) *project {
+func budgetFixture(t *testing.T, size int) *project {
 	t.Helper()
 	base, origin := budgetRemote(t, "main")
-	p := budgetBoard(t, base)
+	p := budgetBoard(t, base, size)
 	p.git("remote", "add", "origin", origin)
 	p.commitAll("a board")
 	p.git("push", "-q", "origin", "HEAD:refs/heads/main")
@@ -144,10 +78,10 @@ func budgetFixture(t *testing.T) *project {
 // called neither `main` nor `master`; and a checkout standing on a claim, which the last
 // rung of the ladder refuses to call a trunk. Every claim worktree of a project that
 // started life locally is in it.
-func noTrunkFixture(t *testing.T) *project {
+func noTrunkFixture(t *testing.T, size int) *project {
 	t.Helper()
 	base, origin := budgetRemote(t, "develop")
-	p := budgetBoard(t, base)
+	p := budgetBoard(t, base, size)
 	p.git("branch", "-m", "develop")
 	p.git("remote", "add", "origin", origin)
 	p.commitAll("a board")
@@ -173,12 +107,12 @@ func budgetRemote(t *testing.T, trunk string) (base, origin string) {
 
 // budgetBoard writes the features, uncommitted: what a caller does with git afterwards is
 // what the two fixtures differ in.
-func budgetBoard(t *testing.T, base string) *project {
+func budgetBoard(t *testing.T, base string, size int) *project {
 	t.Helper()
 	p := projectAt(t, filepath.Join(base, "project"))
 	p.run("init").ok()
 	writeVision(p)
-	for i := 1; i <= budgetFeatures; i++ {
+	for i := 1; i <= size; i++ {
 		id := fmt.Sprintf("%04d", i)
 		feature(p, id, fmt.Sprintf("feature-%d", i), fmt.Sprintf("Feature %d", i),
 			"Draft", "- [ ] One\n- [ ] Two")
@@ -188,9 +122,9 @@ func budgetBoard(t *testing.T, base string) *project {
 
 // shipEverything puts the board in the state the claim checks work hardest in: every doc
 // Shipped, so every one of them asks where its work is.
-func shipEverything(t *testing.T, p *project) {
+func shipEverything(t *testing.T, p *project, size int) {
 	t.Helper()
-	for i := 1; i <= budgetFeatures; i++ {
+	for i := 1; i <= size; i++ {
 		rel := fmt.Sprintf("docs/features/%04d-feature-%d.md", i, i)
 		doc := strings.NewReplacer(
 			"status: Draft", "status: Shipped",
@@ -242,6 +176,9 @@ func countGit(t *testing.T, p *project, args ...string) (int, string) {
 		if fields := strings.Fields(line); len(fields) > 2 {
 			counts[fields[2]]++ // past the `-C <root>` every call carries
 		}
+	}
+	if counts["ls-remote"] > 1 || counts["fetch"] > 1 {
+		t.Fatalf("single-remote survey repeated network reads: %v", counts)
 	}
 	var breakdown strings.Builder
 	for verb, n := range counts {

@@ -20,7 +20,7 @@ release:
 
 # check is the pre-push / CI gate. One command, same in every project.
 .PHONY: check
-check: fmt-check vet lint test
+check: fmt-check lint test
 
 .PHONY: test
 test:
@@ -33,7 +33,10 @@ fmt:
 # fmt-check fails (non-zero) if any file is not gofmt-clean, suitable for CI.
 .PHONY: fmt-check
 fmt-check:
-	@test -z "$$(gofmt -s -l $(FMT_DIRS))" || (echo "Run 'make fmt' to fix:" && gofmt -s -l $(FMT_DIRS) && exit 1)
+	@unformatted=$$(gofmt -s -l $(FMT_DIRS)) || exit $$?; \
+		if [ -n "$$unformatted" ]; then \
+			printf 'Run make fmt to fix:\n%s\n' "$$unformatted"; exit 1; \
+		fi
 
 .PHONY: vet
 vet:
@@ -65,7 +68,7 @@ help:
 	@echo "Targets:"
 	@echo "  build      - check + compile $(BIN)"
 	@echo "  release    - static stripped $(RELEASE_BIN) (GOOS/GOARCH overridable)"
-	@echo "  check      - fmt-check + vet + lint + test (pre-push/CI gate)"
+	@echo "  check      - fmt-check + lint + test (pre-push/CI gate)"
 	@echo "  test       - go test -race -cover ./..."
 	@echo "  fmt        - gofmt -s -w"
 	@echo "  fmt-check  - fail if anything is unformatted"

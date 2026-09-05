@@ -31,7 +31,7 @@ CI_STEPS := check vuln audit
 # What is not in it needs the network: `vuln` downloads the vulnerability database
 # and `audit` reads the remote's claim branches.
 .PHONY: check
-check: fmt-check vet lint test
+check: fmt-check lint test
 
 # How many tests run at once. The suite is 190-odd independent tests, each with its own
 # temporary directory, so this is pure wall clock: on a 12-core machine `go test -race`
@@ -50,7 +50,7 @@ PARALLEL ?= 4
 # named a single test by hand printed three ceilings of four while claiming to print them all.
 .PHONY: gitcount
 gitcount:
-	@$(GO) test -count=1 -v -run 'TestABoard.*GitBudget' ./cmd/kit
+	@$(GO) test -count=1 -v -run 'TestABoardReadKeepsGitWorkBounded' ./cmd/kit
 
 # No -cover. The conformance suite drives a separately built binary, so the number
 # counted the test process and not the kit: 2.9% for the package the suite exercises
@@ -65,8 +65,10 @@ fmt:
 
 .PHONY: fmt-check
 fmt-check:
-	@test -z "$$(gofmt -s -l . | grep -v '^templates/')" \
-		|| (echo "Run 'make fmt' to fix:" && gofmt -s -l . && exit 1)
+	@unformatted=$$(gofmt -s -l .) || exit $$?; \
+		if [ -n "$$unformatted" ]; then \
+			printf 'Run make fmt to fix:\n%s\n' "$$unformatted"; exit 1; \
+		fi
 
 .PHONY: vet
 vet:
@@ -84,7 +86,7 @@ lint:
 # install puts `kit` on your PATH via the Go toolchain.
 .PHONY: vuln
 vuln:
-	$(GO) run golang.org/x/vuln/cmd/govulncheck@latest $(PKG)
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.7.0 $(PKG)
 
 # audit reads this repo's own board. `go run` builds it from the checkout, so it
 # needs no credential for a private module — CI never installs the kit.
@@ -132,7 +134,7 @@ help:
 	@echo "  build       - compile ./$(BIN)"
 	@echo "  install     - go install onto your PATH"
 	@echo "  release     - gate, tag and push a version: make release TAG=v0.3.0"
-	@echo "  check       - fmt-check + vet + lint + test (the gate)"
+	@echo "  check       - fmt-check + lint + test (the gate)"
 	@echo "  test        - unit tests + the conformance suite"
 	@echo "  fmt         - gofmt -s -w ."
 	@echo "  fmt-check   - fail if anything is unformatted"

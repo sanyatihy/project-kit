@@ -6,11 +6,8 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
-	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 	"unicode"
@@ -105,58 +102,6 @@ func TestOverviewDocumentsTheExitCodes(t *testing.T) {
 	}
 }
 
-// ruleNumberRe is a cross-reference to a numbered rule, which is the thing that rots:
-// inserting a rule above one renumbers it and no prose moves with it.
-var ruleNumberRe = regexp.MustCompile(`(?i)\brule \d+`)
-
-func TestNothingUserFacingCitesARuleByNumber(t *testing.T) {
-	t.Parallel()
-	// Two cross-references pointed at the wrong rules for months, because 0007 and
-	// 0009 inserted rules above them and numbers in prose do not move. Naming the
-	// rule removes the class rather than the two instances.
-	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
-	if err != nil {
-		t.Fatalf("reading the protocol: %v", err)
-	}
-	if m := ruleNumberRe.FindString(string(raw)); m != "" {
-		t.Errorf("the protocol cites %q — a rule inserted above it will silently "+
-			"misdirect the reader; cite the rule by its bolded name instead", m)
-	}
-
-	// The same rot reaches the user through what the commands print, and `kit ship`
-	// refused a foreign claim with "rule 8" long after the numbering had moved. Only
-	// string literals are read: a comment citing a rule misdirects nobody but the
-	// next reader of the source, and `_test.go` files are not user-facing at all.
-	for _, dir := range []string{".", "../../internal/kit"} {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			t.Fatalf("reading %s: %v", dir, err)
-		}
-		fset := token.NewFileSet()
-		for _, entry := range entries {
-			name := entry.Name()
-			if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
-				continue
-			}
-			file, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, 0)
-			if err != nil {
-				t.Fatalf("parsing %s: %v", name, err)
-			}
-			ast.Inspect(file, func(n ast.Node) bool {
-				lit, ok := n.(*ast.BasicLit)
-				if !ok || lit.Kind != token.STRING {
-					return true
-				}
-				if m := ruleNumberRe.FindString(lit.Value); m != "" {
-					t.Errorf("%s prints %q — cite the rule by name, or name the "+
-						"command that enforces it", fset.Position(lit.Pos()), m)
-				}
-				return true
-			})
-		}
-	}
-}
-
 func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
 	t.Parallel()
 	// A protocol that describes the manual path for something the tool does is a
@@ -180,27 +125,6 @@ func TestProtocolNamesTheCommandsThatExist(t *testing.T) {
 		if strings.Contains(string(raw), absent) {
 			t.Errorf("the protocol names %q, which a project kit init scaffolds may not have",
 				absent)
-		}
-	}
-}
-
-// ruleRe is a numbered protocol rule as the list writes one.
-var ruleRe = regexp.MustCompile(`(?m)^(\d+)\. \*\*`)
-
-func TestTheProtocolsRulesAreNumberedWithoutAGap(t *testing.T) {
-	t.Parallel()
-	// Cutting a rule means renumbering every rule below it by hand, and this round did
-	// it off by one: the list ran 10, 12, 13. Nothing cites a rule by number, so a gap
-	// misdirects nobody — it just tells every agent reading the protocol that a rule was
-	// removed and the removal was not finished.
-	raw, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
-	if err != nil {
-		t.Fatalf("reading the protocol: %v", err)
-	}
-	for i, m := range ruleRe.FindAllStringSubmatch(string(raw), -1) {
-		if want := strconv.Itoa(i + 1); m[1] != want {
-			t.Fatalf("the protocol's rule %d is numbered %s — the list has a gap or a "+
-				"repeat, so a rule looks deleted and half-deleted", i+1, m[1])
 		}
 	}
 }
@@ -302,37 +226,6 @@ func TestEveryTopicResolvesInTheBinary(t *testing.T) {
 		}
 		if len(strings.TrimSpace(string(raw))) == 0 {
 			t.Errorf("topic %q resolves to an empty document", topic)
-		}
-	}
-}
-
-// showsTaskSyntax are the topics whose job is to demonstrate the feature-doc format,
-// so a `- [ ]` in them is the subject matter rather than a mistake.
-var showsTaskSyntax = map[string]bool{
-	"template": true,
-	"inbox":    true,
-}
-
-// In kit, `- [ ]` means "an implementing task commit, do the topmost one". Guidance that
-// uses the same syntax for "a property to verify" would be read as a task list by an
-// agent following the protocol, and it would work through it.
-func TestNoTopicLooksLikeATaskList(t *testing.T) {
-	t.Parallel()
-	for topic, path := range topics {
-		if showsTaskSyntax[topic] {
-			continue
-		}
-		raw, err := fs.ReadFile(templates, path)
-		if err != nil {
-			continue // TestEveryTopicResolvesInTheBinary reports this
-		}
-		for i, line := range strings.Split(string(raw), "\n") {
-			trimmed := strings.TrimSpace(line)
-			if strings.HasPrefix(trimmed, "- [ ]") || strings.HasPrefix(trimmed, "- [x]") {
-				t.Errorf("%s:%d in topic %q is a task box: %q\n"+
-					"an agent working the topmost unticked box would try to work through these",
-					path, i+1, topic, trimmed)
-			}
 		}
 	}
 }

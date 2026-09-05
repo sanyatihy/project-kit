@@ -133,9 +133,9 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   second half is worth exactly as much as the identities are distinct, and on this repo
   four agents shared the operator's, so it separated none of them. Branch protection is
   the only real enforcement while that is true.
-- **Git reads are memoised within a command.** The gate measures subprocess counts with
-  generated boards: 30 for next offline and 17 for audit online, including one diff for
-  frozen documents. `make gitcount` reports all ceilings and breakdowns.
+- **Git reads are batched.** The performance gate compares 30- and 130-feature boards
+  with the same claims; extra unclaimed features must add no git processes. Remote
+  listing and reservation refresh each run at most once. `make gitcount` prints both.
 
 - **One project per invocation.** `next` and `audit` read the repo you are in and take no
   paths. The fan-out that read several at once keyed its payload by directory basename, so
@@ -226,6 +226,8 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
 - **One defect is one finding; the code names the category, not one member.** Seven pairs
   merged, each survivor's `Means` restated. A missing `VISION.md` or `INBOX.md` is
   `no-protocol`: one command writes all three, so one fix clears them.
+- **Age is advisory.** Stalled work and old questions remain visible without blocking
+  unrelated delivery. A feature’s own unanswered question still prevents claiming it.
 - **Severity is the damage.** `split-claim` is HIGH — two agents owning one feature is the
   worst failure here, and it gated nothing at MEDIUM. `id-mismatch` is HIGH because the
   branch comes from the filename and the claim is looked up by the id, so the board keeps
@@ -299,21 +301,13 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   every file it names against `docLayout` or a help topic. Rule 14 named `BACKLOG.md` while
   nothing wrote or described it, and the first version of that test read only `docs/` paths
   and so found nothing to check.
-- **Standing guidance is embedded, never copied into projects.** `go-checklist` is practice,
-  not documentation of the kit, and `audit` cannot check a word of it — a copy per repo
-  would be drift with nothing to notice it. It must never use `- [ ]`, which in a kit
-  project means an implementing task commit; a test pins that.
-- **Shipped text has line ceilings** (`cmd/kit/budget_test.go`), because nothing else stops
-  a doc growing and no reviewer counts lines. Tiered by how long the reader is expected to
-  sit with it: command help tightest, then the protocol, then topics, then the two whole
-  documents. Ceilings only — a floor rewards padding.
+- **Standing guidance is embedded, never copied into projects.** Checklists are practice;
+  project plans own executable task boxes.
+- **Tests protect behavior.** Prose length, wording, numbering and error-statement counts
+  are not blocking gates. Help reachability, parser contracts and refusal behavior are.
 - **The binary names nothing it does not have.** Tests hold `help.go` against the check
   registry, against `main.go`'s dispatcher and against the topic map, both ways —
   `kit ship --help` advertised `doc-bloat` for a release after the check was deleted.
-- **A refusal list is complete or it is not a list.** `cmd/kit/refusals_test.go` names every
-  reason `ship`, `release` and `claim` turn work away and counts the refusals in the source,
-  so a new one reaches neither the code nor the help alone. The protocol points at
-  `kit ship --help` rather than carrying a second copy.
 - **`--json` is a contract and its shape is pinned.** The board's four groups are `[]` when
   empty, `moved` is absent rather than a year-1 timestamp — `omitempty` does nothing for a
   struct — and a directory nothing surveyed reports through `error` at exit 2.
@@ -410,7 +404,7 @@ Each of these has already caused a bug.
 ## Verifying
 
 ```sh
-make check     # fmt-check, vet, lint, unit tests, conformance suite — the whole gate
+make check     # fmt-check, lint, unit tests, conformance suite — the whole gate
 make vuln      # govulncheck against the module
 make install   # go install ./cmd/kit
 make release TAG=v0.3.0   # gate, then cut and push the tag `@latest` resolves to
@@ -420,11 +414,12 @@ Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`. **CI 
 Makefile's `CI_STEPS` and nothing else**, and `cmd/kit/ci_test.go` fails when the workflow
 drifts from it. **The linter is pinned and its set committed** to `.golangci.yml`, or a
 release changes what the gate means with no commit behind it. Missing or failing lint
-fails `make check`, here and in the Go scaffold. Generated Go CI installs v2.12.2,
+fails `make check`, here and in the Go scaffold. Formatting errors also fail closed;
+vet runs through the configured linter. The vulnerability scanner is pinned at v1.7.0. Generated Go CI installs v2.12.2,
 uses the generated .golangci.yml and limits its job to 15 minutes on both forges.
 
 **The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
-it against throwaway projects, asserting on stdout, stderr, exit codes and the files left
+it with the test suite’s race mode against throwaway projects, asserting on stdout, stderr, exit codes and the files left
 behind. In-tree, because an external script is deleted without anything noticing. Four
 properties are load-bearing. `TestEveryRegisteredCheckIsExercised` compares the cases
 against `kit.Checks` both ways, so a check with no test fails the build. Every audit case

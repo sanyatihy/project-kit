@@ -61,7 +61,7 @@ that can be reviewed and integrated safely; implementation steps stay task boxes
 
 - [x] Verify frozen history against the published integration state
 
-- [ ] Make gates fail correctly and test behavior rather than editorial proxies
+- [x] Make gates fail correctly and test behavior rather than editorial proxies
 - [ ] Clarify submission, reopening and explicit disposal command contracts
 - [ ] Teach substantial value-shaped features and align the workflow documentation
 

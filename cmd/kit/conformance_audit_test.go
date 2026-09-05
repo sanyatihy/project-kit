@@ -1288,12 +1288,13 @@ func TestAnFYIIsNeverAgedAtAll(t *testing.T) {
 	}
 	p.run("audit", "--strict").ok()
 
-	// And the blocking case still fails the gate, or the marker means nothing.
+	// An old decision stays visible and blocks its feature, not the whole gate.
 	blocking := cleanProject(t)
 	blocking.write("docs/INBOX.md", fmt.Sprintf(
 		"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Which host runs this?\n",
 		daysAgo(kit.InboxStaleDays)))
-	blocking.run("audit", "--strict").fails(1)
+	blocking.run("audit", "--strict").ok().has("inbox-stale")
+	blocking.run("claim", "0001").fails(1)
 }
 
 // The claim checks read branch names, which is the one place this tool can

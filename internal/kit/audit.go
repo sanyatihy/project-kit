@@ -86,10 +86,10 @@ var (
 		"a doc declares one frontmatter key twice, so the value the kit reads is not the line a write would change"}
 	checkFrozenDoc = Check{"frozen-doc", High,
 		"a feature already Shipped on the trunk was changed or deleted, or that history could not be verified"}
-	checkStalled = Check{"stalled", High,
+	checkStalled = Check{"stalled", Medium,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
-	checkInboxStale = Check{"inbox-stale", High,
+	checkInboxStale = Check{"inbox-stale", Medium,
 		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkSecretInDoc = Check{"secret-in-doc", High,
 		"a doc contains something shaped like a real credential"}
