@@ -411,6 +411,7 @@ Each of these has already caused a bug.
 
 `kit help compatibility` is the embedded v1 contract and upgrade procedure. Existing
 legacy work stays on its branch; new writers coordinate through immutable id branches.
+[RELEASE.md](RELEASE.md) owns the post-merge publication and installation procedure.
 
 ## Verifying
 

@@ -94,7 +94,7 @@ and installation verification; Submitted alone never claims that outcome.
 - [x] Make fresh Go and Python projects pass their actual gates on the declared supported environments and document reproducible tool requirements
 - [x] Rehearse plan approval, independent claims, interruption and blocker recovery, review revisions, squash integration and dependency unlock across separate clones, plus initial MVP harvest and a disposable financials upgrade
 - [x] Preserve actual legacy claim branch names in board JSON during the coordinated upgrade
-- [ ] Record release-candidate evidence, remote enforcement verification or explicit pending conditions, and the exact post-merge v1.0.0 publication and installation procedure
+- [x] Record release-candidate evidence, remote enforcement verification or explicit pending conditions, and the exact post-merge v1.0.0 publication and installation procedure
 
 ## Log
 
