@@ -1,9 +1,9 @@
 ---
 id: 0075
 title: Agents can complete and revise work without silently bypassing the protocol
-status: Shipped
+status: Draft
 created: 2026-09-05
-shipped: 2026-09-05
+shipped: 
 needs:
 ---
 
@@ -47,3 +47,4 @@ cannot establish misplaced content. Durable facts still move to TECH before subm
 - Added the scaffold task when requiring lint exposed its missing GitLab installation.
 - Applied the release safety check to reservation disposal after finding the same stale-read gap.
 - 2026-09-05 — reset to Draft: Audit the harvested handoff
+- 2026-09-05 — reset to Draft: Review the complete planned and exploratory workflows
