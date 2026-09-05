@@ -117,6 +117,12 @@ func TestLegacyClaimsRemainOwnedAndPreventCanonicalAcquisition(t *testing.T) {
 	a.git("checkout", "-b", "0007-widget")
 	a.git("push", "-u", "origin", "HEAD")
 	b.run("claim", "0007").fails(1).errHas("0007-widget")
+	if yours := a.plan("next", "--json").Yours; len(yours) != 1 || yours[0].Branch != "0007-widget" {
+		t.Fatalf("legacy owner was routed to a different branch: %+v", yours)
+	}
+	if taken := b.plan("next", "--json").Taken; len(taken) != 1 || taken[0].Branch != "0007-widget" {
+		t.Fatalf("legacy observer was shown a different branch: %+v", taken)
+	}
 	a.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build it"))
 	a.commitAll("legacy work")
 	a.run("submit", "0007").ok()

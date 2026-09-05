@@ -205,9 +205,11 @@ func Survey(r *Repo) Plan {
 		claim := ""
 		if len(claims) > 0 {
 			claim = claims[0]
+			item.Branch = claim
 		}
 		if item.Mine = r.Mine(f.ID); item.Mine {
 			plan.Claiming = f.ID
+			item.Branch = r.HeadBranch()
 		}
 		// Boxes are ticked on the claim branch and stay there until it merges, so the
 		// checkout's copy reports 0/3 however far along somebody else is — which reads as
