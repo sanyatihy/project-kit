@@ -308,7 +308,8 @@ one line to docs/INBOX.md in the format the tool parses:
   - [ ] YYYY-MM-DD · <id> · BLOCKING|FYI · <question>
 
 "kit next" then stops offering that feature until a human answers and deletes the
-line. With --fyi it is recorded without blocking, for anything work can continue
+line. Record the answer in the affected plan, commit it with the inbox change, and
+integrate that commit into any paused checkout before resuming. With --fyi it is recorded without blocking, for anything work can continue
 without.
 
 Use this rather than editing INBOX.md by hand. A line that misses the format is

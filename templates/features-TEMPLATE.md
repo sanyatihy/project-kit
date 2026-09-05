@@ -1,11 +1,17 @@
 ---
 id: NNNN
-title: <short imperative name>
+title: <observable improvement>
 status: Draft
 created: YYYY-MM-DD
 submitted:
 needs:
 ---
+
+<!-- A feature is one coherent, reviewable improvement. Addition, removal, security,
+     reliability, performance and cost reductions all qualify. Prefer a substantial
+     outcome with implementation steps as tasks. Split for independent value, distinct
+     approval decisions or reviewability, not by code layer or agent count.
+     Name the benefit and an observable result before choosing implementation tasks. -->
 
 <!-- List prerequisite ids in `needs:` only when this work cannot start until their
      implementation is merged. Leave it empty for independent work.

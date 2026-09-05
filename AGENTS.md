@@ -14,20 +14,28 @@ explains a refusal. Fix its cause rather than bypassing it with raw git or hand 
 
 Plan when asked. For work that began without a plan, use the spike route below.
 
-1. Read `docs/VISION.md` first. Capabilities, reliability, security, performance and
-   removal all count when they serve its outcomes or constraints.
-2. A feature is one change an operator can recognise and a reviewer can assess in one
-   sitting. Prefer the larger coherent change under that ceiling. A separate doc earns
-   its place through a decision the code or commit cannot explain; otherwise use a task
-   box or a chore commit. Do not create a feature for every implementation step.
+1. Read `docs/VISION.md` first. A feature is a verifiable improvement serving its
+   outcomes or constraints: a capability added or removed, an exposure closed, a failure
+   eliminated, or a measurable gain in performance, cost or maintainability. State who
+   benefits and what observable result proves the improvement.
+2. Prefer the largest coherent outcome a reviewer can safely assess in one pull request.
+   Keep implementation layers, migration, tests and documentation as task boxes within
+   that feature. Split when outcomes have independent value, need separate approval, or
+   cannot be reviewed safely together. Do not split merely to give each agent a doc.
+   A feature doc holds decisions worth approving before building; a small change with no
+   such decision can be a task box or an ordinary chore. Removing an integrated feature
+   is new work citing its frozen doc; `drop` only retires an unbuilt plan.
 3. With no commits, commit setup on the trunk before creating the planning branch.
    Draft the whole round with `kit new "<title>"` on one `plan/<round>` branch whose
    name contains no four-digit id. Fill `needs:` with prerequisite feature ids; leave
    it empty when work can start independently. Keep every draft `status: Draft`.
-4. Push the planning branch and open one pull request for human review. After the human
+4. Push the planning branch and open one pull request for human review. Planned features
+   require the human's approval through that merge before implementation starts. After it
    merges, return to a trunk checkout, pull with --ff-only, and run kit audit and kit next.
 5. Put uncertainty in `## Open questions`. Use `kit block <id> "<question>"` for a
    decision only the human can make. Never invent a product decision to unblock yourself.
+   Once answered, record the decision in the affected plan, remove its blocking inbox
+   line, and commit both. Integrate that answer into a paused checkout before resuming.
 
 ### Taking work
 
@@ -38,11 +46,12 @@ Plan when asked. For work that began without a plan, use the spike route below.
    A claimed branch or worktree belonging to another agent is not yours to clean up.
 7. Each agent works in its own checkout. Do not share a working tree, index or claim.
    A branch citing a four-digit id is a claim; ordinary chores and spikes cite none.
-8. For a spike, work on a branch of its own. When done, `kit harvest "<title>"
+8. For human-directed exploration, work on a spike branch of its own. Do not turn a
+   pending plan into a spike to bypass approval. When done, `kit harvest "<title>"
    --box "<outcome>"` records the work and names its branch after the feature. Fill
    Problem and Design before submitting. With no commits, harvest creates an empty trunk
-   base; publish it for the
-   first PR. `kit harvest --nothing "<what it showed>"` records a discarded spike.
+   base; publish it for the first PR. `kit harvest --nothing "<what it showed>"` records
+   a discarded spike.
 
 ### Doing the work
 

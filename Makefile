@@ -33,21 +33,10 @@ CI_STEPS := check vuln audit
 .PHONY: check
 check: fmt-check lint test
 
-# How many tests run at once. The suite is 190-odd independent tests, each with its own
-# temporary directory, so this is pure wall clock: on a 12-core machine `go test -race`
-# measured 32.8s serial, 22.2s at 2, 17.4s at 4, 12.0s at 6 and 8.8s uncapped.
-#
-# 4 is a third of that machine on purpose. The gate runs beside whatever else the operator
-# is doing, and a check that takes the box with it is one people stop running. Raise it for
-# a build server: make check PARALLEL=8
+# Bound concurrent fixture work on a developer machine; build servers can raise it.
 PARALLEL ?= 4
 
-# What a board read costs in subprocesses, on a generated fixture. The ceilings are pinned
-# in the test itself and `make check` fails on them; this target is for reading the numbers
-# and the breakdown behind them when something has to be fixed.
-#
-# Every budget test, not one of them: 0056 added the board with no trunk, and a target that
-# named a single test by hand printed three ceilings of four while claiming to print them all.
+# Print git-process growth across board sizes; the test also runs in the gate.
 .PHONY: gitcount
 gitcount:
 	@$(GO) test -count=1 -v -run 'TestABoardReadKeepsGitWorkBounded' ./cmd/kit

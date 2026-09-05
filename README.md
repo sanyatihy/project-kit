@@ -96,6 +96,19 @@ There are two human review points for planned work: the plan and the implementat
 The agent handles the commands between them. One feature is one pull request; each
 Tasks box is one implementing commit within it.
 
+A feature makes the project observably better. Adding a capability, removing an expensive
+one, closing a security exposure, eliminating a recurring failure and meeting a latency
+or cost target all qualify. State the benefit and how to verify it.
+
+Prefer one substantial, coherent outcome over a separate feature for every small step.
+For example, retiring a legacy import format can include migrating callers, deleting the
+parser, tests and documentation in one feature. Those are task boxes, not four features.
+Split when outcomes stand on their own, approvals differ, or the combined change cannot
+be reviewed safely. Parallel agents are a reason to find independent outcomes, not to
+fragment a coherent one. Small chores need no feature doc unless they hold a decision
+that deserves approval. Removing integrated work gets a new doc citing its frozen history.
+
+
 | Step | Human | Agent |
 | --- | --- | --- |
 | Decide | Discuss the outcome and settle product choices | Record the vision and unresolved questions |
@@ -121,6 +134,8 @@ A task discovered during implementation becomes another box, feature or backlog 
 The agent continues through the current feature until it is ready for review or blocked.
 A human decision goes to `kit block <id> "<question>"`; the agent may take independent
 work from another checkout. If none is available, it reports the blocker and stops.
+When the human answers, record the decision in the plan and remove the blocking inbox
+line in the same commit. Bring that commit into the paused checkout before resuming.
 
 ## Submission and integration
 
@@ -149,8 +164,9 @@ this clone's claim, and always preserves uncommitted files and foreign claims.
 
 ## Exploring first
 
-For an MVP or experiment, work on an ordinary branch with no four-digit id in its name.
-When the result is worth keeping:
+For an MVP or experiment the human asks to explore, work on an ordinary branch with no four-digit id in its name.
+This route does not bypass approval of an already drafted feature. When the result is
+worth keeping:
 
 ```sh
 kit harvest "Shorten URLs" --box "A long URL comes back short"

@@ -193,17 +193,11 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
 - **Every fact has one home, and the routing is decided at submit.** Still true afterwards and
   it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,
   naming the change; neither and it belongs in the pull request.
-- **A feature is one shipped change in what the project can do, can be trusted to do, or can
-  be trusted not to do.** Addition is one shape and not the privileged one: a failure that
-  stops happening, an exposure that closes, a number that crosses a line and a capability
-  removed with its cost all qualify, each gated on the value and trigger `BACKLOG.md` asks
-  of an entry before it is promoted. Removing what shipped is a new doc citing the frozen
-  one, since `kit drop` refuses a Submitted doc and the protocol refuses an edit to it.
-  Named in one sentence an operator would recognise, or it is a task box or a chore commit.
-  **A separate doc earns its place when it holds a decision someone must read before
-  building, not recoverable from the code or the commit.** It has a cost on both sides; the
-  "and" test it replaced had none and so only split, producing eleven docs where five were
-  right. Too big is one nobody reviews in a sitting, split by value never by layer.
+- **Features are coherent, verifiable improvements.** Additions, subtractions, security,
+  reliability, performance, cost and maintainability qualify. Prefer substantial outcomes;
+  layers and delivery steps are tasks. Split for independent value, separate approvals or
+  safe review, never simply to assign more agents. Removing integrated work gets a new doc.
+
 - **Every run of `next` ends with an instruction**, in every state. The newest was a doc
   straight out of `kit new`: it lands in `blocked`, and the closing line said stopping was
   the right outcome when the work was to write the plan just created.
