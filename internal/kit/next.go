@@ -85,6 +85,7 @@ type Plan struct {
 	// weaker statement than it looks: claims come from the last fetch, and anything
 	// awaiting review is missing rather than absent.
 	RemoteUnanswered bool `json:"remote_unanswered,omitempty"`
+	Offline          bool `json:"offline,omitempty"`
 
 	// ProtocolStale says the project's AGENTS.md and the binary reading it disagree, so
 	// the rules the agent is about to follow are not the rules this kit expects. Set by
@@ -320,6 +321,7 @@ func Survey(r *Repo) Plan {
 	}
 	// After the work, so it reports what actually went unanswered.
 	plan.RemoteUnanswered = r.RemoteUnanswered()
+	plan.Offline = r.Offline && len(r.remotes()) > 0
 	plan.Checkout = r.checkoutHandoff(plan.Claiming)
 	if plan.Checkout == "" && plan.Claiming == "" && plan.Spike == "" && r.foundationAsked {
 		plan.Checkout = r.foundationIssue

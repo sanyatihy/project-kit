@@ -761,6 +761,9 @@ func listItems(items []kit.Item) {
 }
 
 func printPlan(plan kit.Plan, color bool) {
+	if plan.Offline {
+		fmt.Println("  offline: claim observations are cached; current remote ownership and review state are unknown")
+	}
 	// Above the board, because an agent that has read the plan and started working has
 	// already walked past anything printed after it. Never changes the exit code: the plan
 	// is still right, it is the rules around it that drifted.

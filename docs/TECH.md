@@ -354,6 +354,9 @@ Draft -> Submitted     (exit: Dropped; reopen before merge for review changes)
 - **Frozen documents are checked against the published trunk online.** `frozen-doc`
   reports edits, deletions and unreadable integration evidence; --offline uses local
   history. Required remote checks must enforce this against raw git.
+- **Offline board output labels cached claims and unknown remote handoffs.** Its JSON
+  carries offline: true; unreadable evidence cannot establish unpushed work or readiness
+  to acquire a new remote claim.
 - **Strict online audit fails on an unanswered remote.** Explicit --offline runs local
   checks and reports the omitted checks; neither path describes partial coverage as agreement.
 - **Reservation disposal checks local and advertised branch tips and leases the ref.**

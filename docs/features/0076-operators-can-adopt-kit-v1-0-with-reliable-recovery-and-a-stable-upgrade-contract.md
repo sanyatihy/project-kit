@@ -88,7 +88,7 @@ and installation verification; Submitted alone never claims that outcome.
 
 - [x] Restore and preserve house rules, remove obsolete workflow guidance, and align approval and documentation rules with regression coverage for protocol-section boundaries
 - [x] Make claim identity survive renames and recover interrupted acquisitions, with deterministic competing-clone tests and legacy-claim migration coverage
-- [ ] Make offline and unavailable-remote handoffs report uncertainty without inventing progress or ownership, verified in text and JSON
+- [x] Make offline and unavailable-remote handoffs report uncertainty without inventing progress or ownership, verified in text and JSON
 - [ ] Document and verify the v1 compatibility and coordinated upgrade contract using legacy history, in-flight work and customized project files
 - [ ] Make release run the complete gate, bind publication to the validated commit, and safely resume failed tag pushes under failure-injection tests
 - [ ] Make fresh Go and Python projects pass their actual gates on the declared supported environments and document reproducible tool requirements
