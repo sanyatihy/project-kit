@@ -414,6 +414,12 @@ func runHarvest(args []string) int {
 			fmt.Printf("  push with git push -u %s HEAD after the gate and ship\n", harvested.Remote)
 		}
 	}
+	if harvested.Baseline != "" {
+		fmt.Printf("  review base %s contains no product files; publish it before opening the first pull request\n", harvested.Baseline)
+		if harvested.Remote != "" {
+			fmt.Printf("  git push %s %s\n", harvested.Remote, harvested.Baseline)
+		}
+	}
 	if harvested.Remote != "" {
 		fmt.Printf("  reserved  %s on %s — no other agent can be handed it\n",
 			harvested.ID, harvested.Remote)

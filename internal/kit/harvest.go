@@ -10,12 +10,13 @@ import (
 
 // Harvested records what a harvest wrote and what it committed.
 type Harvested struct {
-	Branch string
-	Path   string
-	ID     string
-	Remote string // "" when the project has no remote and nothing reserved the ID
-	Commit string // the commit message the work landed under
-	Files  []string
+	Branch   string
+	Baseline string // initial trunk containing only an empty review base
+	Path     string
+	ID       string
+	Remote   string // "" when the project has no remote and nothing reserved the ID
+	Commit   string // the commit message the work landed under
+	Files    []string
 }
 
 // harvestDoc is the doc a harvest writes. The template `kit new` writes is a plan for work
@@ -86,14 +87,11 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 			"move the work to a branch of its own with no four-digit id in the name",
 			r.HeadBranch(), held)
 	}
-	// Harvest commits the whole working tree, and on the trunk that is the one commit
-	// nobody reviews. Rule 20 stands for a spike: it ends in a pull request like anything
-	// else, which needs a branch to open one from.
-	// HasHistory, because a repository with no commits has no trunk to be on: `Trunk`
-	// falls back to whatever branch HEAD names, and the first commit is what creates it.
-	// That state is the one this command exists for — a session that produced a tree and
-	// no log — so refusing it would refuse the case.
-	if branch := r.HeadBranch(); r.HasHistory() && branch != "" && branch == r.Trunk() {
+	branch := r.HeadBranch()
+	if branch == "" {
+		return nil, fmt.Errorf("harvest needs a working branch — create a spike branch before harvesting")
+	}
+	if r.HasHistory() && branch == r.Trunk() {
 		return nil, fmt.Errorf("this checkout is on %s, the trunk, and harvest commits the "+
 			"whole working tree — which nobody could review there\n"+
 			"move the work to a branch of its own: git switch -c <name>, with no "+
@@ -150,6 +148,18 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 
 	res := &Harvested{Path: path, ID: id, Remote: remote, Files: files,
 		Commit: "Harvest " + id}
+	res.Branch = id + "-" + slug
+	if !established {
+		if err := r.harvestBaseline(branch); err != nil {
+			return nil, fmt.Errorf("%s is written; creating its empty review base failed: %w", r.Rel(path), err)
+		}
+		res.Baseline = branch
+		if _, err := r.gitRun("switch", "-c", res.Branch); err != nil {
+			return nil, fmt.Errorf("the empty base is on %s; creating %s failed: %w", branch, res.Branch, err)
+		}
+	} else if _, err := r.gitRun("branch", "-m", res.Branch); err != nil {
+		return nil, fmt.Errorf("%s is written; naming its submission branch failed: %w", r.Rel(path), err)
+	}
 	if err := r.commitAll(res.Commit); err != nil {
 		// The doc is written by here, so the error says where it is rather than leaving
 		// the operator to find an uncommitted file they did not create.
@@ -157,13 +167,23 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 			"commit the tree yourself — the harvest is the doc and the commit together",
 			r.Rel(path), err)
 	}
-	if established {
-		res.Branch = id + "-" + slug
-		if _, err := r.gitRun("branch", "-m", res.Branch); err != nil {
-			return nil, fmt.Errorf("%s is committed, but naming its submission branch failed: %w", r.Rel(path), err)
-		}
-	}
+
 	return res, nil
+}
+
+// harvestBaseline creates the review base without adding any staged product files.
+// The ref must still be unborn, so a concurrent first commit cannot be overwritten.
+func (r *Repo) harvestBaseline(branch string) error {
+	tree, err := r.gitFed("", "mktree")
+	if err != nil {
+		return err
+	}
+	commit, err := r.gitRun("commit-tree", strings.TrimSpace(tree), "-m", "Initialize review base")
+	if err != nil {
+		return err
+	}
+	_, err = r.gitRun("update-ref", "refs/heads/"+branch, strings.TrimSpace(commit), "")
+	return err
 }
 
 // HarvestNothing records what a spike showed and takes no id.

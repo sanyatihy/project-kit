@@ -397,3 +397,38 @@ func TestUnmergedSubmissionCannotSatisfyNeeds(t *testing.T) {
 	w.run("next").ok().has("needs 0007 to merge first")
 	shipping(w, "0008").fails(2).errHas("not integrated")
 }
+
+func TestInitialHarvestKeepsStagedAndUnstagedProductOffTheTrunk(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	trunk := p.headBranch()
+	p.write("staged.txt", "already staged exploration")
+	p.git("add", "staged.txt")
+	p.write("unstaged.txt", "later exploration")
+	p.run("harvest", "Initial MVP", "--box", "Deliver the initial product").ok().has("review base", trunk)
+	if p.headBranch() != "0001-initial-mvp" {
+		t.Fatal("initial product was not put on its feature branch")
+	}
+	if files := strings.TrimSpace(p.gitOut(nil, "ls-tree", "-r", "--name-only", trunk)); files != "" {
+		t.Fatalf("unreviewed product on trunk: %s", files)
+	}
+	if diff := p.gitOut(nil, "diff", "--name-only", trunk, "HEAD"); !strings.Contains(diff, "staged.txt") || !strings.Contains(diff, "unstaged.txt") {
+		t.Fatalf("review omits product files: %s", diff)
+	}
+	p.write("docs/features/0001-initial-mvp.md", doc("0001", "Initial MVP", "Draft", "", "- [x] Deliver the initial product"))
+	shipping(p, "0001").ok()
+	p.run("next").ok().has("ready for local review").lacks("nothing is planned")
+}
+
+func TestDetachedHarvestRefusesBeforeWritingAnything(t *testing.T) {
+	t.Parallel()
+	p := cleanProject(t)
+	p.commitAll("initial project")
+	p.git("switch", "--detach")
+	p.write("exploration.txt", "unfinished")
+	before := p.gitOut(nil, "status", "--porcelain")
+	p.run("harvest", "Exploration", "--box", "Build").fails(2).errHas("working branch")
+	if after := p.gitOut(nil, "status", "--porcelain"); before != after {
+		t.Fatalf("refused harvest mutated the checkout: before %s; after %s", before, after)
+	}
+}

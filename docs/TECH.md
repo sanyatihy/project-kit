@@ -92,6 +92,8 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   online; offline it must equal the local trunk. The plan must already be committed.
 - **Dependencies require integration.** Prerequisite docs must be Shipped on the trunk
   and in HEAD; a stamp on an unmerged branch does not make its code available.
+- **An initial harvest creates an empty trunk base.** Staged and unstaged product
+  files are committed only on the new feature branch, so the first MVP has a PR diff.
 - **Review is a git handoff.** The board follows local revision, unpushed submission and
   published review; a Shipped trunk doc proves integration even after a squash merge.
 - **The board offers only what a claim would accept.** `next` reported a feature as ready
