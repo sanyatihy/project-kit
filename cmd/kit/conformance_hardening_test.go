@@ -310,3 +310,31 @@ func TestUnfetchedDraftCannotLoseItsReservation(t *testing.T) {
 		t.Fatal("live draft lost its reservation")
 	}
 }
+
+func TestHarvestedSubmissionIsVisibleBeforeItsDocReachesTrunk(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.git("switch", "-c", "spike/new-work")
+	a.write("finished.txt", "finished work")
+	a.run("harvest", "New work", "--box", "Finish the work").ok().has("0008-new-work")
+	if a.headBranch() != "0008-new-work" {
+		t.Fatal("harvest left the submission on an unrouteable spike branch")
+	}
+	a.write("docs/features/0008-new-work.md", doc("0008", "New work", "Draft", "", "- [x] Finish the work"))
+	shipping(a, "0008").ok()
+	a.git("push", "-u", "origin", "HEAD")
+	a.run("audit", "--strict").ok().lacks("shipped-not-pushed")
+	b.git("fetch", "origin")
+	b.run("next").ok().has("awaiting review", "0008", "New work")
+}
+
+func TestHarvestCannotPutAnotherFeatureInAnExistingClaim(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("0007-widget")
+	w.run("harvest", "Unrelated", "--box", "Done").fails(2).errHas("branch of its own")
+	if w.exists("docs/features/0008-unrelated.md") {
+		t.Fatal("harvest added unrelated work to a claim")
+	}
+}

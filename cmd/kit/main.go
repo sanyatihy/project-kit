@@ -408,6 +408,12 @@ func runHarvest(args []string) int {
 	fmt.Printf("  committed %s — the work and the doc in one commit, so a reviewer\n",
 		harvested.Commit)
 	fmt.Printf("            reads what changed beside what it was for\n")
+	if harvested.Branch != "" {
+		fmt.Printf("  branch    %s — the feature now has its own submission branch\n", harvested.Branch)
+		if harvested.Remote != "" {
+			fmt.Printf("  push with git push -u %s HEAD after the gate and ship\n", harvested.Remote)
+		}
+	}
 	if harvested.Remote != "" {
 		fmt.Printf("  reserved  %s on %s — no other agent can be handed it\n",
 			harvested.ID, harvested.Remote)

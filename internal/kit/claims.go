@@ -294,7 +294,7 @@ func (r *Repo) AwaitingReview() []Review {
 	}
 	trunk := r.trunkRef()
 	var out []Review
-	for _, f := range r.Features {
+	for _, f := range r.reviewFeatures(heads) {
 		ids := claimIDs(f)
 		for _, name := range heads {
 			if r.isTrunk(name) || !mentionsAny(name, ids) {
@@ -316,6 +316,36 @@ func (r *Repo) AwaitingReview() []Review {
 		}
 	}
 	return out
+}
+
+// reviewFeatures includes harvested documents that have never been on this trunk.
+// Only unknown claim names need an extra read; ordinary planned features use the board.
+func (r *Repo) reviewFeatures(heads []string) []*Feature {
+	features := append([]*Feature(nil), r.Features...)
+	seen := map[string]bool{}
+	for _, f := range features {
+		seen[f.ID] = true
+	}
+	dir := r.Rel(r.FeaturesDir)
+	for _, name := range heads {
+		id := idPrefixRe.FindString(name)
+		if id == "" || seen[id] || r.isTrunk(name) {
+			continue
+		}
+		rel := dir + "/" + name + ".md"
+		raw, err := r.gitRun("show", r.claimRev(name)+":"+rel)
+		if err != nil {
+			continue
+		}
+		fields, _ := ParseFrontmatter(Normalise(raw))
+		if fields["id"] != id || fields["status"] != StatusShipped {
+			continue
+		}
+		features = append(features, &Feature{ID: id, Title: fields["title"],
+			Status: StatusShipped, Rel: rel, Path: filepath.Join(r.Root, rel)})
+		seen[id] = true
+	}
+	return features
 }
 
 // OnlyHere reports whether a feature's work exists nowhere but this checkout: no branch

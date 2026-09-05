@@ -40,7 +40,7 @@ cannot establish misplaced content. Durable facts still move to TECH before subm
 
 - [x] Refuse reservation release when branch state is unreadable or changes concurrently
 
-- [ ] Make harvested submissions visible to audit and the review board
+- [x] Make harvested submissions visible to audit and the review board
 
 ## Log
 

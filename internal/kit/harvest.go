@@ -10,6 +10,7 @@ import (
 
 // Harvested records what a harvest wrote and what it committed.
 type Harvested struct {
+	Branch string
 	Path   string
 	ID     string
 	Remote string // "" when the project has no remote and nothing reserved the ID
@@ -79,7 +80,7 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 
 	// The same refusal `kit new` makes: a branch citing an id claims that feature, so a
 	// doc written here would claim one it has nothing to do with.
-	if held := r.ForeignClaim(); held != "" {
+	if held := r.HeldClaim(); held != "" {
 		return nil, fmt.Errorf("this checkout is on %s, whose name cites %s — a branch "+
 			"citing an id claims that feature, so a doc harvested here would claim it too\n"+
 			"move the work to a branch of its own with no four-digit id in the name",
@@ -99,6 +100,7 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 			"four-digit id anywhere in it", branch)
 	}
 
+	established := r.HasHistory()
 	files, err := r.DirtyFiles()
 	if err != nil {
 		return nil, err
@@ -154,6 +156,12 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 		return nil, fmt.Errorf("%s is written, and committing the work with it failed:\n%v\n"+
 			"commit the tree yourself — the harvest is the doc and the commit together",
 			r.Rel(path), err)
+	}
+	if established {
+		res.Branch = id + "-" + slug
+		if _, err := r.gitRun("branch", "-m", res.Branch); err != nil {
+			return nil, fmt.Errorf("%s is committed, but naming its submission branch failed: %w", r.Rel(path), err)
+		}
 	}
 	return res, nil
 }

@@ -32,7 +32,7 @@ Plan when asked. For work that began without a plan, use the spike route below.
 7. Each agent works in its own checkout. Do not share a working tree, index or claim.
    A branch citing a four-digit id is a claim; ordinary chores and spikes cite none.
 8. For a spike, work on a branch of its own. When done, `kit harvest "<title>"
-   --box "<outcome>"` records and commits the work. Fill its Problem and Design before
+   --box "<outcome>"` records the work and names its branch after the feature. Fill Problem and Design before
    shipping. `kit harvest --nothing "<what it showed>"` records a discarded spike.
 
 ### Doing the work

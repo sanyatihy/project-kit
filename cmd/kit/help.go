@@ -172,6 +172,10 @@ and on a branch whose name cites a four-digit id, which would claim that feature
 that file alone, and takes no id. Trying something and throwing it away has to stay as
 cheap as it is, and the entry is the one durable thing it leaves.
 
+In an established repo, harvest renames the spike branch after the new feature,
+so audit and the review board can follow its submission. An existing claim refuses
+harvest. Push with git push -u <remote> HEAD after the gate and ship.
+
   kit harvest "Shorten URLs" --box "a long URL comes back short"
   kit harvest --nothing "a bloom filter costs more than the lookups it saves"`,
 
