@@ -32,6 +32,16 @@ any machine. It has to degrade for `--offline` and for projects with no remote.
 **Value:** a board that means the same thing on every machine.
 **Promote when:** a second machine joins, or a claim's work is lost with the machine holding it.
 
+## Source comments cite protocol rules that have moved
+
+`internal/kit/audit.go` and `cmd/kit/conformance_audit_test.go` still cite rule 21,
+which does not exist in the current protocol. Other comments cite a number whose
+meaning changed. Removing the former rule-number test did not correct those references.
+Replace the references with the constraint they mean; no numbering gate is required.
+
+**Value:** source comments identify the actual constraint a reader must preserve.
+**Promote when:** fired — obsolete references remain in the 0076 review.
+
 ## `tag-stale` reads this machine's tags, and `@latest` reads the remote's
 
 `TagDistance` describes against the local refs, so a tag cut and never pushed silences the
@@ -56,6 +66,16 @@ design covers; an unreachable one is the case it does not. `next` and `audit` bo
 **Value:** drafting works on a plane, at the cost the operator asked for.
 **Promote when:** an agent is seen unable to draft, or a round is delayed by a remote that
 was down.
+
+## `kit new` help omits some refusal conditions
+
+Help describes branch and write-collision guards but omits rejected titles, missing
+setup, ambiguous remotes, failed reservation and exhausted ids. The former refusal
+registry is gone; that does not make the missing command guidance obsolete.
+Document the invocation conditions without restoring a refusal-count or prose-format gate.
+
+**Value:** a caller can understand the command's preconditions before attempting it.
+**Promote when:** fired — the 0076 review found these conditions absent from help.
 
 ## Nothing tells an agent which language a project's docs are written in
 

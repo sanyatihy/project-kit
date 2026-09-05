@@ -101,7 +101,7 @@ and installation verification; Submitted alone never claims that outcome.
 - [x] Record release-candidate evidence, remote enforcement verification or explicit pending conditions, and the exact post-merge v1.0.0 publication and installation procedure
 
 - [x] Clarify the restoration cause, independent parser repairs and approved review scope
-- [ ] Restore unresolved backlog concerns and account for deliberate documentation removals
+- [x] Restore unresolved backlog concerns and account for deliberate documentation removals
 
 ## Log
 
