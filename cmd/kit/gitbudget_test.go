@@ -44,7 +44,7 @@ const (
 	// and the board has to ask it or it goes on offering claims that exit 2. One
 	// `ls-tree` reads the trunk's whole tree, so the cost is fixed rather than one
 	// `cat-file` per feature — the shape this ceiling exists to catch.
-	offlineBudget = 30
+	offlineBudget = 31 // One cached revision comparison verifies the checkout equals the trunk.
 
 	// `kit audit` against a local bare remote. The remote is on disk, so the round trip
 	// is one cheap process and what grows with the board is the fan-out. 67 before 0039

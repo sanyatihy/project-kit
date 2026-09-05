@@ -48,7 +48,7 @@ including squash merges. Each checkout holds one feature without a global agent 
 
 - [x] Make harvested submissions visible to audit and the review board
 
-- [ ] Enforce current foundations and complete the review and integration handoffs
+- [x] Enforce current foundations and complete the review and integration handoffs
 - [ ] Keep an initial harvested MVP reviewable off the trunk
 - [ ] Document both workflows and remove the arbitrary global work limit
 

@@ -72,8 +72,8 @@ func Ship(templates fs.FS, r *Repo, id string, today time.Time) (*ShipResult, er
 
 	// Completion requires the same prerequisites the board and claim enforce.
 	if unmet := r.UnmetNeeds(target); len(unmet) > 0 {
-		return nil, fmt.Errorf("%s waits on %s: not shipped yet\n"+
-			"ship those first, or correct needs: to what was actually required",
+		return nil, fmt.Errorf("%s waits on %s: not integrated into this checkout yet\n"+
+			"integrate those first, or correct needs: to what was actually required",
 			target.Name(), strings.Join(unmet, ", "))
 	}
 

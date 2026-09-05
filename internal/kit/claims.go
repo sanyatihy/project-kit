@@ -292,9 +292,12 @@ func (r *Repo) AwaitingReview() []Review {
 	if !ok {
 		return nil
 	}
-	trunk := r.trunkRef()
+	trunk := r.integrationRef()
 	var out []Review
 	for _, f := range r.reviewFeatures(heads) {
+		if r.integratedStatuses()[f.Rel] == StatusShipped || (r.Mine(f.ID) && f.Status == StatusDraft) {
+			continue
+		}
 		ids := claimIDs(f)
 		for _, name := range heads {
 			if r.isTrunk(name) || !mentionsAny(name, ids) {

@@ -88,11 +88,12 @@ Draft -> Shipped     (exit: Dropped; reset before merge for review changes)
   those are the ids there is anything to free. One `fetch` mirrors `refs/kit/ids/*` here,
   because `ls-remote` answers with SHAs and the record is in the object — a list that could
   not be refreshed reports nothing and releases nothing.
-- **A claim carries the plan and branches from the trunk.** The doc
-  must be in `HEAD`'s tree and in `trunkRef()`'s, or the claim is a child of the plan
-  branch and only its own author can integrate it. The push is of `HEAD`, so a checkout
-  the trunk does not contain sends another feature's commits under the new name: from the
-  worktree that had just shipped 0001, `kit claim 0002` pushed 0001's work at exit 0.
+- **Claims require the current foundation.** HEAD must equal the advertised trunk tip
+  online; offline it must equal the local trunk. The plan must already be committed.
+- **Dependencies require integration.** Prerequisite docs must be Shipped on the trunk
+  and in HEAD; a stamp on an unmerged branch does not make its code available.
+- **Review is a git handoff.** The board follows local revision, unpushed submission and
+  published review; a Shipped trunk doc proves integration even after a squash merge.
 - **The board offers only what a claim would accept.** `next` reported a feature as ready
   and `claim` exited 2 on it — where every new project stood at step 9. One condition read
   by both, `PlanLanded`, is what stops the two answers drifting apart again.

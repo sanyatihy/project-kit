@@ -78,6 +78,7 @@ type Plan struct {
 	// claims, empty when it claims none.
 	Branch   string `json:"branch,omitempty"`
 	Claiming string `json:"claiming,omitempty"`
+	Checkout string `json:"checkout,omitempty"` // next handoff for the current checkout
 
 	// Spike is the branch this checkout is on when the board is not routing it: neither
 	// a claim nor a plan round, which is what work that started without a doc looks like.
@@ -172,6 +173,7 @@ func NewPlan() Plan {
 func Survey(r *Repo) Plan {
 	plan := NewPlan()
 	plan.Branch = r.HeadBranch()
+	plan.Claiming = r.HeldClaim()
 	plan.Spike = spikeBranch(r, plan.Branch)
 	// Before the board, because the board is what this takes entries out of. A feature
 	// its builder has shipped is finished work waiting for a merge, not a claim somebody
@@ -195,7 +197,7 @@ func Survey(r *Repo) Plan {
 		})
 	}
 	for _, f := range r.ActiveFeatures() {
-		if reviewing[f.ID] {
+		if reviewing[f.ID] || r.integratedDocs[f.Rel] == StatusShipped {
 			continue
 		}
 		open, total := f.TaskCount()
@@ -318,6 +320,9 @@ func Survey(r *Repo) Plan {
 				item.WaitingOn = waitingOnLanding(r, f)
 				item.Unlanded = true
 				plan.Blocked = append(plan.Blocked, item)
+			} else if why := r.foundationProblem(); why != "" {
+				item.WaitingOn = why
+				plan.Blocked = append(plan.Blocked, item)
 			} else {
 				plan.Ready = append(plan.Ready, item)
 			}
@@ -333,6 +338,10 @@ func Survey(r *Repo) Plan {
 	}
 	// After the work, so it reports what actually went unanswered.
 	plan.RemoteUnanswered = r.RemoteUnanswered()
+	plan.Checkout = r.checkoutHandoff(plan.Claiming)
+	if plan.Checkout == "" && plan.Claiming == "" && plan.Spike == "" && r.foundationAsked {
+		plan.Checkout = r.foundationIssue
+	}
 	plan.Guidance = guidanceFor(r, plan)
 	return plan
 }
@@ -356,7 +365,7 @@ func waitingOnNeeds(r *Repo, unmet []string) string {
 	}
 	var parts []string
 	if len(pending) > 0 {
-		parts = append(parts, "needs "+strings.Join(pending, ", ")+" to ship first")
+		parts = append(parts, "needs "+strings.Join(pending, ", ")+" to merge first")
 	}
 	if len(dead) > 0 {
 		parts = append(parts, "needs "+strings.Join(dead, ", ")+
@@ -387,8 +396,15 @@ func waitingOnLanding(r *Repo, f *Feature) string {
 // documented path, found nothing, and decided for itself.
 func guidanceFor(r *Repo, plan Plan) string {
 	switch {
+	case plan.Checkout != "":
+		return plan.Checkout
 	case len(plan.Yours) > 0:
+		if plan.Yours[0].Task == "" {
+			return "all tasks are complete. Run the project gate, kit audit --strict, then kit ship " + plan.Yours[0].ID + "."
+		}
 		return "work the box named under yours, in this checkout. It is already claimed by you."
+	case len(plan.Ready) > 0 && plan.Claiming != "":
+		return "finish this checkout’s claim first. Start another feature from a separate, updated trunk checkout."
 	case len(plan.Ready) > 0:
 		return "take one with kit claim <id>, then work it in the worktree it prints."
 	// Before every arm below, all of which say some version of "there is nothing for you

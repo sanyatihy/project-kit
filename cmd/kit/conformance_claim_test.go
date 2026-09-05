@@ -270,6 +270,7 @@ func TestClaimingFromAnUnmergedPlanRoundIsRefusedUntilItLands(t *testing.T) {
 	// The quiet half: the same feature, once the round has landed.
 	a.git("checkout", "-q", trunk)
 	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
+	a.git("push", "origin", "HEAD")
 
 	a.run("claim", "0008").ok().has("claimed", "0008-later")
 }
@@ -393,7 +394,8 @@ func TestClaimRefusesADocWhoseIDAndFilenameDisagree(t *testing.T) {
 		t.Errorf("a refused claim pushed a branch anyway: %q", out)
 	}
 
-	// The quiet half, in the same project: a doc whose two agree still claims fine.
+	// The quiet half: a matching doc on the published foundation still claims fine.
+	a.git("push", "origin", "HEAD")
 	a.run("claim", "0007").ok().has("claimed", "0007-widget")
 }
 
@@ -577,7 +579,7 @@ func TestOfflineReadsTheMirrorAndAcceptsTheCost(t *testing.T) {
 	}
 }
 
-func TestAnUnreachableRemoteNamesPruneRatherThanAPhantomDelete(t *testing.T) {
+func TestAnUnreachableRemoteRefusesAClaimOnUnknownFoundation(t *testing.T) {
 	t.Parallel()
 	// When the remote cannot be asked, claims fall back to the mirror — and the mirror is
 	// what names branches nobody holds. The refusal has to say so, because the advice it
@@ -593,7 +595,7 @@ func TestAnUnreachableRemoteNamesPruneRatherThanAPhantomDelete(t *testing.T) {
 	}
 	b.git("remote", "set-url", "origin", filepath.Join(b.Root, "does-not-exist.git"))
 
-	b.run("claim", "0007").fails(1).errHas("fetch --prune")
+	b.run("claim", "0007").fails(2).errHas("published trunk", "git fetch")
 }
 
 func TestClaimTakesADraft(t *testing.T) {

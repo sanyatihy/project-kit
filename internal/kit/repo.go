@@ -109,10 +109,14 @@ type Repo struct {
 
 	// Every feature doc's status on the remote's trunk, read in one pass. Asked once: it
 	// cannot change while one command runs, and shipped-not-pushed needs it per doc.
-	trunkDocs      map[string]string
-	trunkDocsAsked bool
-	headDocs       map[string]string
-	headDocsAsked  bool
+	trunkDocs       map[string]string
+	trunkDocsAsked  bool
+	integratedDocs  map[string]string
+	integratedAsked bool
+	foundationAsked bool
+	foundationIssue string
+	headDocs        map[string]string
+	headDocsAsked   bool
 
 	// The branch this checkout is on and the remotes it has, asked once each. Neither can
 	// change while one command runs, and both were being asked per feature: 62 of the 116
@@ -335,19 +339,14 @@ func (r *Repo) needsCycle(start, id string, seen map[string]bool) bool {
 	return false
 }
 
-// UnmetNeeds lists the ids a feature is still waiting on, in declared order.
-//
-// Shipped is the bar rather than merged. `kit ship` is the moment the kit knows a
-// feature's work is done; merging is a human's and follows. Reading merge state
-// instead would make the board's answer depend on how quickly somebody clicked.
-//
-// An id that names nothing, or names a feature that was Dropped, counts
-// as unmet: it can never be satisfied, so the work genuinely cannot start. `audit`
-// reports why; `next` only has to refuse to hand it out.
+// UnmetNeeds requires a submitted prerequisite on the trunk and in this checkout.
+// A stamp on an unmerged branch is a review request, not an available foundation.
 func (r *Repo) UnmetNeeds(f *Feature) []string {
 	var unmet []string
 	for _, id := range f.Needs {
-		if dep := r.FeatureByID(id); dep == nil || dep.Status != StatusShipped {
+		dep := r.FeatureByID(id)
+		if dep == nil || dep.Status != StatusShipped ||
+			r.integratedStatuses()[dep.Rel] != StatusShipped || r.headStatuses()[dep.Rel] != StatusShipped {
 			unmet = append(unmet, id)
 		}
 	}

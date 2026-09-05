@@ -338,3 +338,62 @@ func TestHarvestCannotPutAnotherFeatureInAnExistingClaim(t *testing.T) {
 		t.Fatal("harvest added unrelated work to a claim")
 	}
 }
+
+func TestReviewLifecycleThroughSquashIntegration(t *testing.T) {
+	t.Parallel()
+	a, reviewer := twoAgents(t)
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("0007-widget")
+	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
+	shipping(w, "0007").ok()
+	w.run("next").ok().has("local changes to submit").lacks("nothing is planned")
+	w.git("push", "origin", "HEAD")
+	w.run("next").ok().has("awaiting review", "kit reset 0007")
+	w.run("reset", "0007", "review requested another case").ok()
+	w.write("docs/features/0007-widget.md", w.read("docs/features/0007-widget.md")+"\n")
+	w.write("docs/features/0007-widget.md", strings.Replace(w.read("docs/features/0007-widget.md"), "## Log", "- [ ] Handle the review case\n\n## Log", 1))
+	// The remote still says Shipped; this checkout has resumed implementation.
+	w.run("next").ok().has("yours", "Handle the review case").lacks("awaiting review")
+	w.write("docs/features/0007-widget.md", strings.Replace(w.read("docs/features/0007-widget.md"), "- [ ] Handle", "- [x] Handle", 1))
+	shipping(w, "0007").ok()
+	w.git("push", "origin", "HEAD")
+	reviewer.git("fetch", "origin")
+	reviewer.git("merge", "--squash", "origin/0007-widget")
+	reviewer.commitAll("human accepts the feature")
+	reviewer.git("push", "origin", "HEAD")
+	w.run("next").ok().has("integration state is unreadable")
+	w.git("fetch", "origin")
+	// Local main is stale, and squash integration has no ancestry to the claim.
+	w.run("next").ok().has("0007 is integrated", "git pull --ff-only").lacks("awaiting review")
+	w.run("reset", "0007", "rewrite accepted history").fails(2).errHas("frozen history")
+	a.run("next").ok().lacks("awaiting review")
+}
+
+func TestClaimRequiresTheLatestPublishedFoundation(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	b.write("foundation.txt", "merged foundation")
+	b.commitAll("extend the foundation")
+	b.git("push", "origin", "HEAD")
+	a.run("next").ok().has("blocked", "checkout is behind")
+	a.run("claim", "0007").fails(2).errHas("published trunk")
+	a.git("fetch", "origin")
+	a.run("claim", "0007").fails(2).errHas("published trunk")
+	a.git("pull", "--ff-only", "origin", "main")
+	a.run("claim", "0007").ok()
+	if !a.claimWorktree("0007-widget").exists("foundation.txt") {
+		t.Fatal("claim lacks the integrated foundation")
+	}
+}
+
+func TestUnmergedSubmissionCannotSatisfyNeeds(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("0007-widget")
+	w.write("docs/features/0007-widget.md", doc("0007", "Widget", "Draft", "", "- [x] Build"))
+	shipping(w, "0007").ok()
+	w.write("docs/features/0008-dependent.md", doc("0008", "Dependent", "Draft", "needs: 0007", "- [x] Use widget"))
+	w.run("next").ok().has("needs 0007 to merge first")
+	shipping(w, "0008").fails(2).errHas("not integrated")
+}

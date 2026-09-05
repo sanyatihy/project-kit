@@ -794,7 +794,7 @@ func printPlan(plan kit.Plan, color bool) {
 			listItems(plan.Ready)
 			fmt.Printf("\n  this checkout claims %s. Take one of those in a worktree of\n",
 				plan.Claiming)
-			fmt.Printf("  its own, never here:  kit claim %s\n", first.ID)
+			fmt.Printf("  its own. From a separate, updated trunk checkout: kit claim %s\n", first.ID)
 		} else {
 			fmt.Printf("\n  %s\n", paint("start here", "1;32", color))
 			fmt.Printf("    %s  %-5s %s\n", first.ID, first.Progress(), kit.Show(first.Title, 54))
@@ -861,7 +861,7 @@ func printPlan(plan kit.Plan, color bool) {
 			"33", color))
 	}
 
-	if plan.Guidance != "" && len(plan.Yours) == 0 && len(plan.Ready) == 0 {
+	if plan.Guidance != "" {
 		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
 		// The command goes on its own line, unwrapped, so it can be copied. The
 		// guidance says what to do; this is the thing to run. Not while something is
@@ -873,7 +873,7 @@ func printPlan(plan kit.Plan, color bool) {
 		// somebody else.
 		case plan.Spike != "":
 			fmt.Printf("    kit harvest \"<what the work delivered>\" --box \"<outcome>\"\n")
-		case plan.Empty() && len(plan.AwaitingReview) == 0:
+		case plan.Empty() && len(plan.AwaitingReview) == 0 && plan.Checkout == "":
 			fmt.Printf("    kit new \"<what the feature does>\"\n")
 		}
 	}

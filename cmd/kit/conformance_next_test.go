@@ -204,7 +204,7 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 	if !slices.Contains(plan.Blocked[0].Needs, "0001") {
 		t.Errorf("blocked 0002 needs = %v, want it to name 0001", plan.Blocked[0].Needs)
 	}
-	p.run("next").ok().has("needs 0001 to ship first")
+	p.run("next").ok().has("needs 0001 to merge first")
 
 	// Shipped is the bar, not merged.
 	p.write("docs/features/0001-base.md",
@@ -222,7 +222,7 @@ func TestNextWaitsForDeclaredNeedsAndReleasesOnShip(t *testing.T) {
 
 func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 	t.Parallel()
-	// The board promised a wait that never ends: "waiting on: needs 0001 to ship first"
+	// The board promised a wait that never ends: "waiting on: needs 0001 to merge first"
 	// about a feature that is Dropped. The two states need opposite fixes — one ends on
 	// its own, the other only when somebody edits needs: — so the line has to say which.
 	dead := setUp(t)
@@ -232,7 +232,7 @@ func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 
 	r := dead.run("next").ok()
 	r.has("blocked", "0002", "can never ship")
-	r.lacks("to ship first")
+	r.lacks("to merge first")
 
 	// The whole sentence, read from --json rather than the page: the printed line is
 	// clipped for a narrow terminal, and agents read this format.
@@ -250,7 +250,7 @@ func TestNextSaysWhenADependencyCanNeverShip(t *testing.T) {
 	feature(pending, "0001", "base", "Base", "Draft", "- [ ] Do it")
 	pending.write("docs/features/0002-store.md",
 		doc("0002", "Store", "Draft", "needs: 0001", "- [ ] Do it"))
-	pending.run("next").ok().has("needs 0001 to ship first").lacks("can never ship")
+	pending.run("next").ok().has("needs 0001 to merge first").lacks("can never ship")
 }
 
 func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
@@ -447,6 +447,7 @@ func TestNextNeverOffersAClaimThatWouldBeRefused(t *testing.T) {
 	// The quiet half: the same feature, once the round has landed.
 	a.git("checkout", "-q", trunk)
 	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
+	a.git("push", "origin", "HEAD")
 
 	a.run("next").ok().has("start here", "0008", "kit claim 0008")
 }
@@ -753,6 +754,7 @@ func TestNextShowsWhatIsAwaitingReview(t *testing.T) {
 	// The quiet half: once the work is on the trunk there is nothing to say, whether or
 	// not the branch was deleted afterwards.
 	a.git("merge", "-q", "--no-ff", "-m", "land 0007", "0007-widget")
+	a.git("push", "origin", "HEAD")
 	if got := a.plan("next", "--json").AwaitingReview; len(got) != 0 {
 		t.Errorf("after landing, %d still awaiting review: %+v", len(got), got)
 	}

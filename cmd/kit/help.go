@@ -215,19 +215,19 @@ so of any number of agents claiming at once exactly one wins.
 
   0  it is yours — the worktree to work in is made and named
   1  it is not yours: another agent got there first, a branch already claims it,
-     an open INBOX question blocks it, something in its needs: has not shipped,
+     an open INBOX question blocks it, something in its needs: has not merged,
      the doc is closed or has no status:, the id: disagrees with the filename,
      or nobody wrote it — an empty ## Problem, ## Design or ## Tasks is refused
-     whatever the status
   2  it could not run: no such feature, two docs share the id, no commits yet,
      the plan not committed here, the plan not landed on the default branch,
      this checkout already claims something or is ahead of the default branch,
+     a stale or unreadable published trunk,
      several remotes and no origin, or the push said nothing about the ref
 
 Every exit 1 refusal is one "kit next" already makes, bar the race it cannot see: the
 board and the commands read the same facts, so claiming by id without consulting it
 cannot get you further. The exit 2 ones are about the repository rather than the plan,
-and the board reports none of them.
+and the board reports repository prerequisites before offering work.
 
 The doc has to be on the default branch. Drafting and reading the board from a plan
 branch are correct, and "next" reports the feature as blocked there rather than offering
@@ -246,9 +246,9 @@ The worktree is created at .worktrees/<branch>. A path already holding the claim
 success and anything else there is left alone; making it cannot fail a claim the push has
 won. A won claim also writes .worktrees/ to .git/info/exclude — git clone does not carry it.
 
-This does not fetch first and does not edit the doc. A stale view only ever costs you
-a clearer error, because the remote decides. Nothing to set afterwards either: the
-branch is what says the work started.
+Claim reads the published trunk tip and requires this checkout to equal it. It does
+not fetch or pull a shared working tree. Update a trunk checkout first; the claim
+branch is what says work started.
 Malformed needs:, dependency cycles and duplicate keys also refuse the claim.
   kit claim 0007
   kit claim 7`,

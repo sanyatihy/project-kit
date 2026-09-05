@@ -235,7 +235,7 @@ func TestShipRefusesWhileItsNeedsHaveNotShipped(t *testing.T) {
 	p.write("docs/features/0002-store.md",
 		doc("0002", "Store", "Draft", "needs: 0001", "- [x] Done"))
 
-	shipping(p, "0002").fails(2).errHas("0001", "not shipped")
+	shipping(p, "0002").fails(2).errHas("0001", "not integrated")
 	if strings.Contains(p.read("docs/features/0002-store.md"), "status: Shipped") {
 		t.Error("ship wrote the status despite refusing")
 	}

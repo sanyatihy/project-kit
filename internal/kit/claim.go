@@ -129,7 +129,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	// meant to take something else — the same instruction a lost race carries.
 	if unmet := r.UnmetNeeds(target); len(unmet) > 0 {
 		return nil, &NotYours{
-			fmt.Sprintf("%s waits on %s: not shipped yet", target.Name(),
+			fmt.Sprintf("%s waits on %s: not integrated into this checkout yet", target.Name(),
 				strings.Join(unmet, ", ")),
 			"claim something kit next offers"}
 	}
@@ -176,6 +176,10 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 			"its own author could merge.\nClaim from a checkout of the trunk: git worktree "+
 			"add --detach %s %s, then claim there", r.Trunk(), target.ID,
 			r.WorktreePath(r.Trunk()), r.Trunk())
+	}
+
+	if why := r.foundationProblem(); why != "" {
+		return nil, fmt.Errorf("cannot claim from this foundation: %s", why)
 	}
 
 	// One feature per checkout, which until now was a rule in prose and nothing else:
