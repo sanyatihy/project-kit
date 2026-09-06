@@ -1,9 +1,9 @@
 ---
 id: 0080
 title: Agents can use concise kit reference and help
-status: Submitted
+status: Draft
 created: 2026-09-06
-submitted: 2026-09-06
+submitted: 
 needs:
 ---
 
@@ -37,3 +37,4 @@ remains unchanged.
 ## Log
 
 - 2026-09-06 — Added a help correction after checking the described harvest refusals against its implementation.
+- 2026-09-06 — reopen to Draft: Review requires A/B evidence that prose compression preserves behavior, especially the battle-tested language checklists.
