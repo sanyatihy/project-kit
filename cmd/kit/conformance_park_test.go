@@ -231,3 +231,30 @@ func TestParkingRefusesStaleTrunkAndTerminalHistory(t *testing.T) {
 	b.commitAll("rewrite local status")
 	b.run("park", "0007", "later").fails(2).errHas("terminal history")
 }
+
+func TestParkingReviewReportsAClaimAcquiredAfterTheDecision(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.git("switch", "-c", "plan/parking")
+	a.run("park", "0007", "later").ok()
+	b.run("claim", "0007").ok()
+	a.run("audit", "--strict").fails(1).has("parked-claim", "work/0007")
+	plan := a.plan("next", "--json")
+	if len(plan.Parked) != 1 || plan.Parked[0].ClaimedBy != "work/0007" || plan.Parked[0].Task != "" {
+		t.Fatalf("parking hid ownership: %+v", plan)
+	}
+	a.run("next").ok().has("claim observed", "work/0007").lacks("kit claim 0007")
+	a.run("activate", "0007").fails(2).errHas("claimed")
+}
+
+func TestParkedBoardDoesNotGuessIntegrationWithAnUnansweredRemote(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.git("switch", "-c", "plan/parking")
+	a.run("park", "0007", "later").ok()
+	a.git("remote", "set-url", "origin", filepath.Join(t.TempDir(), "missing.git"))
+	plan := a.plan("next", "--json")
+	if !plan.RemoteUnanswered || len(plan.Parked) != 1 || !strings.Contains(plan.Parked[0].WaitingOn, "unknown") {
+		t.Fatalf("guessed integration: %+v", plan)
+	}
+}

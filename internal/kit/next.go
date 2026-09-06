@@ -200,8 +200,14 @@ func Survey(r *Repo) Plan {
 			item.Task, item.Branch = "", ""
 			item.Reason = f.ParkingReason()
 			item.WaitingOn = "operator activation through a reviewed planning PR"
-			if r.integratedStatuses()[f.Rel] != StatusParked {
+			if r.integratedStatuses() == nil {
+				item.WaitingOn = "parking integration is unknown; fetch before deciding shared availability"
+			} else if r.integratedStatuses()[f.Rel] != StatusParked {
 				item.WaitingOn = "parking is local; push the planning branch for human review before shared availability changes"
+			}
+			if claims := r.Claims(f.ID); len(claims) > 0 {
+				item.ClaimedBy = strings.Join(claims, " and ")
+				item.WaitingOn = "claim observed on " + item.ClaimedBy + "; preserve its work and resolve ownership before merging parking"
 			}
 			plan.Parked = append(plan.Parked, item)
 			continue

@@ -30,6 +30,8 @@ templates/   project documents, help topics and Go/Python scaffolds
   Parking preserves plan content; activation needs merge before claims become eligible.
   Parked remains document-validated, appears separately on next with its Log reason,
   and does not age as stalled work. It satisfies no implementation dependency.
+  Next retains observed ownership; parked-claim fails strict audit when a claim races
+  parking review. Unknown integration is reported without guessing shared availability.
 - Legacy Shipped/shipped: remains readable; ship/reset alias submit/reopen with the same
   guards. Invalid-status repair requires `--repair`; Dropped cannot be reopened.
 - Submit, drop, reopen, park and activate own status changes and commit them. Submit requires a clean

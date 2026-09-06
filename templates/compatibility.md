@@ -73,7 +73,8 @@ as unknown and may suggest repair; older repair commands can erase scheduling in
 Never repair Parked with an old binary or use mixed writers. Current reopen refuses
 Parked even with --repair. A stale clone must update trunk before claiming.
 
-Parking checks visible claims when the command runs. Recheck next and audit before
+Parking checks visible claims when the command runs. The new HIGH `parked-claim`
+finding flags a known claim on a parked plan. Recheck next and audit before
 merging the planning PR: a later claim can race a review. Git permissions and human
 review enforce merge authority; these commands cannot prevent raw git changes.
 

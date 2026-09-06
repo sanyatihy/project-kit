@@ -89,6 +89,8 @@ var (
 	checkStalled = Check{"stalled", Medium,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
+	checkParkedClaim = Check{"parked-claim", High,
+		"a parked plan still has a claim; resolve ownership before merging the scheduling decision"}
 	checkInboxStale = Check{"inbox-stale", Medium,
 		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkSecretInDoc = Check{"secret-in-doc", High,
@@ -201,7 +203,7 @@ var (
 // `--offline`, or when the remote is asked and does not answer, they are not evaluated at
 // all. Named here rather than written into the command, so a check that grows a network
 // question cannot fall out of the notice that says what did not run.
-var OfflineChecks = []Check{checkSubmittedNotPushed}
+var OfflineChecks = []Check{checkSubmittedNotPushed, checkParkedClaim}
 
 // CheckCodes is a check list as codes, for a message that names what did not run.
 func CheckCodes(checks []Check) []string {
@@ -215,7 +217,7 @@ func CheckCodes(checks []Check) []string {
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
-	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled,
+	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled, checkParkedClaim,
 	checkInboxStale,
 	checkStatusUncommitted, checkSubmittedNotPushed,
 	checkUnfilledVision, checkDoneNotSubmitted, checkTechDrift, checkTagStale,
@@ -343,6 +345,7 @@ var featureChecks = []featureCheck{
 	{[]Check{checkStatusUncommitted}, statusUncommitted},
 	{[]Check{checkSubmittedNotPushed}, submittedNotPushed},
 	{[]Check{checkStalled}, stalled},
+	{[]Check{checkParkedClaim}, parkedClaim},
 	{[]Check{checkDoneNotSubmitted}, doneNotSubmitted},
 	{[]Check{checkNoStatus}, statusState},
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
@@ -553,6 +556,15 @@ func submittedNotPushed(s *docState) []Finding {
 	return []Finding{finding(checkSubmittedNotPushed, s.at,
 		s.f.Name()+": Submitted, but no remote carries the work",
 		"push it from its owning checkout: git push -u origin HEAD")}
+}
+
+func parkedClaim(s *docState) []Finding {
+	if s.f.Status != StatusParked || len(s.claims) == 0 || (len(s.r.remotes()) > 0 && !s.r.RefsAreAuthoritative()) {
+		return nil
+	}
+	return []Finding{finding(checkParkedClaim, s.at,
+		fmt.Sprintf("%s is Parked but claimed by %s", s.f.Name(), strings.Join(s.claims, " and ")),
+		"preserve the claim's work; resolve ownership and revise the planning PR before merging parking")}
 }
 
 // Liveness comes from the claim rather than a status, which is set on the feature branch
