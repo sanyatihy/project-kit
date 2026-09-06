@@ -30,6 +30,7 @@ permission to invent work. Agents run the commands; humans approve plans and mer
 
 Commands (kit help <command> gives usage, refusals and recovery):
   kit init [PATH] [--stack STACK]   create missing project files
+  kit finish [--json] [-- <gate argv>]  validate and publish for review
   kit start [<id>|--plan <round>|--work <outcome>]  prepare requested work
   kit new <title...>               draft a feature on the planning branch
   kit harvest <title...> --box ... record completed exploratory work
@@ -94,6 +95,18 @@ var topics = map[string]string{
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
 // above the flag list.
 var commandHelp = map[string]string{
+ "finish": `kit finish [--json] [-- <gate argv>]
+
+Plans: validate Draft plans and untouched tasks, commit only setup/docs, audit, push.
+Work: supply an executable and arguments after --. Harvest recorded direct work
+if needed; fill the requested Problem/Design facts and commit before retrying.
+Then require complete tasks and a clean tree, run the gate, audit, submit and push.
+Failed checks or changed candidates stop. Retries revalidate without duplicate stamps.
+The handoff names base, branch, exact candidate and verified publication. It never
+claims a PR exists: the agent opens one through its forge interface. Humans approve
+and merge. A review handoff does not stop independent approved work from trunk.
+No remote: report the missing PR handoff. Add the intended remote and retry.
+`,
  "start": `kit start <id> | --plan "<round>" | --work "<outcome>"
 
 Approved id: use the existing claim guards and enter the printed worktree.

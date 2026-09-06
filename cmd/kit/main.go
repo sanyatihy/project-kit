@@ -9,12 +9,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime/debug"
 	"slices"
@@ -74,6 +76,8 @@ func run() int {
 		return 0
 	case "init":
 		return runInit(os.Args[2:])
+	case "finish":
+		return runFinish(os.Args[2:])
 	case "start":
 		return runStart(os.Args[2:])
 	case "new":
@@ -100,6 +104,50 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "kit: unknown command %q\n\n%s\n", cmd, overview)
 		return 2
 	}
+}
+
+func runFinish(args []string) int {
+	before, gate := args, []string(nil)
+	for i, arg := range args {
+		if arg == "--" {
+			before, gate = args[:i], args[i+1:]
+			break
+		}
+	}
+	fs := newFlagSet("finish", before)
+	jsonOut := fs.Bool("json", false, "print the actual review handoff as JSON")
+	if rest := parseArgs(fs, before); len(rest) > 0 {
+		fmt.Fprintln(os.Stderr, commandHelp["finish"])
+		return 2
+	}
+	r, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	runGate := func(argv []string) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+		cmd.Dir = r.Root
+		cmd.WaitDelay = 3 * time.Second
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		return cmd.Run()
+	}
+	result, err := kit.Finish(templates, r, gate, runGate, currentProtocol(), time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit finish: %v\n", err)
+		return 2
+	}
+	if *jsonOut {
+		if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+	} else {
+		fmt.Printf("base: %s\nbranch: %s\ncandidate: %s\npublished: %t\n%s\n", result.Base, result.Branch, result.Candidate, result.Published, result.Next)
+	}
+	return 0
 }
 
 func runStart(args []string) int {
