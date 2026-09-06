@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -175,4 +176,47 @@ func TestFinishStopsForUnknownRemoteAndChangedPublicationCandidate(t *testing.T)
 		t.Fatal("unknown audit submitted")
 	}
 	w.withGit("if [ \"$3\" = push ]; then \"$real_git\" -C \"$2\" commit --allow-empty -m concurrent >/dev/null || exit 9; fi", "finish", "--", "true").fails(2).errHas("candidate changed")
+}
+
+func TestFinishRejectsCommittedChangesFromASubmissionHook(t *testing.T) {
+	t.Parallel()
+	w := completedGuidedWork(t)
+	common := w.gitOut(nil, "rev-parse", "--git-common-dir")
+	if !filepath.IsAbs(common) {
+		common = filepath.Join(w.Root, common)
+	}
+	writeExecutable(t, filepath.Join(common, "hooks", "post-commit"), `#!/bin/sh
+case "$(git log -1 --format=%s)" in
+ 'Submit 0007')
+  echo generated > generated.txt
+  git add generated.txt
+  git -c core.hooksPath=/dev/null commit -m 'Generated after submission'
+  ;;
+esac
+`)
+	w.run("finish", "--", "true").fails(2).errHas("submission changed the validated candidate")
+	remote := w.gitOut(nil, "show", "origin/work/0007:docs/features/0007-widget.md")
+	if !strings.Contains(remote, "status: Draft") {
+		t.Fatal("unvalidated hook changes were published")
+	}
+}
+
+func TestFinishRejectsAHookThatAmendsTheSubmissionStatus(t *testing.T) {
+	t.Parallel()
+	w := completedGuidedWork(t)
+	common := w.gitOut(nil, "rev-parse", "--git-common-dir")
+	if !filepath.IsAbs(common) {
+		common = filepath.Join(w.Root, common)
+	}
+	writeExecutable(t, filepath.Join(common, "hooks", "post-commit"), `#!/bin/sh
+case "$(git log -1 --format=%s)" in
+ 'Submit 0007')
+  sed 's/status: Submitted/status: Dropped/' docs/features/0007-widget.md > altered
+  mv altered docs/features/0007-widget.md
+  git add docs/features/0007-widget.md
+  git -c core.hooksPath=/dev/null commit --amend --no-edit
+  ;;
+esac
+`)
+	w.run("finish", "--", "true").fails(2).errHas("submission changed the validated candidate")
 }

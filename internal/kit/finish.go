@@ -127,6 +127,10 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 		if err != nil {
 			return nil, err
 		}
+		stamped := r.FeatureByID(id)
+		if stamped == nil || stamped.Status != StatusSubmitted || stamped.Submitted.UTC().Format(DateLayout) != today.UTC().Format(DateLayout) || !r.onlySubmissionStamp(candidate, f.Rel) {
+			return nil, fmt.Errorf("submission changed the validated candidate; preserve its commits, run kit reopen %s, then rerun finish", id)
+		}
 	}
 	h, err := publishHandoff(r)
 	if err != nil {
@@ -372,4 +376,34 @@ func finishHarvest(r *Repo, intent *Intent, today time.Time) (string, error) {
 		}
 	}
 	return pending.ID, nil
+}
+
+// Submission may change only its lifecycle fields; hooks cannot smuggle new work
+// between a passed gate and publication, even by amending the stamping commit.
+func (r *Repo) onlySubmissionStamp(candidate, path string) bool {
+	parent, err := r.gitRun("rev-parse", "HEAD^")
+	if err != nil || strings.TrimSpace(parent) != candidate {
+		return false
+	}
+	changed, err := r.gitRun("diff", "--name-only", "-z", candidate, "HEAD", "--")
+	if err != nil {
+		return false
+	}
+	paths := gitPaths(changed)
+	if len(paths) != 1 || paths[0] != path {
+		return false
+	}
+	before, err := r.gitRun("show", candidate+":"+path)
+	if err != nil {
+		return false
+	}
+	after, err := r.gitRun("show", "HEAD:"+path)
+	if err != nil {
+		return false
+	}
+	for _, key := range []string{"status", "submitted", "shipped"} {
+		before = RemoveField(Normalise(before), key)
+		after = RemoveField(Normalise(after), key)
+	}
+	return before == after
 }

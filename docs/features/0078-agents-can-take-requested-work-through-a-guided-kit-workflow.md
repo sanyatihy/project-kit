@@ -72,7 +72,7 @@ without weakening review or work preservation; an incomplete handoff is not comp
 - [x] Verify external merge-authority boundaries and report unverified live permissions
 - [x] Compare complete draft, approved-work and small-change routes, including required human stops
 
-- [ ] Reject submission hooks that change the validated candidate before publication
+- [x] Reject submission hooks that change the validated candidate before publication
 
 ## Log
 - 2026-09-07 — Added a final candidate check after submission: a commit hook can create additional committed changes after the gate.
