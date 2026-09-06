@@ -61,6 +61,8 @@ without weakening review or work preservation; an incomplete handoff is not comp
 
 ## Tasks
 
+- [ ] Complete safe release of retained merged checkouts and report merged-but-unsubmitted work without inventing completion
+
 - [ ] Add guarded start routes with recorded intent and no unrecorded chore exemption
 - [ ] Preserve staged and unstaged files through recoverable empty-base setup and first-PR publication
 - [ ] Add plan and work finish routes with real gates, safe retries and candidate-bound validation
@@ -71,5 +73,7 @@ without weakening review or work preservation; an incomplete handoff is not comp
 - [ ] Compare complete draft, approved-work and small-change routes, including required human stops
 
 ## Log
+
+- 2026-09-07 — Added recovery before guided routes after 0080 remained taken following release: its retained custom checkout kept the local claim alive. Review handoff must also direct agents to independent work from trunk, not end the session.
 
 - 2026-09-06 — Expanded the review/setup plan to guided start and finish after the chore bypass. Retained its original outcomes; revised tasks for the wider scope and added comparative rehearsals. Implementation still awaits plan approval.
