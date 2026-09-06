@@ -68,12 +68,12 @@ without weakening review or work preservation; an incomplete handoff is not comp
 - [x] Add plan and work finish routes with real gates, safe retries and candidate-bound validation
 - [x] Make PR handoffs report actual publication state and human ownership of approval and merge
 - [x] Align protocol and help with initial setup, both review gates and revisions
-- [ ] Rehearse fresh and existing repositories, preserved files, interrupted operations and unavailable remotes
+- [x] Rehearse fresh and existing repositories, preserved files, interrupted operations and unavailable remotes
 - [ ] Verify external merge-authority boundaries and report unverified live permissions
 - [ ] Compare complete draft, approved-work and small-change routes, including required human stops
 
 ## Log
 
-- 2026-09-07 — Added recovery before guided routes after 0080 remained taken following release: its retained custom checkout kept the local claim alive. Review handoff must also direct agents to independent work from trunk, not end the session.
+- 2026-09-06 — Added recovery before guided routes after 0080 remained taken following release: its retained custom checkout kept the local claim alive. Review handoff must also direct agents to independent work from trunk, not end the session.
 
 - 2026-09-06 — Expanded the review/setup plan to guided start and finish after the chore bypass. Retained its original outcomes; revised tasks for the wider scope and added comparative rehearsals. Implementation still awaits plan approval.

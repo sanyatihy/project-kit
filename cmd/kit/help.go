@@ -143,7 +143,7 @@ with completed boxes, names the branch after the feature and commits the whole
 working tree. Name observable outcomes with --box; history is not used to infer them.
 Fill Problem and Design; keep Log for plan changes, which may be empty.
 
-Refuses trunk, detached HEAD and existing claims, including branch names citing a
+Refuses trunk, planning branches, detached HEAD and existing claims, including branch names citing a
 four-digit id. Use a spike branch; never bypass a pending plan's approval. With no
 commits, first creates an empty trunk review base; product files stay on the feature
 branch. Publish that base before the first PR.

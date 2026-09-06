@@ -84,3 +84,22 @@ func TestStartResumesAfterEmptyBaseAndRefusesForeignRemoteHistory(t *testing.T) 
 		t.Fatal("refusal created history")
 	}
 }
+
+func TestStartResumesAnIntentSavedBeforeCheckout(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.commitAll("setup")
+	p.git("branch", "-m", "main")
+	p.withGit("if [ \"$3\" = switch ]; then exit 9; fi", "start", "--work", "Small fix").fails(2).errHas("intent saved")
+	p.run("start", "--work", "Small fix").ok()
+	if p.headBranch() != "spike/small-fix" {
+		t.Fatal("did not resume saved start")
+	}
+}
+
+func TestHarvestCannotTurnPlanningIntoImplementation(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.run("start", "--plan", "unapproved round").ok()
+	p.run("harvest", "Unapproved work", "--box", "Done").fails(2).errHas("planning branch")
+}

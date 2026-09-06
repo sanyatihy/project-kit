@@ -41,17 +41,10 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 		if intent == nil || intent.Mode != "work" || branch != "spike/"+Slug(intent.Outcome) {
 			return nil, fmt.Errorf("no recorded direct-work intent; use kit start --work before implementing, or harvest an existing spike")
 		}
-		// A partially written harvest is preserved for explicit recovery, not allocated again.
-		for _, f := range r.Features {
-			if Slug(f.Title) == Slug(intent.Outcome) {
-				return nil, fmt.Errorf("%s already records this outcome; preserve it and resume its feature branch before finishing", f.Rel)
-			}
-		}
-		res, err := Harvest(r, intent.Outcome, []string{intent.Outcome}, today)
+		id, err = finishHarvest(r, intent, today)
 		if err != nil {
 			return nil, err
 		}
-		id = res.ID
 		r, err = Open(r.Root)
 		if err != nil {
 			return nil, err
@@ -115,6 +108,17 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 	if err := finishAudit(r, protocol, today, f.Rel); err != nil {
 		return nil, err
 	}
+	fresh, err := Open(r.Root)
+	if err != nil {
+		return nil, err
+	}
+	if fresh.HeadBranch() != branch || strings.TrimSpace(fresh.git("rev-parse", "HEAD")) != candidate {
+		return nil, fmt.Errorf("candidate changed during audit; rerun finish before submission")
+	}
+	if err := cleanCandidate(fresh); err != nil {
+		return nil, err
+	}
+	r = fresh
 	if !IsSubmitted(f.Status) {
 		if _, err := Submit(templates, r, id, today); err != nil {
 			return nil, err
@@ -323,4 +327,49 @@ func publishHandoff(r *Repo) (*Handoff, error) {
 	h.Published = true
 	h.Next = "agent: open or update the PR for this base and candidate using the available forge interface. Human: approve and merge. Then agent: return to an updated trunk checkout, run kit next, and continue independent approved work."
 	return h, nil
+}
+
+// finishHarvest reuses a doc written before an interrupted branch rename or commit.
+func finishHarvest(r *Repo, intent *Intent, today time.Time) (string, error) {
+	baseline := r.statusesOn(intent.Base)
+	if baseline == nil {
+		return "", fmt.Errorf("recorded work base is unreadable; fetch before recovering harvest")
+	}
+	var pending *Feature
+	for _, f := range r.Features {
+		if Slug(f.Title) != Slug(intent.Outcome) || baseline[f.Rel] != "" {
+			continue
+		}
+		if pending != nil {
+			return "", fmt.Errorf("multiple documents record this work; resolve ambiguity before finishing")
+		}
+		pending = f
+	}
+	if pending == nil {
+		res, err := Harvest(r, intent.Outcome, []string{intent.Outcome}, today)
+		if err != nil {
+			return "", err
+		}
+		return res.ID, nil
+	}
+	if _, err := r.WriteTarget(pending.ID); err != nil {
+		return "", err
+	}
+	if pending.Status != StatusDraft {
+		return "", fmt.Errorf("preserved harvest %s is not Draft", pending.ID)
+	}
+	if claims := r.Claims(pending.ID); len(claims) > 0 {
+		return "", fmt.Errorf("preserved harvest is claimed by %s; resume its owner checkout", strings.Join(claims, ", "))
+	}
+	if _, err := r.gitRun("branch", "-m", pending.Branch()); err != nil {
+		return "", err
+	}
+	if files, err := r.DirtyFiles(); err != nil {
+		return "", err
+	} else if len(files) > 0 {
+		if err := r.commitAll("Harvest " + pending.ID); err != nil {
+			return "", fmt.Errorf("harvest files preserved; commit them and retry finish: %w", err)
+		}
+	}
+	return pending.ID, nil
 }

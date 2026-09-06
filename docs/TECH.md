@@ -54,7 +54,8 @@ templates/   project documents, help topics and Go/Python scaffolds
 - Plan finish validates complete Draft plans with unticked tasks, commits only approved
   setup/document paths, audits and pushes. Implementation changes require their own route.
 - Work finish harvests recorded direct work once, requests missing Problem/Design facts,
-  then requires complete tasks and a clean candidate. Gate argv runs directly with a
+  and reuses a partial harvest after interruption, then requires complete tasks and a
+  clean candidate. Planning branches cannot be harvested to bypass approval. Gate argv runs directly with a
   30-minute bound; failure, changed HEAD/branch or dirty output stops publication.
   Revisions after submission require reopen. Retrying finish reruns validation.
 - Handoffs report the advertised base, candidate and confirmed publication. They do not

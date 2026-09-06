@@ -72,7 +72,7 @@ func Start(r *Repo, mode, outcome string) (*Started, error) {
 		return nil, fmt.Errorf("established trunk has uncommitted files; preserve them on their owning branch before starting")
 	}
 	if r.hasRef("refs/heads/" + branch) {
-		return nil, fmt.Errorf("%s already exists; resume its checkout or choose another outcome", branch)
+		return r.resumeStart(branch, mode, outcome)
 	}
 	if heads, ok := r.remoteHeads(); !ok && len(r.remotes()) > 0 {
 		return nil, fmt.Errorf("remote branches are unreadable; reconnect before starting")
@@ -105,8 +105,10 @@ func Start(r *Repo, mode, outcome string) (*Started, error) {
 
 // WorkIntent reads only first-parent history so a merged unrelated spike cannot
 // supply this branch's outcome. A later start replaces earlier intent.
-func (r *Repo) WorkIntent() (*Intent, error) {
-	text, err := r.gitRun("log", "--first-parent", "--format=%B%x00", "--grep=^"+intentPrefix, "-1")
+func (r *Repo) WorkIntent() (*Intent, error) { return r.intentOn("HEAD") }
+
+func (r *Repo) intentOn(ref string) (*Intent, error) {
+	text, err := r.gitRun("log", "--first-parent", "--format=%B%x00", "--grep=^"+intentPrefix, "-1", ref)
 	if err != nil {
 		return nil, err
 	}
@@ -191,4 +193,24 @@ func (r *Repo) isReviewBase(ref string) bool {
 	}
 	message, err := r.gitRun("show", "-s", "--format=%s", ref)
 	return err == nil && strings.TrimSpace(message) == "Initialize review base"
+}
+
+func (r *Repo) resumeStart(branch, mode, outcome string) (*Started, error) {
+	ref := "refs/heads/" + branch
+	intent, err := r.intentOn(ref)
+	if err != nil {
+		return nil, err
+	}
+	base := strings.TrimSpace(r.git("rev-parse", "HEAD"))
+	parents := strings.Fields(r.git("rev-list", "--parents", "-n", "1", ref))
+	if intent == nil || intent.Mode != mode || intent.Outcome != outcome || intent.Base != base || len(parents) != 2 || parents[1] != base || r.worktreeFor(branch) != "" {
+		return nil, fmt.Errorf("%s already exists with other work or a checkout; preserve it and choose another outcome", branch)
+	}
+	if _, err := r.gitRun("diff", "--quiet", base, ref, "--"); err != nil {
+		return nil, fmt.Errorf("%s carries work beyond its start intent; preserve it", branch)
+	}
+	if _, err := r.gitRun("switch", branch); err != nil {
+		return nil, err
+	}
+	return &Started{branch, r.Root}, nil
 }

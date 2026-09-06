@@ -137,3 +137,42 @@ func TestReviewHandoffDirectsContinuationWithoutInventingAPullRequest(t *testing
 	}
 	w.run("next").ok().has("actor: agent", "action: review_handoff", "independent approved work")
 }
+
+func TestFinishRecoversPartialHarvestWithoutAnotherID(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.run("start", "--work", "Small fix").ok()
+	p.write("work.txt", "valuable\n")
+	p.withGit("if [ \"$3\" = branch ] && [ \"$4\" = -m ]; then exit 9; fi", "finish", "--", "true").fails(2)
+	p.run("finish", "--", "true").fails(2).errHas("fill review facts")
+	if p.headBranch() != "0001-small-fix" {
+		t.Fatal("did not resume the first harvest")
+	}
+	if p.read("work.txt") != "valuable\n" {
+		t.Fatal("lost work")
+	}
+	if got := p.gitOut(nil, "ls-tree", "-r", "--name-only", "HEAD", "--", "docs/features"); strings.Contains(got, "0002-") {
+		t.Fatal("allocated a duplicate harvest")
+	}
+}
+
+func TestFinishRetriesAnAcceptedPushWithLostAcknowledgement(t *testing.T) {
+	t.Parallel()
+	w := completedGuidedWork(t)
+	w.withGit("if [ \"$3\" = push ]; then \"$real_git\" \"$@\" || exit $?; exit 9; fi", "finish", "--", "true").fails(2).errHas("unconfirmed")
+	head := w.gitOut(nil, "rev-parse", "HEAD")
+	w.run("finish", "--", "true").ok().has("published: true")
+	if head != w.gitOut(nil, "rev-parse", "HEAD") {
+		t.Fatal("retry repeated submission")
+	}
+}
+
+func TestFinishStopsForUnknownRemoteAndChangedPublicationCandidate(t *testing.T) {
+	t.Parallel()
+	w := completedGuidedWork(t)
+	w.withGit("if [ \"$3\" = ls-remote ]; then exit 9; fi", "finish", "--", "true").fails(2).errHas("online audit is incomplete")
+	if !strings.Contains(w.read("docs/features/0007-widget.md"), "status: Draft") {
+		t.Fatal("unknown audit submitted")
+	}
+	w.withGit("if [ \"$3\" = push ]; then \"$real_git\" -C \"$2\" commit --allow-empty -m concurrent >/dev/null || exit 9; fi", "finish", "--", "true").fails(2).errHas("candidate changed")
+}
