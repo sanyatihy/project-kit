@@ -59,7 +59,8 @@ templates/   project documents, help topics and Go/Python scaffolds
   30-minute bound; failure, changed HEAD/branch or dirty output stops publication.
   Revisions after submission require reopen. Retrying finish reruns validation.
 - Handoffs report the advertised base, candidate and confirmed publication. They do not
-  certify PR creation, approval or merge authority. Agents use their forge interface,
+  certify PR creation, approval or merge authority. Disposable pre-receive fixtures
+  test denied trunk writes; live hosted permissions still require authenticated evidence. Agents use their forge interface,
   then continue independent approved work from an updated trunk checkout.
 - Next adds an action containing actor, kind, checkout and optional argv. Work merged
   as Draft with a retained claim produces merged-before-submit; unchecked tasks survive.

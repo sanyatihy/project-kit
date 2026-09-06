@@ -420,7 +420,7 @@ func (r *Repo) commitDate(rev string) time.Time {
 // Unknown answers empty, the way every other git question here does. This one feeds a
 // refusal, so inventing files from a failed call would block a submit for no reason.
 func (r *Repo) DirtyFiles() ([]string, error) {
-	out, err := r.gitRun("status", "--porcelain", "-z")
+	out, err := r.gitRun("status", "--porcelain", "-z", "--untracked-files=all")
 	if err != nil {
 		return nil, err
 	}
