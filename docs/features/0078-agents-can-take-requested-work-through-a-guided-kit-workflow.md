@@ -70,7 +70,7 @@ without weakening review or work preservation; an incomplete handoff is not comp
 - [x] Align protocol and help with initial setup, both review gates and revisions
 - [x] Rehearse fresh and existing repositories, preserved files, interrupted operations and unavailable remotes
 - [x] Verify external merge-authority boundaries and report unverified live permissions
-- [ ] Compare complete draft, approved-work and small-change routes, including required human stops
+- [x] Compare complete draft, approved-work and small-change routes, including required human stops
 
 ## Log
 
