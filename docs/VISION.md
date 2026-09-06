@@ -23,6 +23,10 @@ is good, and everything else should happen without them. The agents' scarce reso
 is certainty about what is true — which feature is taken, what the plan is, whether a
 doc still describes reality.
 
+Operators give intent in conversation: draft, park, finish or revise. Agents run kit,
+manage branches and prepare review. Humans approve plans and merge work; next and audit
+are also available for direct inspection by the operator.
+
 This includes smaller local coding models such as Qwen. Changes must keep commands,
 conventions and next actions explicit and easy to follow without reconstructing the
 workflow from scattered rules or relying on frontier-model reasoning.

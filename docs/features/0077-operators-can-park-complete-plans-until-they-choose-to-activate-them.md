@@ -21,6 +21,7 @@ Pausing an active claim. Preserve and hand off ongoing work through the existing
 ## Design
 
 Add Parked and two commands: `kit park <id> "<reason>"` and `kit activate <id>`.
+Agents call them when the operator asks to park or activate work.
 Parking preserves the id, design, dependencies and tasks. Activation returns it to Draft;
 Dropped remains permanent retirement. Existing Draft behavior stays unchanged.
 

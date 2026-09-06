@@ -25,6 +25,7 @@ Rewriting an existing project's initial commit. Preserve its history and files.
 ## Design
 
 Add `kit plan <round>` to create a plan branch with no feature id from updated trunk.
+The agent runs it when the operator asks for a plan and handles setup and PR creation.
 With no commits, create an empty trunk base and preserve staged and unstaged files on the
 planning branch. Review setup and plans in the first PR. Init remains a file scaffolder;
 harvest shares the empty-base contract. Existing history is preserved.
