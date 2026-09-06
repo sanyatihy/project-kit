@@ -74,6 +74,8 @@ func run() int {
 		return 0
 	case "init":
 		return runInit(os.Args[2:])
+	case "start":
+		return runStart(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
 	case "harvest":
@@ -98,6 +100,36 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "kit: unknown command %q\n\n%s\n", cmd, overview)
 		return 2
 	}
+}
+
+func runStart(args []string) int {
+	fs := newFlagSet("start", args)
+	plan := fs.String("plan", "", "draft a reviewed planning round")
+	work := fs.String("work", "", "record directly requested work")
+	rest := parseArgs(fs, args)
+	if *plan == "" && *work == "" && len(rest) == 1 {
+		return runClaim(rest)
+	}
+	if (*plan == "") == (*work == "") || len(rest) != 0 {
+		fmt.Fprintln(os.Stderr, commandHelp["start"])
+		return 2
+	}
+	r, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	mode, outcome := "plan", *plan
+	if *work != "" {
+		mode, outcome = "work", *work
+	}
+	res, err := kit.Start(r, mode, outcome)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit start: %v\n", err)
+		return 2
+	}
+	fmt.Printf("branch: %s\ncheckout: %s\nagent: work in this checkout; run kit finish when ready for human review\n", res.Branch, res.Checkout)
+	return 0
 }
 
 // ---------------------------------------------------------------- init

@@ -30,6 +30,7 @@ permission to invent work. Agents run the commands; humans approve plans and mer
 
 Commands (kit help <command> gives usage, refusals and recovery):
   kit init [PATH] [--stack STACK]   create missing project files
+  kit start [<id>|--plan <round>|--work <outcome>]  prepare requested work
   kit new <title...>               draft a feature on the planning branch
   kit harvest <title...> --box ... record completed exploratory work
   kit claim <id>                   acquire a feature and its worktree
@@ -93,6 +94,16 @@ var topics = map[string]string{
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
 // above the flag list.
 var commandHelp = map[string]string{
+ "start": `kit start <id> | --plan "<round>" | --work "<outcome>"
+
+Approved id: use the existing claim guards and enter the printed worktree.
+Plan: record intent on plan/<round>, then use kit new and write the plans.
+Direct work: record the operator's outcome on spike/<outcome>, then implement.
+Start from clean, updated trunk. Refuses foreign work, conflicting branches,
+unreadable remotes and direct work matching an existing plan. A pending plan
+never becomes a spike to avoid approval. Retrying the same recorded start is safe.
+Run kit finish for review; humans approve plans and merge implementations.
+`,
 	"init": `kit init [PATH] [--stack STACK] [--forge FORGE]
 
 Create missing project files; never clear the target first. Makes a directory and
