@@ -28,6 +28,8 @@ func Reopen(r *Repo, id, why string, today time.Time, repair bool) (*ReopenResul
 		}
 	case StatusDropped:
 		return nil, fmt.Errorf("%s is Dropped — draft a new feature for human approval instead of reviving a retired plan", target.Name())
+	case StatusParked:
+		return nil, fmt.Errorf("%s is Parked — use kit activate %s on a planning branch when the operator asks", target.Name(), target.ID)
 	case StatusDraft:
 		return nil, fmt.Errorf("%s is already Draft", target.Name())
 	default:

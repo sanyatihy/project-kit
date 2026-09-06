@@ -11,6 +11,7 @@ import (
 
 const (
 	StatusDraft         = "Draft"
+	StatusParked        = "Parked"
 	StatusSubmitted     = "Submitted"
 	StatusLegacyShipped = "Shipped"
 	StatusDropped       = "Dropped"

@@ -38,6 +38,8 @@ Commands (kit help <command> gives usage, refusals and recovery):
   kit submit <id>                  stamp completed work for review
   kit reopen <id> "<why>"          revise an unmerged submission
   kit drop <id> "<why>"            retire an unbuilt plan
+  kit park <id> "<why>"            retain a complete plan for later
+  kit activate <id>                propose making parked work available
   kit next [--json] [--offline]    show the next task and checkout
   kit audit [--json] [--strict] [--offline]  report drift
   kit version                     show the installed version
@@ -93,6 +95,21 @@ var topics = map[string]string{
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
 // above the flag list.
 var commandHelp = map[string]string{
+	"park": `kit park <id> "<reason>"
+
+On a plan/<round> branch with no feature id, commit a complete, unstarted Draft
+as Parked and record the reason. Commit the plan first; unrelated edits stay out.
+Refuses claims, terminal history, invalid plans, dirty target files and unknown
+remote state. Integrate the current trunk before retrying. Already Parked is a no-op.
+Push the planning branch and open a PR. The human's merge changes shared availability.
+`,
+	"activate": `kit activate <id>
+
+When the operator asks, revalidate a Parked plan and commit it as Draft on a
+plan/<round> branch with no feature id. Uses park's plan, claim and remote guards.
+Already Draft is a no-op. Push and open a PR for human review; implementation
+can start only after activation merges and the trunk checkout is updated.
+`,
 	"init": `kit init [PATH] [--stack STACK] [--forge FORGE]
 
 Create missing project files; never clear the target first. Makes a directory and

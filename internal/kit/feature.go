@@ -10,7 +10,7 @@ import (
 // The feature document: its fields, its sections, and the branch name it implies.
 
 // AllStatuses includes current statuses and the readable legacy submission stamp.
-var AllStatuses = []string{StatusDraft, StatusDropped, StatusSubmitted, StatusLegacyShipped}
+var AllStatuses = []string{StatusDraft, StatusParked, StatusDropped, StatusSubmitted, StatusLegacyShipped}
 
 // terminal reports whether a status is an end state, after which a branch bearing the
 // feature's name is a merged leftover rather than somebody's work in progress.

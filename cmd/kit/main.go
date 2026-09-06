@@ -84,6 +84,8 @@ func run() int {
 		return runRelease(os.Args[2:])
 	case "drop":
 		return runDrop(os.Args[2:])
+	case "park", "activate":
+		return runAvailability(cmd, os.Args[2:])
 	case "reopen":
 		return runReopen(os.Args[2:])
 	case "block":
@@ -325,6 +327,41 @@ func releaseReservation(repo *kit.Repo, typed, why string) int {
 }
 
 // ---------------------------------------------------------------- reopen
+
+func runAvailability(command string, args []string) int {
+	rest := parseArgs(newFlagSet(command, args), args)
+	if (command == "park" && len(rest) < 2) || (command == "activate" && len(rest) != 1) {
+		fmt.Fprintln(os.Stderr, commandHelp[command])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", command, err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", command, err)
+		return 2
+	}
+	var res *kit.AvailabilityResult
+	if command == "park" {
+		res, err = kit.Park(repo, id, strings.Join(rest[1:], " "), time.Now().UTC())
+	} else {
+		res, err = kit.Activate(repo, id, time.Now().UTC())
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", command, err)
+		return 2
+	}
+	if res.Commit == "" {
+		fmt.Printf("%s is already %s; no change.\n", res.Doc, res.Status)
+	} else {
+		fmt.Printf("%s — %s\n", res.Commit, res.Doc)
+	}
+	fmt.Println("Push this planning branch and open a PR for human review. Shared availability changes after merge; then update trunk and run kit next.")
+	return 0
+}
 
 func runReopen(args []string) int {
 	fs := newFlagSet("reopen", args)
