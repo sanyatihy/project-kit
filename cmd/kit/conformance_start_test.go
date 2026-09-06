@@ -39,3 +39,48 @@ func TestStartGuardsExistingWorkAndReusesClaim(t *testing.T) {
 	w := a.claimWorktree("work/0007")
 	w.run("start", "--work", "another change").fails(2).errHas("already has work")
 }
+
+func TestStartPublishesOnlyAnEmptyBaseAndPreservesTheIndex(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	origin := p.path("../remote.git")
+	gitIn(t, p.Root, "init", "--bare", origin)
+	p.git("remote", "add", "origin", origin)
+	p.write("product.txt", "staged\n")
+	p.git("add", "product.txt")
+	p.write("product.txt", "unstaged\n")
+	p.run("start", "--work", "Build requested product").ok()
+	if tree := p.gitOut(nil, "ls-tree", "-r", "--name-only", "main"); tree != "" {
+		t.Fatalf("product leaked into main: %s", tree)
+	}
+	if p.read("product.txt") != "unstaged\n" || p.gitOut(nil, "show", ":product.txt") != "staged" {
+		t.Fatal("start changed staged or unstaged content")
+	}
+	if !hasRemoteBranch(t, p, "main") {
+		t.Fatal("empty base was not published")
+	}
+	head := p.gitOut(nil, "rev-parse", "HEAD")
+	p.run("start", "--work", "Build requested product").ok()
+	if head != p.gitOut(nil, "rev-parse", "HEAD") {
+		t.Fatal("retry repeated setup")
+	}
+}
+
+func TestStartResumesAfterEmptyBaseAndRefusesForeignRemoteHistory(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.git("commit", "--allow-empty", "-m", "Initialize review base")
+	p.git("branch", "-m", "main")
+	p.write("keep.txt", "uncommitted\n")
+	p.run("start", "--plan", "first round").ok()
+	if p.read("keep.txt") != "uncommitted\n" {
+		t.Fatal("recovery lost work")
+	}
+	a, _ := twoAgents(t)
+	q := setUp(t)
+	q.git("remote", "add", "origin", a.gitOut(nil, "remote", "get-url", "origin"))
+	q.run("start", "--plan", "fresh").fails(2).errHas("already has history")
+	if q.resolves("HEAD") {
+		t.Fatal("refusal created history")
+	}
+}

@@ -52,15 +52,23 @@ func Start(r *Repo, mode, outcome string) (*Started, error) {
 			}
 		}
 	}
-	if !r.HasHistory() {
-		return nil, fmt.Errorf("initial review base is missing; initialize it before starting")
+	initial, err := r.ensureReviewBase()
+	if err != nil {
+		return nil, err
+	}
+	if initial {
+		fresh, err := Open(r.Root)
+		if err != nil {
+			return nil, err
+		}
+		*r = *fresh
 	}
 	if why := r.foundationProblem(); why != "" {
 		return nil, fmt.Errorf("%s", why)
 	}
 	if files, err := r.DirtyFiles(); err != nil {
 		return nil, err
-	} else if len(files) > 0 {
+	} else if len(files) > 0 && !initial {
 		return nil, fmt.Errorf("established trunk has uncommitted files; preserve them on their owning branch before starting")
 	}
 	if r.hasRef("refs/heads/" + branch) {
@@ -115,4 +123,72 @@ func (r *Repo) WorkIntent() (*Intent, error) {
 		}
 	}
 	return nil, nil
+}
+
+// ensureReviewBase resumes initial publication without adding staged product files.
+func (r *Repo) ensureReviewBase() (bool, error) {
+	if r.HasHistory() && !r.isReviewBase("HEAD") {
+		return false, nil
+	}
+	remote, err := pickRemote(r)
+	if err != nil {
+		return false, err
+	}
+	if remote != "" {
+		heads, ok := r.remoteHeads()
+		if !ok {
+			return false, fmt.Errorf("remote state is unreadable; reconnect before initial setup")
+		}
+		if !r.HasHistory() && len(heads) > 0 {
+			return false, fmt.Errorf("remote already has history; clone or fetch it instead of creating a review base")
+		}
+	}
+	if !r.HasHistory() {
+		heads, err := r.gitRun("for-each-ref", "--format=%(refname)", "refs/heads/")
+		if err != nil {
+			return false, err
+		}
+		if strings.TrimSpace(heads) != "" {
+			return false, fmt.Errorf("existing branches must be preserved; resume their history before starting")
+		}
+		if _, err := r.gitRun("symbolic-ref", "HEAD", "refs/heads/main"); err != nil {
+			return false, err
+		}
+		if err := r.harvestBaseline("main"); err != nil {
+			return false, err
+		}
+		fresh, err := Open(r.Root)
+		if err != nil {
+			return false, err
+		}
+		*r = *fresh
+	}
+	base := strings.TrimSpace(r.git("rev-parse", "HEAD"))
+	trunk := r.HeadBranch()
+	if remote != "" {
+		if tip, ok := r.remoteTip(remote, trunk); ok {
+			if tip != base {
+				return false, fmt.Errorf("remote trunk differs from the empty base; fetch and inspect it without overwriting history")
+			}
+		} else {
+			ref := "refs/heads/" + trunk
+			if _, err := r.gitRun("push", "--porcelain", "--force-with-lease="+ref+":", remote, base+":"+ref); err != nil {
+				return false, fmt.Errorf("empty base preserved on %s; publication is unconfirmed — retry kit start: %w", trunk, err)
+			}
+		}
+	}
+	return true, nil
+}
+
+func (r *Repo) isReviewBase(ref string) bool {
+	parents, err := r.gitRun("rev-list", "--parents", "-n", "1", ref)
+	if err != nil || len(strings.Fields(parents)) != 1 {
+		return false
+	}
+	files, err := r.gitRun("ls-tree", "-r", "--name-only", ref)
+	if err != nil || strings.TrimSpace(files) != "" {
+		return false
+	}
+	message, err := r.gitRun("show", "-s", "--format=%s", ref)
+	return err == nil && strings.TrimSpace(message) == "Initialize review base"
 }
