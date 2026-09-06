@@ -46,4 +46,7 @@ This extends 0075's lifecycle.
 - [x] Make next, claim, dependencies and audit agree on parked availability, including activation awaiting merge and stale-clone attempts
 - [x] Document operator activation, distinguish parking from blockers and claim release, and verify text, JSON and previous-version safety
 
+- [ ] Report claims acquired during parking review without hiding ownership or guessing unknown integration state
+
 ## Log
+- 2026-09-06 — Added review-race coverage: a claim may appear after parking is committed but before the planning PR merges. Next must show ownership and strict audit must flag that conflict.
