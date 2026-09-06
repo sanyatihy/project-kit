@@ -117,3 +117,12 @@ carries the incident beside the constraint.
 **Value:** a reader of the code gets the constraint without the archaeology.
 **Promote when:** fired — measured 2026-09-01, and the rule that judges it now exists.
 
+## Review complete changes locally before publishing
+
+The operator wants to inspect a branch diff, give an agent comments and review the fixes
+before any remote publication. The first round focuses on PR review in 0078. A later
+local workflow needs an empty review base, an exact reviewed commit, a clear feedback loop
+and human integration without inventing an approval marker the agent can grant itself.
+
+**Value:** the operator can review all setup and implementation locally before publishing.
+**Promote when:** the operator chooses to work without PR review or before adding a remote.
