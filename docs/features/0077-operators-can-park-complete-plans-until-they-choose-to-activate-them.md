@@ -1,9 +1,9 @@
 ---
 id: 0077
 title: Operators can park complete plans until they choose to activate them
-status: Draft
+status: Submitted
 created: 2026-09-06
-submitted:
+submitted: 2026-09-06
 needs:
 ---
 
