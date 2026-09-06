@@ -17,14 +17,15 @@ Plan when asked. For work that began without a plan, use the spike route below.
    that feature. Split when outcomes have independent value, need separate approval, or
    cannot be reviewed safely together. Do not split merely to give each agent a doc.
    A feature doc holds decisions worth approving before building; a small change with no
-   such decision can be a task box or an ordinary chore. Removing an integrated feature
-   is new work citing its frozen doc; `drop` only retires an unbuilt plan.
-3. With no commits, commit setup on the trunk before creating the planning branch.
-   Draft the whole round with `kit new "<title>"` on one `plan/<round>` branch whose
+   such decision can be a task box or recorded direct work through the spike route.
+   Removing an integrated feature is new work citing its frozen doc; `drop` only retires an unbuilt plan.
+3. Start the round with `kit start --plan "<round>"`. For a new repo, it publishes an
+   empty trunk base and preserves setup files for the first PR. Draft the whole round
+   with `kit new "<title>"` on that `plan/<round>` branch whose
    name contains no four-digit id. Fill `needs:` with prerequisite feature ids; leave
    it empty when work can start independently. Keep every draft `status: Draft`.
-4. Push the planning branch and open one pull request for human review. Planned features
-   require the human's approval through that merge before implementation starts. After it
+4. Run `kit finish` to validate, commit and push the planning round; open one PR for
+   human review. Planned features require the human's approval through that merge before implementation starts. After it
    merges, return to a trunk checkout, pull with --ff-only, and run kit audit and kit next.
 5. Put uncertainty in `## Open questions`. Use `kit block <id> "<question>"` for a
    decision only the human can make. Never invent a product decision to unblock yourself.
@@ -33,16 +34,20 @@ Plan when asked. For work that began without a plan, use the spike route below.
 
 ### Taking work
 
-6. From an updated trunk checkout, take a feature with `kit claim <id>`. Read the exit code:
+6. From an updated trunk checkout, take a feature with `kit start <id>` (the guarded
+   claim route; `kit claim <id>` remains available). Read the exit code:
    - **0**: the claim is yours; work in the worktree the command names.
    - **1**: it is not yours; run `kit next` and choose different work.
    - **2**: the command could not run; fix the reported cause before retrying.
    A claimed branch or worktree belonging to another agent is not yours to clean up.
 7. Each agent works in its own checkout. Do not share a working tree, index or claim.
-   A branch citing a four-digit id is a claim; ordinary chores and spikes cite none.
-8. For human-directed exploration, work on a spike branch of its own. Do not turn a
-   pending plan into a spike to bypass approval. When done, `kit harvest "<title>"
-   --box "<outcome>"` records the work and names its branch after the feature. Fill
+   A branch citing a four-digit id is a claim; recorded direct work and spikes cite none.
+8. For directly requested changes or exploration, use `kit start --work "<outcome>"`.
+   It records intent on a spike branch of its own; small changes also use this route.
+   Do not turn a pending plan into a spike to bypass approval. When done,
+   `kit finish -- <gate argv>` harvests recorded work and names missing review facts.
+   Existing spikes can use `kit harvest "<title>" --box "<outcome>"` to record the
+   work and name its branch after the feature. Fill
    Problem and Design before submitting. With no commits, harvest creates an empty trunk
    base; publish it for the first PR. `kit harvest --nothing "<what it showed>"` records
    a discarded spike.
@@ -70,19 +75,26 @@ Plan when asked. For work that began without a plan, use the spike route below.
 
 15. Before submitting, move durable facts to `docs/TECH.md`; leave only changes to the
     plan in Log, which may be empty. Put validation and review context in the PR.
-16. Run the project's gate, then `kit audit --strict`, then `kit submit <id>`, in that
-    order. A failed or incomplete check is not a pass. Explicit offline audits cover
-    local checks only; complete the online audit before handing off to review.
+16. Run `kit finish -- <gate argv>` with the project's actual gate executable and arguments.
+    It requires complete tasks and a clean tree, runs the gate and strict online audit,
+    submits, and verifies the push. The individual project gate → `kit audit --strict` →
+    `kit submit <id>` → push sequence remains supported. A failed or incomplete check is not a pass. Explicit offline
+    audits cover local checks only; complete the online audit before handing off to review.
 17. Push the branch, open the pull request, and hand it to the human reviewer.
     `submit` records readiness for review; the feature is integrated only after merge.
     You never merge your own work.
-    With no remote, say so and leave the work on the branch for local review.
+    With no remote or forge access, report the incomplete PR handoff and preserve the branch.
+    Review waits apply to that feature. Return to a clean, updated trunk checkout, run
+    `kit next`, and continue independent approved work without waiting for that merge.
 18. For review changes before merge, run `kit reopen <id> "<why>"`, revise the tasks,
     implement the changes, and repeat the gate and submit steps. A Submitted doc on the
     trunk is frozen history; further changes need a new doc citing it.
 19. After any merge, return to a trunk checkout, pull with --ff-only, then run
     `kit audit` and `kit next`. Dependencies unlock only once their merged work is here.
-    Duplicate ids from offline drafting must be resolved before either doc is claimed.
+    Release your retained merged claims with `kit release`; custom checkouts are preserved.
+    If work merged as Draft, preserve unchecked tasks and resolve its retained claim;
+    never mark missing validation complete. Duplicate ids from offline drafting must be
+    resolved before either doc is claimed.
 
 ### Writing
 

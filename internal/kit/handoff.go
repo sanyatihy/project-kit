@@ -109,7 +109,9 @@ func (r *Repo) mergedDraftClaim(f *Feature) string {
 	}
 	for _, branch := range r.Claims(f.ID) {
 		if rev := r.claimRev(branch); rev != "" && r.reaches(rev, ref) {
-			return branch
+			if open, total, ok := r.TasksOn(rev, f.Rel); ok && open < total {
+				return branch
+			}
 		}
 	}
 	return ""

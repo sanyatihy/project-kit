@@ -257,20 +257,10 @@ func runInit(args []string) int {
 			target, *stack, strings.Join(kit.Forges, "|"))
 	}
 
-	// Singular here is what produced a plan with one feature covering a whole
-	// project: the tool asked for a feature and the agent wrote a feature. Bootstrap
-	// means the whole set, and which of them go ahead is not the agent's to decide.
-	fmt.Printf("\nnext:\n")
-	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
-	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
-	fmt.Printf("  each one a change a human can review in one sitting\n")
-	fmt.Printf("  leave them Draft — kit submit, kit drop and kit reopen write a status\n")
-	// Said here because this is where a bootstrap run reads what to do next, and the
-	// omission is what let `kit claim` win a branch carrying no plan: a claim pushes
-	// HEAD, so a plan that is only in the working tree does not travel with it.
-	fmt.Printf("  then land all of it on the default branch — a pull or merge request,\n")
-	fmt.Printf("  if that branch is protected. A claim pushes HEAD, so nothing uncommitted\n")
-	fmt.Printf("  reaches the branch an agent is sent to work in\n\n")
+	fmt.Printf("\nnext:\n  kit next\n")
+	fmt.Printf("  for requested planning: read docs/VISION.md, then kit start --plan \"<round>\"\n")
+	fmt.Printf("  draft with kit new, finish the round, and open its PR for human approval\n")
+	fmt.Printf("  setup and implementation belong on review branches; new trunk starts empty\n\n")
 	return 0
 }
 

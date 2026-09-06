@@ -67,7 +67,7 @@ without weakening review or work preservation; an incomplete handoff is not comp
 - [x] Preserve staged and unstaged files through recoverable empty-base setup and first-PR publication
 - [x] Add plan and work finish routes with real gates, safe retries and candidate-bound validation
 - [x] Make PR handoffs report actual publication state and human ownership of approval and merge
-- [ ] Align protocol and help with initial setup, both review gates and revisions
+- [x] Align protocol and help with initial setup, both review gates and revisions
 - [ ] Rehearse fresh and existing repositories, preserved files, interrupted operations and unavailable remotes
 - [ ] Verify external merge-authority boundaries and report unverified live permissions
 - [ ] Compare complete draft, approved-work and small-change routes, including required human stops

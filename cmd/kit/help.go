@@ -45,10 +45,11 @@ Commands (kit help <command> gives usage, refusals and recovery):
   kit version                     show the installed version
 
 Workflow:
-  Plan: draft a round → push and open PR → human merges → update trunk → claim.
-  Build: enter the claimed worktree → finish the first unticked Tasks box → repeat.
-  Review: project gate → kit audit --strict → kit submit → push and open PR.
-  Stop for human review. Never merge your own work. Use reopen for requested changes.
+  Plan: start --plan → new/write → finish → agent opens PR → human merges → update trunk.
+  Build: start <id> → enter its worktree → implement and commit task boxes in order.
+  Review: finish -- <gate argv> → agent opens PR → human review.
+  Hand off for human review, then continue independent approved work from updated trunk.
+  Never merge your own work. Use reopen for requested changes.
   Exploration: use a spike branch, then harvest and the same review sequence.
   Finish this checkout's claim first; otherwise take the lowest ready id.
 
@@ -95,7 +96,7 @@ var topics = map[string]string{
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
 // above the flag list.
 var commandHelp = map[string]string{
- "finish": `kit finish [--json] [-- <gate argv>]
+	"finish": `kit finish [--json] [-- <gate argv>]
 
 Plans: validate Draft plans and untouched tasks, commit only setup/docs, audit, push.
 Work: supply an executable and arguments after --. Harvest recorded direct work
@@ -107,12 +108,13 @@ claims a PR exists: the agent opens one through its forge interface. Humans appr
 and merge. A review handoff does not stop independent approved work from trunk.
 No remote: report the missing PR handoff. Add the intended remote and retry.
 `,
- "start": `kit start <id> | --plan "<round>" | --work "<outcome>"
+	"start": `kit start <id> | --plan "<round>" | --work "<outcome>"
 
 Approved id: use the existing claim guards and enter the printed worktree.
 Plan: record intent on plan/<round>, then use kit new and write the plans.
 Direct work: record the operator's outcome on spike/<outcome>, then implement.
-Start from clean, updated trunk. Refuses foreign work, conflicting branches,
+Start from clean, updated trunk. New repos get a published empty main base;
+staged and unstaged files stay on the first review branch. Refuses foreign work, conflicting branches,
 unreadable remotes and direct work matching an existing plan. A pending plan
 never becomes a spike to avoid approval. Retrying the same recorded start is safe.
 Run kit finish for review; humans approve plans and merge implementations.
@@ -204,8 +206,8 @@ Kit does not pull into the checkout for you. Never delete another agent's claim.
 	"release": `kit release <id> [--discard]
 
 Surrender this clone's claim: delete its remote branch, then local branch and the
-worktree kit created. Run from outside that worktree. Current or custom worktrees
-may remain; the command reports required cleanup.
+worktree kit created. Run from outside that worktree. Current and custom worktrees are preserved as detached snapshots. A cleanup
+failure reports the preserved checkout and asks for a retry through kit release.
 
 Exit 0 means released. Exit 2 refuses missing or multiple claims, foreign ownership,
 unresolvable branches, a local copy missing remote work, unknown trunk/remote state,
