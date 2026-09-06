@@ -104,7 +104,7 @@ var (
 	// write, so what this catches is a doc they stamped before they did, a stamp lost in a
 	// rebase, and a commit that failed and was never made by hand afterwards.
 	checkStatusUncommitted = Check{"status-uncommitted", High,
-		"a terminal status is only in the working tree — HEAD carries the doc as open work"}
+		"a terminal or parking transition is only in the working tree — HEAD carries different availability"}
 	// HIGH because `kit claim` does not consult `audit`: this has to fail --strict to
 	// stop an agent being handed a design nobody wrote. It cannot misfire — the
 	// template's guidance lives in comments, which every parser here strips, so an
@@ -519,10 +519,13 @@ func submittedDate(s *docState) []Finding {
 // disk said Submitted and no check looked anywhere else. A doc HEAD does not carry at all
 // counts as absent — an uncommitted terminal doc is the same loss.
 func statusUncommitted(s *docState) []Finding {
-	if !terminal(s.f.Status) || !s.r.HasHistory() {
+	if !s.r.HasHistory() {
 		return nil
 	}
 	was := s.r.headStatuses()[s.f.Rel]
+	if !terminal(s.f.Status) && s.f.Status != StatusParked && was != StatusParked {
+		return nil
+	}
 	if was == s.f.Status {
 		return nil
 	}
@@ -533,6 +536,10 @@ func statusUncommitted(s *docState) []Finding {
 	verb := "Submit"
 	if s.f.Status == StatusDropped {
 		verb = "Drop"
+	} else if s.f.Status == StatusParked {
+		verb = "Park"
+	} else if was == StatusParked {
+		verb = "Activate"
 	}
 	return []Finding{finding(checkStatusUncommitted, s.at,
 		fmt.Sprintf("%s: %s in the file, and HEAD %s", s.f.Name(), s.f.Status, carries),
@@ -556,7 +563,7 @@ func submittedNotPushed(s *docState) []Finding {
 // the trunk's tip is identical to one whose pull request already merged, and neither
 // carries a date to read.
 func stalled(s *docState) []Finding {
-	if terminal(s.f.Status) || len(s.claims) == 0 {
+	if terminal(s.f.Status) || s.f.Status == StatusParked || len(s.claims) == 0 {
 		return nil
 	}
 	claim := s.claims[0]

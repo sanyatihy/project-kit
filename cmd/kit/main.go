@@ -872,6 +872,15 @@ func printPlan(plan kit.Plan, color bool) {
 		}
 	}
 
+	if len(plan.Parked) > 0 {
+		fmt.Printf("\n  %s\n", paint("parked — operator activation required", "2", color))
+		for _, item := range plan.Parked {
+			fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
+			fmt.Println(wrapAt(item.Reason, 74, "          "))
+			fmt.Println(wrapAt(item.WaitingOn, 74, "          "))
+		}
+	}
+
 	if len(plan.Blocked) > 0 {
 		fmt.Printf("\n  %s\n", paint("blocked", "33", color))
 		for _, item := range plan.Blocked {
@@ -919,7 +928,7 @@ func printPlan(plan kit.Plan, color bool) {
 		// somebody else.
 		case plan.Spike != "":
 			fmt.Printf("    kit harvest \"<what the work delivered>\" --box \"<outcome>\"\n")
-		case plan.Empty() && len(plan.AwaitingReview) == 0 && plan.Checkout == "":
+		case plan.Empty() && len(plan.Parked) == 0 && len(plan.AwaitingReview) == 0 && plan.Checkout == "":
 			fmt.Printf("    kit new \"<what the feature does>\"\n")
 		}
 	}

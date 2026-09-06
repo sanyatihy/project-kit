@@ -130,3 +130,104 @@ func TestParkingCommitFailurePreservesDecisionForRecovery(t *testing.T) {
 	p.git("commit", "-m", "Recover parking", "--", "docs/features/0001-later.md")
 	p.run("park", "0001", "later").ok().has("already Parked")
 }
+
+func TestParkedAvailabilityChangesOnlyAfterReviewMerge(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.git("switch", "-c", "plan/parking")
+	a.run("park", "0007", "operator chose later").ok()
+	if plan := b.plan("next", "--json"); len(plan.Ready) != 1 {
+		t.Fatal("unmerged parking changed shared availability")
+	}
+	a.git("switch", "main")
+	a.git("merge", "--ff-only", "plan/parking")
+	a.git("push", "origin", "main")
+	// The stale clone has Draft in its files, even after fetching the new trunk.
+	b.run("claim", "0007").fails(2)
+	b.git("fetch", "origin")
+	if plan := b.plan("next", "--json"); len(plan.Ready) != 0 {
+		t.Fatal("stale clone offered parked plan")
+	}
+	b.run("claim", "0007").fails(2)
+	b.git("pull", "--ff-only")
+	plan := b.plan("next", "--json")
+	if len(plan.Parked) != 1 || len(plan.Ready) != 0 || plan.Parked[0].Reason != "operator chose later" || plan.Parked[0].Task != "" || plan.Parked[0].Branch != "" {
+		t.Fatalf("bad parked board: %+v", plan)
+	}
+	b.run("next").ok().has("parked", "operator chose later").lacks("kit claim 0007", "kit new")
+	b.run("claim", "0007").fails(1).errHas("Parked")
+	b.git("switch", "-c", "plan/activation")
+	b.run("activate", "0007").ok()
+	plan = b.plan("next", "--json")
+	if len(plan.Ready) != 0 || len(plan.Blocked) != 1 || !strings.Contains(plan.Blocked[0].WaitingOn, "activation") {
+		t.Fatalf("unreviewed activation offered work: %+v", plan)
+	}
+	b.run("claim", "0007").fails(2)
+	if plan := a.plan("next", "--json"); len(plan.Parked) != 1 {
+		t.Fatal("unmerged activation changed shared availability")
+	}
+	b.git("switch", "main")
+	b.git("merge", "--ff-only", "plan/activation")
+	b.git("push", "origin", "main")
+	a.git("pull", "--ff-only", "origin", "main")
+	if plan := a.plan("next", "--json"); len(plan.Ready) != 1 || len(plan.Parked) != 0 {
+		t.Fatal("reviewed activation did not restore availability")
+	}
+	a.run("claim", "0007").ok()
+}
+
+func TestParkedDependenciesRemainUnmetAndDocumentsRemainValidated(t *testing.T) {
+	t.Parallel()
+	p := parkingPlan(t)
+	p.write("docs/features/0002-child.md", doc("0002", "Child", "Draft", "needs: 0001", "- [ ] Use it"))
+	p.commitAll("dependent plan")
+	p.run("park", "0001", "after next quarter").ok()
+	p.git("switch", "main")
+	p.git("merge", "--ff-only", "plan/schedule")
+	plan := p.plan("next", "--json")
+	if len(plan.Parked) != 1 || len(plan.Blocked) != 1 || len(plan.Blocked[0].Needs) != 1 {
+		t.Fatalf("parked dependency offered work: %+v", plan)
+	}
+	p.run("claim", "0002").fails(1).errHas("0001")
+	// Scheduling itself creates no age-based work or question finding.
+	p.run("audit", "--strict").ok().lacks("stalled", "inbox-stale", "no-status")
+	path := "docs/features/0001-later.md"
+	p.write(path, strings.Replace(p.read(path), "This way.", "", 1))
+	p.commitAll("break design")
+	p.run("audit", "--strict").fails(1).has("unfilled-template")
+	p.git("switch", "-c", "plan/revalidate")
+	p.run("activate", "0001").fails(2).errHas("complete plan")
+}
+
+func TestAuditReportsUncommittedParkingAndActivation(t *testing.T) {
+	t.Parallel()
+	p := parkingPlan(t)
+	path := "docs/features/0001-later.md"
+	p.write(path, strings.Replace(p.read(path), "status: Draft", "status: Parked", 1))
+	p.run("audit", "--strict").fails(1).has("status-uncommitted")
+	p.commitAll("park")
+	p.write(path, strings.Replace(p.read(path), "status: Parked", "status: Draft", 1))
+	p.run("audit", "--strict").fails(1).has("status-uncommitted")
+}
+
+func TestParkingRefusesStaleTrunkAndTerminalHistory(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.write("new.txt", "new trunk work\n")
+	a.commitAll("advance trunk")
+	a.git("push", "origin", "main")
+	b.git("switch", "-c", "plan/stale")
+	b.run("park", "0007", "later").fails(2).errHas("integrate the current trunk")
+	b.git("fetch", "origin")
+	b.git("merge", "--ff-only", "origin/main")
+	b.run("park", "0007", "later").ok()
+	// A manually rewritten local copy cannot retire already integrated history.
+	a.run("drop", "0007", "retired").ok()
+	a.git("push", "origin", "main")
+	b.git("fetch", "origin")
+	b.git("reset", "--hard", "origin/main")
+	path := "docs/features/0007-widget.md"
+	b.write(path, strings.Replace(b.read(path), "status: Dropped", "status: Draft", 1))
+	b.commitAll("rewrite local status")
+	b.run("park", "0007", "later").fails(2).errHas("terminal history")
+}

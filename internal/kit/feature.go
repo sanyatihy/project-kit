@@ -74,6 +74,17 @@ func (f *Feature) Name() string {
 // Section returns a section's trimmed content, empty when absent.
 func (f *Feature) Section(heading string) string { return f.sections[heading] }
 
+// ParkingReason is the latest command-recorded scheduling decision.
+func (f *Feature) ParkingReason() string {
+	reason := "operator activation required"
+	for _, line := range strings.Split(f.Section("Log"), "\n") {
+		if _, why, ok := strings.Cut(line, " — parked: "); ok {
+			reason = strings.TrimSpace(why)
+		}
+	}
+	return reason
+}
+
 // PlannedSections are what an agent needs in order to work a feature at all. `Log` is
 // not among them: a plan that never changed needs no Log entries.
 var PlannedSections = []string{"Problem", "Design", "Tasks"}

@@ -23,6 +23,7 @@ type Item struct {
 	Needs     []string `json:"needs,omitempty"` // ids this is still waiting on
 	ClaimedBy string   `json:"claimed_by,omitempty"`
 	WaitingOn string   `json:"waiting_on,omitempty"`
+	Reason    string   `json:"reason,omitempty"`
 	Mine      bool     `json:"mine,omitempty"`
 
 	// Unplanned marks a feature blocked only because nobody has written its plan. That
@@ -64,6 +65,7 @@ type Plan struct {
 	Ready   []Item `json:"ready"`
 	Taken   []Item `json:"taken"`
 	Blocked []Item `json:"blocked"`
+	Parked  []Item `json:"parked"`
 
 	// AwaitingReview is the far side of submit: work that has left its builder and
 	// arrived nowhere. Not part of the board above — none of it is claimable, and
@@ -149,7 +151,7 @@ func (p Plan) Empty() bool {
 // one say the same thing, and `null` says it in a third shape a consumer has to special
 // case — `findings` in `audit --json` has always been `[]`, and these four were not.
 func NewPlan() Plan {
-	return Plan{Yours: []Item{}, Ready: []Item{}, Taken: []Item{}, Blocked: []Item{}}
+	return Plan{Yours: []Item{}, Ready: []Item{}, Taken: []Item{}, Blocked: []Item{}, Parked: []Item{}}
 }
 
 // Survey answers: what should I work on?
@@ -193,6 +195,16 @@ func Survey(r *Repo) Plan {
 			Branch: f.ClaimBranch(),
 			Done:   total - open,
 			Total:  total,
+		}
+		if f.Status == StatusParked {
+			item.Task, item.Branch = "", ""
+			item.Reason = f.ParkingReason()
+			item.WaitingOn = "operator activation through a reviewed planning PR"
+			if r.integratedStatuses()[f.Rel] != StatusParked {
+				item.WaitingOn = "parking is local; push the planning branch for human review before shared availability changes"
+			}
+			plan.Parked = append(plan.Parked, item)
+			continue
 		}
 		// The claim on this checkout's own HEAD is this agent's. Calling it taken
 		// would be the tool reporting a fact about the reader back to them as an
@@ -366,6 +378,9 @@ func waitingOnNeeds(r *Repo, unmet []string) string {
 // round at all, and the two need different first moves — commit, or open the request —
 // so the line says which.
 func waitingOnLanding(r *Repo, f *Feature) string {
+	if r.integratedStatuses()[f.Rel] == StatusParked {
+		return "parked on trunk — activation needs human review through merge; then update this checkout"
+	}
 	if !r.TrackedAtHEAD(f.Rel) {
 		return "not committed yet — commit the plan, then land it on " + r.Trunk()
 	}
@@ -427,6 +442,8 @@ func guidanceFor(r *Repo, plan Plan) string {
 	// been planned: the entries below are plans that were built.
 	case len(plan.AwaitingReview) > 0:
 		return "nothing is left to build. " + reviewing(len(plan.AwaitingReview))
+	case len(plan.Parked) > 0:
+		return "only parked plans remain. Leave them parked until the operator asks to activate one. Planning changes need human review through merge."
 	// The branch that used to sit here said drafts were waiting on a human to accept
 	// them. It is gone with the gate: a Draft is active work now, so it reaches Ready
 	// or Blocked like anything else and never leaves the plan empty.
