@@ -95,3 +95,22 @@ func (r *Repo) checkoutHandoff(id string) string {
 	}
 	return id + " is awaiting review. For requested changes, run kit reopen " + id + " \"<why>\", revise tasks, implement, and repeat the gate, submit and push. After the human merges, return to an updated trunk checkout."
 }
+
+// mergedDraftClaim identifies implementation merged before submission without
+// marking unchecked work complete or mistaking a fresh claim receipt for a merge.
+func (r *Repo) mergedDraftClaim(f *Feature) string {
+	open, total := f.TaskCount()
+	if f.Status != StatusDraft || open == total {
+		return ""
+	}
+	ref := r.integrationRef()
+	if ref == "" {
+		return ""
+	}
+	for _, branch := range r.Claims(f.ID) {
+		if rev := r.claimRev(branch); rev != "" && r.reaches(rev, ref) {
+			return branch
+		}
+	}
+	return ""
+}

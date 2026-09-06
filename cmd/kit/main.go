@@ -589,7 +589,8 @@ func runRelease(args []string) int {
 	// gone when it is not would hand the next agent a feature the board here calls taken.
 	if res.Kept != "" {
 		fmt.Printf("\n  the local branch is still here: %s\n", res.Kept)
-		fmt.Printf("  leave that checkout, then: git branch -D %s\n", res.Branch)
+		fmt.Printf("  preserve its files, leave that checkout, then retry: kit release %s\n", id)
+		return 2
 	}
 	fmt.Println()
 	return 0

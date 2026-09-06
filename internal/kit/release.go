@@ -72,7 +72,7 @@ func Release(r *Repo, id string, discard bool) (*Released, error) {
 	// Whether a branch carries work cannot be read from its name, and "no work" is the
 	// answer that deletes it — so a branch this checkout cannot resolve stops here rather
 	// than being released out of ignorance.
-	rev := r.resolveBranch(branch)
+	rev := strings.TrimSpace(r.git("rev-parse", "--verify", "refs/heads/"+branch+"^{commit}"))
 	if rev == "" {
 		return nil, fmt.Errorf("%s is a branch this checkout cannot resolve, so whether it "+
 			"carries work cannot be read\nrun git fetch, then release", branch)
@@ -154,17 +154,26 @@ func Release(r *Repo, id string, discard bool) (*Released, error) {
 	// courtesy: without this every release would find the branch checked out and could
 	// never delete it. Only the one the kit made at the path it chooses — a worktree an
 	// operator put somewhere else is theirs, and is reported below rather than removed.
-	if own := r.WorktreePath(branch); r.worktreeBranch(own) == branch {
+	if own := r.WorktreePath(branch); own != r.Root && r.worktreeBranch(own) == branch {
 		if _, err := r.gitRun("worktree", "remove", own); err != nil {
 			res.Kept = own
+		}
+	}
+
+	// Preserve custom checkouts in place, but detach their clean snapshot so they no
+	// longer hold the released claim. Never force a checkout with valuable changes.
+	if path := r.worktreeFor(branch); path != "" && res.Kept == "" {
+		checkout := &Repo{Root: path}
+		if _, err := checkout.gitRun("switch", "--detach", rev); err != nil {
+			res.Kept = path
 		}
 	}
 
 	// The local branch is a copy, and by here the claim itself is already released, so
 	// failing to delete it must not fail the command. It fails when the worktree above
 	// could not go: an agent releasing from the checkout it was working in.
-	if r.hasRef("refs/heads/" + branch) {
-		if _, err := r.gitRun("branch", "-D", branch); err != nil {
+	if res.Kept == "" && r.hasRef("refs/heads/"+branch) {
+		if _, err := r.gitRun("update-ref", "-d", "refs/heads/"+branch, rev); err != nil {
 			if res.Kept = r.worktreeFor(branch); res.Kept == "" {
 				res.Kept = err.Error()
 			}

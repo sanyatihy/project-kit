@@ -61,7 +61,7 @@ without weakening review or work preservation; an incomplete handoff is not comp
 
 ## Tasks
 
-- [ ] Complete safe release of retained merged checkouts and report merged-but-unsubmitted work without inventing completion
+- [x] Complete safe release of retained merged checkouts and report merged-but-unsubmitted work without inventing completion
 
 - [ ] Add guarded start routes with recorded intent and no unrecorded chore exemption
 - [ ] Preserve staged and unstaged files through recoverable empty-base setup and first-PR publication
