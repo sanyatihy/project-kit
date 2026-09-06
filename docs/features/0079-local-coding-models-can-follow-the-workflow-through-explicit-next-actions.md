@@ -1,7 +1,7 @@
 ---
 id: 0079
 title: Local coding models can follow the workflow through explicit next actions
-status: Draft
+status: Dropped
 created: 2026-09-06
 submitted:
 needs: 0077, 0078
@@ -72,3 +72,4 @@ rehearsal stays outside the ordinary CI gate so development does not require mod
 - [ ] Provide reproducible local-model rehearsal scenarios and record actual results against the agreed model without substituting a frontier-model run
 
 ## Log
+- 2026-09-06 — dropped: The operator has already used Qwen successfully; keep small-model usability as a standing design constraint, not a separate workflow redesign or model-certification feature.
