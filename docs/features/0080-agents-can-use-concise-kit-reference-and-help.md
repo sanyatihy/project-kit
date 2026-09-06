@@ -45,7 +45,7 @@ remains unchanged.
 - [x] Produce shorter TECH and embedded-help candidates while preserving generated house rules
 - [x] Correct the harvest help to distinguish the planning restriction from enforced refusals
 
-- [ ] Restore the original Go/Python checklists and defer their compression with pinned comparison references
+- [x] Restore the original Go/Python checklists and defer their compression with pinned comparison references
 - [ ] Account for baseline rules, exceptions and examples in the retained prose changes
 - [ ] Run paired A/B tasks and retain original wording wherever equivalent value is not established
 
