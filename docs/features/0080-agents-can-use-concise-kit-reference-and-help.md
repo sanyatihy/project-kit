@@ -32,7 +32,7 @@ remains unchanged.
 ## Tasks
 
 - [x] Reduce TECH and embedded help while preserving workflow contracts, recovery guidance and generated house rules
-- [ ] Correct the harvest help to distinguish the planning restriction from enforced refusals
+- [x] Correct the harvest help to distinguish the planning restriction from enforced refusals
 
 ## Log
 
