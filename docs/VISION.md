@@ -23,6 +23,10 @@ is good, and everything else should happen without them. The agents' scarce reso
 is certainty about what is true — which feature is taken, what the plan is, whether a
 doc still describes reality.
 
+This includes smaller local coding models such as Qwen. Changes must keep commands,
+conventions and next actions explicit and easy to follow without reconstructing the
+workflow from scattered rules or relying on frontier-model reasoning.
+
 ## What done looks like
 
 An operator gives a prompt; an agent drafts a feature; the operator accepts it; agents
