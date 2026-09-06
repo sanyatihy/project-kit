@@ -126,3 +126,15 @@ and human integration without inventing an approval marker the agent can grant i
 
 **Value:** the operator can review all setup and implementation locally before publishing.
 **Promote when:** the operator chooses to work without PR review or before adding a remote.
+
+## Compress battle-tested agent guidance only with paired evidence
+
+Keep the original Go/Python checklists, AGENTS.md and embedded Work protocol. Baseline: 237ab912c288dc9722768132d17eb35e8ffafce2;
+the shorter 0080 candidates are at 33ee31f. The operator deferred their compression.
+Compare unchanged task fixtures and runner settings in fresh, repeated A/B sessions;
+review rule coverage and task quality before considering context savings. Protocol cases
+must cover human approval, claim ownership, failed checks and safe recovery.
+
+**Value:** smaller instruction context without losing established behavior or engineering guidance.
+**Promote when:** paired behavioral evidence supports a candidate and the operator chooses
+guidance compression; smaller word counts or passing kit tests alone do not qualify.
