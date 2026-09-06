@@ -24,45 +24,30 @@ Rewriting an existing project's initial commit. Preserve its history and files.
 
 ## Design
 
-Add `kit plan <round>` as the guarded entry into planned work. It creates a `plan/`
-branch whose name has no feature id, from an updated trunk. In a repository with no
-commits it first establishes an empty trunk commit, keeping every staged and unstaged
-file off that commit, then switches to the planning branch with the files preserved.
-Setup and feature docs are reviewed together on that branch. `kit init` remains the
-idempotent file scaffolder; it does not itself approve or commit setup. This replaces
-0075's direct setup commit advice and shares the empty-base contract already used by harvest.
+Add `kit plan <round>` to create a plan branch with no feature id from updated trunk.
+With no commits, create an empty trunk base and preserve staged and unstaged files on the
+planning branch. Review setup and plans in the first PR. Init remains a file scaffolder;
+harvest shares the empty-base contract. Existing history is preserved.
 
-The command reports the review base and branch. With a remote, it names publishing the
-empty trunk base as the prerequisite to the first planning PR; it never pushes setup or
-product files to trunk. Existing advertised remote history, a dirty established trunk,
-a conflicting branch, a foreign claim or unavailable required git evidence must refuse
-without losing files. An interrupted invocation must have a command-driven retry.
-Existing projects branch from their current trunk without creating a new root. No-commit
-spikes keep using harvest and the same empty-base recovery rules. Without a remote,
-planning can be saved locally; the PR handoff waits for the operator to supply one.
+Print the empty-base push before the first PR; never push setup or product files to trunk.
+Refuse conflicting branches, foreign claims, dirty established trunk and unreadable remote
+evidence. Detect existing remote history before creating a base. Interrupted setup must
+be safely retryable. Without a remote, save the plan and wait for one.
 
-Make every PR handoff name its target trunk, source branch, exact local and published
-commits, and whether the review base has been published. The board and command output
-must distinguish committing a plan, publishing it, requesting human review, addressing
-feedback and waiting for human integration. A missing base or unreadable remote cannot
-produce a complete handoff. Do not infer an open PR, approval or passing checks from a
-branch or Submitted stamp. Git remains the only runtime dependency; opening and inspecting
-a PR uses the operator's existing forge interface outside kit.
+PR handoffs name the base, source branch, local and published commits, and next responsible
+actor. Distinguish commit, push, request review, revise and wait for human merge. Never infer
+an open PR, approval or passing tests from git state. Forge interaction stays outside kit;
+git remains its only runtime dependency.
 
-Keep both human gates: plan before implementation and implementation before integration.
-Planning comments are addressed on the same plan branch. Implementation comments use
-reopen, revised tasks, implementation, gate, audit, submit and a new push to the existing
-PR. A changed candidate needs review of the new tip. Agent-facing next actions stop at
-the review handoff and never prescribe self-merge. Claim eligibility still requires
-the approved plan on the current published trunk; submission alone never unlocks work.
+Humans review both plans and implementations. Plan corrections stay on the planning branch;
+implementation corrections use reopen and repeat the gate, audit, submit and push sequence.
+Changed tips need renewed review. Agent instructions never prescribe self-merge. Claim
+requires the plan on current published trunk.
 
-Document how the operator reserves direct trunk writes and final merge authority outside
-the agent's credentials, and how to verify that separation with a disposable repository.
-Cover the empty-base publication before protection and the first PR after protection.
-Required tests alone do not prove human approval. An agent with the operator's credentials
-or an available bypass can still self-merge; a status or local approval marker cannot fix
-that. Distinguish kit's tested refusals from verified remote permission enforcement and
-from settings that remain unverified. This extends the review boundary stated in 0076.
+Document and rehearse empty-base publication, branch protection and the first PR in a
+disposable repository. Reserve direct trunk writes and final merge authority outside agent
+credentials. Required tests alone do not enforce human approval. Report verified permissions
+separately from unverified settings. This extends 0076's review boundary.
 
 ## Tasks
 

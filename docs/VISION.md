@@ -58,6 +58,8 @@ cannot recover from the code. A ticked box in its implementing commit records th
 Log records changes to the approved plan. Human-directed exploration records its decisions
 retrospectively through harvest, then receives implementation review.
 
+Design prose stays short: facts, decisions and constraints needed for review.
+
 Every field, rule, command and document is weighed both ways: what it costs the person
 doing the work now, and what it saves the one who has to understand it later. Something
 that fails both does not belong in the kit, whatever else it improves.

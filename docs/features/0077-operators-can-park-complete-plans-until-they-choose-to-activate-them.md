@@ -20,35 +20,24 @@ Pausing an active claim. Preserve and hand off ongoing work through the existing
 
 ## Design
 
-Add status Parked and commands `kit park <id> "<reason>"` and
-`kit activate <id>`. Parked keeps the same id, design, dependencies and task boxes;
-activation returns it to Draft. Dropped keeps its existing meaning. This extends 0075's
-lifecycle without changing the meaning or availability of existing Draft documents.
+Add Parked and two commands: `kit park <id> "<reason>"` and `kit activate <id>`.
+Parking preserves the id, design, dependencies and tasks. Activation returns it to Draft;
+Dropped remains permanent retirement. Existing Draft behavior stays unchanged.
 
-Parking and activation are reviewed changes on a planning branch. The command commits
-only its feature change and records the transition reason in Log; activation records
-that the operator chose to make the plan available. Neither command merges or acquires
-a claim. The published trunk determines availability across clones: parking becomes
-shared after merge, and activation does not permit a claim before its own review merge.
-An operator can draft, finish and park a new plan on the same planning branch.
+Both transitions commit only the target feature on a planning branch and record the
+reason in Log. They require human review through merge before changing shared availability.
+Parking requires a complete, unstarted Draft; activation revalidates Parked. Refuse active
+claims, terminal history, ambiguous documents, uncommitted target edits and unknown remote
+state. Repeated transitions are no-ops. Reopen cannot activate parked work.
 
-Both commands require one unambiguous document and refuse active claims, terminal
-history, unrelated dirty changes to the target and unreadable remote evidence. Parking
-requires a complete unstarted Draft; activation requires Parked and validates the plan
-again. Repeating an already completed transition is a no-op. Reopen, including repair,
-must not become an alternative way to activate a parked feature.
+Next shows parked plans separately in text and additive JSON, with a reason and no build
+action. Claim refuses them, including stale-clone attempts. Dependents wait for implemented,
+integrated prerequisites. Parking creates no stalled-work or unanswered-question warning;
+ordinary document validation still applies.
 
-`kit next` lists parked plans separately in text and an additive JSON group, with their
-reason and no implementation action. A board containing only parked plans says to wait
-for operator activation. `claim` refuses Parked consistently, including direct calls
-and stale checkouts. A dependent remains blocked until its prerequisite is implemented
-and integrated, not merely activated. Parking is not stalled work or an unanswered question;
-malformed documents, leaked secrets and other real drift remain auditable.
-
-Use a status rather than an optional eligibility field: an older kit already refuses to
-claim a status other than Draft, whereas it could ignore a new field and start parked work.
-Verify that behavior against the supported previous binary. Update all writers before
-using the commands; document older audit and repair limitations without rewriting history.
+Use a status so older clients refuse claims rather than ignore a new eligibility field.
+Verify previous-version refusal and document coordinated upgrades and repair limitations.
+This extends 0075's lifecycle.
 
 ## Tasks
 
