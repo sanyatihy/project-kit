@@ -2,78 +2,67 @@
 
 ## Supported use
 
-Kit runs on macOS and Linux with git as its only runtime dependency. Windows is outside
-the v1.0 support scope. Go and Python are the supported scaffolds.
+macOS and Linux; git is the only runtime dependency. Go and Python scaffolds are supported.
+Windows is outside v1.0 support. Verified baseline:
 
-The supported baseline is git 2.39.5, GNU make 3.81 for development gates, Go 1.26.4
-for source builds and the Go scaffold, and Python 3.12.9 with uv 0.12.10 for the Python
-scaffold. Older versions are not certified. Go projects record their toolchain in go.mod;
-the linter is v2.12.2. Python selects the 3.12 interpreter line in .python-version.
-Run make sync once and commit uv.lock before the first CI run. The lockfile records
-resolved development dependencies; CI uses uv sync --locked and the pinned uv version.
-The v1 candidate was exercised on macOS 15.7 and Debian 12, both arm64. Other architectures
-need the same gates before claiming validation; CI supplies additional runner evidence.
+- git 2.39.5; GNU make 3.81 for development gates.
+- Go 1.26.4 for source builds and scaffolds; golangci-lint v2.12.2.
+- Python 3.12.9 with uv 0.12.10. Run make sync and commit uv.lock before CI;
+  CI uses uv sync --locked. .python-version selects the 3.12 line.
+- Rehearsed on macOS 15.7 and Debian 12, arm64. Older tools and other architectures
+  need validation; CI supplies additional runner evidence.
 
-Each agent uses its own checkout. Agents sharing a remote upgrade together. One binary
-cannot enforce human review when agents can use the human's merge credentials.
+Agents use separate checkouts and upgrade together. Shared human credentials cannot
+enforce human-only approval; reserve merge authority outside the agent.
 
-## What stays compatible through v1.x
+## Stable through v1.x
 
-- Canonical command names, documented flags and exit meanings remain compatible.
-  Exit 0 means success, 1 means a completed negative result, and 2 means refusal or an
-  incomplete operation. For claim, 0 also includes safely resuming your recorded claim.
-- Existing JSON fields retain their types and meanings. Additional fields may appear;
-  consumers ignore unknown fields. Human-readable output is not a parsing interface.
-- Audit identifiers remain stable. Additional checks and stronger validation of unsafe
-  states may change whether a gate passes and are called out in release notes.
-- Feature ids, frontmatter keys and parsed section headings remain supported. Keep the
-  machine-readable keys, headings and statuses in English; body prose may use any language.
-- Legacy Shipped/shipped: snapshots remain readable and frozen after integration.
-  ship and reset remain aliases of submit and reopen with the current safety guards.
-- init preserves application files, existing feature documents and customized stack files.
-  Only the real Work protocol section is refreshed; house rules belong outside it.
+- Canonical commands, flags and exit meanings: 0 success, 1 completed negative result,
+  2 refusal/incomplete operation. Claim 0 includes recovery of recorded ownership.
+- Existing JSON field types and meanings; additive fields are allowed. Ignore unknown
+  fields. Human-readable wording is not a machine interface.
+- Audit identifiers. New checks or stricter unsafe-state validation appear in release notes.
+- Feature ids, frontmatter keys and parsed headings. Keep keys, headings and statuses
+  English; body prose may use another language.
+- Legacy Shipped/shipped: and ship/reset aliases, with current guards and frozen history.
+- Init preserves application files, feature docs and custom stack files. Only the real
+  Work protocol section refreshes; keep house rules outside it.
 
-Breaking removals or changed machine meanings require a new major release. Internal Go
-packages, test implementation, branch display titles and prose wording are not public APIs.
+Breaking removals or changed machine meanings need a major release. Internal Go packages,
+tests, prose and branch display titles are not public APIs.
 
 ## Upgrade from v0.7 or an untagged predecessor
 
-1. Pause writers sharing the remote. Commit and push valuable work; record which checkout
-   owns each in-flight claim. Keep those checkouts, including their git metadata.
-2. Install the chosen published kit version on every machine and run kit version. Avoid
-   mixing old writers with v1 claims: the old filename lock cannot coordinate the new
-   immutable id lock. Merely renaming an old branch is not a migration.
-3. Run kit init in each project. Review its diff and commit the protocol refresh through
-   normal review. Existing Makefiles and CI are preserved; compare them with the current
-   scaffold and apply relevant gate fixes explicitly. init is not a stack-file updater.
-4. Run kit audit --strict online, fetching advertised branch objects when requested.
-   Resolve duplicate ids and malformed plans. Never rewrite integrated feature history.
-5. Resume existing legacy branches in their original checkouts. New claims use work/<id>
-   and carry a unique empty claim commit. Local git refs retain acquisition evidence and
-   confirmed ownership; keep them until release. Claim retries reconcile interruptions.
+1. Pause writers. Commit and push valuable work; record its owning checkouts. Preserve
+   those checkouts and git metadata.
+2. Install the chosen release everywhere and run kit version. Old filename claims and
+   new work/<id> claims cannot safely coordinate mixed writers; renaming is not migration.
+3. Run kit init per project and review the protocol diff normally. Compare preserved
+   Makefiles and CI against current scaffolds; init does not update existing stack files.
+4. Run kit audit --strict online; fetch missing advertised objects. Resolve duplicate ids
+   and malformed plans without rewriting integrated history.
+5. Resume legacy work on its existing branches. New claims use immutable ids and unique
+   empty receipts. Preserve local acquisition/ownership refs until release.
 
-Changed operations from v0.7:
+Changed operations:
 
-| Previous operation | Current operation |
+| Previous | Current |
 | --- | --- |
-| ship a completed feature | submit; status Submitted and submitted: date |
+| ship | submit; status Submitted and submitted: date |
 | reset review changes | reopen on the unmerged feature branch |
-| reset an invalid/missing status | reopen --repair |
-| revive a Dropped plan | draft a new feature for approval |
-| release --force | release --discard; foreign claims and dirty files remain protected |
-| drop an id with no local doc | drop --reservation for explicit unused-id cleanup |
+| reset invalid/missing status | reopen --repair |
+| revive Dropped | new feature for human approval |
+| release --force | release --discard; ownership/dirty-work guards remain |
+| drop id without a doc | drop --reservation for unused-id cleanup |
 | shipped-not-pushed / shipped-no-date / done-not-shipped | submitted-not-pushed / submitted-no-date / done-not-submitted |
 
-An unknown push outcome preserves the attempt. Retry kit claim <id> from that clone
-when the remote is reachable. A confirmed competing winner returns exit 1. Do not delete
-refs by hand or decide ownership solely because two branches started at the same commit.
-A worktree creation warning means the claim is already held: preserve any obstructing
-files, then retry claim. Offline output labels cached observations; it cannot certify
-current remote ownership, publication or integration.
+Unknown push outcome: retain the receipt and retry claim from that clone when online.
+Confirmed competing winner: exit 1. Never infer ownership from matching starting commits
+or delete refs by hand. Worktree creation warning: the claim is won; preserve obstructing
+files and retry. Offline evidence cannot certify remote ownership or integration.
 
 ## Release boundary
 
-A Submitted feature is awaiting implementation review. After the human merges, the
-release operator validates the merged trunk, publishes the intended version and checks
-an installation of that exact version. Required remote checks and merge permissions are
-release conditions. An unverified setting remains pending; local tests do not certify it.
+Submitted means awaiting review. After human merge, the release operator validates trunk,
+publishes the version and verifies its installation. Required checks and remote merge
+permissions are release conditions; local fixtures do not certify live enforcement.

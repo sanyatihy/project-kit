@@ -4,6 +4,7 @@ package main
 // destroys anything — it is run on populated repos, and repeatedly.
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -272,7 +273,11 @@ Below the section.
 			t.Errorf("refreshing the protocol destroyed %q, which is not kit-owned", keep)
 		}
 	}
-	if !strings.Contains(got, "take a feature with `kit claim <id>`") {
+	protocol, err := fs.ReadFile(templates, "templates/AGENTS-section.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, strings.TrimSpace(string(protocol))) {
 		t.Error("the refreshed section does not contain the current protocol")
 	}
 }
