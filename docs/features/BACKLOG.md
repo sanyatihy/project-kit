@@ -117,13 +117,14 @@ carries the incident beside the constraint.
 **Value:** a reader of the code gets the constraint without the archaeology.
 **Promote when:** fired — measured 2026-09-01, and the rule that judges it now exists.
 
-## Compress battle-tested language checklists only with paired evidence
+## Compress battle-tested agent guidance only with paired evidence
 
-Keep the original Go/Python checklist wording. Baseline: 237ab912c288dc9722768132d17eb35e8ffafce2;
+Keep the original Go/Python checklists, AGENTS.md and embedded Work protocol. Baseline: 237ab912c288dc9722768132d17eb35e8ffafce2;
 the shorter 0080 candidates are at 33ee31f. The operator deferred their compression.
 Compare unchanged task fixtures and runner settings in fresh, repeated A/B sessions;
-review rule coverage and task quality before considering context savings.
+review rule coverage and task quality before considering context savings. Protocol cases
+must cover human approval, claim ownership, failed checks and safe recovery.
 
-**Value:** smaller instruction context without losing established engineering guidance.
+**Value:** smaller instruction context without losing established behavior or engineering guidance.
 **Promote when:** paired behavioral evidence supports a candidate and the operator chooses
-checklist compression; smaller word counts or passing kit tests alone do not qualify.
+guidance compression; smaller word counts or passing kit tests alone do not qualify.

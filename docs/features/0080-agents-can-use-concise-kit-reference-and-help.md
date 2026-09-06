@@ -47,7 +47,7 @@ remains unchanged.
 - [x] Correct the harvest help to distinguish the planning restriction from enforced refusals
 
 - [x] Restore the original Go/Python checklists and defer their compression with pinned comparison references
-- [ ] Restore baseline AGENTS.md and its embedded protocol and defer their compression
+- [x] Restore baseline AGENTS.md and its embedded protocol and defer their compression
 - [ ] Account for baseline rules, exceptions and examples in the retained prose changes
 - [ ] Run paired A/B tasks and retain original wording wherever equivalent value is not established
 

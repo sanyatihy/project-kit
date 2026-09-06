@@ -56,84 +56,99 @@ Three constraints that are easy to trip over:
      it are lost on the next run; durable house rules go above this comment. -->
 ## Work protocol
 
-Act on the human's requested scope. Agents run kit and manage the workflow; humans
-approve plans and merge work. Run `kit next` at session start and after finishing or
-releasing work. `kit audit` reports drift; `kit help <command>` explains refusals.
-Fix the cause; do not bypass it with raw git or hand edits.
+Run `kit next` at the start of every session and after finishing or releasing work.
+It names the feature and next task. `kit audit` reports drift; `kit help <command>`
+explains a refusal. Fix its cause rather than bypassing it with raw git or hand edits.
 
 ### Planning
 
-Plan when asked. Unplanned exploration uses the spike route below.
+Plan when asked. For work that began without a plan, use the spike route below.
 
-1. Read `docs/VISION.md`. A feature is a verifiable improvement: capability, removal,
-   security, reliability, performance, cost or maintainability. Name who benefits and
-   what observable result proves it.
-2. Prefer one coherent, safely reviewable PR. Implementation layers, migration, tests
-   and docs are task boxes. Split for independent value, separate approval or review
-   size, not agent count. Small changes without design decisions may be chores.
-   Removing integrated work needs a new feature citing its frozen doc.
-3. With no commits, commit setup on trunk first. Draft the round with `kit new "<title>"`
-   on one `plan/<round>` branch with no four-digit id. Keep status Draft; `needs:` names
-   prerequisite features and stays empty for independent work.
-4. Push the round and open one PR. Human approval through merge is required before
-   implementation. After merge, update a trunk checkout with `git pull --ff-only`,
-   then run `kit audit` and `kit next`.
-5. Put uncertainty in Open questions. Use `kit block <id> "<question>"` for human
-   decisions; never invent the answer. Record the answer in the plan, remove its inbox
-   line and commit both. Integrate the answer into paused checkouts before resuming.
+1. Read `docs/VISION.md` first. A feature is a verifiable improvement serving its
+   outcomes or constraints: a capability added or removed, an exposure closed, a failure
+   eliminated, or a measurable gain in performance, cost or maintainability. State who
+   benefits and what observable result proves the improvement.
+2. Prefer the largest coherent outcome a reviewer can safely assess in one pull request.
+   Keep implementation layers, migration, tests and documentation as task boxes within
+   that feature. Split when outcomes have independent value, need separate approval, or
+   cannot be reviewed safely together. Do not split merely to give each agent a doc.
+   A feature doc holds decisions worth approving before building; a small change with no
+   such decision can be a task box or an ordinary chore. Removing an integrated feature
+   is new work citing its frozen doc; `drop` only retires an unbuilt plan.
+3. With no commits, commit setup on the trunk before creating the planning branch.
+   Draft the whole round with `kit new "<title>"` on one `plan/<round>` branch whose
+   name contains no four-digit id. Fill `needs:` with prerequisite feature ids; leave
+   it empty when work can start independently. Keep every draft `status: Draft`.
+4. Push the planning branch and open one pull request for human review. Planned features
+   require the human's approval through that merge before implementation starts. After it
+   merges, return to a trunk checkout, pull with --ff-only, and run kit audit and kit next.
+5. Put uncertainty in `## Open questions`. Use `kit block <id> "<question>"` for a
+   decision only the human can make. Never invent a product decision to unblock yourself.
+   Once answered, record the decision in the affected plan, remove its blocking inbox
+   line, and commit both. Integrate that answer into a paused checkout before resuming.
 
 ### Taking work
 
-6. From updated trunk, run `kit claim <id>`. Exit 0: yours; use the named worktree.
-   Exit 1: not yours; run `kit next` and choose other work. Exit 2: fix the reported
-   cause before retrying. Never clean up another agent's claim or worktree.
-7. Each agent has its own checkout, index and claim. A branch citing a four-digit id
-   is a claim; chores and spikes cite none.
-8. Human-directed exploration uses its own spike branch. Never use a spike to bypass
-   a pending plan's approval. Finish with `kit harvest "<title>" --box "<outcome>"`;
-   it names the branch after the feature. Fill Problem and Design before submitting.
-   With no commits, harvest creates an empty trunk base; publish it before the first PR.
-   Use `kit harvest --nothing "<lesson>"` for discarded exploration.
+6. From an updated trunk checkout, take a feature with `kit claim <id>`. Read the exit code:
+   - **0**: the claim is yours; work in the worktree the command names.
+   - **1**: it is not yours; run `kit next` and choose different work.
+   - **2**: the command could not run; fix the reported cause before retrying.
+   A claimed branch or worktree belonging to another agent is not yours to clean up.
+7. Each agent works in its own checkout. Do not share a working tree, index or claim.
+   A branch citing a four-digit id is a claim; ordinary chores and spikes cite none.
+8. For human-directed exploration, work on a spike branch of its own. Do not turn a
+   pending plan into a spike to bypass approval. When done, `kit harvest "<title>"
+   --box "<outcome>"` records the work and names its branch after the feature. Fill
+   Problem and Design before submitting. With no commits, harvest creates an empty trunk
+   base; publish it for the first PR. `kit harvest --nothing "<what it showed>"` records
+   a discarded spike.
 
 ### Doing the work
 
-9. Read the feature design, `docs/TECH.md` and the applicable `kit help go-checklist`
-   or `kit help python-checklist` before coding.
-10. Implement the first unticked Tasks box and tick it in that commit. One box, one
-    commit; the subject names the outcome. Continue until ready for review or blocked.
-    Explain only what the diff and plan cannot.
-11. State assumptions and observable completion criteria; verify them. Match project
-    style. Change only what is required; avoid speculative abstractions and cleanup.
-12. Record discoveries as task boxes, features or BACKLOG entries. Append boxes unless
-    they block earlier work. Revise incorrect tasks in a separate commit with the
-    reason in Log; never silently delete unfinished work.
-13. `kit drop <id> "<why>"` retires unbuilt plans. `kit release <id>` surrenders untouched
-    work. To pause changed work, commit and push, open an unfinished PR and state what remains.
-14. Never put secrets in docs; name the variable and storage location. Only `kit submit`,
-    `kit drop` and `kit reopen` write status and submitted fields.
+9. Read the feature doc for its design and `docs/TECH.md` for the system it changes.
+   Read `kit help go-checklist` or `kit help python-checklist` before writing code.
+10. Do the first unticked Tasks box. Tick it in the commit implementing it, then continue
+    to the next box until the feature is ready for review or blocked. One box, one commit;
+    the subject names the outcome. Explain only what the diff and feature doc cannot.
+11. State assumptions and an observable definition of done before coding; verify it.
+    Change only what the task requires. Match the project's style and avoid speculative
+    abstractions or adjacent cleanup.
+12. Discovered work becomes a task box, a new feature, or a BACKLOG entry. Append a box
+    unless it blocks the work below. Revise an incorrect task in its own commit with
+    the reason in Log; never silently delete unfinished work.
+13. Use `kit drop <id> "<why>"` for a plan that should not be built. Use `kit release
+    <id>` to surrender untouched work. To pause work with changes, commit and push it,
+    open the pull request unfinished, and say what remains.
+14. Never put real secrets in docs. Name the variable and where its value lives.
+    Only `kit submit`, `kit drop` and `kit reopen` write status and submitted fields.
 
 ### Finishing and review
 
-15. Move durable facts to TECH; Log holds only plan changes and may be empty. Put
-    validation and review context in the PR.
-16. Run the project gate, `kit audit --strict`, then `kit submit <id>`, in that order.
-    Failed or incomplete checks are not passes. Offline audit covers local checks;
-    finish online audit before handoff.
-17. Push, open the PR and hand it to the human. Submit means ready for review;
-    integration requires merge. Never merge your own work. With no remote, state that
-    limitation and leave the branch for local review.
-18. For review changes, `kit reopen <id> "<why>"`, revise tasks, implement, then repeat
-    gate, audit and submit. Submitted docs on trunk are frozen; further work needs a new doc.
-19. After merge, update trunk with `git pull --ff-only`, then run `kit audit` and `kit next`.
-    Dependencies unlock only when merged work is here. Resolve duplicate offline ids
-    before claiming either document.
+15. Before submitting, move durable facts to `docs/TECH.md`; leave only changes to the
+    plan in Log, which may be empty. Put validation and review context in the PR.
+16. Run the project's gate, then `kit audit --strict`, then `kit submit <id>`, in that
+    order. A failed or incomplete check is not a pass. Explicit offline audits cover
+    local checks only; complete the online audit before handing off to review.
+17. Push the branch, open the pull request, and hand it to the human reviewer.
+    `submit` records readiness for review; the feature is integrated only after merge.
+    You never merge your own work.
+    With no remote, say so and leave the work on the branch for local review.
+18. For review changes before merge, run `kit reopen <id> "<why>"`, revise the tasks,
+    implement the changes, and repeat the gate and submit steps. A Submitted doc on the
+    trunk is frozen history; further changes need a new doc citing it.
+19. After any merge, return to a trunk checkout, pull with --ff-only, then run
+    `kit audit` and `kit next`. Dependencies unlock only once their merged work is here.
+    Duplicate ids from offline drafting must be resolved before either doc is claimed.
 
 ### Writing
 
-- Keep facts, decisions, constraints and measurements concise; omit git-recoverable narration.
-- One home per fact: TECH for current contracts, feature for plan, Log for plan changes,
-  PR for validation and handoff. Cite feature ids instead of repeating their reasoning.
-- Comments explain constraints code cannot express. Prefer tool enforcement to prose;
-  remote permissions and required checks enforce human merge authority.
+- Keep decisions, constraints and measurements; omit narration recoverable from git.
+- Give each fact one home: TECH for what remains true, the feature for its plan, Log
+  for a change to that plan, and the PR for validation and handoff.
+- Cite another feature by id instead of copying its reasoning.
+- A comment explains a contract or constraint the code cannot express.
+- Prefer enforcement in the tool to another rule in this protocol. Kit can refuse its
+  own commands; remote permissions and required checks enforce who may merge.
 
-Formats: `kit help template`, `kit help backlog`, `kit help checks`.
+`kit help template` gives the doc format, `kit help backlog` the deferred-entry format,
+and `kit help checks` the audit checks and their limits.
