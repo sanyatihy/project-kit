@@ -9,24 +9,31 @@ needs:
 
 ## Problem
 
-<!-- What was this for? The tension that made it worth doing, in one to three sentences.
-     The diff says what was built and cannot say why it was worth building. -->
+Long reference documents and repeated workflow explanations consume agent context.
+Agents need concise current contracts, command effects, refusals and recovery steps.
 
 ## Non-goals
 
-<!-- What this deliberately does not do, and where that lives instead. Delete the section
-     if nothing was ruled out. -->
+New workflow commands or changed lifecycle rules. The guided workflow is planned separately.
 
 ## Design
 
-<!-- What was chosen and what it beat: an alternative rejected, a constraint that shaped
-     the answer, a cost accepted. Only what a reader cannot recover from the code. -->
+Condense TECH, command help, protocol and embedded reference templates. Preserve command
+interfaces, lifecycle rules, recovery constraints and generated house rules. Keep the
+agent responsible for commands and the human responsible for approval and merge.
+
+Remove incident narratives and duplication. Keep language checklists as review aids;
+preserve their practices without adding a model-certification requirement. The protocol
+refresh test compares the actual embedded template instead of a fixed sentence.
+
+Distinguish required protocol behavior from command-enforced refusals. Command logic
+remains unchanged.
 
 ## Tasks
 
 - [x] Reduce TECH and embedded help while preserving workflow contracts, recovery guidance and generated house rules
+- [ ] Correct the harvest help to distinguish the planning restriction from enforced refusals
 
 ## Log
 
-<!-- What the doing taught that a plan would not have predicted: a premise falsified, an
-     approach abandoned, a measurement that changed the shape. -->
+- 2026-09-06 — Added a help correction after checking the described harvest refusals against its implementation.
