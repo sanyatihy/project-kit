@@ -152,6 +152,7 @@ The branch's relationship to trunk determines the handoff:
 
 | State | Next action |
 | --- | --- |
+| Parked | Wait for the operator to request activation; agent opens a planning PR |
 | Draft with unfinished tasks | Implement the next box |
 | All tasks complete | Gate, audit, submit |
 | Completion stamp still local | Push and open the implementation PR |
@@ -168,6 +169,13 @@ Unknown or missing statuses require `reopen --repair`; Dropped plans need a new 
 feature to return. `release --discard` permits deleting unmerged committed work from
 this clone's claim, and always preserves uncommitted files and foreign claims.
 `drop --reservation` explicitly releases an unused id; a missing doc alone deletes nothing.
+
+To retain a complete plan for later, ask the agent to park it. On a `plan/<round>`
+branch, `kit park <id> "<reason>"` preserves the plan as Parked; `kit activate <id>`
+returns it to Draft when requested. Both changes require human review through merge.
+Parking refuses ongoing claims. Use `block` for unanswered decisions, `release` for
+untouched claims, and an unfinished PR to preserve ongoing work. `reopen --repair`
+cannot activate parked work. Upgrade all writers before using Parked.
 
 ## Exploring first
 
@@ -202,9 +210,11 @@ kit new   <title...>                     next free ID, date filled in, status Dr
 kit claim <id>                           push the branch; exit 1 means you lost it
 kit release <id> [--discard]               give a claim back; refuses over work, and over
                                          a claim this clone never created
-kit block <id> "<question>" [--fyi]      park a decision only a human can make
+kit block <id> "<question>" [--fyi]      record a decision only a human can make
 kit submit  <id>                           verify every box, stamp the date, submit
 kit reopen <id> "<why>" [--repair]       reopen review; explicit invalid-status repair
+kit park <id> "<why>"                   retain a complete plan for later
+kit activate <id>                       propose activation through planning review
 kit drop  <id> "<why>" [--reservation]   retire a plan; explicit unused-id cleanup
 kit next  [--json] [--offline]           the next action for this checkout
 kit audit [--json] [--strict] [--offline]  --strict exits 1 on HIGH, for CI
@@ -247,12 +257,12 @@ it cannot drift. Thresholds are constants in `internal/kit`.
 ## The feature doc
 
 One file per feature in `docs/features/`, named `NNNN-name.md`. The directory listing is
-the board. Frontmatter carries `id`, `title`, `status` (`Draft → Submitted`, exit
+the board. Frontmatter carries `id`, `title`, `status` (`Parked ↔ Draft → Submitted`, exit
 `Dropped`), `created`, `submitted` and `needs`. Sections: `Problem`, `Non-goals`, `Design`,
 `Tasks`, `Open questions` (optional), `Log`.
 
-Only `kit submit`, `kit drop` and `kit reopen` write a status, and only `kit submit` writes a
-date. There is no status for work in flight — the claim branch says that, and a second
+Only `kit submit`, `kit drop`, `kit reopen`, `kit park` and `kit activate` write status;
+`kit submit` writes the submission date. There is no status for work in flight — the claim branch says that, and a second
 copy in the doc could only disagree with it.
 
 `needs:` lists the feature ids whose implementation must merge before this one can

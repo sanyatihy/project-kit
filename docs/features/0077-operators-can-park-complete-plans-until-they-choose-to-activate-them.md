@@ -44,6 +44,6 @@ This extends 0075's lifecycle.
 
 - [x] Preserve full plans through command-owned parking and activation transitions, with safe refusal and retry behavior
 - [x] Make next, claim, dependencies and audit agree on parked availability, including activation awaiting merge and stale-clone attempts
-- [ ] Document operator activation, distinguish parking from blockers and claim release, and verify text, JSON and previous-version safety
+- [x] Document operator activation, distinguish parking from blockers and claim release, and verify text, JSON and previous-version safety
 
 ## Log

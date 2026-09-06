@@ -52,9 +52,10 @@ Workflow:
   Exploration: use a spike branch, then harvest and the same review sequence.
   Finish this checkout's claim first; otherwise take the lowest ready id.
 
-State: Draft → Submitted; Dropped retires a plan. Submitted is integrated only on
-trunk. Only submit, drop and reopen write status fields. Legacy ship/reset alias
-submit/reopen. BLOCKING inbox questions and unmet needs: prevent claims.
+State: Parked ↔ Draft → Submitted; Dropped retires a plan. Parking and activation
+need a planning PR merge. Submitted is integrated only on trunk. Status writers:
+submit, drop, reopen, park, activate. Legacy ship/reset alias submit/reopen.
+BLOCKING inbox questions and unmet needs: prevent claims.
 
 Exit codes:
   0  success
@@ -107,7 +108,8 @@ Push the planning branch and open a PR. The human's merge changes shared availab
 
 When the operator asks, revalidate a Parked plan and commit it as Draft on a
 plan/<round> branch with no feature id. Uses park's plan, claim and remote guards.
-Already Draft is a no-op. Push and open a PR for human review; implementation
+Already Draft is a no-op. This schedules work; block records a human question,
+release surrenders a claim, and drop retires a plan. Push and open a PR for human review; implementation
 can start only after activation merges and the trunk checkout is updated.
 `,
 	"init": `kit init [PATH] [--stack STACK] [--forge FORGE]
@@ -274,7 +276,8 @@ Revise an unmerged submission: set Draft, clear submitted:, add the reason to Lo
 and commit the doc. Unknown or missing statuses require --repair. Dropped stays
 retired; draft a new feature if the operator wants that work again.
 
-Refuses already Draft, foreign claims, ambiguous docs or missing frontmatter.
+Refuses already Draft, Parked (including --repair), foreign claims, ambiguous docs
+or missing frontmatter. Use activate for an operator-requested scheduling change.
 Reopening Submitted requires an unmerged working branch and readable published
 trunk (local trunk with no remote). Fetch missing objects before retrying.
 Submitted on trunk is frozen history and needs a new feature.
