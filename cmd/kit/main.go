@@ -767,12 +767,12 @@ func runSubmit(args []string) int {
 			res.Trunk, res.Merged)
 	}
 	if res.HasRemote {
-		fmt.Printf("  push the branch and stop — open the pull request; reviewing and merging are not yours\n")
+		fmt.Printf("  push the branch and open the pull request; reviewing and merging are not yours\n")
 	} else {
 		fmt.Printf("  this project has no remote, so there is nowhere to hand this off.\n")
 		fmt.Printf("  say so rather than merging it yourself — merging is not yours\n")
 	}
-	fmt.Printf("  kit next\n\n")
+	fmt.Printf("  after handoff, return to updated trunk and run kit next; continue independent approved work\n\n")
 	return 0
 }
 
@@ -953,6 +953,12 @@ func printPlan(plan kit.Plan, color bool) {
 
 	if plan.Guidance != "" {
 		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
+		if plan.Action != nil {
+			fmt.Printf("  actor: %s · action: %s\n  checkout: %s\n", plan.Action.Actor, plan.Action.Kind, plan.Action.Checkout)
+			if len(plan.Action.Command) > 0 {
+				fmt.Printf("  command: %s\n", strings.Join(plan.Action.Command, " "))
+			}
+		}
 		// The command goes on its own line, unwrapped, so it can be copied. The
 		// guidance says what to do; this is the thing to run. Not while something is
 		// awaiting review: there the guidance says merging is the work, and a second

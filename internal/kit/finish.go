@@ -10,12 +10,13 @@ import (
 
 // Handoff reports git evidence, never inferred PR creation or human approval.
 type Handoff struct {
-	Base      string `json:"base"`
-	Candidate string `json:"candidate"`
-	Branch    string `json:"branch"`
-	Checkout  string `json:"checkout"`
-	Published bool   `json:"published"`
-	Next      string `json:"next"`
+	Base       string `json:"base"`
+	BaseCommit string `json:"base_commit"`
+	Candidate  string `json:"candidate"`
+	Branch     string `json:"branch"`
+	Checkout   string `json:"checkout"`
+	Published  bool   `json:"published"`
+	Next       string `json:"next"`
 }
 
 // Finish binds gates and review publication to the candidate actually checked.
@@ -279,13 +280,24 @@ func publishHandoff(r *Repo) (*Handoff, error) {
 	branch := r.HeadBranch()
 	base := r.Trunk()
 	candidate := strings.TrimSpace(r.git("rev-parse", "HEAD"))
-	h := &Handoff{Base: base, Candidate: candidate, Branch: branch, Checkout: r.Root}
+	h := &Handoff{Base: base, BaseCommit: strings.TrimSpace(r.git("rev-parse", r.trunkRef())), Candidate: candidate, Branch: branch, Checkout: r.Root}
 	if remote == "" {
 		h.Next = "agent: add the intended remote and retry finish; PR review is pending, not complete"
 		return h, nil
 	}
 	if _, ok := r.remoteHeads(); !ok {
 		return nil, fmt.Errorf("publication is unknown; reconnect and retry kit finish")
+	}
+	if _, exists := r.remoteTip(remote, base); !exists {
+		ref := r.trunkRef()
+		if !r.isReviewBase(ref) {
+			return nil, fmt.Errorf("remote review base is missing; publish the reviewed trunk before finishing")
+		}
+		baseTip := strings.TrimSpace(r.git("rev-parse", ref))
+		remoteRef := "refs/heads/" + base
+		if _, err := r.gitRun("push", "--porcelain", "--force-with-lease="+remoteRef+":", remote, baseTip+":"+remoteRef); err != nil {
+			return nil, fmt.Errorf("review base publication is unconfirmed; retry finish: %w", err)
+		}
 	}
 	if tip, ok := r.remoteTip(remote, branch); ok && tip != candidate && !r.reaches(tip, candidate) {
 		return nil, fmt.Errorf("remote candidate differs; fetch and reconcile its work before retrying finish")
@@ -303,6 +315,11 @@ func publishHandoff(r *Repo) (*Handoff, error) {
 	if fresh.HeadBranch() != branch || strings.TrimSpace(fresh.git("rev-parse", "HEAD")) != candidate {
 		return nil, fmt.Errorf("local candidate changed during publication; run finish again before review")
 	}
+	baseTip, ok := fresh.remoteTip(remote, base)
+	if !ok {
+		return nil, fmt.Errorf("review base is unknown after publication; reconnect and retry finish")
+	}
+	h.BaseCommit = baseTip
 	h.Published = true
 	h.Next = "agent: open or update the PR for this base and candidate using the available forge interface. Human: approve and merge. Then agent: return to an updated trunk checkout, run kit next, and continue independent approved work."
 	return h, nil

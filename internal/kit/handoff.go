@@ -93,7 +93,7 @@ func (r *Repo) checkoutHandoff(id string) string {
 	if tip != head {
 		return id + " has local changes to submit. Run the project gate and kit audit --strict, push this branch, then open or update its pull request."
 	}
-	return id + " is awaiting review. For requested changes, run kit reopen " + id + " \"<why>\", revise tasks, implement, and repeat the gate, submit and push. After the human merges, return to an updated trunk checkout."
+	return id + " is awaiting review. For requested changes, run kit reopen " + id + " \"<why>\", revise tasks, implement, and repeat the gate, submit and push. After handoff, return to an updated trunk checkout and run kit next to continue independent approved work; this review does not stop the session. After the human merges, update trunk again."
 }
 
 // mergedDraftClaim identifies implementation merged before submission without

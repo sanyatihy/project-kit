@@ -57,6 +57,7 @@ type Waiting struct {
 // Plan sorts the open features into what is yours, what you can start, what is
 // taken, and what is blocked.
 type Plan struct {
+	Action *NextAction `json:"action,omitempty"`
 	// Yours is what the checkout you are standing in already claims. It is separate
 	// from Taken because a claim held by this checkout is not somebody else's, and
 	// reporting it as taken is the tool saying something untrue.
@@ -333,6 +334,7 @@ func Survey(r *Repo) Plan {
 		plan.Checkout = r.foundationIssue
 	}
 	plan.Guidance = guidanceFor(r, plan)
+	plan.Action = actionFor(r, plan)
 	return plan
 }
 

@@ -108,3 +108,32 @@ func TestFinishRequiresReopenForChangesAfterSubmission(t *testing.T) {
 	w.run("reopen", "0007", "review requested change").ok()
 	w.run("finish", "--", "true").ok()
 }
+
+func TestFinishPublishesTheEmptyBaseWhenRemoteIsAddedLater(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	p.run("start", "--work", "Requested change").ok()
+	p.write("product.txt", "kept\n")
+	p.run("finish", "--", "true").fails(2).errHas("fill review facts")
+	feature(p, "0001", "requested-change", "Requested change", "Draft", "- [x] Requested change")
+	p.commitAll("facts")
+	p.run("finish", "--", "true").ok().has("published: false")
+	origin := p.path("../later-origin.git")
+	gitIn(t, p.Root, "init", "--bare", origin)
+	p.git("remote", "add", "origin", origin)
+	p.run("finish", "--", "true").ok().has("published: true")
+	if !hasRemoteBranch(t, p, "main") {
+		t.Fatal("no first-PR base")
+	}
+}
+
+func TestReviewHandoffDirectsContinuationWithoutInventingAPullRequest(t *testing.T) {
+	t.Parallel()
+	w := completedGuidedWork(t)
+	w.run("finish", "--", "true").ok()
+	plan := w.plan("next", "--json")
+	if plan.Action == nil || plan.Action.Actor != "agent" || plan.Action.Kind != "review_handoff" || !strings.Contains(plan.Action.Instruction, "not inferred") || !strings.Contains(plan.Action.Instruction, "independent approved work") {
+		t.Fatalf("missing handoff or continuation: %+v", plan.Action)
+	}
+	w.run("next").ok().has("actor: agent", "action: review_handoff", "independent approved work")
+}
