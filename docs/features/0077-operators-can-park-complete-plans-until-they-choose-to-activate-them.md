@@ -1,9 +1,9 @@
 ---
 id: 0077
 title: Operators can park complete plans until they choose to activate them
-status: Submitted
+status: Draft
 created: 2026-09-06
-submitted: 2026-09-06
+submitted: 
 needs:
 ---
 
@@ -50,3 +50,4 @@ This extends 0075's lifecycle.
 
 ## Log
 - 2026-09-06 — Added review-race coverage: a claim may appear after parking is committed but before the planning PR merges. Next must show ownership and strict audit must flag that conflict.
+- 2026-09-07 — reopen to Draft: Integrate merged 0078 guided workflow and resolve parking conflicts
