@@ -1,9 +1,9 @@
 ---
 id: 0078
 title: Agents can take requested work through a guided kit workflow
-status: Draft
+status: Submitted
 created: 2026-09-06
-submitted: 
+submitted: 2026-09-07
 needs:
 ---
 
