@@ -1,9 +1,9 @@
 ---
 id: 0080
 title: Agents can use concise kit reference and help
-status: Draft
+status: Submitted
 created: 2026-09-06
-submitted: 
+submitted: 2026-09-07
 needs:
 ---
 
