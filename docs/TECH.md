@@ -107,8 +107,10 @@ belong to the agent runner, not kit.
   labels its reduced coverage (`offline: true` in JSON). Neither establishes remote absence.
   Strict online audit fails on an unanswered remote; offline audit names omitted checks.
 - Audit leaves project files unchanged; online reservation checks may refresh refs.
-  `featureChecks` and `repoChecks` use the registry in audit.go. Help is generated from it.
-  Every registered check must have one implementation and a conformance case.
+  Help is generated from the registry in audit.go.
+- **Checks are a table, not a function.** `featureChecks` runs per feature and `repoChecks`
+  once per project; each entry names the registry codes it can report, and a test fails the
+  build if a registered check has no implementation or two claim one code.
 - One defect produces one actionable finding. Severity reflects damage; age is advisory.
   Delete checks for states nobody may repair. Missing VISION/INBOX share no-protocol;
   split-claim and id-mismatch are HIGH. Keep issuer patterns in audit.go, never templates.
@@ -128,10 +130,13 @@ belong to the agent runner, not kit.
 - Git path output uses `-z`. Git reads are batched; adding unclaimed features must not add
   subprocesses. Remote listing and reservation refresh each run at most once per read.
   The process-growth comparison uses 30- and 130-feature boards with identical claims.
-- Remote calls are bounded at 15 seconds. Set `exec.Cmd.WaitDelay` within that budget;
-  killing git alone can leave a helper holding its output pipe. Inject dates into logic.
-  A black-holed remote once took 75s; WaitDelay reduced it to 15.05s. A 5s timeout had
-  excluded a working SSH remote measured at 5.58s.
+- **`exec.CommandContext` kills git and nothing git started.** `git-remote-https` outlives
+  it holding the stdout pipe, so `cmd.Output()` blocks for ever: `next` against a
+  black-holed remote came back in 75s against the 15s its help promises, and in 15.05s
+  once every git command set `cmd.WaitDelay`. The delay comes out of the bound, not on
+  top of it.
+  Remote calls are bounded at 15 seconds. A 5s timeout excluded a working SSH remote
+  measured at 5.58s. Inject dates into logic.
 
 ## Scaffolding and parsing
 
@@ -174,13 +179,24 @@ make release TAG=v1.0.0  # complete gate, validated trunk tag, verified push
 
 CI runs Makefile CI_STEPS: check, vuln, audit. Missing or failed checks fail the gate.
 The Go linter is pinned at v2.12.2; govulncheck at v1.7.0. Scaffolded CI is bounded at
-15 minutes. Build with CGO_ENABLED=0, -trimpath and stripped ldflags; do not export
-CGO_ENABLED=0 into race tests. Version falls back to Go build metadata when unstamped.
+15 minutes. Build with CGO_ENABLED=0, -trimpath and stripped ldflags.
+Version falls back to Go build metadata when unstamped.
 
-Conformance builds the binary once and drives isolated temporary projects with controlled
-gitEnv, not the user's environment. No shared cwd, globals or fixture ordering. Coverage
-of the driver process is not coverage of the tested binary, so no percentage is reported.
-Audit cases start from a clean project. Registry and exercised cases match in both directions.
+- **`CGO_ENABLED=0` must not reach `make test`.** The race detector needs cgo on
+  linux/amd64 but not darwin/arm64, so a file-level export passes locally and fails CI.
+
+**The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
+it with the test suite’s race mode against throwaway projects, asserting on stdout, stderr, exit codes and the files left
+behind. In-tree, because an external script is deleted without anything noticing. Four
+properties are load-bearing. `TestEveryRegisteredCheckIsExercised` compares the cases
+against `kit.Checks` both ways, so a check with no test fails the build. Every audit case
+starts from the same clean project, which must report nothing. Every test is independent —
+own `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind `sync.Once`.
+**And the binary under test gets `gitEnv()`, not `os.Environ()`**: it used to inherit the
+developer's `~/.gitconfig`, so three tests — including the one written to catch the
+`release` deletion bug — passed only on a machine whose `init.defaultBranch` is `main`.
+
+Coverage of the driver process is not coverage of the tested binary; no percentage is reported.
 
 The module is private: installation requires GOPRIVATE and credentials. Preserve existing
 comma-separated GOPRIVATE entries; exported environment values override `go env -w`.

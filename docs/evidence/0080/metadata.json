@@ -83,5 +83,7 @@
     "-session-timeout",
     "20m",
     "Complete TASKS.md using the supplied references. Write all three requested artifacts and finish."
-  ]
+  ],
+  "tested_candidate_commit": "456a8daf08881143a59566b2b2e52ce4cde2f1ba",
+  "reproduction": "Use the pinned A/B source files and fixture-AGENTS.md in separate fresh repositories. Rename docs/TECH.md to kit-tech.md, templates/TECH.md to as-built-template.md, templates/features-TEMPLATE.md to feature-template.md, and templates/AGENTS-section.md to protocol.md. kit-help.md concatenates overview and commandHelp raw strings in source order. Supply TASKS.md; run argv once per fixture in A-B-B-A order. rubric.md is withheld. Localcode must already be serving the recorded configuration."
 }
