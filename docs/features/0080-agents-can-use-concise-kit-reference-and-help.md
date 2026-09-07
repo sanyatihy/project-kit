@@ -36,7 +36,7 @@ Before resubmission, compare baseline and candidate guidance on the same predefi
 using the same localcode model, runner, tools and settings. Use fresh, repeated sessions
 and alternate A/B order. Score task correctness, rule compliance and human intervention
 before context savings. Investigate regressions and retain original wording where value
-is not established. Record actual results and limits in the review evidence.
+is not established. Keep validation artifacts local; report results and limits in the PR.
 
 Distinguish required protocol behavior from command-enforced refusals. Command logic
 remains unchanged.
@@ -51,7 +51,11 @@ remains unchanged.
 - [x] Account for baseline rules, exceptions and examples in the retained prose changes
 - [x] Run paired A/B tasks and retain original wording wherever equivalent value is not established
 
+- [ ] Remove validation artifacts from the PR while preserving their local copy
+
 ## Log
+
+- 2026-09-07 — Operator requested local-only validation artifacts. Integrated merged 0078 routes and release behavior while retaining the restored guidance.
 
 - 2026-09-06 — Added a help correction after checking the described harvest refusals against its implementation.
 - 2026-09-06 — reopen to Draft: Review requires A/B evidence that prose compression preserves behavior, especially the battle-tested language checklists.

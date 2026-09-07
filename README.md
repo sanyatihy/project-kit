@@ -112,24 +112,24 @@ For example, retiring a legacy import format can include migrating callers, dele
 parser, tests and documentation in one feature. Those are task boxes, not four features.
 Split when outcomes stand on their own, approvals differ, or the combined change cannot
 be reviewed safely. Parallel agents are a reason to find independent outcomes, not to
-fragment a coherent one. Small chores need no feature doc unless they hold a decision
-that deserves approval. Removing integrated work gets a new doc citing its frozen history.
+fragment a coherent one. Small directly requested changes use `start --work` and receive a harvested feature
+record before review. Removing integrated work gets a new doc citing its frozen history.
 
 
 | Step | Human | Agent |
 | --- | --- | --- |
 | Decide | Discuss the outcome and settle product choices | Record the vision and unresolved questions |
-| Plan | Ask for a complete feature round | Create `plan/<round>`, use `kit new`, fill designs, tasks and `needs:`, push one planning PR |
+| Plan | Ask for a complete feature round | Run `kit start --plan "<round>"`, use `kit new`, fill designs, tasks and `needs:`, then `kit finish` and open one planning PR |
 | Approve the plan | Review and merge the planning PR | Address plan feedback on that branch |
 | Build | Let agents proceed | Update a trunk checkout, run `kit audit` and `kit next`, claim one feature, work in its worktree through every task |
-| Submit | Review the implementation PR | Run the project gate, `kit audit --strict`, `kit submit <id>`, push and open the PR |
+| Submit | Review the implementation PR | Run `kit finish -- <gate argv>`, open the PR, then continue independent approved work from updated trunk |
 | Revise | Request changes if needed | On the same feature branch, `kit reopen <id> "<why>"`, revise tasks, implement, validate, submit and push again |
 | Integrate | Merge the implementation PR | Return to a trunk checkout, `git pull --ff-only`, then `kit audit` and `kit next` |
 
-For a new repository, initialize it with `kit init`. Before the planning branch, create
-an initial trunk commit containing setup only; keep product implementation on a feature
-branch. Add a shared remote before parallel drafting so ids and claims can be reserved.
-With no remote, review is local and independent clones cannot coordinate ids or claims.
+For a new repository, initialize it with `kit init`. Run `kit start --plan "<round>"`
+or `kit start --work "<outcome>"`; it publishes an empty trunk and preserves all files
+for the first review branch. Add a shared remote before parallel drafting so ids and claims can be reserved.
+With no remote, PR review remains pending and independent clones cannot coordinate ids or claims.
 
 Claims must start from the current published trunk. Kit refuses a stale checkout and
 prints the repair; it does not pull into a working tree another agent may be using.
@@ -198,6 +198,8 @@ approval for the human; an agent using the human's credentials has the same perm
 ## Commands
 
 ```sh
+kit start <id> | --plan <round> | --work <outcome>  prepare recorded work
+kit finish [--json] [-- <gate argv>]     validate, submit and publish for human review
 kit new   <title...>                     next free ID, date filled in, status Draft
 kit claim <id>                           push the branch; exit 1 means you lost it
 kit release <id> [--discard]               give a claim back; refuses over work, and over

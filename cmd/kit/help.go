@@ -26,6 +26,8 @@ func canonicalCommand(name string) string {
 const overview = `kit — bootstrap projects and run them with agents.
 
 Commands:
+  kit start [<id>|--plan <round>|--work <outcome>]  prepare requested work
+  kit finish [--json] [-- <gate argv>]  validate and publish for review
   kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
   kit new   <title...>                start a feature doc, ID and date filled in
   kit harvest <title...> --box "..."  give finished work a doc and a commit
@@ -54,11 +56,14 @@ How it works:
   Legacy Shipped/shipped: documents remain readable; ship/reset are compatibility
   spellings for submit/reopen and enforce the same guards.
 
-  Two routes in. Plan first — draft a round, land it, claim from it — which is what
-  agents that never speak to each other need, because "needs:" is what orders them.
-  Or work first on a branch that claims nothing, and run "kit harvest" at the end: it
-  takes an id, writes the doc and commits the tree in one commit. Both end in a Draft
-  to finish, validate and submit; the human reviews and merges the implementation.
+  Plan first: kit start --plan "<round>", draft with kit new, then kit finish and
+  open a PR for human approval. After merge, update trunk and use kit start <id>.
+  "needs:" orders work for agents that never speak to each other.
+  Directly requested work: kit start --work "<outcome>", then implement and commit.
+  kit finish -- <gate argv> harvests if needed, validates, submits and publishes.
+  The agent opens the PR with the supplied title; humans approve and merge.
+  Setup belongs on the first PR over an empty trunk. Never merge your own work.
+  After handoff, continue independent approved work from an updated trunk checkout.
 
   "kit next" and "kit audit" read the project you are in. For several projects:
     for d in ~/code/*; do (cd $d && kit next); done
@@ -125,6 +130,31 @@ var topics = map[string]string{
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
 // above the flag list.
 var commandHelp = map[string]string{
+	"finish": `kit finish [--json] [-- <gate argv>]
+
+Plans: validate Draft plans and untouched tasks, commit only setup/docs, audit, push.
+Work: supply an executable and arguments after --. Harvest recorded direct work
+if needed; fill the requested Problem/Design facts and commit before retrying.
+Then require complete tasks and a clean tree, run the gate, audit, submit and push.
+Failed checks or changed candidates stop. Retries revalidate without duplicate stamps.
+The handoff supplies pr_title from the feature title (plans: Plan: <round>); set it
+explicitly when creating the PR instead of using commit autofill. It also names
+base, branch, exact candidate and verified publication. It never
+claims a PR exists: the agent opens one through its forge interface. Humans approve
+and merge. A review handoff does not stop independent approved work from trunk.
+No remote: report the missing PR handoff. Add the intended remote and retry.
+`,
+	"start": `kit start <id> | --plan "<round>" | --work "<outcome>"
+
+Approved id: use the existing claim guards and enter the printed worktree.
+Plan: record intent on plan/<round>, then use kit new and write the plans.
+Direct work: record the operator's outcome on spike/<outcome>, then implement.
+Start from clean, updated trunk. New repos get a published empty main base;
+staged and unstaged files stay on the first review branch. Refuses foreign work, conflicting branches,
+unreadable remotes and direct work matching an existing plan. A pending plan
+never becomes a spike to avoid approval. Retrying the same recorded start is safe.
+Run kit finish for review; humans approve plans and merge implementations.
+`,
 	"init": `kit init [PATH] [--stack STACK] [--forge FORGE]
 
 Create missing project files; never clear the target first. Makes a directory and
@@ -151,7 +181,7 @@ working tree. Name observable outcomes with --box; history is not used to infer 
 Fill Problem and Design; keep Log for plan changes, which may be empty.
 Without --box, the refusal lists the working tree to help name outcomes.
 
-Refuses trunk, detached HEAD and existing claims, including branch names citing a
+Refuses trunk, planning branches, detached HEAD and existing claims, including branch names citing a
 four-digit id. Use a spike branch; never bypass a pending plan's approval. With no
 commits, first creates an empty trunk review base; product files stay on the feature
 branch. Publish that base before the first PR.
@@ -214,8 +244,9 @@ Kit does not pull into the checkout for you. Never delete another agent's claim.
 
 	"release": `kit release <id> [--discard]
 
-Stopping for good? Give the claim back. Deletes the branch that claims the feature on
-the remote first, because that ref is the claim, and then locally.
+Surrender this clone's claim: delete its remote branch, then local branch and the
+worktree kit created. Run from outside that worktree. Current and custom worktrees are preserved as detached snapshots. A cleanup
+failure reports the preserved checkout and asks for a retry through kit release.
 
 Refuses while the branch carries any unmerged commit or uncommitted file. Stopping covers two
 situations and only one of them is this: work worth nothing, and work worth keeping.
@@ -233,10 +264,8 @@ For the second, push the branch and open the pull request unfinished, saying why
 It never overrides ownership or uncommitted-work protection. Preserve valuable work
 before using it; deleted commits may eventually be garbage-collected.
 
-Release removes the worktree the claim made, which is the other half of creating it. It
-cannot remove the one you are standing in, and a worktree you put elsewhere is yours: the
-claim is released either way and the command says what is left, because until the branch
-goes this checkout still reads the feature as taken.
+Release removes an unused worktree the claim made. Current and custom checkouts stay
+as detached snapshots. Incomplete cleanup names what remains and a kit release retry.
 
 Uncommitted work in its worktree also refuses release. A commit changing only the doc is work.
 The remote delete uses the observed tip as a lease, even with --discard; a later push

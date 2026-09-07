@@ -52,6 +52,31 @@ belong to the agent runner, not kit.
   changes; PRs hold validation and handoff. Log may be empty; length is not a gate.
   Integrated feature history is frozen. The one-time prose compaction is recorded in 0073.
 
+## Guided work
+
+- Start records mode, outcome and base in an empty commit's Kit-Intent trailer. Plans
+  use plan/<round>; direct work uses spike/<outcome>. Approved ids reuse claim guards.
+- With no history, start creates and publishes an empty main through exclusive ref
+  creation. The index and working files remain on the first review branch. Existing
+  history, conflicting branches and unknown remote state refuse unsafe setup.
+- Plan finish validates complete Draft plans with unticked tasks, commits only approved
+  setup/document paths, audits and pushes. Implementation changes require their own route.
+- Work finish harvests recorded direct work once, requests missing Problem/Design facts,
+  and reuses a partial harvest after interruption, then requires complete tasks and a
+  clean candidate. Planning branches cannot be harvested to bypass approval. Gate argv runs directly with a
+  30-minute bound; failure, changed HEAD/branch or dirty output stops publication.
+  Submission may change only lifecycle fields; hook-created commits or other edits refuse publication.
+  Revisions after submission require reopen. Retrying finish reruns validation.
+- Finish supplies pr_title from the feature title or Plan: <round>; next repeats the
+  feature title for pending review. Agents set the PR title explicitly instead of
+  commit autofill, which can select the claim receipt.
+- Handoffs report the advertised base, candidate and confirmed publication. They do not
+  certify PR creation, approval or merge authority. Disposable pre-receive fixtures
+  test denied trunk writes; live hosted permissions still require authenticated evidence. Agents use their forge interface,
+  then continue independent approved work from an updated trunk checkout.
+- Next adds an action containing actor, kind, checkout and optional argv. Work merged
+  as Draft with a retained claim produces merged-before-submit; unchecked tasks survive.
+
 ## IDs, claims and recovery
 
 - New reserves `refs/kit/ids/<id>` remotely before writing the doc. Exclusive ref creation
@@ -85,7 +110,8 @@ belong to the agent runner, not kit.
   proves neither ownership nor permission to delete another agent's work.
 - Release refuses uncommitted files and unmerged commits, including doc-only changes.
   `--discard` permits unmerged commits, never foreign ownership or dirty worktrees. The
-  remote delete leases the observed tip. Current or custom worktrees may need later cleanup.
+  remote delete leases the observed tip. Current and custom worktrees are kept detached;
+  local ref deletion leases the checked tip. Incomplete cleanup names a kit release retry.
   The local branch must contain the advertised remote tip before deletion.
 - Reopen checks the published trunk before changing a submission; missing objects or
   unknown integration evidence refuse. Reopen, submit and drop reject foreign claims.
