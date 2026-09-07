@@ -35,7 +35,8 @@ Retries preserve completed stages without duplicate records or stale validation.
 
 Next names one action, checkout and responsible actor. Agents execute commands and open
 PRs using the existing forge interface. Humans approve plans and merge implementations.
-Handoffs name the base, candidate and known publication state; unavailable credentials or
+Handoffs supply the feature title (or planning round) as the PR title, never a claim
+receipt or other bookkeeping commit subject. They name the base, candidate and known publication state; unavailable credentials or
 remote evidence produce a stop. Kit never invents a PR, approval or successful check.
 
 For a new repo, establish and publish an empty trunk base; preserve staged and unstaged
@@ -73,6 +74,8 @@ without weakening review or work preservation; an incomplete handoff is not comp
 - [x] Compare complete draft, approved-work and small-change routes, including required human stops
 
 - [x] Reject submission hooks that change the validated candidate before publication
+
+- [ ] Supply an explicit outcome-based PR title in review handoffs and verify plan, claimed and direct-work routes
 
 ## Log
 - 2026-09-07 — Added a final candidate check after submission: a commit hook can create additional committed changes after the gate.
