@@ -52,6 +52,7 @@ remains unchanged.
 - [x] Run paired A/B tasks and retain original wording wherever equivalent value is not established
 
 - [x] Remove validation artifacts from the PR while preserving their local copy
+- [x] Integrate merged 0077 parking commands and lifecycle into the retained guidance
 
 ## Log
 

@@ -90,6 +90,8 @@ func run() int {
 		return runRelease(os.Args[2:])
 	case "drop":
 		return runDrop(os.Args[2:])
+	case "park", "activate":
+		return runAvailability(cmd, os.Args[2:])
 	case "reopen":
 		return runReopen(os.Args[2:])
 	case "block":
@@ -312,7 +314,7 @@ func runNew(args []string) int {
 	// The gate this described is gone: `Accepted` was removed after 82 docs reached it
 	// zero times, and `next` offers a written Draft the moment its round lands.
 	fmt.Printf("  kit next offers it after the plan merges and its needs are integrated.\n")
-	fmt.Printf("  kit submit, kit drop and kit reopen are the only things that write a status.\n\n")
+	fmt.Printf("  kit submit, kit drop, kit reopen, kit park and kit activate write status.\n\n")
 	return 0
 }
 
@@ -395,6 +397,41 @@ func releaseReservation(repo *kit.Repo, typed, why string) int {
 }
 
 // ---------------------------------------------------------------- reopen
+
+func runAvailability(command string, args []string) int {
+	rest := parseArgs(newFlagSet(command, args), args)
+	if (command == "park" && len(rest) < 2) || (command == "activate" && len(rest) != 1) {
+		fmt.Fprintln(os.Stderr, commandHelp[command])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", command, err)
+		return 2
+	}
+	id, err := kit.ResolveID(repo, rest[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", command, err)
+		return 2
+	}
+	var res *kit.AvailabilityResult
+	if command == "park" {
+		res, err = kit.Park(repo, id, strings.Join(rest[1:], " "), time.Now().UTC())
+	} else {
+		res, err = kit.Activate(repo, id, time.Now().UTC())
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", command, err)
+		return 2
+	}
+	if res.Commit == "" {
+		fmt.Printf("%s is already %s; no change.\n", res.Doc, res.Status)
+	} else {
+		fmt.Printf("%s — %s\n", res.Commit, res.Doc)
+	}
+	fmt.Println("Push this planning branch and open a PR for human review. Shared availability changes after merge; then update trunk and run kit next.")
+	return 0
+}
 
 func runReopen(args []string) int {
 	fs := newFlagSet("reopen", args)
@@ -906,6 +943,15 @@ func printPlan(plan kit.Plan, color bool) {
 		}
 	}
 
+	if len(plan.Parked) > 0 {
+		fmt.Printf("\n  %s\n", paint("parked — operator activation required", "2", color))
+		for _, item := range plan.Parked {
+			fmt.Printf("    %s  %s\n", item.ID, kit.Show(item.Title, 60))
+			fmt.Println(wrapAt(item.Reason, 74, "          "))
+			fmt.Println(wrapAt(item.WaitingOn, 74, "          "))
+		}
+	}
+
 	if len(plan.Blocked) > 0 {
 		fmt.Printf("\n  %s\n", paint("blocked", "33", color))
 		for _, item := range plan.Blocked {
@@ -959,7 +1005,7 @@ func printPlan(plan kit.Plan, color bool) {
 		// somebody else.
 		case plan.Spike != "":
 			fmt.Printf("    kit harvest \"<what the work delivered>\" --box \"<outcome>\"\n")
-		case plan.Empty() && len(plan.AwaitingReview) == 0 && plan.Checkout == "":
+		case plan.Empty() && len(plan.Parked) == 0 && len(plan.AwaitingReview) == 0 && plan.Checkout == "":
 			fmt.Printf("    kit new \"<what the feature does>\"\n")
 		}
 	}

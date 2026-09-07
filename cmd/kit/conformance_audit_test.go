@@ -119,6 +119,11 @@ var auditCases = []struct {
 	code  string
 	setUp func(p *project)
 }{
+	{"parked-claim", func(p *project) {
+		feature(p, "0001", "thing", "A thing", "Parked", "- [ ] Do the thing")
+		p.commitAll("parked plan")
+		p.git("branch", "work/0001")
+	}},
 	{"merged-before-submit", func(p *project) {
 		feature(p, "0001", "thing", "A thing", "Draft", "- [x] Done\n- [ ] Still needed")
 		p.commitAll("partly implemented plan")

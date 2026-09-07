@@ -91,6 +91,8 @@ var (
 	checkStalled = Check{"stalled", Medium,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
+	checkParkedClaim = Check{"parked-claim", High,
+		"a parked plan still has a claim; resolve ownership before merging the scheduling decision"}
 	checkInboxStale = Check{"inbox-stale", Medium,
 		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
 	checkSecretInDoc = Check{"secret-in-doc", High,
@@ -106,7 +108,7 @@ var (
 	// write, so what this catches is a doc they stamped before they did, a stamp lost in a
 	// rebase, and a commit that failed and was never made by hand afterwards.
 	checkStatusUncommitted = Check{"status-uncommitted", High,
-		"a terminal status is only in the working tree — HEAD carries the doc as open work"}
+		"a terminal or parking transition is only in the working tree — HEAD carries different availability"}
 	// HIGH because `kit claim` does not consult `audit`: this has to fail --strict to
 	// stop an agent being handed a design nobody wrote. It cannot misfire — the
 	// template's guidance lives in comments, which every parser here strips, so an
@@ -203,7 +205,7 @@ var (
 // `--offline`, or when the remote is asked and does not answer, they are not evaluated at
 // all. Named here rather than written into the command, so a check that grows a network
 // question cannot fall out of the notice that says what did not run.
-var OfflineChecks = []Check{checkSubmittedNotPushed}
+var OfflineChecks = []Check{checkSubmittedNotPushed, checkParkedClaim}
 
 // CheckCodes is a check list as codes, for a message that names what did not run.
 func CheckCodes(checks []Check) []string {
@@ -217,7 +219,7 @@ func CheckCodes(checks []Check) []string {
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
-	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled, checkMergedDraft,
+	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled, checkParkedClaim, checkMergedDraft,
 	checkInboxStale,
 	checkStatusUncommitted, checkSubmittedNotPushed,
 	checkUnfilledVision, checkDoneNotSubmitted, checkTechDrift, checkTagStale,
@@ -345,6 +347,7 @@ var featureChecks = []featureCheck{
 	{[]Check{checkStatusUncommitted}, statusUncommitted},
 	{[]Check{checkSubmittedNotPushed}, submittedNotPushed},
 	{[]Check{checkStalled}, stalled},
+	{[]Check{checkParkedClaim}, parkedClaim},
 	{[]Check{checkMergedDraft}, mergedDraft},
 	{[]Check{checkDoneNotSubmitted}, doneNotSubmitted},
 	{[]Check{checkNoStatus}, statusState},
@@ -522,10 +525,13 @@ func submittedDate(s *docState) []Finding {
 // disk said Submitted and no check looked anywhere else. A doc HEAD does not carry at all
 // counts as absent — an uncommitted terminal doc is the same loss.
 func statusUncommitted(s *docState) []Finding {
-	if !terminal(s.f.Status) || !s.r.HasHistory() {
+	if !s.r.HasHistory() {
 		return nil
 	}
 	was := s.r.headStatuses()[s.f.Rel]
+	if !terminal(s.f.Status) && s.f.Status != StatusParked && was != StatusParked {
+		return nil
+	}
 	if was == s.f.Status {
 		return nil
 	}
@@ -536,6 +542,10 @@ func statusUncommitted(s *docState) []Finding {
 	verb := "Submit"
 	if s.f.Status == StatusDropped {
 		verb = "Drop"
+	} else if s.f.Status == StatusParked {
+		verb = "Park"
+	} else if was == StatusParked {
+		verb = "Activate"
 	}
 	return []Finding{finding(checkStatusUncommitted, s.at,
 		fmt.Sprintf("%s: %s in the file, and HEAD %s", s.f.Name(), s.f.Status, carries),
@@ -551,6 +561,15 @@ func submittedNotPushed(s *docState) []Finding {
 		"push it from its owning checkout: git push -u origin HEAD")}
 }
 
+func parkedClaim(s *docState) []Finding {
+	if s.f.Status != StatusParked || len(s.claims) == 0 || (len(s.r.remotes()) > 0 && !s.r.RefsAreAuthoritative()) {
+		return nil
+	}
+	return []Finding{finding(checkParkedClaim, s.at,
+		fmt.Sprintf("%s is Parked but claimed by %s", s.f.Name(), strings.Join(s.claims, " and ")),
+		"preserve the claim's work; resolve ownership and revise the planning PR before merging parking")}
+}
+
 // Liveness comes from the claim rather than a status, which is set on the feature branch
 // and never reaches the trunk — so from the only checkout anyone audits, a dead agent and
 // a busy one looked identical.
@@ -559,7 +578,7 @@ func submittedNotPushed(s *docState) []Finding {
 // the trunk's tip is identical to one whose pull request already merged, and neither
 // carries a date to read.
 func stalled(s *docState) []Finding {
-	if terminal(s.f.Status) || len(s.claims) == 0 {
+	if terminal(s.f.Status) || s.f.Status == StatusParked || len(s.claims) == 0 {
 		return nil
 	}
 	claim := s.claims[0]
