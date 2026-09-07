@@ -59,7 +59,7 @@ templates/   project documents, help topics and Go/Python scaffolds
 - With no history, start creates and publishes an empty main through exclusive ref
   creation. The index and working files remain on the first review branch. Existing
   history, conflicting branches and unknown remote state refuse unsafe setup.
-- Plan finish validates complete Draft plans with unticked tasks, commits only approved
+- Plan finish validates complete Draft or Parked plans with unticked tasks, commits only approved
   setup/document paths, audits and pushes. Implementation changes require their own route.
 - Work finish harvests recorded direct work once, requests missing Problem/Design facts,
   and reuses a partial harvest after interruption, then requires complete tasks and a

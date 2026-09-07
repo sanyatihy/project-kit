@@ -209,8 +209,8 @@ func finishPlan(r *Repo, protocol string, today time.Time) (*Handoff, error) {
 	plans := 0
 	for _, f := range r.Features {
 		if paths[f.Rel] {
-			if f.Status != StatusDraft {
-				return nil, fmt.Errorf("planning finish requires Draft plans; %s is %s", f.ID, f.Status)
+			if f.Status != StatusDraft && f.Status != StatusParked {
+				return nil, fmt.Errorf("planning finish requires Draft or Parked plans; %s is %s", f.ID, f.Status)
 			}
 			if err := r.PlanError(f); err != nil {
 				return nil, err

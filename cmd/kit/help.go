@@ -117,7 +117,7 @@ can start only after activation merges and the trunk checkout is updated.
 `,
 	"finish": `kit finish [--json] [-- <gate argv>]
 
-Plans: validate Draft plans and untouched tasks, commit only setup/docs, audit, push.
+Plans: validate Draft or Parked plans and untouched tasks, commit only setup/docs, audit, push.
 Work: supply an executable and arguments after --. Harvest recorded direct work
 if needed; fill the requested Problem/Design facts and commit before retrying.
 Then require complete tasks and a clean tree, run the gate, audit, submit and push.

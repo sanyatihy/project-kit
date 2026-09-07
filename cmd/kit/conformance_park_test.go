@@ -134,8 +134,12 @@ func TestParkingCommitFailurePreservesDecisionForRecovery(t *testing.T) {
 func TestParkedAvailabilityChangesOnlyAfterReviewMerge(t *testing.T) {
 	t.Parallel()
 	a, b := twoAgents(t)
-	a.git("switch", "-c", "plan/parking")
+	a.run("start", "--plan", "parking").ok()
 	a.run("park", "0007", "operator chose later").ok()
+	a.run("finish").ok().has("published: true", "pr_title: Plan: parking")
+	if !strings.Contains(a.read("docs/features/0007-widget.md"), "status: Parked") {
+		t.Fatal("planning finish activated parked work")
+	}
 	if plan := b.plan("next", "--json"); len(plan.Ready) != 1 {
 		t.Fatal("unmerged parking changed shared availability")
 	}
@@ -156,8 +160,11 @@ func TestParkedAvailabilityChangesOnlyAfterReviewMerge(t *testing.T) {
 	}
 	b.run("next").ok().has("parked", "operator chose later").lacks("kit claim 0007", "kit new")
 	b.run("claim", "0007").fails(1).errHas("Parked")
-	b.git("switch", "-c", "plan/activation")
+	b.run("start", "0007").fails(1).errHas("Parked")
+	b.run("start", "--work", "A widget").fails(2).errHas("already has a plan")
+	b.run("start", "--plan", "activation").ok()
 	b.run("activate", "0007").ok()
+	b.run("finish").ok().has("published: true", "pr_title: Plan: activation")
 	plan = b.plan("next", "--json")
 	if len(plan.Ready) != 0 || len(plan.Blocked) != 1 || !strings.Contains(plan.Blocked[0].WaitingOn, "activation") {
 		t.Fatalf("unreviewed activation offered work: %+v", plan)
@@ -173,7 +180,7 @@ func TestParkedAvailabilityChangesOnlyAfterReviewMerge(t *testing.T) {
 	if plan := a.plan("next", "--json"); len(plan.Ready) != 1 || len(plan.Parked) != 0 {
 		t.Fatal("reviewed activation did not restore availability")
 	}
-	a.run("claim", "0007").ok()
+	a.run("start", "0007").ok()
 }
 
 func TestParkedDependenciesRemainUnmetAndDocumentsRemainValidated(t *testing.T) {
