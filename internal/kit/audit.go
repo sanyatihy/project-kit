@@ -86,6 +86,8 @@ var (
 		"a doc declares one frontmatter key twice, so the value the kit reads is not the line a write would change"}
 	checkFrozenDoc = Check{"frozen-doc", High,
 		"a feature already Submitted on the trunk was changed or deleted, or that history could not be verified"}
+	checkMergedDraft = Check{"merged-before-submit", Medium,
+		"a claim with completed tasks merged while its document remained Draft; preserve unfinished work and release the retained claim"}
 	checkStalled = Check{"stalled", Medium,
 		"claimed and carrying work, but no commit cites it anywhere for " +
 			countDays(StalledDays)}
@@ -217,7 +219,7 @@ func CheckCodes(checks []Check) []string {
 // Checks is every check audit can report, in reporting order.
 var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
-	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled, checkParkedClaim,
+	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled, checkParkedClaim, checkMergedDraft,
 	checkInboxStale,
 	checkStatusUncommitted, checkSubmittedNotPushed,
 	checkUnfilledVision, checkDoneNotSubmitted, checkTechDrift, checkTagStale,
@@ -346,6 +348,7 @@ var featureChecks = []featureCheck{
 	{[]Check{checkSubmittedNotPushed}, submittedNotPushed},
 	{[]Check{checkStalled}, stalled},
 	{[]Check{checkParkedClaim}, parkedClaim},
+	{[]Check{checkMergedDraft}, mergedDraft},
 	{[]Check{checkDoneNotSubmitted}, doneNotSubmitted},
 	{[]Check{checkNoStatus}, statusState},
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
@@ -1127,4 +1130,12 @@ func clip(text string, width int) string {
 		return text
 	}
 	return strings.TrimRight(string(runes[:width-1]), " ") + "…"
+}
+
+func mergedDraft(s *docState) []Finding {
+	if branch := s.r.mergedDraftClaim(s.f); branch != "" {
+		return []Finding{finding(checkMergedDraft, s.at, s.f.Name()+" merged as Draft from "+branch,
+			"preserve unfinished tasks; release the retained claim with kit release "+s.f.ID+", then kit next")}
+	}
+	return nil
 }

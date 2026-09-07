@@ -1,9 +1,9 @@
 ---
 id: 0078
 title: Agents can take requested work through a guided kit workflow
-status: Draft
+status: Submitted
 created: 2026-09-06
-submitted:
+submitted: 2026-09-07
 needs:
 ---
 
@@ -35,7 +35,8 @@ Retries preserve completed stages without duplicate records or stale validation.
 
 Next names one action, checkout and responsible actor. Agents execute commands and open
 PRs using the existing forge interface. Humans approve plans and merge implementations.
-Handoffs name the base, candidate and known publication state; unavailable credentials or
+Handoffs supply the feature title (or planning round) as the PR title, never a claim
+receipt or other bookkeeping commit subject. They name the base, candidate and known publication state; unavailable credentials or
 remote evidence produce a stop. Kit never invents a PR, approval or successful check.
 
 For a new repo, establish and publish an empty trunk base; preserve staged and unstaged
@@ -61,15 +62,25 @@ without weakening review or work preservation; an incomplete handoff is not comp
 
 ## Tasks
 
-- [ ] Add guarded start routes with recorded intent and no unrecorded chore exemption
-- [ ] Preserve staged and unstaged files through recoverable empty-base setup and first-PR publication
-- [ ] Add plan and work finish routes with real gates, safe retries and candidate-bound validation
-- [ ] Make PR handoffs report actual publication state and human ownership of approval and merge
-- [ ] Align protocol and help with initial setup, both review gates and revisions
-- [ ] Rehearse fresh and existing repositories, preserved files, interrupted operations and unavailable remotes
-- [ ] Verify external merge-authority boundaries and report unverified live permissions
-- [ ] Compare complete draft, approved-work and small-change routes, including required human stops
+- [x] Complete safe release of retained merged checkouts and report merged-but-unsubmitted work without inventing completion
+
+- [x] Add guarded start routes with recorded intent and no unrecorded chore exemption
+- [x] Preserve staged and unstaged files through recoverable empty-base setup and first-PR publication
+- [x] Add plan and work finish routes with real gates, safe retries and candidate-bound validation
+- [x] Make PR handoffs report actual publication state and human ownership of approval and merge
+- [x] Align protocol and help with initial setup, both review gates and revisions
+- [x] Rehearse fresh and existing repositories, preserved files, interrupted operations and unavailable remotes
+- [x] Verify external merge-authority boundaries and report unverified live permissions
+- [x] Compare complete draft, approved-work and small-change routes, including required human stops
+
+- [x] Reject submission hooks that change the validated candidate before publication
+
+- [x] Supply an explicit outcome-based PR title in review handoffs and verify plan, claimed and direct-work routes
 
 ## Log
+- 2026-09-07 — Added a final candidate check after submission: a commit hook can create additional committed changes after the gate.
+
+- 2026-09-06 — Added recovery before guided routes after 0080 remained taken following release: its retained custom checkout kept the local claim alive. Review handoff must also direct agents to independent work from trunk, not end the session.
 
 - 2026-09-06 — Expanded the review/setup plan to guided start and finish after the chore bypass. Retained its original outcomes; revised tasks for the wider scope and added comparative rehearsals. Implementation still awaits plan approval.
+- 2026-09-07 — reopen to Draft: Review handoffs must provide an outcome-based PR title instead of exposing the claim receipt

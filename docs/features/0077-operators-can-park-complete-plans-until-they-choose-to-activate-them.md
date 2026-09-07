@@ -48,6 +48,8 @@ This extends 0075's lifecycle.
 
 - [x] Report claims acquired during parking review without hiding ownership or guessing unknown integration state
 
+- [ ] Integrate 0078 and verify parking and activation through guided planning, finish and start
+
 ## Log
 - 2026-09-06 — Added review-race coverage: a claim may appear after parking is committed but before the planning PR merges. Next must show ownership and strict audit must flag that conflict.
 - 2026-09-07 — reopen to Draft: Integrate merged 0078 guided workflow and resolve parking conflicts

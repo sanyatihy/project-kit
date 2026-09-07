@@ -9,12 +9,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime/debug"
 	"slices"
@@ -74,6 +76,10 @@ func run() int {
 		return 0
 	case "init":
 		return runInit(os.Args[2:])
+	case "finish":
+		return runFinish(os.Args[2:])
+	case "start":
+		return runStart(os.Args[2:])
 	case "new":
 		return runNew(os.Args[2:])
 	case "harvest":
@@ -100,6 +106,80 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "kit: unknown command %q\n\n%s\n", cmd, overview)
 		return 2
 	}
+}
+
+func runFinish(args []string) int {
+	before, gate := args, []string(nil)
+	for i, arg := range args {
+		if arg == "--" {
+			before, gate = args[:i], args[i+1:]
+			break
+		}
+	}
+	fs := newFlagSet("finish", before)
+	jsonOut := fs.Bool("json", false, "print the actual review handoff as JSON")
+	if rest := parseArgs(fs, before); len(rest) > 0 {
+		fmt.Fprintln(os.Stderr, commandHelp["finish"])
+		return 2
+	}
+	r, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	runGate := func(argv []string) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+		cmd.Dir = r.Root
+		cmd.WaitDelay = 3 * time.Second
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		return cmd.Run()
+	}
+	result, err := kit.Finish(templates, r, gate, runGate, currentProtocol(), time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit finish: %v\n", err)
+		return 2
+	}
+	if *jsonOut {
+		if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+	} else {
+		fmt.Printf("pr_title: %s\nbase: %s\nbranch: %s\ncandidate: %s\npublished: %t\n%s\n", result.PRTitle, result.Base, result.Branch, result.Candidate, result.Published, result.Next)
+	}
+	return 0
+}
+
+func runStart(args []string) int {
+	fs := newFlagSet("start", args)
+	plan := fs.String("plan", "", "draft a reviewed planning round")
+	work := fs.String("work", "", "record directly requested work")
+	rest := parseArgs(fs, args)
+	if *plan == "" && *work == "" && len(rest) == 1 {
+		return runClaim(rest)
+	}
+	if (*plan == "") == (*work == "") || len(rest) != 0 {
+		fmt.Fprintln(os.Stderr, commandHelp["start"])
+		return 2
+	}
+	r, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	mode, outcome := "plan", *plan
+	if *work != "" {
+		mode, outcome = "work", *work
+	}
+	res, err := kit.Start(r, mode, outcome)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit start: %v\n", err)
+		return 2
+	}
+	fmt.Printf("branch: %s\ncheckout: %s\nagent: work in this checkout; run kit finish when ready for human review\n", res.Branch, res.Checkout)
+	return 0
 }
 
 // ---------------------------------------------------------------- init
@@ -179,20 +259,10 @@ func runInit(args []string) int {
 			target, *stack, strings.Join(kit.Forges, "|"))
 	}
 
-	// Singular here is what produced a plan with one feature covering a whole
-	// project: the tool asked for a feature and the agent wrote a feature. Bootstrap
-	// means the whole set, and which of them go ahead is not the agent's to decide.
-	fmt.Printf("\nnext:\n")
-	fmt.Printf("  write docs/VISION.md — what this is for, and what it is not\n")
-	fmt.Printf("  then decompose it: one kit new per feature the vision describes,\n")
-	fmt.Printf("  each one a change a human can review in one sitting\n")
-	fmt.Printf("  leave them Draft — kit submit, kit drop, kit reopen, kit park and kit activate write a status\n")
-	// Said here because this is where a bootstrap run reads what to do next, and the
-	// omission is what let `kit claim` win a branch carrying no plan: a claim pushes
-	// HEAD, so a plan that is only in the working tree does not travel with it.
-	fmt.Printf("  then land all of it on the default branch — a pull or merge request,\n")
-	fmt.Printf("  if that branch is protected. A claim pushes HEAD, so nothing uncommitted\n")
-	fmt.Printf("  reaches the branch an agent is sent to work in\n\n")
+	fmt.Printf("\nnext:\n  kit next\n")
+	fmt.Printf("  for requested planning: read docs/VISION.md, then kit start --plan \"<round>\"\n")
+	fmt.Printf("  draft with kit new, finish the round, and open its PR for human approval\n")
+	fmt.Printf("  setup and implementation belong on review branches; new trunk starts empty\n\n")
 	return 0
 }
 
@@ -626,7 +696,8 @@ func runRelease(args []string) int {
 	// gone when it is not would hand the next agent a feature the board here calls taken.
 	if res.Kept != "" {
 		fmt.Printf("\n  the local branch is still here: %s\n", res.Kept)
-		fmt.Printf("  leave that checkout, then: git branch -D %s\n", res.Branch)
+		fmt.Printf("  preserve its files, leave that checkout, then retry: kit release %s\n", id)
+		return 2
 	}
 	fmt.Println()
 	return 0
@@ -723,12 +794,12 @@ func runSubmit(args []string) int {
 			res.Trunk, res.Merged)
 	}
 	if res.HasRemote {
-		fmt.Printf("  push the branch and stop — open the pull request; reviewing and merging are not yours\n")
+		fmt.Printf("  push the branch and open the pull request; reviewing and merging are not yours\n")
 	} else {
 		fmt.Printf("  this project has no remote, so there is nowhere to hand this off.\n")
 		fmt.Printf("  say so rather than merging it yourself — merging is not yours\n")
 	}
-	fmt.Printf("  kit next\n\n")
+	fmt.Printf("  after handoff, return to updated trunk and run kit next; continue independent approved work\n\n")
 	return 0
 }
 
@@ -918,6 +989,12 @@ func printPlan(plan kit.Plan, color bool) {
 
 	if plan.Guidance != "" {
 		fmt.Printf("\n%s\n", paint(wrapAt(plan.Guidance, 74, "  "), "33", color))
+		if plan.Action != nil {
+			fmt.Printf("  actor: %s · action: %s\n  checkout: %s\n", plan.Action.Actor, plan.Action.Kind, plan.Action.Checkout)
+			if len(plan.Action.Command) > 0 {
+				fmt.Printf("  command: %s\n", strings.Join(plan.Action.Command, " "))
+			}
+		}
 		// The command goes on its own line, unwrapped, so it can be copied. The
 		// guidance says what to do; this is the thing to run. Not while something is
 		// awaiting review: there the guidance says merging is the work, and a second
