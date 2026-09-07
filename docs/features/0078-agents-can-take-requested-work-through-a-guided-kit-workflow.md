@@ -75,7 +75,7 @@ without weakening review or work preservation; an incomplete handoff is not comp
 
 - [x] Reject submission hooks that change the validated candidate before publication
 
-- [ ] Supply an explicit outcome-based PR title in review handoffs and verify plan, claimed and direct-work routes
+- [x] Supply an explicit outcome-based PR title in review handoffs and verify plan, claimed and direct-work routes
 
 ## Log
 - 2026-09-07 — Added a final candidate check after submission: a commit hook can create additional committed changes after the gate.

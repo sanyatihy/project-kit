@@ -1,6 +1,9 @@
 package kit
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // NextAction is additive routing guidance shared by text and JSON. Empty argv
 // means the next step is judgment or an external review action, not a kit command.
@@ -22,7 +25,7 @@ func actionFor(r *Repo, p Plan) *NextAction {
 			action.Instruction = "Update trunk, then kit next; continue independent approved work."
 		} else {
 			action.Kind = "review_handoff"
-			action.Instruction = p.Checkout + " Hand off this candidate through the forge interface; PR existence and approval are not inferred from a git push. Continue independent approved work from updated trunk; report any blocked handoff."
+			action.Instruction = p.Checkout + fmt.Sprintf(" Hand off this candidate through the forge interface with explicit PR title %q, not commit autofill; PR existence and approval are not inferred from a git push. Continue independent approved work from updated trunk; report any blocked handoff.", f.Title)
 		}
 		return action
 	}

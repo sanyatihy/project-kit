@@ -59,6 +59,9 @@ templates/   project documents, help topics and Go/Python scaffolds
   30-minute bound; failure, changed HEAD/branch or dirty output stops publication.
   Submission may change only lifecycle fields; hook-created commits or other edits refuse publication.
   Revisions after submission require reopen. Retrying finish reruns validation.
+- Finish supplies pr_title from the feature title or Plan: <round>; next repeats the
+  feature title for pending review. Agents set the PR title explicitly instead of
+  commit autofill, which can select the claim receipt.
 - Handoffs report the advertised base, candidate and confirmed publication. They do not
   certify PR creation, approval or merge authority. Disposable pre-receive fixtures
   test denied trunk writes; live hosted permissions still require authenticated evidence. Agents use their forge interface,

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -27,14 +28,14 @@ func TestFinishPlanningPublishesDraftsAndRefusesUnrelatedChanges(t *testing.T) {
 	if err := json.Unmarshal([]byte(result.Stdout), &h); err != nil {
 		t.Fatal(err)
 	}
-	if !h.Published || h.Base != "main" || h.Candidate != a.gitOut(nil, "rev-parse", "HEAD") {
+	if !h.Published || h.Base != "main" || h.PRTitle != "Plan: next round" || h.Candidate != a.gitOut(nil, "rev-parse", "HEAD") {
 		t.Fatalf("bad handoff: %+v", h)
 	}
 	if !strings.Contains(a.read("docs/features/0008-next.md"), "status: Draft") {
 		t.Fatal("planning finish changed status")
 	}
 	head := h.Candidate
-	a.run("finish").ok()
+	a.run("finish").ok().has("pr_title: Plan: next round")
 	if head != a.gitOut(nil, "rev-parse", "HEAD") {
 		t.Fatal("planning retry duplicated commit")
 	}
@@ -49,6 +50,34 @@ func completedGuidedWork(t *testing.T) *project {
 	feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it")
 	w.commitAll("0007 built")
 	return w
+}
+
+func TestReviewTitleComesFromTheFeatureAndPreservesTheClaimReceipt(t *testing.T) {
+	t.Parallel()
+	w := completedGuidedWork(t)
+	receipt := strings.Split(w.gitOut(nil, "rev-list", "--reverse", "main..HEAD"), "\n")[0]
+	if subject := w.gitOut(nil, "show", "-s", "--format=%s", receipt); !strings.HasPrefix(subject, "Kit claim 0007 ") {
+		t.Fatalf("fixture must begin with a claim receipt: %s", subject)
+	}
+	const title = "Keep `claim` & \"review\" separate"
+	feature(w, "0007", "widget", title, "Draft", "- [x] Build it")
+	w.commitAll("Update review facts")
+	result := w.run("finish", "--json", "--", "true").ok()
+	var h kit.Handoff
+	if err := json.Unmarshal([]byte(result.Stdout), &h); err != nil {
+		t.Fatal(err)
+	}
+	if h.PRTitle != title || !strings.Contains(h.Next, "Set its title explicitly from pr_title") {
+		t.Fatalf("missing explicit feature title: %+v", h)
+	}
+	w.run("finish", "--", "true").ok().has("pr_title: " + title)
+	if first := strings.Split(w.gitOut(nil, "rev-list", "--reverse", "main..HEAD"), "\n")[0]; first != receipt {
+		t.Fatal("handoff rewrote the claim receipt")
+	}
+	plan := w.plan("next", "--json")
+	if plan.Action == nil || !strings.Contains(plan.Action.Instruction, "explicit PR title "+strconv.Quote(title)) {
+		t.Fatalf("next lost the review title: %+v", plan.Action)
+	}
 }
 
 func TestFinishRunsRealGateAndRetriesWithoutDuplicateSubmission(t *testing.T) {
@@ -93,7 +122,7 @@ func TestFinishHarvestsOnceAndRequestsReviewFacts(t *testing.T) {
 	}
 	feature(p, "0001", "requested-small-change", "Requested small change", "Draft", "- [x] Requested small change")
 	p.commitAll("review facts")
-	p.run("finish", "--", "true").ok().has("published: false", "PR review is pending")
+	p.run("finish", "--", "true").ok().has("pr_title: Requested small change", "published: false", "PR review is pending")
 	if p.resolves("refs/heads/0002-requested-small-change") {
 		t.Fatal("duplicate harvest")
 	}

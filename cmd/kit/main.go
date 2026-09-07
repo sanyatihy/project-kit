@@ -145,7 +145,7 @@ func runFinish(args []string) int {
 			return 2
 		}
 	} else {
-		fmt.Printf("base: %s\nbranch: %s\ncandidate: %s\npublished: %t\n%s\n", result.Base, result.Branch, result.Candidate, result.Published, result.Next)
+		fmt.Printf("pr_title: %s\nbase: %s\nbranch: %s\ncandidate: %s\npublished: %t\n%s\n", result.PRTitle, result.Base, result.Branch, result.Candidate, result.Published, result.Next)
 	}
 	return 0
 }

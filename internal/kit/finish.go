@@ -10,6 +10,7 @@ import (
 
 // Handoff reports git evidence, never inferred PR creation or human approval.
 type Handoff struct {
+	PRTitle    string `json:"pr_title"`
 	Base       string `json:"base"`
 	BaseCommit string `json:"base_commit"`
 	Candidate  string `json:"candidate"`
@@ -132,7 +133,7 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 			return nil, fmt.Errorf("submission changed the validated candidate; preserve its commits, run kit reopen %s, then rerun finish", id)
 		}
 	}
-	h, err := publishHandoff(r)
+	h, err := publishHandoff(r, f.Title)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +243,7 @@ func finishPlan(r *Repo, protocol string, today time.Time) (*Handoff, error) {
 	if err := finishAudit(r, protocol, today, ""); err != nil {
 		return nil, err
 	}
-	return publishHandoff(r)
+	return publishHandoff(r, "Plan: "+intent.Outcome)
 }
 
 func planningPath(path string, initial bool, root string) bool {
@@ -277,7 +278,7 @@ func planningPath(path string, initial bool, root string) bool {
 	return false
 }
 
-func publishHandoff(r *Repo) (*Handoff, error) {
+func publishHandoff(r *Repo, title string) (*Handoff, error) {
 	if err := cleanCandidate(r); err != nil {
 		return nil, err
 	}
@@ -288,7 +289,7 @@ func publishHandoff(r *Repo) (*Handoff, error) {
 	branch := r.HeadBranch()
 	base := r.Trunk()
 	candidate := strings.TrimSpace(r.git("rev-parse", "HEAD"))
-	h := &Handoff{Base: base, BaseCommit: strings.TrimSpace(r.git("rev-parse", r.trunkRef())), Candidate: candidate, Branch: branch, Checkout: r.Root}
+	h := &Handoff{PRTitle: title, Base: base, BaseCommit: strings.TrimSpace(r.git("rev-parse", r.trunkRef())), Candidate: candidate, Branch: branch, Checkout: r.Root}
 	if remote == "" {
 		h.Next = "agent: add the intended remote and retry finish; PR review is pending, not complete"
 		return h, nil
@@ -329,7 +330,7 @@ func publishHandoff(r *Repo) (*Handoff, error) {
 	}
 	h.BaseCommit = baseTip
 	h.Published = true
-	h.Next = "agent: open or update the PR for this base and candidate using the available forge interface. Human: approve and merge. Then agent: return to an updated trunk checkout, run kit next, and continue independent approved work."
+	h.Next = "agent: open or update the PR for this base and candidate using the available forge interface. Set its title explicitly from pr_title, not commit autofill. Human: approve and merge. Then agent: return to an updated trunk checkout, run kit next, and continue independent approved work."
 	return h, nil
 }
 

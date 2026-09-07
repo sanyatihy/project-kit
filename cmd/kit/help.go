@@ -103,7 +103,9 @@ Work: supply an executable and arguments after --. Harvest recorded direct work
 if needed; fill the requested Problem/Design facts and commit before retrying.
 Then require complete tasks and a clean tree, run the gate, audit, submit and push.
 Failed checks or changed candidates stop. Retries revalidate without duplicate stamps.
-The handoff names base, branch, exact candidate and verified publication. It never
+The handoff supplies pr_title from the feature title (plans: Plan: <round>); set it
+explicitly when creating the PR instead of using commit autofill. It also names
+base, branch, exact candidate and verified publication. It never
 claims a PR exists: the agent opens one through its forge interface. Humans approve
 and merge. A review handoff does not stop independent approved work from trunk.
 No remote: report the missing PR handoff. Add the intended remote and retry.
