@@ -51,7 +51,7 @@ remains unchanged.
 - [x] Account for baseline rules, exceptions and examples in the retained prose changes
 - [x] Run paired A/B tasks and retain original wording wherever equivalent value is not established
 
-- [ ] Remove validation artifacts from the PR while preserving their local copy
+- [x] Remove validation artifacts from the PR while preserving their local copy
 
 ## Log
 

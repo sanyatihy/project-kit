@@ -1,6 +1,0 @@
-chain 20260907-093914 — 1 session, 541 s
-  generated  2969 tokens
-  ingested   16349 tokens, 4257 of it preamble — paid once per session
-  reused     122290 tokens the server already held
-  clock      539.6 s inside a call to the model, 1.4 s outside one
-  fitted     decode 7.59 tok/s, prefill 109.7 tok/s, over 10 calls
