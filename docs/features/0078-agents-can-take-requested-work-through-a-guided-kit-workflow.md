@@ -1,9 +1,9 @@
 ---
 id: 0078
 title: Agents can take requested work through a guided kit workflow
-status: Submitted
+status: Draft
 created: 2026-09-06
-submitted: 2026-09-07
+submitted: 
 needs:
 ---
 
@@ -80,3 +80,4 @@ without weakening review or work preservation; an incomplete handoff is not comp
 - 2026-09-06 — Added recovery before guided routes after 0080 remained taken following release: its retained custom checkout kept the local claim alive. Review handoff must also direct agents to independent work from trunk, not end the session.
 
 - 2026-09-06 — Expanded the review/setup plan to guided start and finish after the chore bypass. Retained its original outcomes; revised tasks for the wider scope and added comparative rehearsals. Implementation still awaits plan approval.
+- 2026-09-07 — reopen to Draft: Review handoffs must provide an outcome-based PR title instead of exposing the claim receipt
