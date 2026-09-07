@@ -1,9 +1,9 @@
 ---
 id: 0080
 title: Agents can use concise kit reference and help
-status: Submitted
+status: Draft
 created: 2026-09-06
-submitted: 2026-09-07
+submitted: 
 needs:
 ---
 
@@ -57,3 +57,4 @@ remains unchanged.
 - 2026-09-06 — reopen to Draft: Review requires A/B evidence that prose compression preserves behavior, especially the battle-tested language checklists.
 - 2026-09-06 — Operator chose to preserve both language checklists and defer compression. Reworded the completed edit task as candidate production; behavioral equivalence remains unproven and now gates resubmission.
 - 2026-09-06 — Extended preservation to AGENTS.md and its embedded protocol following operator review; their wording changes require separate evidence before adoption.
+- 2026-09-07 — reopen to Draft: Keep A/B validation artifacts local, outside the review diff
