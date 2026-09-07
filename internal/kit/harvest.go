@@ -88,6 +88,9 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 			r.HeadBranch(), held)
 	}
 	branch := r.HeadBranch()
+	if strings.HasPrefix(branch, "plan/") {
+		return nil, fmt.Errorf("a planning branch cannot be harvested to bypass approval; finish its planning review first")
+	}
 	if branch == "" {
 		return nil, fmt.Errorf("harvest needs a working branch — create a spike branch before harvesting")
 	}

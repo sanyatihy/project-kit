@@ -83,15 +83,20 @@ func TestReleaseForceDeletesWorkOnPurpose(t *testing.T) {
 // was working in, so the branch it is on cannot be deleted. The claim is still
 // released, and saying the branch is gone when it is not would hand the next agent a
 // feature this checkout goes on reading as taken.
-func TestReleaseSaysWhatIsLeftWhenAWorktreeHoldsTheBranch(t *testing.T) {
+func TestReleaseDetachesAndPreservesItsCurrentCheckout(t *testing.T) {
 	t.Parallel()
 	a, _ := twoAgents(t)
 	a.run("claim", "0007").ok()
 	w := a.claimWorktree("work/0007")
 
-	// Released from inside the worktree it was working in. Git will not remove the
-	// checkout you are standing in, so the branch outlives the claim and release says so.
-	w.run("release", "0007").ok().has("still here")
+	// Release keeps the current directory usable while removing its claim.
+	w.run("release", "0007").ok().lacks("still here")
+	if a.resolves("refs/heads/work/0007") {
+		t.Fatal("local claim survived")
+	}
+	if w.read("docs/features/0007-widget.md") == "" {
+		t.Fatal("checkout was removed")
+	}
 
 	if hasRemoteBranch(t, a, "work/0007") {
 		t.Error("the claim on the remote survived a release that reported success")
@@ -202,5 +207,29 @@ func TestReleaseRefusesWhenTheRemoteHasCommitsThisCheckoutHasNotSeen(t *testing.
 
 	if !hasRemoteBranch(t, a, "work/0007") {
 		t.Fatal("release deleted a branch whose commits this checkout had never seen")
+	}
+}
+
+func TestReleaseRetainedMergedCheckoutPreservesRemainingWork(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	feature(p, "0001", "thing", "Thing", "Draft", "- [x] Built\n- [ ] Validate")
+	p.commitAll("partly implemented plan")
+	p.git("branch", "-m", "main")
+	dir := p.path("custom-checkout")
+	p.git("worktree", "add", "-b", "0001-thing", dir)
+	p.run("next").ok().has("merged before submission")
+	p.run("audit").ok().has("merged-before-submit")
+	p.run("release", "0001").ok()
+	if p.resolves("refs/heads/0001-thing") {
+		t.Fatal("retained local claim")
+	}
+	w := &project{t: t, Root: dir}
+	if !strings.Contains(w.read("docs/features/0001-thing.md"), "- [ ] Validate") {
+		t.Fatal("lost unfinished work")
+	}
+	plan := p.plan("next", "--json")
+	if len(plan.Ready) != 1 || len(plan.Taken) != 0 {
+		t.Fatalf("released work not available: %+v", plan)
 	}
 }

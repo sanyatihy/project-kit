@@ -93,5 +93,26 @@ func (r *Repo) checkoutHandoff(id string) string {
 	if tip != head {
 		return id + " has local changes to submit. Run the project gate and kit audit --strict, push this branch, then open or update its pull request."
 	}
-	return id + " is awaiting review. For requested changes, run kit reopen " + id + " \"<why>\", revise tasks, implement, and repeat the gate, submit and push. After the human merges, return to an updated trunk checkout."
+	return id + " is awaiting review. For requested changes, run kit reopen " + id + " \"<why>\", revise tasks, implement, and repeat the gate, submit and push. After handoff, return to an updated trunk checkout and run kit next to continue independent approved work; this review does not stop the session. After the human merges, update trunk again."
+}
+
+// mergedDraftClaim identifies implementation merged before submission without
+// marking unchecked work complete or mistaking a fresh claim receipt for a merge.
+func (r *Repo) mergedDraftClaim(f *Feature) string {
+	open, total := f.TaskCount()
+	if f.Status != StatusDraft || open == total {
+		return ""
+	}
+	ref := r.integrationRef()
+	if ref == "" {
+		return ""
+	}
+	for _, branch := range r.Claims(f.ID) {
+		if rev := r.claimRev(branch); rev != "" && r.reaches(rev, ref) {
+			if open, total, ok := r.TasksOn(rev, f.Rel); ok && open < total {
+				return branch
+			}
+		}
+	}
+	return ""
 }

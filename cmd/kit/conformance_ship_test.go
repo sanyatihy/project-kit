@@ -376,7 +376,7 @@ func TestShipSaysTheWorkIsHandedOffNotFinished(t *testing.T) {
 	p.git("remote", "add", "origin", p.path(".git"))
 	feature(p, "0008", "next", "Next", "Draft", "- [x] One")
 	p.git("checkout", "-b", "0008-next")
-	submitting(p, "0008").ok().has("push the branch and stop")
+	submitting(p, "0008").ok().has("open the pull request", "reviewing and merging are not yours", "continue independent approved work")
 }
 
 func TestShipDoesNotAskForEditsAfterSubmission(t *testing.T) {
