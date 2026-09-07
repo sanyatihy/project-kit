@@ -1,0 +1,87 @@
+{
+  "baseline": "237ab912c288",
+  "candidate_git": "9a64c35be125534484f3c97b03541d4fda25249c",
+  "order": [
+    "A",
+    "B",
+    "B",
+    "A"
+  ],
+  "files": {
+    "A": {
+      "docs/TECH.md": {
+        "sha256": "92403597c3a731a61e8d3160d78e802f3a7b6a411bd4a84468d19ee92640204c",
+        "bytes": 33251,
+        "words": 5398
+      },
+      "templates/TECH.md": {
+        "sha256": "5fe732067e42bb3a7504b3be5a8187fea015d014466e1bc3d1c3750da5a64290",
+        "bytes": 2127,
+        "words": 378
+      },
+      "templates/features-TEMPLATE.md": {
+        "sha256": "d76cc576a1c62cea05c26b8beced7857d7f1c05ada8baf54a8879e7ca8032ac4",
+        "bytes": 4075,
+        "words": 659
+      },
+      "templates/compatibility.md": {
+        "sha256": "9acb5febf5a3f958e363b92fa0160b0c4f2fc2590229905afda13d5569114ad1",
+        "bytes": 5080,
+        "words": 777
+      },
+      "templates/AGENTS-section.md": {
+        "sha256": "ae56990ae89f472962d7c3602d08191a682d9752ff68902191cdb5dbdca17656",
+        "bytes": 6509,
+        "words": 1066
+      },
+      "cmd/kit/help.go": {
+        "sha256": "054987cafe898909c9fad6dad949a4a6695b7c291c0e1b71c9394f18e46be037",
+        "bytes": 27032,
+        "words": 4495
+      }
+    },
+    "B": {
+      "docs/TECH.md": {
+        "sha256": "c804c5b496e053f842f11685fba276d8c3b0369cc7f91b6a26881f88318a274c",
+        "bytes": 13655,
+        "words": 1992
+      },
+      "templates/TECH.md": {
+        "sha256": "00ffff481832b5da093a67d300321735fb66e06463a606cfd6f320996a11fcbc",
+        "bytes": 975,
+        "words": 142
+      },
+      "templates/features-TEMPLATE.md": {
+        "sha256": "8a3a6f72d88f267cb39fa62e37f76e9fca1021b83e481f8398d2ea61d1e4ab3d",
+        "bytes": 2245,
+        "words": 327
+      },
+      "templates/compatibility.md": {
+        "sha256": "17727fcc51ebbb1198ff35444f43d77966248bac80cae9ddb24c4ce40f610759",
+        "bytes": 3756,
+        "words": 553
+      },
+      "templates/AGENTS-section.md": {
+        "sha256": "ae56990ae89f472962d7c3602d08191a682d9752ff68902191cdb5dbdca17656",
+        "bytes": 6509,
+        "words": 1066
+      },
+      "cmd/kit/help.go": {
+        "sha256": "647d0cbdc55fd97ebbdfd87d2e15901c64789076cb3b007fe2eea2b7da35c93c",
+        "bytes": 16998,
+        "words": 2477
+      }
+    }
+  },
+  "argv": [
+    "localcode",
+    "-no-serve",
+    "-sessions",
+    "1",
+    "-calls",
+    "24",
+    "-session-timeout",
+    "20m",
+    "Complete TASKS.md using the supplied references. Write all three requested artifacts and finish."
+  ]
+}

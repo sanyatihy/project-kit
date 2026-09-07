@@ -108,7 +108,8 @@ path. Unknown forge produces no CI and reports it. Invalid stack/forge, a non-di
 target or failed file/git operations refuse.
 
   kit init ~/code/github.com/you/thing --stack go
-  kit init . --stack go --forge gitlab`,
+  kit init . --stack go --forge gitlab
+  kit init .                     # fill in missing files`,
 
 	"harvest": `kit harvest <title...> --box "<outcome>" [--box "<outcome>"]
 
@@ -116,6 +117,7 @@ Record human-directed exploration on a spike branch. Reserves an id, writes a Dr
 with completed boxes, names the branch after the feature and commits the whole
 working tree. Name observable outcomes with --box; history is not used to infer them.
 Fill Problem and Design; keep Log for plan changes, which may be empty.
+Without --box, the refusal lists the working tree to help name outcomes.
 
 Refuses trunk, detached HEAD and existing claims, including branch names citing a
 four-digit id. Use a spike branch; never bypass a pending plan's approval. With no
@@ -175,7 +177,8 @@ Legacy filename-based claims still block acquisition. Upgrade all writers togeth
 (kit help compatibility). A won claim excludes .worktrees/ in .git/info/exclude.
 Kit does not pull into the checkout for you. Never delete another agent's claim.
 
-  kit claim 0007`,
+  kit claim 0007
+  kit claim 7                    # ids accept the short spelling`,
 
 	"release": `kit release <id> [--discard]
 
@@ -209,7 +212,8 @@ After the human answers, record the decision in the plan, remove its inbox line 
 commit both. Integrate that commit into paused checkouts before resuming. Meanwhile,
 take independent work from another trunk checkout, or report the blocker and stop.
 
-  kit block 0007 "Should codes expire? Leaning: no, keep forever."`,
+  kit block 0007 "Should codes expire? Leaning: no, keep forever."
+  kit block 7 "Using base62 for slugs." --fyi`,
 
 	"submit": `kit submit <id>
 
@@ -287,6 +291,8 @@ review state. --offline skips remote reads and labels reduced coverage; it does 
 prove remote availability or absence. Missing docs/features exits 2.
 
 Reads only, from any subdirectory. --json includes the same closing guidance.
+JSON progress fields are done and total. For several repositories:
+  for d in ~/code/*; do (cd "$d" && kit next); done
 
   kit next --json
   kit next --offline`,

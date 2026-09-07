@@ -1,0 +1,1861 @@
+{
+  "baseline": "237ab912c288",
+  "note": "Review inventory, not behavioral equivalence evidence. Every baseline paragraph/bullet is included verbatim so omitted examples and explanations remain inspectable. Candidate pointers name sections, not line numbers. Historical incidents/counts explicitly omitted here remain in baseline git. Read alongside paired results.",
+  "entries": [
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 0,
+      "baseline": "# TECH",
+      "candidate": "docs/TECH.md##Structure",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 1,
+      "baseline": "The kit as built: the facts that outlive the feature that produced them. Feature docs in\n[features/](features/) carry what is planned; this carries what is true now. It is read\nbefore every change, so one fact goes on one line, and evidence appears only where it\nstops the rule being reversed.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 2,
+      "baseline": "## What it is",
+      "candidate": "docs/TECH.md##Structure",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 3,
+      "baseline": "One Go binary, `kit`, that bootstraps projects and says what to work on. The feature docs\nand the git branches *are* the state: no database, no queue, no config file. `git` at\nruntime is the only dependency.",
+      "candidate": "docs/TECH.md##Structure",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 4,
+      "baseline": "```\ncmd/kit/          CLI: dispatch, output, help\ninternal/kit/     feature model, git plumbing, claims, audit, next, scaffold\ntemplates/        what `kit init` writes, embedded via assets.go\n```",
+      "candidate": "docs/TECH.md##Structure",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 5,
+      "baseline": "`internal/kit` is one package split by subject: `feature.go` the document, `git.go` every\nsubprocess, `claims.go` which branch holds what, `repo.go` discovery, then one file per\ncommand. It was one 1416-line file, which is why nothing noticed that two functions ran\ngit two different ways.",
+      "candidate": "docs/TECH.md##Structure",
+      "disposition": "File-specific routing stays in the directory map and code filenames; 1416-line origin story remains in baseline git."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 6,
+      "baseline": "## Enforce, do not instruct",
+      "candidate": "docs/TECH.md##Enforcement",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 7,
+      "baseline": "Prose can be skimmed, misread or reasoned past; a refusal in the tool has to be routed\naround deliberately.",
+      "candidate": "docs/TECH.md##Enforcement",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 8,
+      "baseline": "| tier | example | an agent gets past it by |\n| --- | --- | --- |\n| the remote | branch protection, credentials | nothing it can do |\n| the kit | `claim` refusing unmet `needs:` | not using the kit |\n| prose | \"push the branch and stop\" | reading carelessly |",
+      "candidate": "docs/TECH.md##Enforcement",
+      "disposition": "Restored enforcement ordering and raw-git limit; replaces the table with a short paragraph."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 9,
+      "baseline": "A rule belongs at the highest tier it can reach, so a protocol sentence is a last resort:\nask what would make it unnecessary. **A printed command is the same tier as the refusal it\nsits next to.** The refusal for an already-claimed feature named `git push --delete`, and\na losing agent that ran it took the winner's branch and claimed the feature on the next\nattempt — mutual exclusion defeated using only what the kit printed.",
+      "candidate": "docs/TECH.md##Enforcement",
+      "disposition": "Restored the concrete losing-claim/deletion counterexample."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 10,
+      "baseline": "## The model",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 11,
+      "baseline": "One markdown file per feature, `docs/features/NNNN-name.md`, with `status:` canonical:",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 12,
+      "baseline": "```\nDraft -> Submitted     (exit: Dropped; reopen before merge for review changes)\n```",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 13,
+      "baseline": "- **Three statuses, written by submit, drop and reopen.** Draft is open work; Submitted\n  submits completed work for review; Dropped retires a plan. Reopen reopens an unmerged\n  submission for review changes and clears its date. A Submitted doc on the trunk is frozen.\n  Legacy Shipped/shipped: snapshots remain readable without rewriting history; ship/reset\n  are aliases, while repair requires --repair and Dropped plans cannot be reopened.\n  The canonical audit codes are submitted-not-pushed, submitted-no-date and done-not-submitted.\n  Submission requires the feature's branch even when no claim exists.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 14,
+      "baseline": "- **A write needs one unambiguous doc.** `WriteTarget` refuses an id two docs declare and a\n  key one doc declares twice; the first match `FeatureByID` returns is for reads, where\n  refusing to render would help nobody.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 15,
+      "baseline": "- **Six frontmatter fields.** `id`, `title`, `status`, `created`, `submitted`, `needs`.\n  `check:`, `checked:` and `review:` went with the commands that wrote them. `related:`\n  went because 77 docs filled it in and no line of Go ever read it. The template writes no\n  prose on any of them, and a test holds it to that: two spaces is all that separates a\n  comment from a value, so guidance there is one keystroke from data. `needs-unparsed`\n  reports what leaks anyway — a `needs:` is ids, commas and spaces, and anything else in\n  it is not a dependency `needs-unknown` could ever have asked about.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Six fields and data/comment boundary retained; removed legacy fields and their 77-doc count remain in baseline git. Prediction-removal decision/count restored under Scaffolding."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 16,
+      "baseline": "- **Plan validation is shared by next, claim and submit.** Duplicate keys or ids, malformed\n  dependencies and dependency cycles block work; submit also refuses unanswered blockers,\n  unknown statuses and unwritten sections. Command help carries the invocation refusals.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 17,
+      "baseline": "- **New claims use work/<id>, independent of filenames.** The exclusive remote creation\n  carries a unique empty commit. Local refs/kit/claims/<id> retain the acquisition receipt;\n  refs/kit/owned/<id> record confirmed ownership, which survives rebasing the work.\n  Unknown push outcomes preserve the receipt and retry reconciles it with the remote.\n  A confirmed competing winner removes only the unchanged, unoccupied losing attempt.\n  Legacy filename-based branches remain owned and block new claims for the same id.\n  All writers sharing a remote must upgrade together before creating canonical claims.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 18,
+      "baseline": "- **An id is handed out once, by the same compare-and-swap.** `kit new` pushes\n  `refs/kit/ids/<id>` before writing the doc; only a *created* ref is the number, and the\n  disk scan says where to start rather than what is free. The ref outlives the file, so\n  deleting a doc no longer frees its id, and `kit init` reserves the ids a project already\n  holds — nothing reports an unreserved one, because until that ran every doc on every\n  board was one. The ref points at a commit naming the id and the title, over the empty\n  tree asked of git because that value differs under SHA-256 — a backfilled one is the bare\n  tree and records nothing. A project with no commits can still reserve; no remote means no\n  reservation, and `kit new` says which guarantee it could not give.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Exclusive reservation, persistence, empty-tree hash, legacy backfill and no-remote limit retained. No separate audit requires initial backfill."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 19,
+      "baseline": "- **A reservation is accounted for, or released.** `kit drop --reservation` on an id no doc holds deletes\n  the ref instead of writing a status, and `audit` reports `orphan-reservation` at MEDIUM\n  for one past the stalled horizon. Whether a doc holds it is asked of every branch's\n  *tree*: a round that was drafted and reverted keeps its docs in `git log` for ever, and\n  those are the ids there is anything to free. One `fetch` mirrors `refs/kit/ids/*` here,\n  because `ls-remote` answers with SHAs and the record is in the object — a list that could\n  not be refreshed reports nothing and releases nothing.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Reservation horizon/tree/ref contracts retained; exact disposal command remains in help drop."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 20,
+      "baseline": "- **Claims require the current foundation.** HEAD must equal the advertised trunk tip\n  online; offline it must equal the local trunk. The plan must already be committed.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 21,
+      "baseline": "- **An initial harvest creates an empty trunk base.** Staged and unstaged product\n  files are committed only on the new feature branch, so the first MVP has a PR diff.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 22,
+      "baseline": "- **Review is a git handoff.** The board follows local revision, unpushed submission and\n  published review; a Submitted trunk doc proves integration even after a squash merge.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 23,
+      "baseline": "- **The board offers only what a claim would accept.** `next` reported a feature as ready\n  and `claim` exited 2 on it — where every new project stood at step 9. One condition read\n  by both, `PlanLanded`, is what stops the two answers drifting apart again.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Shared PlanLanded rule retained; first-project incident omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 24,
+      "baseline": "- **The checkout is the unit of isolation, and ownership is branch equality.** A worktree\n  holds one feature, and its claim reads as *yours* while HEAD *is* the branch named after\n  the doc — `notes-0001-alpha` mentions the id and confers nothing. A rebase detaches HEAD,\n  so the name is read from git's rebase state instead.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 25,
+      "baseline": "- **One checkout takes one claim, and the branch name is what refuses.** `claim` refuses\n  while HEAD's name cites any four-digit id: the ahead-of-the-trunk check sees a second\n  claim only once the first branch carries a commit, so `kit claim 0008` inside 0007's\n  worktree pushed both at exit 0.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 26,
+      "baseline": "- **A branch citing an id claims that feature, so `new` refuses to draft on one.**\n  `plan/fold-in-0002-fix` made the board report 0002 as taken while `audit` exited 0. The\n  draft is refused rather than `Claims` narrowed, which would shrink the guarantee; a\n  feature's own claim branch is exempt, so a doc discovered mid-build still lands there.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Any four-digit id still claims; plan/fold-in-0002-fix is an instance of that exact rule. Own-claim discovery exception retained."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 27,
+      "baseline": "- **Destroying a claim asks who made it, and the test is a local head.** `Mine` asks\n  whether HEAD *is* a canonical or legacy claim branch, which is right for `submit` — shipping happens in the\n  worktree doing the work — and wrong for `release`, which runs in the trunk the claim was\n  made from rather than in the worktree it created. A local ref means this clone created the branch: the same answer for every\n  worktree sharing it, a different one for an agent that only saw the claim over the wire.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 28,
+      "baseline": "- **Release requires readable state and preserves work.** It refuses uncommitted files\n  and every unmerged work commit, including changes only to the plan; git errors cannot mean\n  no work. The remote delete uses the observed tip as a lease, including under --discard.\n  Explicit discard permits unmerged commits, never uncommitted files or foreign claims.\n  The exact claim receipt and its empty rebased equivalent are bookkeeping, not work.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 29,
+      "baseline": "- **Ordering needs no syntax.** Task order is dependency order and `next` returns the\n  topmost unticked box. This replaced a dependency graph.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Task ordering retained; superseded dependency-graph implementation omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 30,
+      "baseline": "- **`needs:` is the only cross-feature ordering, and it is declared.** Blocked until every\n  prerequisite is Submitted on the trunk and in HEAD; submission alone does not unlock it.\n  Shared filenames alone do not order features. Each checkout owns one feature; there\n  is no global concurrency cap.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 31,
+      "baseline": "- **Awaiting review reads the advertised remote tip.** A stale local branch cannot hide\n  a submission or keep a reopened submission in the review group. Unfetched objects\n  remain unknown until fetched.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 32,
+      "baseline": "- **You never merge your own work: legibility here, enforcement on the remote.** The board\n  marks what the reader built — the claim it stands on, or the branch's authorship. The\n  second half is worth exactly as much as the identities are distinct, and on this repo\n  four agents shared the operator's, so it separated none of them. Branch protection is\n  the only real enforcement while that is true.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Identity limitation and external authority retained; count of four previously shared identities omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 33,
+      "baseline": "- **Git reads are batched.** The performance gate compares 30- and 130-feature boards\n  with the same claims; extra unclaimed features must add no git processes. Remote\n  listing and reservation refresh each run at most once. `make gitcount` prints both.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Restored exact 30/130 measurement setup."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 34,
+      "baseline": "- **One project per invocation.** `next` and `audit` read the repo you are in and take no\n  paths. The fan-out that read several at once keyed its payload by directory basename, so\n  two projects called `proj` reported as one, silently, at exit 0 — and it had no `recover`,\n  so a panic in one blanked the board for all. Four days across five projects invoked it\n  zero times. A shell loop replaces it, and the two defects were deleted rather than fixed.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Current-repository operation retained; removed fan-out collision/panic implementation and zero-use/four-day history omitted. Shell-loop example restored in help next."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 35,
+      "baseline": "- **Claims are read from the remote, not from `refs/remotes/*`**, which git prunes on\n  neither `fetch` nor `pull`, so a branch deleted on merge reads as a live claim for ever.\n  That `ls-remote` also advertises each branch's tip, and the tip is the claim: a local\n  head is only the last push. `release` refuses unless the tip is contained in the copy it\n  deletes; progress, *last moved* and `stalled` read it, and one never fetched counts\n  nothing rather than the trunk's zero. One `ls-remote` per remote, bounded at 15s — 5s is\n  inside a working remote's latency (5.58s to GitHub over SSH) and the board silently\n  printed nothing. `RemoteUnanswered` separates *asked and got nothing* from *nothing to\n  ask*, because absence and ignorance render identically. `--offline` stays quiet, being\n  an instruction; `claim` never reads the cache.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Advertised tip and containment guard retained; timeout measurements restored. Cache is explicitly insufficient to claim."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 36,
+      "baseline": "- **Liveness comes from the claim branch, and there is no status for it.** A status set on\n  the feature branch never reaches the trunk, which is the only checkout anyone audits. The\n  log is read `--all` for the same reason; a doc's mtime is not a signal, since a merge\n  resets it.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Branch-tip progress retained; explicitly restored git-history liveness rather than document mtimes reset by merges."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 37,
+      "baseline": "- **A claim finding needs positive evidence, not absence.** From the trunk an in-flight\n  feature's doc is *always* missing, so absence would report every open feature while\n  advising a fix that deletes the draft. A branch is an orphan only if its own tree says so.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 38,
+      "baseline": "- **Drafting is a plan round, and drafts live on the trunk.** One `plan/<something>` branch\n  per session, merged once — and its name must not mention a feature id *anywhere*, since\n  any branch citing one is a claim and such a draft claims itself. Not only the first\n  segment: `plan/fold-the-fix-into-0039` is a claim on 0039. `kit drop` exists because a\n  doc on the trunk cannot be retired by deleting a branch.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Plan naming and trunk approval retained. plan/fold-the-fix-into-0039 is covered by any-id rule. Dropping trunk plans remains in help drop."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 39,
+      "baseline": "- **Blocking is an INBOX line naming the feature in its id field**, never the prose, which\n  stops work invisibly; an unparseable line matches whole-line, which over-blocks — the safe\n  direction. `next` skips at once, `audit` escalates after two days, because a line carries\n  a date and no time. An FYI line never blocks and is never aged: nothing is owed it.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 40,
+      "baseline": "- **Template guidance lives in HTML comments and does not count as a plan.** Markdown\n  fences using backticks or tildes hide example headings and boxes from task parsing.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 41,
+      "baseline": "- **The plan checks gate on *committed*, never on a terminal doc, and read a boxless\n  `## Tasks` as unwritten** — so a doc out of `kit new` stays quiet, `claim` refuses what\n  the board declines, and a stub `drop` retired stops refusing every submit in the project.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 42,
+      "baseline": "- **Three docs, three tenses:** VISION what the project is becoming, `features/` what is\n  being done now, TECH what exists. **`kit init` writes the whole document layout and\n  nothing else creates a project file**, so there is one answer to where a file came from;\n  `kit submit`'s as-built creation is a fallback for projects that predate it. Every document\n  is the project's the moment it is placed, and only the protocol section is refreshed.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 43,
+      "baseline": "- **`kit init` writes an `AGENTS.md` with a title and the marker note.** It used to write\n  the bare protocol section, opening on an `##` heading with no project name and nothing\n  saying the section is regenerated — so the promise that house rules survive above the\n  marker reached nobody. `CLAUDE.md` is a symlink to it, because the kit reads either name\n  and one git object cannot disagree with itself; a Windows checkout gets the target's path\n  as text instead, and the protocol is in `AGENTS.md` either way.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 44,
+      "baseline": "- **Every fact has one home, and the routing is decided at submit.** Still true afterwards and\n  it belongs here, one line; a change to the plan and it belongs in that doc's `## Log`,\n  naming the change; neither and it belongs in the pull request.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 45,
+      "baseline": "- **Features are coherent, verifiable improvements.** Additions, subtractions, security,\n  reliability, performance, cost and maintainability qualify. Prefer substantial outcomes;\n  layers and delivery steps are tasks. Split for independent value, separate approvals or\n  safe review, never simply to assign more agents. Removing integrated work gets a new doc.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Outcome/splitting rules remain verbatim in AGENTS; reference restored here."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 46,
+      "baseline": "- **Every run of `next` ends with an instruction**, in every state. The newest was a doc\n  straight out of `kit new`: it lands in `blocked`, and the closing line said stopping was\n  the right outcome when the work was to write the plan just created.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 47,
+      "baseline": "- **`protocol-stale` compares the project's protocol section with the kit's**, because\n  shipping a protocol change does not deliver one — `AGENTS.md` is rewritten only by `init`.\n  Protocol boundaries ignore quoted markers, fenced examples and HTML comments.\n  House rules before the real heading and sections after it survive refresh.\n  It reports which side is behind: `kit init .` writes the binary's copy over the section,\n  so offered to the newer side it reverts it, and the only project that can be the newer\n  side is the one carrying `templates/AGENTS-section.md`. `no-protocol` covers a file whose\n  `## Work protocol` heading is gone as well as a missing file; nothing else looks for it.\n  **Rules are cited by name, never by number**, in every shipped string as well as in the\n  protocol. A number is valid only inside the one list that carries it, and a refusal that\n  cited one sent the reader to a list they were not holding.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 48,
+      "baseline": "- **`secret-in-doc` matches shapes, not entropy** — eleven formats whose issuer publishes a\n  fixed prefix. HIGH, because a published credential is the one finding late discovery\n  cannot fix. The patterns live in `audit.go` only; in a template they would trip the check.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Issuer-specific shapes and audit-only storage retained; pattern count is not a contract."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 49,
+      "baseline": "- **Checks are a table, not a function.** `featureChecks` runs per feature and `repoChecks`\n  once per project; each entry names the registry codes it can report, and a test fails the\n  build if a registered check has no implementation or two claim one code.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 50,
+      "baseline": "- **`audit` has one job:** find where the docs disagree with the repo. It never writes — an\n  auditor that fixes things stops being read — and it counts boxes rather than estimating.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 51,
+      "baseline": "- **A check that reports a state nobody may fix is deleted, not tuned.** Nine went that\n  way: five demanded prose nobody owed, four reported a state `submit` refuses to create or\n  a note `--fyi` cleared to wait. What a terminal doc is still asked is the frontmatter\n  the kit writes — repairable without reopening the plan — and a leaked credential.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Restored removal of unrepairable findings; historical counts of removed checks omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 52,
+      "baseline": "- **One defect is one finding; the code names the category, not one member.** Seven pairs\n  merged, each survivor's `Means` restated. A missing `VISION.md` or `INBOX.md` is\n  `no-protocol`: one command writes all three, so one fix clears them.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Restored missing VISION/INBOX as no-protocol; historical seven-pair consolidation omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 53,
+      "baseline": "- **Age is advisory.** Stalled work and old questions remain visible without blocking\n  unrelated delivery. A feature’s own unanswered question still prevents claiming it.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 54,
+      "baseline": "- **Severity is the damage.** `split-claim` is HIGH — two agents owning one feature is the\n  worst failure here, and it gated nothing at MEDIUM. `id-mismatch` is HIGH because the\n  branch comes from the filename and the claim is looked up by the id, so the board keeps\n  offering a feature somebody holds. Empty severity groups are omitted.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Restored HIGH examples; empty severity rendering is implementation detail."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 55,
+      "baseline": "- **`audit` is silent only about what it checked.** A doc it cannot open is\n  `unreadable-doc` at HIGH, carrying its filename and its still-reserved id, and no other\n  feature check runs on it — they all fire on the empty struct. `--offline` names the\n  checks it dropped, from `OfflineChecks`. A directory with no `docs/features` exits 2 from\n  `next` and from `audit`: nothing was read, so there is no clean bill to give either.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 56,
+      "baseline": "- **Every git read that yields a path asks for `-z`.** git C-quotes anything outside\n  printable ASCII, and each reader compares the result against a name `os.ReadDir`\n  produced: one accented character disabled the plan checks on that doc, reported pushed\n  work as unpushed, and named `submit`'s debris under a name nothing on disk has.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "NUL-delimited paths retained; concrete frontmatter/hash example restored separately. Accented filename incident remains in baseline git."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 57,
+      "baseline": "- **A fix line has to be one the reader can run.** `done-not-submitted` wants boxes before it\n  calls a doc finished, and names the edit where there is no `id:` for `kit submit` to take.\n  `submitted:` is validated — absent, unparseable and not yet arrived are one finding — and\n  `tech-drift` ignores a day that has not happened, which nothing could be newer than.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Date/box rules retained; actionable fixes remain in audit registry."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 58,
+      "baseline": "- **`exec.CommandContext` kills git and nothing git started.** `git-remote-https` outlives\n  it holding the stdout pipe, so `cmd.Output()` blocks for ever: `next` against a\n  black-holed remote came back in 75s against the 15s its help promises, and in 15.05s\n  once every git command set `cmd.WaitDelay`. The delay comes out of the bound, not on\n  top of it.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Restored 75s/15.05s and 5.58s/5s observations explaining timeout choices."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 59,
+      "baseline": "- **The kit owns the work, not the runtime.** Where agents run — panes, restarts, noticing\n  one is blocked — belongs to a runtime like `herdr`; an agent composes the two.",
+      "candidate": "docs/TECH.md##Structure",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 60,
+      "baseline": "## Decisions and why",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 61,
+      "baseline": "- **Go, not Python**, for `go install` distribution. The cost is real: a binary cannot be\n  patched in place by an agent, and it drifts from source until `make install` runs.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Install distribution/cost retained in release section and unchanged AGENTS house rule."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 62,
+      "baseline": "- **The repo is private, and that has a price.** `go install` needs `GOPRIVATE` and\n  credentials, which is why generated CI does not run `kit audit --strict`: every scaffolded\n  project would carry a credential to rotate. The kit's own CI audits, because\n  `go run ./cmd/kit` authenticates to nothing.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 63,
+      "baseline": "- **PDCA was rejected** as the frame — it comes from repeated processes and software changes\n  are mostly one-offs, so mandatory predictions became ceremony. The optional\n  `check:`/`checked:` pair that survived it was itself removed: zero of 82 docs used it.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Restored decision and zero-of-82 observation; optional predictions are not current fields."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 64,
+      "baseline": "- **A stack declares its files, entry-point globs, keep directory and pipelines**, so `Init`\n  names no language. Python's entry point is `src/*/__main__.py`, under a package name a\n  hyphenated repository name cannot be. Generated Python entry-point tests run outside\n  the source tree; existing applications get neither those tests nor an interpreter pin.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 65,
+      "baseline": "- **Deployment scaffolding is not generated**, and the topic that documented it is gone.\n  A stack produces what you need to write and verify code; the rest is the fastest-rotting\n  part, and no project ever read the topic.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 66,
+      "baseline": "- **The forge is detected at `init`, written as a file, and never consulted again.** First\n  rung with positive evidence: the project's CI directory, the remote's host, then the\n  module path's host segment. Unknown writes **no CI file** and says so — a missing pipeline\n  is visible, one for the wrong forge is not.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Detection order and unknown-forge result retained; generated CI is a file rather than runtime forge config."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 67,
+      "baseline": "- **Prevent before detecting.** `block`, `submit`, `release` and `drop` exist because writing\n  an INBOX line, a status, or a branch deletion by hand each cost something a command makes\n  impossible. `submit` refuses a tree with anything uncommitted in it, the debris being the\n  feature's own.",
+      "candidate": "docs/TECH.md##Enforcement",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 68,
+      "baseline": "- **The commands refuse exactly what the board refuses** — `Survey`, `ClaimFeature` and\n  `Ship` share `UnmetNeeds`, and `Ship` reuses `Repo.Mine`.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 69,
+      "baseline": "- **One path per document kind.** Three feature directories and four spellings of the\n  as-built doc were accepted for projects the kit never scaffolded, and `createTechDoc`\n  hard-coded one of the four anyway — so a project using a different spelling got a second\n  as-built doc rather than an updated one.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Canonical document paths retained; removed alternate spellings and earlier implementation omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 70,
+      "baseline": "- **Exit codes are a contract**, pinned by a test: `0` worked, `1` it ran and the answer is\n  no (`claim` lost the race, `audit --strict` found HIGH), `2` it could not run or refused.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 71,
+      "baseline": "- **Dates are passed in, never read inside** — a clock inside leaves tests unable to catch a\n  UTC-midnight off-by-one.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 72,
+      "baseline": "- **`kit init` writes the whole layout, and nothing else creates a project file.** One\n  command, one answer to where a file came from; `submit`'s lazy `TECH.md` path is a fallback\n  for projects that predate it. Splitting creation across `init`, `submit` and `block` was\n  tried and reversed — it moved four files between three commands to silence one finding,\n  and that finding was a gate: `unfilled-vision` now waits for features, as `no-protocol`\n  already did, so a virgin project audits clean while carrying everything it will need.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Restored virgin-project gate exceptions; superseded multi-command creation experiment omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 73,
+      "baseline": "- **A `.gitignore` is a refusal expressed as a file**, so `init` writes one — editor and OS\n  droppings only, because anything else guesses what the project is. A stack's copy replaces\n  it rather than extending it.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 74,
+      "baseline": "- **What the protocol does not carry, it points at**, and `cmd/kit/layout_test.go` holds\n  every file it names against `docLayout` or a help topic. Rule 14 named `BACKLOG.md` while\n  nothing wrote or described it, and the first version of that test read only `docs/` paths\n  and so found nothing to check.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Reachability contract retained; obsolete numeric-rule and first-test failure history omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 75,
+      "baseline": "- **Standing guidance is embedded, never copied into projects.** Checklists are practice;\n  project plans own executable task boxes.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 76,
+      "baseline": "- **Tests protect behavior.** Prose length, wording, numbering and error-statement counts\n  are not blocking gates. Help reachability, parser contracts and refusal behavior are.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 77,
+      "baseline": "- **The binary names nothing it does not have.** Help commands and topics resolve through the binary; check help\n  comes from the registry. English hyphenation is not parsed as a check identifier.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Registry and embedded-topic contracts retained; ordinary English hyphenation is not an identifier."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 78,
+      "baseline": "- **`--json` is a contract and its shape is pinned.** The board's four groups are `[]` when\n  empty, `moved` is absent rather than a year-1 timestamp — `omitempty` does nothing for a\n  struct — and a directory nothing surveyed reports through `error` at exit 2.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 79,
+      "baseline": "- **A commit is not a fourth home for a fact.** The subject names the box and the body is\n  empty: the diff shows what changed, the doc says why, and a body restating either is the\n  routing rule broken at the one artifact it never named.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "One-home rule retained; unchanged AGENTS allows commit bodies only for information diff/doc cannot explain."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 80,
+      "baseline": "- **The Submitted corpus was compacted once, under 0073.** What is frozen is the decision\n  record — status, boxes, and every decision, constraint and measurement. What was cut is\n  narration of how a decision was reached, which no reader acts on. Rule 17 is unchanged and\n  this is the exception it does not carry.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Frozen-history exception still explicitly cites 0073."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 81,
+      "baseline": "- **A spike is a branch the board does not route, and the id is taken at harvest.** Not the\n  trunk, not `plan/`, and citing no four-digit id anywhere in its name — any id counts as a\n  claim, so a mistyped one is reported by `orphan-claim` rather than becoming a spike.\n  Nothing reserves a number while the work is exploratory, so a spike that dies leaks none;\n  `kit harvest` takes one, writes the doc and commits the whole working tree with it,\n  because a session that explored leaves a tree rather than a log.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 82,
+      "baseline": "- **A won claim creates the worktree at `.worktrees/<branch>`, and `release` removes it.**\n  The parent stays a list of repositories, and a dot directory is skipped by ripgrep and the\n  Go toolchain on the name alone. The path is absolute, anchored at the main worktree, so it\n  is right from a worktree as well as from the trunk. The add runs after the push and cannot\n  undo it: a failure is a warning beside a claim that is already won, and a path already\n  holding the claim branch is success. `release` removing it is what keeps the branch\n  deletable, since otherwise every claim would leave one checked out. `claim` writes `.worktrees/` to\n  `.git/info/exclude` rather than asking, because declining the exclude is not legitimate and\n  `git clone` carries none — which puts the write in the command that runs in every clone.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Path/ownership/recovery/exclusion retained; release behavior here remains the main implementation. The separate 0078 repair is not imported into this prose comparison."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 83,
+      "baseline": "- **`needs-unstated` is the kit's only LOW check, and the level is the design.** A plan\n  naming a feature that has not shipped, with `needs:` silent about it, is worth printing\n  and not worth gating: the check cannot tell a dependency from a comparison. It reads\n  `## Problem` and `## Design` only and skips terminal docs — without that gate 41 of this\n  repo's 65 docs fire, every one of them citing settled work.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Problem/Design-only and nonterminal scope retained; historical 41-of-65 false-positive count omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 84,
+      "baseline": "- **Reopen checks the published trunk before reopening a Submitted doc.** It refuses on\n  the trunk, on detached HEAD, or when the remote tip or its documents cannot be read.\n  Reopen, submit and drop refuse a feature claimed by another checkout.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 85,
+      "baseline": "- **A status the kit writes is committed by the command that wrote it.** `submit`'s\n  dirty-tree refusal makes that commit exactly the stamp; `drop` takes the doc's path\n  alone, because a plan is often edited in the breath that retires it. `status-uncommitted`\n  is the backstop and the only check that reads `HEAD` — every other one reads the working\n  tree, which is why a stamp nobody committed reported as agreement. It reads the whole\n  board in one `ls-tree` and one `cat-file --batch`.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Committed status and batched reads retained; drop path-only staging remains in help drop."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 86,
+      "baseline": "- **Log length is not a gate.** A valid review reason can outweigh a short plan; no word\n  ratio proves misplaced content. Move durable facts before submit, and allow an empty Log.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 87,
+      "baseline": "- **Frozen documents are checked against the published trunk online.** `frozen-doc`\n  reports edits, deletions and unreadable integration evidence; --offline uses local\n  history. Required remote checks must enforce this against raw git.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 88,
+      "baseline": "- **Offline board output labels cached claims and unknown remote handoffs.** Its JSON\n  carries offline: true; unreadable evidence cannot establish unpushed work or readiness\n  to acquire a new remote claim.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 89,
+      "baseline": "- **Strict online audit fails on an unanswered remote.** Explicit --offline runs local\n  checks and reports the omitted checks; neither path describes partial coverage as agreement.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 90,
+      "baseline": "- **Reservation disposal checks local and advertised branch tips and leases the ref.**\n  An unreadable branch cannot establish that its id is unused.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 91,
+      "baseline": "- **Harvest names an established repo's spike branch after its feature.** Review scans\n  unknown claim names for Submitted docs not yet on the trunk; an existing claim refuses harvest.",
+      "candidate": "docs/TECH.md##IDs, claims and recovery",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 92,
+      "baseline": "- **Concurrent blocking questions append without rewriting the inbox.** Each command\n  writes its whole line once, so a second question cannot erase the first.",
+      "candidate": "docs/TECH.md##Documents and lifecycle",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 93,
+      "baseline": "- **Scaffolding creates user files exclusively and preserves dangling symlinks.** A\n  concurrent create cannot be overwritten by a later template write.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 94,
+      "baseline": "- **A release is part of shipping, because `@latest` is whatever the newest tag says.**\n  `make release TAG=…` runs CI_STEPS, binds checks and an annotated tag to one clean\n  published trunk commit, and verifies the remote tag object. Retry preserves the same\n  tag; conflicting local or remote tags are never overwritten. Failed state reads refuse; `audit` reports `tag-stale` when the\n  newest tag falls further than `TagStaleCommits` behind the trunk.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Release checks, tag identity/retry and stale-tag limitation retained; exact threshold is code, not duplicated."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 95,
+      "baseline": "## Gotchas",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 96,
+      "baseline": "Each of these has already caused a bug.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 97,
+      "baseline": "- **Files under `templates/` must not be valid Go package files or a nested module**, or\n  `go vet ./...` compiles them and `go:embed` skips them. Hence `gomod`, `gitignore`,\n  `main.go.tmpl`.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 98,
+      "baseline": "- **Templates are embedded through `assets.go` at the repo root** — `go:embed` cannot reach\n  a parent directory from `cmd/kit/`.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 99,
+      "baseline": "- **The frontmatter closes on a line of exactly three dashes, is written only inside those\n  bounds, and takes a comment only after two spaces.** Each is a bug already had: a setext\n  underline closed the block early, a document-wide replace stamped the submit date into a\n  `title:` quoting a status, and `\\s+#` cut `title: Fix #123 crash` down to `Fix`.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Restored Fix #123 and setext examples; bounded writes retained."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 100,
+      "baseline": "- **Go's `flag` stops parsing at the first positional.** `parseArgs` loops it so a flag\n  after an argument still parses. It also writes usage to the stream it writes a\n  bad-flag error to, so `newFlagSet` picks the stream from the args: help asked for is\n  output, help printed after an error is a diagnostic.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 101,
+      "baseline": "- **The `## Work protocol` section of a project's `AGENTS.md` is regenerated** by `init`.\n  Edits inside it are lost; durable house rules go above the marker.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 102,
+      "baseline": "- **`kit help checks` is generated from the registry `audit` reports from.** Add checks\n  there, never as bare strings.",
+      "candidate": "docs/TECH.md##Board, audit and git",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 103,
+      "baseline": "- **The installed binary is not the source.** `make install` after anything lands, or test\n  against `./kit`. A real project once ran two features behind and nothing said so.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Reinstallation retained; previous two-feature lag remains baseline incident history."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 104,
+      "baseline": "- **`go install` does not apply the Makefile's `-ldflags`**, so `resolveVersion` falls back\n  to the module version in the build info.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 105,
+      "baseline": "- **`CGO_ENABLED=0` must not reach `make test`.** The race detector needs cgo on\n  linux/amd64 but not darwin/arm64, so a file-level export passes locally and fails CI.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Race/CGO separation retained; platform-specific example is unnecessary to the portable instruction."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 106,
+      "baseline": "- **Guidance the binary does not print may as well not exist.** An outside review reached\n  four wrong conclusions, every one a fair reading of `kit help`. Two tests keep that shut.",
+      "candidate": "docs/TECH.md##Scaffolding and parsing",
+      "disposition": "Reachability retained; four-conclusion/two-test history omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 107,
+      "baseline": "- **`GOPRIVATE` is a comma-separated list, and a shell `export` beats `go env -w`.** Append\n  to an existing company value; the `-w` write is inert when the variable is exported.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 108,
+      "baseline": "## Compatibility",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 109,
+      "baseline": "`kit help compatibility` is the embedded v1 contract and upgrade procedure. Existing\nlegacy work stays on its branch; new writers coordinate through immutable id branches.\n[RELEASE.md](RELEASE.md) owns the post-merge publication and installation procedure.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 110,
+      "baseline": "## Verifying",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 111,
+      "baseline": "```sh\nmake check     # fmt-check, lint, unit tests, conformance suite — the whole gate\nmake vuln      # govulncheck against the module\nmake install   # go install ./cmd/kit\nmake release TAG=v0.3.0   # gate, then cut and push the tag `@latest` resolves to\n```",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 112,
+      "baseline": "Builds are reproducible: `CGO_ENABLED=0`, `-trimpath`, `-ldflags \"-s -w\"`. **CI runs the\nMakefile's `CI_STEPS` and nothing else**, and `cmd/kit/ci_test.go` fails when the workflow\ndrifts from it. **The linter is pinned and its set committed** to `.golangci.yml`, or a\nrelease changes what the gate means with no commit behind it. Missing or failing lint\nfails `make check`, here and in the Go scaffold. Formatting errors also fail closed;\nvet runs through the configured linter. The vulnerability scanner is pinned at v1.7.0. Generated Go CI installs v2.12.2,\nuses the generated .golangci.yml and limits its job to 15 minutes on both forges.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 113,
+      "baseline": "**The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives\nit with the test suite’s race mode against throwaway projects, asserting on stdout, stderr, exit codes and the files left\nbehind. In-tree, because an external script is deleted without anything noticing. Four\nproperties are load-bearing. `TestEveryRegisteredCheckIsExercised` compares the cases\nagainst `kit.Checks` both ways, so a check with no test fails the build. Every audit case\nstarts from the same clean project, which must report nothing. Every test is independent —\nown `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind `sync.Once`.\n**And the binary under test gets `gitEnv()`, not `os.Environ()`**: it used to inherit the\ndeveloper's `~/.gitconfig`, so three tests — including the one written to catch the\n`release` deletion bug — passed only on a machine whose `init.defaultBranch` is `main`.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Driver isolation, race mode and registry case coverage retained; restore clean baseline requirement and bidirectional registry coverage."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 114,
+      "baseline": "**No coverage number is reported.** `-cover` measured the test process, not the binary the\nsuite drives — 2.9% for a package covered end to end — and no threshold reads the result.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "No driver coverage claim retained; misleading historical 2.9% omitted."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 115,
+      "baseline": "## State of play",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:docs/TECH.md",
+      "unit": 116,
+      "baseline": "Private Go module; install a published version with `go install …/cmd/kit@<tag>`.",
+      "candidate": "docs/TECH.md##Verification and release",
+      "disposition": "Contract retained in the named section; repeated explanation is consolidated. Headings/layout may move."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 0,
+      "baseline": "kit — bootstrap projects and run them with agents.",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 1,
+      "baseline": "Commands:\n  kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing\n  kit new   <title...>                start a feature doc, ID and date filled in\n  kit harvest <title...> --box \"...\"  give finished work a doc and a commit\n  kit claim <id>                      take a feature: push the branch, win or lose\n  kit release <id> [--discard]          give a claim back: delete the branch, both sides\n  kit block <id> \"<question>\"         park a decision only a human can make\n  kit submit  <id>                      verify completed boxes, stamp, submit for review\n  kit drop  <id> \"<why>\"              retire a feature that will not be built\n  kit reopen <id> \"<why>\"              reopen an unmerged submission for review changes\n  kit next  [--json] [--offline]      what should I work on?\n  kit audit [--json] [--strict] [--offline]\n                                      where do the docs disagree with the repo?\n  kit help  [TOPIC]                   this, or a topic below\n  kit version",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 2,
+      "baseline": "How it works:\n  Plans live in docs/features/, one markdown file per feature, named NNNN-name.md.\n  The directory listing is the board. There is no database and no queue: the docs\n  and the git branches are the state.",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 3,
+      "baseline": "    Draft -> Submitted -> integrated on trunk   (exit: Dropped)",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 4,
+      "baseline": "  The stored statuses are Draft, Submitted and Dropped. Submitted is a review\n  snapshot; git distinguishes submission from integration. Only submit, drop and reopen\n  write status fields. A claim branch records who has started work.\n  Legacy Shipped/shipped: documents remain readable; ship/reset are compatibility\n  spellings for submit/reopen and enforce the same guards.",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 5,
+      "baseline": "  Two routes in. Plan first — draft a round, land it, claim from it — which is what\n  agents that never speak to each other need, because \"needs:\" is what orders them.\n  Or work first on a branch that claims nothing, and run \"kit harvest\" at the end: it\n  takes an id, writes the doc and commits the tree in one commit. Both end in a Draft\n  to finish, validate and submit; the human reviews and merges the implementation.",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 6,
+      "baseline": "  \"kit next\" and \"kit audit\" read the project you are in. For several projects:\n    for d in ~/code/*; do (cd $d && kit next); done",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 7,
+      "baseline": "The four rules:\n  1. Lowest ID first, and the claim this checkout already holds before anything\n     free. Finishing beats starting.\n  2. Within a feature, do the topmost unticked \"## Tasks\" box. List order is the\n     order of work, so ordering needs no extra syntax.\n  3. One agent per feature, one feature per checkout. \"kit claim <id>\" pushes the\n     branch that claims it, and creating that ref on the remote is what decides:\n     exit 1 means another agent won it. Local branches, remote branches and\n     worktrees all count as claims. A won claim makes the worktree to work in;\n     go there, not here.\n  4. A feature named by a BLOCKING line in docs/INBOX.md is blocked until it is\n     answered, and so is one whose \"needs:\" has not merged. \"Named\" means the id\n     field of the line, not a mention in the question text. FYI lines never block.\n     See \"kit help inbox\" for the format.",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 8,
+      "baseline": "The claim refusals you will meet most: an unmet \"needs:\", a BLOCKING inbox line, an\nunwritten ## Problem, ## Design or ## Tasks, an id: that disagrees with the filename,\na duplicate id, or a plan that has not reached the default branch. \"kit claim --help\"\nnames every one.",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 9,
+      "baseline": "Blocked on something only a human can decide? Run \"kit block <id> \\\"<question>\\\"\",\nwhich writes docs/INBOX.md in the format the tool parses, then move to another\nfree feature from another trunk checkout. If none is free, report the blocker and stop.",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 10,
+      "baseline": "Exit codes, so a script can tell these apart:\n  0  it worked\n  1  it ran and the answer is no: \"kit claim\" lost the feature to another agent,\n     or \"kit audit --strict\" found something HIGH\n  2  the command could not run, or refused: unknown command, bad flag, or a\n     refusal named above",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 11,
+      "baseline": "Topics:\n  kit help protocol      the rules agents follow, as written into AGENTS.md\n  kit help template      the feature doc format, field by field\n  kit help checks        every audit finding and what it means\n  kit help inbox         the docs/INBOX.md format, and what BLOCKING means\n  kit help compatibility supported use, stable interfaces and coordinated upgrades\n  kit help backlog       the docs/features/BACKLOG.md format, and what promotes an entry\n  kit help vision        the docs/VISION.md shape, and what it is not for\n  kit help as-built      the docs/TECH.md shape, section by section\n  kit help go-checklist      engineering practices for Go projects, tiered\n  kit help python-checklist  the same for Python, and the libraries it does name",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:overview",
+      "unit": 12,
+      "baseline": "Run \"kit <command> --help\" for a command's options.",
+      "candidate": "cmd/kit/help.go:overview",
+      "disposition": "Command list, lifecycle, order, actors and exits retained; detailed refusals move to named command help. Inbox id matching/FYI remain in block and inbox. Multi-repo example in next."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:init",
+      "unit": 0,
+      "baseline": "kit init [PATH] [--stack STACK] [--forge FORGE]",
+      "candidate": "cmd/kit/help.go:init",
+      "disposition": "Effects, preservation, forge order, rerun/reservation and deployment exclusion retained; restored no-argument rerun example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:init",
+      "unit": 1,
+      "baseline": "Set a project up, or fill in what an existing one is missing.",
+      "candidate": "cmd/kit/help.go:init",
+      "disposition": "Effects, preservation, forge order, rerun/reservation and deployment exclusion retained; restored no-argument rerun example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:init",
+      "unit": 2,
+      "baseline": "Creates the directory if it does not exist, makes it a git repo if it is not one,\nand writes AGENTS.md, a CLAUDE.md symlink to it, docs/VISION.md, docs/INBOX.md,\ndocs/TECH.md, docs/features/BACKLOG.md and a .gitignore for what an editor and an OS\nleave behind.\nNothing else creates a project file, so there is one answer to where a file came\nfrom. With --stack it also scaffolds the code layout, one CI pipeline, and that\nstack's .gitignore in place of the default.",
+      "candidate": "cmd/kit/help.go:init",
+      "disposition": "Effects, preservation, forge order, rerun/reservation and deployment exclusion retained; restored no-argument rerun example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:init",
+      "unit": 3,
+      "baseline": "Which CI file that is depends on where the project is hosted, and it is worked out\nfrom the first thing that actually says: a .gitlab-ci.yml or .github/workflows the\nproject already has, then the remote's host, then the directory layout when it\nnames a forge (~/code/gitlab.example.com/team/thing). When nothing says, no CI\nfile is written and the run tells you so — a missing pipeline is visible, and one\nfor the wrong forge is not. --forge settles it outright.",
+      "candidate": "cmd/kit/help.go:init",
+      "disposition": "Effects, preservation, forge order, rerun/reservation and deployment exclusion retained; restored no-argument rerun example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:init",
+      "unit": 4,
+      "baseline": "Nothing you wrote is overwritten or deleted, so it is safe on a populated directory\nand safe to re-run. One kit-owned thing is refreshed on every run: the\n\"## Work protocol\" section of AGENTS.md. Every document is yours the moment it is\nplaced, and house rules go above the marker comment in AGENTS.md.\nRe-running is also how a project gets its CI file once it has a remote, and how the\nIDs its docs already hold are reserved — after which deleting a doc cannot free its\nnumber for a later \"kit new\" to hand out again.",
+      "candidate": "cmd/kit/help.go:init",
+      "disposition": "Effects, preservation, forge order, rerun/reservation and deployment exclusion retained; restored no-argument rerun example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:init",
+      "unit": 5,
+      "baseline": "Deployment scaffolding is deliberately not generated. Add it when the project has\nsomething to deploy.",
+      "candidate": "cmd/kit/help.go:init",
+      "disposition": "Effects, preservation, forge order, rerun/reservation and deployment exclusion retained; restored no-argument rerun example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:init",
+      "unit": 6,
+      "baseline": "  kit init ~/code/github.com/you/thing --stack go\n  kit init . --stack go --forge gitlab\n  kit init .                     # fill in what is missing here",
+      "candidate": "cmd/kit/help.go:init",
+      "disposition": "Effects, preservation, forge order, rerun/reservation and deployment exclusion retained; restored no-argument rerun example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 0,
+      "baseline": "kit harvest <title...> --box \"<outcome>\" [--box \"<outcome>\"]",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 1,
+      "baseline": "Give finished work a doc and a commit. This is the route for a session that explored\nfirst, on a branch that is neither a claim nor a plan round — the board does not route\none, and \"kit next\" says so rather than refusing you.",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 2,
+      "baseline": "Harvest does not read history. It takes the next id, writes the doc, and commits the\nwhole working tree with it, so a session that produced two thousand lines and no commits\nstill becomes one reviewable change. That commit is also what leaves the clean working\ntree \"kit submit\" refuses to run without.",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 3,
+      "baseline": "Every box it writes is ticked: work that is finished has no unticked box to offer. The\nboxes are yours to name, because no order of work can be recovered from a tree and a\ncommit message is not an outcome. Run it without --box and the refusal lists what the\ntree holds, which is the raw material for naming them.",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 4,
+      "baseline": "## Problem, ## Design and ## Log arrive as questions. They carry what the code cannot\nsay, and the kit will not invent them: \"kit audit --strict\" refuses the doc until they\nare answered. The status is Draft, so the work still ends in a pull request somebody\nelse merges.",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 5,
+      "baseline": "Refused on the trunk, where committing the whole tree is a change nobody could review,\nand on a branch whose name cites a four-digit id, which would claim that feature.",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 6,
+      "baseline": "--nothing is the spike that did not survive: it appends one BACKLOG.md entry, commits\nthat file alone, and takes no id. Trying something and throwing it away has to stay as\ncheap as it is, and the entry is the one durable thing it leaves.",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 7,
+      "baseline": "Harvest names the branch after the feature so the board can follow its submission.\nWith no commits, it first creates an empty trunk as the review base; no product files\ngo on it. Publish that base before the first PR. An existing claim or detached HEAD\nrefuses harvest. Push with git push -u <remote> HEAD after the gate and submit.",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:harvest",
+      "unit": 8,
+      "baseline": "  kit harvest \"Shorten URLs\" --box \"a long URL comes back short\"\n  kit harvest --nothing \"a bloom filter costs more than the lookups it saves\"",
+      "candidate": "cmd/kit/help.go:harvest",
+      "disposition": "Whole tree, outcomes, no history inference, empty base, Draft and review retained. Baseline statement requiring nonempty Log was stale; Log may be empty. Planning restriction is protocol at this revision, not a command refusal. Both examples retained; missing-box tree listing restored."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:new",
+      "unit": 0,
+      "baseline": "kit new <title...>",
+      "candidate": "cmd/kit/help.go:new",
+      "disposition": "Allocation/own-claim exception and refusal contracts retained; numbered output example replaced by explicit NNNN path. Human planning boundary explicit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:new",
+      "unit": 1,
+      "baseline": "Start a feature doc in the current project. Takes the next free four-digit ID,\nfills in the title and today's date, and leaves status: Draft.",
+      "candidate": "cmd/kit/help.go:new",
+      "disposition": "Allocation/own-claim exception and refusal contracts retained; numbered output example replaced by explicit NNNN path. Human planning boundary explicit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:new",
+      "unit": 2,
+      "baseline": "The ID is reserved before the doc is written, by pushing refs/kit/ids/<id>: that\neither creates the ref or it does not, so of any number of agents drafting at\nonce no two are handed the same number. The ref outlives the doc, so deleting a\ndoc does not free its ID either.",
+      "candidate": "cmd/kit/help.go:new",
+      "disposition": "Allocation/own-claim exception and refusal contracts retained; numbered output example replaced by explicit NNNN path. Human planning boundary explicit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:new",
+      "unit": 3,
+      "baseline": "With no remote there is nothing to compare and swap against. The doc is still\nwritten, under the next free ID on disk, and the run says which guarantee it\ncould not give.",
+      "candidate": "cmd/kit/help.go:new",
+      "disposition": "Allocation/own-claim exception and refusal contracts retained; numbered output example replaced by explicit NNNN path. Human planning boundary explicit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:new",
+      "unit": 4,
+      "baseline": "Fails rather than overwrites, so two agents drafting at once get an error instead\nof one silently losing its work.",
+      "candidate": "cmd/kit/help.go:new",
+      "disposition": "Allocation/own-claim exception and refusal contracts retained; numbered output example replaced by explicit NNNN path. Human planning boundary explicit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:new",
+      "unit": 5,
+      "baseline": "Refuses on a branch whose name cites a four-digit id that is not its own claim. Any\nbranch citing an id claims that feature, so a round drafted on one claims a feature\nit has nothing to do with. Put the round on a \"plan/\" branch with no id in the name.",
+      "candidate": "cmd/kit/help.go:new",
+      "disposition": "Allocation/own-claim exception and refusal contracts retained; numbered output example replaced by explicit NNNN path. Human planning boundary explicit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:new",
+      "unit": 6,
+      "baseline": "Then fill in Problem, Non-goals, Design, and Tasks. Anything unresolved goes in\n## Open questions; anything only a human can answer goes in docs/INBOX.md via\n\"kit block\". Never set status: or submitted: yourself — \"kit submit\", \"kit drop\" and\n\"kit reopen\" are the only things that write them.",
+      "candidate": "cmd/kit/help.go:new",
+      "disposition": "Allocation/own-claim exception and refusal contracts retained; numbered output example replaced by explicit NNNN path. Human planning boundary explicit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:new",
+      "unit": 7,
+      "baseline": "  kit new \"Shorten URLs\"         # -> docs/features/0001-shorten-urls.md",
+      "candidate": "cmd/kit/help.go:new",
+      "disposition": "Allocation/own-claim exception and refusal contracts retained; numbered output example replaced by explicit NNNN path. Human planning boundary explicit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 0,
+      "baseline": "kit claim <id>",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 1,
+      "baseline": "Take a feature on work/<id>, independent of its filename. The push\nis what decides: creating the branch on the remote either succeeds or it does not,\nso of any number of agents claiming at once exactly one wins.",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 2,
+      "baseline": "  0  it is yours — the worktree to work in is made and named\n  1  it is not yours: another agent got there first, a branch already claims it,\n     an open INBOX question blocks it, something in its needs: has not merged,\n     the doc is closed or has no status:, the id: disagrees with the filename,\n     or nobody wrote it — an empty ## Problem, ## Design or ## Tasks is refused\n  2  it could not run: no such feature, two docs share the id, no commits yet,\n     the plan not committed here, the plan not landed on the default branch,\n     this checkout already claims something or is ahead of the default branch,\n     a stale or unreadable published trunk,\n     several remotes and no origin, or the push said nothing about the ref",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 3,
+      "baseline": "Every exit 1 refusal is one \"kit next\" already makes, bar the race it cannot see: the\nboard and the commands read the same facts, so claiming by id without consulting it\ncannot get you further. The exit 2 ones are about the repository rather than the plan,\nand the board reports repository prerequisites before offering work.",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 4,
+      "baseline": "The doc has to be on the default branch. Drafting and reading the board from a plan\nbranch are correct, and \"next\" reports the feature as blocked there rather than offering\nit. A claim made from an unmerged round pushes a branch whose parent is that plan\nbranch, so the only way to integrate the work is a merge into the branch its own author\ncoordinated. Land the round, then claim. A project with no trunk to land on — one\nbranch, no remote — is unaffected.",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 5,
+      "baseline": "Losing is normal. Run \"kit next\" and take something else.",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 6,
+      "baseline": "Nothing local is written unless the push wins, so a lost race leaves no branch\nbehind. On a project with no remote the branch is still created and the command\nsays so — that claim is invisible to everyone else.",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 7,
+      "baseline": "The worktree is created at .worktrees/<branch>. A path already holding the claim branch is\nsuccess and anything else there is left alone; making it cannot fail a claim the push has\nwon. Retrying a claim from the same clone resumes its recorded acquisition. A lost\nacknowledgement preserves a unique git receipt; retry after the remote is reachable.\nConfirmed ownership survives rebases. An empty claim receipt is not product work.\nLegacy filename-based claims stay usable and block a second claim of that id.\nUpgrade every writer sharing the remote before using the new claim namespace.",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 8,
+      "baseline": "A won claim also writes .worktrees/ to .git/info/exclude — git clone does not carry it.",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:claim",
+      "unit": 9,
+      "baseline": "Claim reads the published trunk tip and requires this checkout to equal it. It does\nnot fetch or pull a shared working tree. Update a trunk checkout first; the claim\nbranch is what says work started.\nMalformed needs:, dependency cycles and duplicate keys also refuse the claim.\n  kit claim 0007\n  kit claim 7",
+      "candidate": "cmd/kit/help.go:claim",
+      "disposition": "Exit classes, receipts, rebases, ownership, worktree failure, no-remote, upgrade and trunk guards retained. Baseline claim that nothing local is written before winning was stale: receipts preserve unknown outcomes. Restored short-id example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:release",
+      "unit": 0,
+      "baseline": "kit release <id> [--discard]",
+      "candidate": "cmd/kit/help.go:release",
+      "disposition": "Guards, remote-first delete/lease and unfinished PR retained. Discard example uses 0007 instead of 7; short-id acceptance remains in claim example. Existing retained-checkout limitation remains truthful pending 0078."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:release",
+      "unit": 1,
+      "baseline": "Stopping for good? Give the claim back. Deletes the branch that claims the feature on\nthe remote first, because that ref is the claim, and then locally.",
+      "candidate": "cmd/kit/help.go:release",
+      "disposition": "Guards, remote-first delete/lease and unfinished PR retained. Discard example uses 0007 instead of 7; short-id acceptance remains in claim example. Existing retained-checkout limitation remains truthful pending 0078."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:release",
+      "unit": 2,
+      "baseline": "Refuses while the branch carries any unmerged commit or uncommitted file. Stopping covers two\nsituations and only one of them is this: work worth nothing, and work worth keeping.\nFor the second, push the branch and open the pull request unfinished, saying why there\n— the doc travels with the branch, so the record lands when it merges.",
+      "candidate": "cmd/kit/help.go:release",
+      "disposition": "Guards, remote-first delete/lease and unfinished PR retained. Discard example uses 0007 instead of 7; short-id acceptance remains in claim example. Existing retained-checkout limitation remains truthful pending 0078."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:release",
+      "unit": 3,
+      "baseline": "  0  the claim is gone and the feature is free for anyone to claim\n  2  it could not run: no such feature, nothing claims it, two branches claim it,\n     a branch this clone never created, a branch this checkout cannot resolve, a\n     copy of it here that is not the remote's, no default branch to read work\n     against, several remotes and no origin, the remote did not answer, or the\n     branch carries work and --discard was not given",
+      "candidate": "cmd/kit/help.go:release",
+      "disposition": "Guards, remote-first delete/lease and unfinished PR retained. Discard example uses 0007 instead of 7; short-id acceptance remains in claim example. Existing retained-checkout limitation remains truthful pending 0078."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:release",
+      "unit": 4,
+      "baseline": "--discard explicitly permits deleting unmerged commits from this clone's claim.\nIt never overrides ownership or uncommitted-work protection. Preserve valuable work\nbefore using it; deleted commits may eventually be garbage-collected.",
+      "candidate": "cmd/kit/help.go:release",
+      "disposition": "Guards, remote-first delete/lease and unfinished PR retained. Discard example uses 0007 instead of 7; short-id acceptance remains in claim example. Existing retained-checkout limitation remains truthful pending 0078."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:release",
+      "unit": 5,
+      "baseline": "Release removes the worktree the claim made, which is the other half of creating it. It\ncannot remove the one you are standing in, and a worktree you put elsewhere is yours: the\nclaim is released either way and the command says what is left, because until the branch\ngoes this checkout still reads the feature as taken.",
+      "candidate": "cmd/kit/help.go:release",
+      "disposition": "Guards, remote-first delete/lease and unfinished PR retained. Discard example uses 0007 instead of 7; short-id acceptance remains in claim example. Existing retained-checkout limitation remains truthful pending 0078."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:release",
+      "unit": 6,
+      "baseline": "Uncommitted work in its worktree also refuses release. A commit changing only the doc is work.\nThe remote delete uses the observed tip as a lease, even with --discard; a later push\ncannot be deleted by an earlier decision.",
+      "candidate": "cmd/kit/help.go:release",
+      "disposition": "Guards, remote-first delete/lease and unfinished PR retained. Discard example uses 0007 instead of 7; short-id acceptance remains in claim example. Existing retained-checkout limitation remains truthful pending 0078."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:release",
+      "unit": 7,
+      "baseline": "  kit release 0007\n  kit release 7 --discard",
+      "candidate": "cmd/kit/help.go:release",
+      "disposition": "Guards, remote-first delete/lease and unfinished PR retained. Discard example uses 0007 instead of 7; short-id acceptance remains in claim example. Existing retained-checkout limitation remains truthful pending 0078."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:block",
+      "unit": 0,
+      "baseline": "kit block <id> \"<question>\" [--fyi]",
+      "candidate": "cmd/kit/help.go:block",
+      "disposition": "Format, id parsing, leaning, FYI and answer integration retained; restored FYI example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:block",
+      "unit": 1,
+      "baseline": "Blocked on something only a human can decide? Write it here and move on. Appends\none line to docs/INBOX.md in the format the tool parses:",
+      "candidate": "cmd/kit/help.go:block",
+      "disposition": "Format, id parsing, leaning, FYI and answer integration retained; restored FYI example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:block",
+      "unit": 2,
+      "baseline": "  - [ ] YYYY-MM-DD · <id> · BLOCKING|FYI · <question>",
+      "candidate": "cmd/kit/help.go:block",
+      "disposition": "Format, id parsing, leaning, FYI and answer integration retained; restored FYI example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:block",
+      "unit": 3,
+      "baseline": "\"kit next\" then stops offering that feature until a human answers and deletes the\nline. Record the answer in the affected plan, commit it with the inbox change, and\nintegrate that commit into any paused checkout before resuming. With --fyi it is recorded without blocking, for anything work can continue\nwithout.",
+      "candidate": "cmd/kit/help.go:block",
+      "disposition": "Format, id parsing, leaning, FYI and answer integration retained; restored FYI example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:block",
+      "unit": 4,
+      "baseline": "Use this rather than editing INBOX.md by hand. A line that misses the format is\nmatched by prose instead of by its id field, so it blocks whatever it happens to\nmention — \"kit audit\" reports those as inbox-unparsed.",
+      "candidate": "cmd/kit/help.go:block",
+      "disposition": "Format, id parsing, leaning, FYI and answer integration retained; restored FYI example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:block",
+      "unit": 5,
+      "baseline": "State a leaning. It turns most questions into a yes/no.",
+      "candidate": "cmd/kit/help.go:block",
+      "disposition": "Format, id parsing, leaning, FYI and answer integration retained; restored FYI example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:block",
+      "unit": 6,
+      "baseline": "  kit block 0007 \"Should codes expire? Leaning: no, keep forever.\"\n  kit block 7 \"Using base62 for slugs.\" --fyi",
+      "candidate": "cmd/kit/help.go:block",
+      "disposition": "Format, id parsing, leaning, FYI and answer integration retained; restored FYI example."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:submit",
+      "unit": 0,
+      "baseline": "kit submit <id>",
+      "candidate": "cmd/kit/help.go:submit",
+      "disposition": "Stamp-only, complete/clean/own branch, actual gate responsibility and human boundary retained. Short-id example represented by claim; no behavior removed."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:submit",
+      "unit": 1,
+      "baseline": "Submit finished work for review. Refuses unless every \"## Tasks\" box is ticked,\nsets status: Submitted, stamps submitted: with today's date, and commits that stamp.\nThat is a submission snapshot; it becomes integrated only when merged into trunk.",
+      "candidate": "cmd/kit/help.go:submit",
+      "disposition": "Stamp-only, complete/clean/own branch, actual gate responsibility and human boundary retained. Short-id example represented by claim; no behavior removed."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:submit",
+      "unit": 2,
+      "baseline": "Exit 2 when the doc is already Submitted or Dropped, has an unknown status or\nno status: line, no ## Tasks boxes, an unwritten Problem or Design, a BLOCKING\nquestion, ambiguous fields or ids, or invalid dependencies. If needs: has not\nmerged into this checkout, integrate the prerequisites first. If it is claimed by a branch other than\nthis checkout's, use the owning worktree. Submission always requires its feature\nbranch; trunk and detached checkouts refuse even when nobody claims the feature.",
+      "candidate": "cmd/kit/help.go:submit",
+      "disposition": "Stamp-only, complete/clean/own branch, actual gate responsibility and human boundary retained. Short-id example represented by claim; no behavior removed."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:submit",
+      "unit": 3,
+      "baseline": "The command also refuses uncommitted or untracked files and an unreadable git\nstatus. A failure is not proof of a clean tree. If committing it failed after the\nstamp was written, the error names the file to commit.",
+      "candidate": "cmd/kit/help.go:submit",
+      "disposition": "Stamp-only, complete/clean/own branch, actual gate responsibility and human boundary retained. Short-id example represented by claim; no behavior removed."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:submit",
+      "unit": 4,
+      "baseline": "Before this command, move durable facts to docs/TECH.md, keep only changes to the\nplan in Log (an empty Log is fine), run the project gate, and run kit audit --strict.\nSubmit verifies the document; it does not run or certify the project's tests.",
+      "candidate": "cmd/kit/help.go:submit",
+      "disposition": "Stamp-only, complete/clean/own branch, actual gate responsibility and human boundary retained. Short-id example represented by claim; no behavior removed."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:submit",
+      "unit": 5,
+      "baseline": "Push the branch and open the pull request. Do not merge your own work.\nFor review changes before merge, use kit reopen <id> \"<why>\", revise the tasks,\nthen repeat the gate and submit. A Submitted document on the trunk is frozen history.",
+      "candidate": "cmd/kit/help.go:submit",
+      "disposition": "Stamp-only, complete/clean/own branch, actual gate responsibility and human boundary retained. Short-id example represented by claim; no behavior removed."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:submit",
+      "unit": 6,
+      "baseline": "  kit submit 0007\n  kit submit 7",
+      "candidate": "cmd/kit/help.go:submit",
+      "disposition": "Stamp-only, complete/clean/own branch, actual gate responsibility and human boundary retained. Short-id example represented by claim; no behavior removed."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 0,
+      "baseline": "kit drop <id> \"<why>\" [--reservation]",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 1,
+      "baseline": "Retire a feature that will not be built. Sets status: Dropped, records the reason in\n\"## Log\", and commits that doc — a status left in the working tree is one session\nfrom being read as debris. Only the doc: whatever else the tree carries is yours.\nRefuses at exit 2 when the commit fails, naming the file the status is already on.",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 2,
+      "baseline": "Feature docs live on the default branch at every status, so an unwanted one cannot\nbe disposed of by deleting a branch — left alone it sits on the board for ever and\nevery agent reads it as work nobody has started.",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 3,
+      "baseline": "Refuses a Submitted doc: that is frozen history and the work is in the repo, so\nretiring it would make the record say the feature was never built.",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 4,
+      "baseline": "The branch is not this command's to delete: that is \"kit release\". A leftover branch\nnamed after the doc still reads as a claim, and dropping the doc says so rather than\nacting.",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 5,
+      "baseline": "It also names any feature whose needs: cites the dropped one. A Dropped feature can\nnever submit, so those docs wait for ever until their needs: is edited — and the board\nsays so too, rather than promising a wait that will not end.",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 6,
+      "baseline": "Unreadable branch objects refuse id release: fetch before trying again.\nReservation deletion leases the observed ref, so a concurrent replacement survives.",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 7,
+      "baseline": "With --reservation, release an unused id reservation instead of retiring a doc, deleting\nrefs/kit/ids/<id> so the number goes back into circulation. A cut draft leaves one\nbehind and nothing else can reach it. Three refusals: a doc for that id on any\nbranch's tree, a reservation younger than the stalled horizon, and a list of\nreservations the remote could not be asked for. There is no doc to record the reason\nin, so say it in the pull request.",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:drop",
+      "unit": 8,
+      "baseline": "  kit drop 0007 \"superseded by 0011's router\"\n  kit drop 7 \"the metric it was chasing moved on its own\"",
+      "candidate": "cmd/kit/help.go:drop",
+      "disposition": "Doc-only stamp, dependent plans, separate release and reservation guards retained. One reason example replaces the second equivalent reason; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:reopen",
+      "unit": 0,
+      "baseline": "kit reopen <id> \"<why>\" [--repair]",
+      "candidate": "cmd/kit/help.go:reopen",
+      "disposition": "Draft/date/log, repair, immutable Dropped, ownership and readable trunk retained. Both examples retained with 0007; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:reopen",
+      "unit": 1,
+      "baseline": "Put a doc back to status: Draft, clear submitted:, record the reason in Log, and\ncommit it. This lets review feedback revise a Submitted feature before it merges.\nUnknown or missing statuses require --repair. Dropped plans stay retired: draft a\nnew feature for human approval if the idea becomes useful again.",
+      "candidate": "cmd/kit/help.go:reopen",
+      "disposition": "Draft/date/log, repair, immutable Dropped, ownership and readable trunk retained. Both examples retained with 0007; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:reopen",
+      "unit": 2,
+      "baseline": "Refuses if already Draft, claimed by a branch other than this checkout's, or\ncarrying no frontmatter. If committing it failed after writing, commit the named\nfile to preserve the repair.",
+      "candidate": "cmd/kit/help.go:reopen",
+      "disposition": "Draft/date/log, repair, immutable Dropped, ownership and readable trunk retained. Both examples retained with 0007; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:reopen",
+      "unit": 3,
+      "baseline": "Reopening it from Submitted requires an unmerged working branch and a readable trunk.\nWith a remote, reopen checks its published trunk; fetch first if its objects are\nmissing. A document already Submitted on the trunk is frozen history: create a new\nfeature for further work.",
+      "candidate": "cmd/kit/help.go:reopen",
+      "disposition": "Draft/date/log, repair, immutable Dropped, ownership and readable trunk retained. Both examples retained with 0007; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:reopen",
+      "unit": 4,
+      "baseline": "  kit reopen 0007 \"review requested another case\"\n  kit reopen 7 --repair \"In Progress was never a status the kit writes\"",
+      "candidate": "cmd/kit/help.go:reopen",
+      "disposition": "Draft/date/log, repair, immutable Dropped, ownership and readable trunk retained. Both examples retained with 0007; short-id syntax represented by claim."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 0,
+      "baseline": "kit next [--json] [--offline]",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 1,
+      "baseline": "What should I work on? Reads the feature docs and git, and names one task.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 2,
+      "baseline": "Ranks by lowest ID, and within a feature returns the topmost unticked \"## Tasks\"\nbox. What this checkout already claims comes first of all.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 3,
+      "baseline": "Blocked rather than offered: a doc with an empty ## Problem, ## Design or ## Tasks, and\na feature whose plan round is not on the trunk yet. \"kit claim\" refuses both.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 4,
+      "baseline": "Each feature shows ticked-over-total, \"2/4\", carried in --json as \"done\" and \"total\".\nFor a feature somebody else holds the count comes from the branch the remote has,\nwhere the boxes are actually ticked, and the entry says when that branch last moved.\nA claim this checkout has never fetched shows no count rather than a stale one. A\ncount of boxes and not an estimate: boxes are not equal sizes.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 5,
+      "baseline": "A feature is reported as taken when a branch cites its id — local branches, remote\nbranches and worktrees all count, so a stale fetch hides someone else's claim. The\none exception is the branch this checkout is on: that claim is yours, and it is\nreported as \"yours\" and offered as the work to do. A feature is reported as blocked\nwhen a BLOCKING docs/INBOX.md line carries its id in the id field, or when something\nin its \"needs:\" has not merged into this checkout yet.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 6,
+      "baseline": "Below the board, \"awaiting review\" is the far side of submit: a branch the remote has,\ncarrying a doc that says Submitted, not yet on the trunk, and off the board above while\nit waits. The status is read from the branch, because on the trunk it still says what\nit said when the plan round landed. Entries you built are marked; where reviewing is\nall there is, the closing guidance says so instead of telling you to stop.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 7,
+      "baseline": "What is ready is how much can happen at once: three ready features means three agents\ncan take one each, which falls out of what the docs declare rather than being planned.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 8,
+      "baseline": "The board asks the remote which branches exist, bounded at 15 seconds. If that does not\nanswer the page says so: claims fall back to the last fetch, and anything awaiting review\nis missing rather than absent. --offline skips the question and stays quiet.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 9,
+      "baseline": "A directory with no docs/features exits 2: nothing was surveyed, so an empty board is\nnot a report that there is nothing to do.",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 10,
+      "baseline": "Reads only. Uses the repo you are in, from any subdirectory. For several projects:\n  for d in ~/code/*; do (cd $d && kit next); done",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:next",
+      "unit": 11,
+      "baseline": "  kit next                       # this project\n  kit next --json                # for agents\n  kit next --offline             # do not ask the remote which branches exist",
+      "candidate": "cmd/kit/help.go:next",
+      "disposition": "Order, counts, advertised progress, review, read scope and timeout retained; restored done/total names and quoted multi-repository example. Empty invocation appears in overview."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:audit",
+      "unit": 0,
+      "baseline": "kit audit [--json] [--strict] [--offline]",
+      "candidate": "cmd/kit/help.go:audit",
+      "disposition": "Severity/checks link, strict failure, offline omissions, read-only files and ref refresh retained. Shared shell-loop pattern in next also applies to audit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:audit",
+      "unit": 1,
+      "baseline": "Where do the docs disagree with the repo? Names the file, the problem, and the fix.",
+      "candidate": "cmd/kit/help.go:audit",
+      "disposition": "Severity/checks link, strict failure, offline omissions, read-only files and ref refresh retained. Shared shell-loop pattern in next also applies to audit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:audit",
+      "unit": 2,
+      "baseline": "Findings are ranked HIGH (a doc says something untrue, or work is stuck and nobody\nnoticed) and MEDIUM (incomplete or drifting). See \"kit help checks\" for every\nfinding and what it means.",
+      "candidate": "cmd/kit/help.go:audit",
+      "disposition": "Severity/checks link, strict failure, offline omissions, read-only files and ref refresh retained. Shared shell-loop pattern in next also applies to audit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:audit",
+      "unit": 3,
+      "baseline": "--offline names the checks it did not run, because a check that was skipped and one\nthat passed otherwise print the same page. A directory with no docs/features exits 2:\nnothing was read, so there is no finding and no clean bill either.\nWith --strict, an unanswered remote also exits 2. --offline explicitly limits the audit.",
+      "candidate": "cmd/kit/help.go:audit",
+      "disposition": "Severity/checks link, strict failure, offline omissions, read-only files and ref refresh retained. Shared shell-loop pattern in next also applies to audit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:audit",
+      "unit": 4,
+      "baseline": "Leaves project files unchanged; online reservation checks refresh git refs. Uses the repo you are in. For several projects:\n  for d in ~/code/*; do (cd $d && kit audit); done",
+      "candidate": "cmd/kit/help.go:audit",
+      "disposition": "Severity/checks link, strict failure, offline omissions, read-only files and ref refresh retained. Shared shell-loop pattern in next also applies to audit."
+    },
+    {
+      "source": "237ab912c288:cmd/kit/help.go:audit",
+      "unit": 5,
+      "baseline": "  kit audit                      # this project\n  kit audit --strict             # exit 1 on any HIGH, for CI\n  kit audit --offline            # do not ask the remote which branches exist",
+      "candidate": "cmd/kit/help.go:audit",
+      "disposition": "Severity/checks link, strict failure, offline omissions, read-only files and ref refresh retained. Shared shell-loop pattern in next also applies to audit."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 0,
+      "baseline": "# TECH",
+      "candidate": "templates/TECH.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 1,
+      "baseline": "The system as built: the facts that outlive the feature that produced them. Feature\ndocs in [features/](features/) describe a change and then freeze; this describes what\nexists now, and must always be true.",
+      "candidate": "templates/TECH.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 2,
+      "baseline": "<!-- Written after the work, not before it. When a feature ships, its durable facts\n     move here and the feature doc becomes history. This file has no lifecycle and no\n     status: it is either accurate or it is a bug, and `kit audit` reports tech-drift\n     when a feature ships and this file has not been touched since.",
+      "candidate": "templates/TECH.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 3,
+      "baseline": "     It is read before every change, so length is a tax paid per change. Record only\n     what the code cannot say: why this shape beat the alternative, and what breaks if it\n     changes. A fact left out is one rediscovered the hard way.",
+      "candidate": "templates/TECH.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 4,
+      "baseline": "     One fact, one line. How it was found, and what it cost to find, stay in the feature\n     doc that found them. -->",
+      "candidate": "templates/TECH.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 5,
+      "baseline": "## What it is",
+      "candidate": "templates/TECH.md##What it is",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 6,
+      "baseline": "<!-- Two or three sentences: what the system does, and the shape of it. Then the\n     directory layout, one line each — enough that someone can find the code that\n     handles a request without asking. -->",
+      "candidate": "templates/TECH.md##What it is",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 7,
+      "baseline": "## The model",
+      "candidate": "templates/TECH.md##The model",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 8,
+      "baseline": "<!-- The nouns and their relationships: data model, state machine, the lifecycle of\n     the main thing. Whatever someone has to hold in their head before a change is\n     safe to make. -->",
+      "candidate": "templates/TECH.md##The model",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 9,
+      "baseline": "## Decisions and why",
+      "candidate": "templates/TECH.md##Decisions and why",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 10,
+      "baseline": "<!-- Recorded so they are not re-litigated. One bullet each: what was chosen, what\n     it was chosen over, and the cost that was accepted. A decision without its cost\n     reads as free and gets reversed by the next person who meets the cost. -->",
+      "candidate": "templates/TECH.md##Decisions and why",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 11,
+      "baseline": "## Gotchas",
+      "candidate": "templates/TECH.md##Gotchas",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 12,
+      "baseline": "<!-- Each of these should have already caused a bug. Things that are surprising,\n     invisible, or that look wrong and are not. Resist filling this in early — a\n     gotcha nobody has hit yet is a guess. -->",
+      "candidate": "templates/TECH.md##Gotchas",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 13,
+      "baseline": "## Verifying",
+      "candidate": "templates/TECH.md##Verifying",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 14,
+      "baseline": "<!-- The commands that prove it works: make check, how to run it locally, how to\n     tell it is healthy in production. -->",
+      "candidate": "templates/TECH.md##Verifying",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 15,
+      "baseline": "## State of play",
+      "candidate": "templates/TECH.md##State of play",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/TECH.md",
+      "unit": 16,
+      "baseline": "<!-- What is true today and what the next gap is. This section goes stale fastest,\n     so keep it short and update it when a feature ships. -->\n",
+      "candidate": "templates/TECH.md##State of play",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 0,
+      "baseline": "---\nid: NNNN\ntitle: <observable improvement>\nstatus: Draft\ncreated: YYYY-MM-DD\nsubmitted:\nneeds:\n---",
+      "candidate": "templates/features-TEMPLATE.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 1,
+      "baseline": "<!-- A feature is one coherent, reviewable improvement. Addition, removal, security,\n     reliability, performance and cost reductions all qualify. Prefer a substantial\n     outcome with implementation steps as tasks. Split for independent value, distinct\n     approval decisions or reviewability, not by code layer or agent count.\n     Name the benefit and an observable result before choosing implementation tasks. -->",
+      "candidate": "templates/features-TEMPLATE.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 2,
+      "baseline": "<!-- List prerequisite ids in `needs:` only when this work cannot start until their\n     implementation is merged. Leave it empty for independent work.\n     Depend on an API, schema or decision you must build on. Shared files alone do not\n     create a dependency; incompatible decisions or a shared number allocation can.\n     `status: Submitted` on a working branch records a submission, not integration. -->",
+      "candidate": "templates/features-TEMPLATE.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 3,
+      "baseline": "## Problem\n<!-- 1-3 sentences: the standing tension and the signal that justifies it now — not the\n     incident that surfaced it, which the pull request holds. Shorter and nobody can tell\n     whether it was worth doing; longer and the doc is arguing instead of deciding. -->",
+      "candidate": "templates/features-TEMPLATE.md##Problem",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 4,
+      "baseline": "## Non-goals\n<!-- What this deliberately does not do, and where that lives instead. One line each, with\n     the reason on it: \"A database. None is needed at four hundred rows a month.\" Not an\n     argument, and never a thing nobody would have built. -->",
+      "candidate": "templates/features-TEMPLATE.md##Non-goals",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 5,
+      "baseline": "## Design\n<!-- Decisions only: what was chosen, what it beat, what it costs. Not a walkthrough — the\n     code will say what the code does, and this is read alongside it. Call out data-model,\n     migration, API and config changes explicitly. Written before the work, so it is the\n     part most likely to be wrong by the end; let `## Log` carry what the doing teaches.",
+      "candidate": "templates/features-TEMPLATE.md##Design",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 6,
+      "baseline": "     One claim per sentence, and evidence gets one clause. Rejected, then the rewrite:\n       no   the cache is per-process because a shared one would need invalidation across\n            workers, which this deployment does not have, and it also drops the dependency\n            we have been trying to get rid of since the last migration\n       yes  The cache is per-process. A shared one needs cross-worker invalidation, which\n            this deployment does not have.\n     The third clause was about the work rather than the system, so it is gone rather\n     than split. Write the decision and not the route to it: \"Changed JSONL for SQLite\",\n     never \"we researched the append-only design, found it would not scale, and chose a\n     database\".",
+      "candidate": "templates/features-TEMPLATE.md##Design",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 7,
+      "baseline": "     A paragraph per `## Tasks` box is the Tasks list restated, and the same fact then\n     sits in two sections. What a box cannot say is what belongs here.",
+      "candidate": "templates/features-TEMPLATE.md##Design",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 8,
+      "baseline": "     A doc is as long as its decisions and no longer. One a reader cannot hold in one\n     sitting is describing a feature that is too big, not a design worth the length. -->",
+      "candidate": "templates/features-TEMPLATE.md##Design",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 9,
+      "baseline": "## Tasks\n<!-- Each box is one commit with an outcome you can verify, in execution order.\n     The feature is one pull request containing those commits:\n       - [ ] the outcome, not the activity",
+      "candidate": "templates/features-TEMPLATE.md##Tasks",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 10,
+      "baseline": "     Guidance lives in comments here on purpose. A box written inside one is invisible\n     to the tool, so an unwritten plan counts as unwritten: `unfilled-template` says the\n     plan is missing instead of `kit next` handing an agent a placeholder to build. -->",
+      "candidate": "templates/features-TEMPLATE.md##Tasks",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 11,
+      "baseline": "## Open questions\n<!-- Optional. Delete when empty. Each with a leaning if you have one. -->",
+      "candidate": "templates/features-TEMPLATE.md##Open questions",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 12,
+      "baseline": "## Log\n<!-- One entry per change to the plan, and each names the change: a box rewritten, a\n     premise falsified, an open question settled, a number something downstream reads.\n     Take the room a change needs; append-only.",
+      "candidate": "templates/features-TEMPLATE.md##Log",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 13,
+      "baseline": "     An entry naming no change is not an entry. What the work did before it converged —\n     the run, the re-run, the reading that was revised — belongs in the pull request, and\n     a fact still true after this ships belongs in the as-built doc, one line. Never both:\n     each fact has one home.\n       - YYYY-MM-DD — decided X over Y because … -->",
+      "candidate": "templates/features-TEMPLATE.md##Log",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/features-TEMPLATE.md",
+      "unit": 14,
+      "baseline": "",
+      "candidate": "templates/features-TEMPLATE.md##Log",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 0,
+      "baseline": "# v1 compatibility and upgrades",
+      "candidate": "templates/compatibility.md##preamble",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 1,
+      "baseline": "## Supported use",
+      "candidate": "templates/compatibility.md##Supported use",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 2,
+      "baseline": "Kit runs on macOS and Linux with git as its only runtime dependency. Windows is outside\nthe v1.0 support scope. Go and Python are the supported scaffolds.",
+      "candidate": "templates/compatibility.md##Supported use",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 3,
+      "baseline": "The supported baseline is git 2.39.5, GNU make 3.81 for development gates, Go 1.26.4\nfor source builds and the Go scaffold, and Python 3.12.9 with uv 0.12.10 for the Python\nscaffold. Older versions are not certified. Go projects record their toolchain in go.mod;\nthe linter is v2.12.2. Python selects the 3.12 interpreter line in .python-version.\nRun make sync once and commit uv.lock before the first CI run. The lockfile records\nresolved development dependencies; CI uses uv sync --locked and the pinned uv version.\nThe v1 candidate was exercised on macOS 15.7 and Debian 12, both arm64. Other architectures\nneed the same gates before claiming validation; CI supplies additional runner evidence.",
+      "candidate": "templates/compatibility.md##Supported use",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 4,
+      "baseline": "Each agent uses its own checkout. Agents sharing a remote upgrade together. One binary\ncannot enforce human review when agents can use the human's merge credentials.",
+      "candidate": "templates/compatibility.md##Supported use",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 5,
+      "baseline": "## What stays compatible through v1.x",
+      "candidate": "templates/compatibility.md##Stable through v1.x",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 6,
+      "baseline": "- Canonical command names, documented flags and exit meanings remain compatible.\n  Exit 0 means success, 1 means a completed negative result, and 2 means refusal or an\n  incomplete operation. For claim, 0 also includes safely resuming your recorded claim.\n- Existing JSON fields retain their types and meanings. Additional fields may appear;\n  consumers ignore unknown fields. Human-readable output is not a parsing interface.\n- Audit identifiers remain stable. Additional checks and stronger validation of unsafe\n  states may change whether a gate passes and are called out in release notes.\n- Feature ids, frontmatter keys and parsed section headings remain supported. Keep the\n  machine-readable keys, headings and statuses in English; body prose may use any language.\n- Legacy Shipped/shipped: snapshots remain readable and frozen after integration.\n  ship and reset remain aliases of submit and reopen with the current safety guards.\n- init preserves application files, existing feature documents and customized stack files.\n  Only the real Work protocol section is refreshed; house rules belong outside it.",
+      "candidate": "templates/compatibility.md##Stable through v1.x",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 7,
+      "baseline": "Breaking removals or changed machine meanings require a new major release. Internal Go\npackages, test implementation, branch display titles and prose wording are not public APIs.",
+      "candidate": "templates/compatibility.md##Stable through v1.x",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 8,
+      "baseline": "## Upgrade from v0.7 or an untagged predecessor",
+      "candidate": "templates/compatibility.md##Upgrade from v0.7 or an untagged predecessor",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 9,
+      "baseline": "1. Pause writers sharing the remote. Commit and push valuable work; record which checkout\n   owns each in-flight claim. Keep those checkouts, including their git metadata.\n2. Install the chosen published kit version on every machine and run kit version. Avoid\n   mixing old writers with v1 claims: the old filename lock cannot coordinate the new\n   immutable id lock. Merely renaming an old branch is not a migration.\n3. Run kit init in each project. Review its diff and commit the protocol refresh through\n   normal review. Existing Makefiles and CI are preserved; compare them with the current\n   scaffold and apply relevant gate fixes explicitly. init is not a stack-file updater.\n4. Run kit audit --strict online, fetching advertised branch objects when requested.\n   Resolve duplicate ids and malformed plans. Never rewrite integrated feature history.\n5. Resume existing legacy branches in their original checkouts. New claims use work/<id>\n   and carry a unique empty claim commit. Local git refs retain acquisition evidence and\n   confirmed ownership; keep them until release. Claim retries reconcile interruptions.",
+      "candidate": "templates/compatibility.md##Upgrade from v0.7 or an untagged predecessor",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 10,
+      "baseline": "Changed operations from v0.7:",
+      "candidate": "templates/compatibility.md##Upgrade from v0.7 or an untagged predecessor",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 11,
+      "baseline": "| Previous operation | Current operation |\n| --- | --- |\n| ship a completed feature | submit; status Submitted and submitted: date |\n| reset review changes | reopen on the unmerged feature branch |\n| reset an invalid/missing status | reopen --repair |\n| revive a Dropped plan | draft a new feature for approval |\n| release --force | release --discard; foreign claims and dirty files remain protected |\n| drop an id with no local doc | drop --reservation for explicit unused-id cleanup |\n| shipped-not-pushed / shipped-no-date / done-not-shipped | submitted-not-pushed / submitted-no-date / done-not-submitted |",
+      "candidate": "templates/compatibility.md##Upgrade from v0.7 or an untagged predecessor",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 12,
+      "baseline": "An unknown push outcome preserves the attempt. Retry kit claim <id> from that clone\nwhen the remote is reachable. A confirmed competing winner returns exit 1. Do not delete\nrefs by hand or decide ownership solely because two branches started at the same commit.\nA worktree creation warning means the claim is already held: preserve any obstructing\nfiles, then retry claim. Offline output labels cached observations; it cannot certify\ncurrent remote ownership, publication or integration.",
+      "candidate": "templates/compatibility.md##Upgrade from v0.7 or an untagged predecessor",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 13,
+      "baseline": "## Release boundary",
+      "candidate": "templates/compatibility.md##Release boundary",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    },
+    {
+      "source": "237ab912c288:templates/compatibility.md",
+      "unit": 14,
+      "baseline": "A Submitted feature is awaiting implementation review. After the human merges, the\nrelease operator validates the merged trunk, publishes the intended version and checks\nan installation of that exact version. Required remote checks and merge permissions are\nrelease conditions. An unverified setting remains pending; local tests do not certify it.\n",
+      "candidate": "templates/compatibility.md##Release boundary",
+      "disposition": "Same section or renamed equivalent. Feature dependency/cost/design examples restored. Rejected verbose cache example is represented by its accepted rewrite; incident/history belongs in PR. Compatibility offline publication limit restored. TECH section prompts preserve decisions, costs and verified gotchas; one-line typography is not a behavioral rule."
+    }
+  ]
+}

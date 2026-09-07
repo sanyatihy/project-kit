@@ -48,7 +48,7 @@ remains unchanged.
 
 - [x] Restore the original Go/Python checklists and defer their compression with pinned comparison references
 - [x] Restore baseline AGENTS.md and its embedded protocol and defer their compression
-- [ ] Account for baseline rules, exceptions and examples in the retained prose changes
+- [x] Account for baseline rules, exceptions and examples in the retained prose changes
 - [ ] Run paired A/B tasks and retain original wording wherever equivalent value is not established
 
 ## Log

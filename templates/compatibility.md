@@ -59,7 +59,7 @@ Changed operations:
 Unknown push outcome: retain the receipt and retry claim from that clone when online.
 Confirmed competing winner: exit 1. Never infer ownership from matching starting commits
 or delete refs by hand. Worktree creation warning: the claim is won; preserve obstructing
-files and retry. Offline evidence cannot certify remote ownership or integration.
+files and retry. Offline evidence cannot certify remote ownership, publication or integration.
 
 ## Release boundary
 
