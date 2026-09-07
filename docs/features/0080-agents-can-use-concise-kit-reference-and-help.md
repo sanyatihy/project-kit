@@ -1,9 +1,9 @@
 ---
 id: 0080
 title: Agents can use concise kit reference and help
-status: Draft
+status: Submitted
 created: 2026-09-06
-submitted: 
+submitted: 2026-09-07
 needs:
 ---
 
@@ -36,7 +36,7 @@ Before resubmission, compare baseline and candidate guidance on the same predefi
 using the same localcode model, runner, tools and settings. Use fresh, repeated sessions
 and alternate A/B order. Score task correctness, rule compliance and human intervention
 before context savings. Investigate regressions and retain original wording where value
-is not established. Record actual results and limits in the review evidence.
+is not established. Keep validation artifacts local; report results and limits in the PR.
 
 Distinguish required protocol behavior from command-enforced refusals. Command logic
 remains unchanged.
@@ -48,12 +48,18 @@ remains unchanged.
 
 - [x] Restore the original Go/Python checklists and defer their compression with pinned comparison references
 - [x] Restore baseline AGENTS.md and its embedded protocol and defer their compression
-- [ ] Account for baseline rules, exceptions and examples in the retained prose changes
-- [ ] Run paired A/B tasks and retain original wording wherever equivalent value is not established
+- [x] Account for baseline rules, exceptions and examples in the retained prose changes
+- [x] Run paired A/B tasks and retain original wording wherever equivalent value is not established
+
+- [x] Remove validation artifacts from the PR while preserving their local copy
+- [x] Integrate merged 0077 parking commands and lifecycle into the retained guidance
 
 ## Log
+
+- 2026-09-07 — Operator requested local-only validation artifacts. Integrated merged 0078 routes and release behavior while retaining the restored guidance.
 
 - 2026-09-06 — Added a help correction after checking the described harvest refusals against its implementation.
 - 2026-09-06 — reopen to Draft: Review requires A/B evidence that prose compression preserves behavior, especially the battle-tested language checklists.
 - 2026-09-06 — Operator chose to preserve both language checklists and defer compression. Reworded the completed edit task as candidate production; behavioral equivalence remains unproven and now gates resubmission.
 - 2026-09-06 — Extended preservation to AGENTS.md and its embedded protocol following operator review; their wording changes require separate evidence before adoption.
+- 2026-09-07 — reopen to Draft: Keep A/B validation artifacts local, outside the review diff

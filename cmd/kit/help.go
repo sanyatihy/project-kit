@@ -23,64 +23,98 @@ func canonicalCommand(name string) string {
 
 // overview is everything needed to use the kit without reading its source. An
 // agent that only has the binary should be able to work from this.
-const overview = `kit — run an agent's project workflow from markdown and git.
+const overview = `kit — bootstrap projects and run them with agents.
 
-Start with kit next. Follow the operator's requested scope; an empty board is not
-permission to invent work. Agents run the commands; humans approve plans and merge PRs.
-
-Commands (kit help <command> gives usage, refusals and recovery):
-  kit init [PATH] [--stack STACK]   create missing project files
-  kit finish [--json] [-- <gate argv>]  validate and publish for review
+Commands:
   kit start [<id>|--plan <round>|--work <outcome>]  prepare requested work
-  kit new <title...>               draft a feature on the planning branch
-  kit harvest <title...> --box ... record completed exploratory work
-  kit claim <id>                   acquire a feature and its worktree
-  kit block <id> "<question>"       record a decision only the human can make
-  kit release <id> [--discard]     surrender a claim; protects valuable work
-  kit submit <id>                  stamp completed work for review
-  kit reopen <id> "<why>"          revise an unmerged submission
-  kit drop <id> "<why>"            retire an unbuilt plan
-  kit park <id> "<why>"            retain a complete plan for later
-  kit activate <id>                propose making parked work available
-  kit next [--json] [--offline]    show the next task and checkout
-  kit audit [--json] [--strict] [--offline]  report drift
-  kit version                     show the installed version
+  kit finish [--json] [-- <gate argv>]  validate and publish for review
+  kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
+  kit new   <title...>                start a feature doc, ID and date filled in
+  kit harvest <title...> --box "..."  give finished work a doc and a commit
+  kit claim <id>                      take a feature: push the branch, win or lose
+  kit release <id> [--discard]          give a claim back: delete the branch, both sides
+  kit block <id> "<question>"         park a decision only a human can make
+  kit submit  <id>                      verify completed boxes, stamp, submit for review
+  kit drop  <id> "<why>"              retire a feature that will not be built
+  kit reopen <id> "<why>"              reopen an unmerged submission for review changes
+  kit park <id> "<why>"                retain a complete plan for later
+  kit activate <id>                    propose making parked work available
+  kit next  [--json] [--offline]      what should I work on?
+  kit audit [--json] [--strict] [--offline]
+                                      where do the docs disagree with the repo?
+  kit help  [TOPIC]                   this, or a topic below
+  kit version
 
-Workflow:
-  Plan: start --plan → new/write → finish → agent opens PR → human merges → update trunk.
-  Build: start <id> → enter its worktree → implement and commit task boxes in order.
-  Review: finish -- <gate argv> → agent opens PR → human review.
-  Hand off for human review, then continue independent approved work from updated trunk.
-  Never merge your own work. Use reopen for requested changes.
-  Exploration: use a spike branch, then harvest and the same review sequence.
-  Finish this checkout's claim first; otherwise take the lowest ready id.
+How it works:
+  Plans live in docs/features/, one markdown file per feature, named NNNN-name.md.
+  The directory listing is the board. There is no database and no queue: the docs
+  and the git branches are the state.
 
-State: Parked ↔ Draft → Submitted; Dropped retires a plan. Parking and activation
-need a planning PR merge. Submitted is integrated only on trunk. Status writers:
-submit, drop, reopen, park, activate. Legacy ship/reset alias submit/reopen.
-BLOCKING inbox questions and unmet needs: prevent claims.
+    Parked <-> Draft -> Submitted -> integrated on trunk   (exit: Dropped)
 
-Exit codes:
-  0  success
-  1  completed negative result
-  2  refusal or incomplete operation
-For claim, 0 means yours: enter its worktree; 1 means run next and choose other work;
-2 means fix the reported cause. An unanswered remote is not evidence of absence.
+  The stored statuses are Parked, Draft, Submitted and Dropped. Submitted is a review
+  snapshot; git distinguishes submission from integration. Only submit, drop, reopen,
+  park and activate write status fields. Parking and activation require a planning PR
+  merge before shared availability changes. A claim branch records who has started work.
+  Legacy Shipped/shipped: documents remain readable; ship/reset are compatibility
+  spellings for submit/reopen and enforce the same guards.
 
-Reference (read only what the task needs):
-  kit help protocol       full workflow, also in AGENTS.md
-  kit help template       feature format
-  kit help checks         audit findings and limits
-  kit help inbox          blocking questions and FYI format
-  kit help compatibility  supported versions and upgrades
-  kit help backlog        deferred ideas
-  kit help vision         project direction
-  kit help as-built       TECH format
-  kit help go-checklist   Go review practices
-  kit help python-checklist  Python review practices
+  Plan first: kit start --plan "<round>", draft with kit new, then kit finish and
+  open a PR for human approval. After merge, update trunk and use kit start <id>.
+  "needs:" orders work for agents that never speak to each other.
+  Directly requested work: kit start --work "<outcome>", then implement and commit.
+  kit finish -- <gate argv> harvests if needed, validates, submits and publishes.
+  The agent opens the PR with the supplied title; humans approve and merge.
+  Setup belongs on the first PR over an empty trunk. Never merge your own work.
+  After handoff, continue independent approved work from an updated trunk checkout.
 
-Next and audit use the current repository. --offline reports reduced coverage.
-kit <command> --help also lists flags.`
+  "kit next" and "kit audit" read the project you are in. For several projects:
+    for d in ~/code/*; do (cd $d && kit next); done
+
+The four rules:
+  1. Lowest ID first, and the claim this checkout already holds before anything
+     free. Finishing beats starting.
+  2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
+     order of work, so ordering needs no extra syntax.
+  3. One agent per feature, one feature per checkout. "kit claim <id>" pushes the
+     branch that claims it, and creating that ref on the remote is what decides:
+     exit 1 means another agent won it. Local branches, remote branches and
+     worktrees all count as claims. A won claim makes the worktree to work in;
+     go there, not here.
+  4. A feature named by a BLOCKING line in docs/INBOX.md is blocked until it is
+     answered, and so is one whose "needs:" has not merged. "Named" means the id
+     field of the line, not a mention in the question text. FYI lines never block.
+     See "kit help inbox" for the format.
+
+The claim refusals you will meet most: an unmet "needs:", a BLOCKING inbox line, an
+unwritten ## Problem, ## Design or ## Tasks, an id: that disagrees with the filename,
+a duplicate id, or a plan that has not reached the default branch. "kit claim --help"
+names every one.
+
+Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
+which writes docs/INBOX.md in the format the tool parses, then move to another
+free feature from another trunk checkout. If none is free, report the blocker and stop.
+
+Exit codes, so a script can tell these apart:
+  0  it worked
+  1  it ran and the answer is no: "kit claim" lost the feature to another agent,
+     or "kit audit --strict" found something HIGH
+  2  the command could not run, or refused: unknown command, bad flag, or a
+     refusal named above
+
+Topics:
+  kit help protocol      the rules agents follow, as written into AGENTS.md
+  kit help template      the feature doc format, field by field
+  kit help checks        every audit finding and what it means
+  kit help inbox         the docs/INBOX.md format, and what BLOCKING means
+  kit help compatibility supported use, stable interfaces and coordinated upgrades
+  kit help backlog       the docs/features/BACKLOG.md format, and what promotes an entry
+  kit help vision        the docs/VISION.md shape, and what it is not for
+  kit help as-built      the docs/TECH.md shape, section by section
+  kit help go-checklist      engineering practices for Go projects, tiered
+  kit help python-checklist  the same for Python, and the libraries it does name
+
+Run "kit <command> --help" for a command's options.`
 
 // topics map a help topic to embedded content, so the binary carries its own
 // documentation and an agent never needs the kit's repository.
@@ -155,7 +189,8 @@ path. Unknown forge produces no CI and reports it. Invalid stack/forge, a non-di
 target or failed file/git operations refuse.
 
   kit init ~/code/github.com/you/thing --stack go
-  kit init . --stack go --forge gitlab`,
+  kit init . --stack go --forge gitlab
+  kit init .                     # fill in missing files`,
 
 	"harvest": `kit harvest <title...> --box "<outcome>" [--box "<outcome>"]
 
@@ -163,6 +198,7 @@ Record human-directed exploration on a spike branch. Reserves an id, writes a Dr
 with completed boxes, names the branch after the feature and commits the whole
 working tree. Name observable outcomes with --box; history is not used to infer them.
 Fill Problem and Design; keep Log for plan changes, which may be empty.
+Without --box, the refusal lists the working tree to help name outcomes.
 
 Refuses trunk, planning branches, detached HEAD and existing claims, including branch names citing a
 four-digit id. Use a spike branch; never bypass a pending plan's approval. With no
@@ -222,7 +258,8 @@ Legacy filename-based claims still block acquisition. Upgrade all writers togeth
 (kit help compatibility). A won claim excludes .worktrees/ in .git/info/exclude.
 Kit does not pull into the checkout for you. Never delete another agent's claim.
 
-  kit claim 0007`,
+  kit claim 0007
+  kit claim 7                    # ids accept the short spelling`,
 
 	"release": `kit release <id> [--discard]
 
@@ -230,33 +267,52 @@ Surrender this clone's claim: delete its remote branch, then local branch and th
 worktree kit created. Run from outside that worktree. Current and custom worktrees are preserved as detached snapshots. A cleanup
 failure reports the preserved checkout and asks for a retry through kit release.
 
-Exit 0 means released. Exit 2 refuses missing or multiple claims, foreign ownership,
-unresolvable branches, a local copy missing remote work, unknown trunk/remote state,
-ambiguous remotes, uncommitted files or unmerged work. Doc-only commits are work.
+Refuses while the branch carries any unmerged commit or uncommitted file. Stopping covers two
+situations and only one of them is this: work worth nothing, and work worth keeping.
+For the second, push the branch and open the pull request unfinished, saying why there
+— the doc travels with the branch, so the record lands when it merges.
 
---discard permits deleting unmerged commits, never foreign claims or dirty files.
-Deleted commits may be garbage-collected. Preserve valuable work by committing and
-pushing it and opening an unfinished PR with the remaining work described.
+  0  the claim is gone and the feature is free for anyone to claim
+  2  it could not run: no such feature, nothing claims it, two branches claim it,
+     a branch this clone never created, a branch this checkout cannot resolve, a
+     copy of it here that is not the remote's, no default branch to read work
+     against, several remotes and no origin, the remote did not answer, or the
+     branch carries work and --discard was not given
 
-Remote deletion leases the observed tip, even with --discard; a later push survives.
+--discard explicitly permits deleting unmerged commits from this clone's claim.
+It never overrides ownership or uncommitted-work protection. Preserve valuable work
+before using it; deleted commits may eventually be garbage-collected.
+
+Release removes an unused worktree the claim made. Current and custom checkouts stay
+as detached snapshots. Incomplete cleanup names what remains and a kit release retry.
+
+Uncommitted work in its worktree also refuses release. A commit changing only the doc is work.
+The remote delete uses the observed tip as a lease, even with --discard; a later push
+cannot be deleted by an earlier decision.
 
   kit release 0007
-  kit release 0007 --discard`,
+  kit release 7 --discard`,
 
 	"block": `kit block <id> "<question>" [--fyi]
 
-Ask for a human decision by appending this line to docs/INBOX.md:
+Blocked on something only a human can decide? Write it here and move on. Appends
+one line to docs/INBOX.md in the format the tool parses:
+
   - [ ] YYYY-MM-DD · <id> · BLOCKING|FYI · <question>
 
-BLOCKING stops next offering the feature. --fyi records information without blocking
-or aging. State a leaning. Use this command so the id field is parsed correctly;
-malformed lines conservatively match their whole text and audit reports inbox-unparsed.
+"kit next" then stops offering that feature until a human answers and deletes the
+line. Record the answer in the affected plan, commit it with the inbox change, and
+integrate that commit into any paused checkout before resuming. With --fyi it is recorded without blocking, for anything work can continue
+without.
 
-After the human answers, record the decision in the plan, remove its inbox line and
-commit both. Integrate that commit into paused checkouts before resuming. Meanwhile,
-take independent work from another trunk checkout, or report the blocker and stop.
+Use this rather than editing INBOX.md by hand. A line that misses the format is
+matched by prose instead of by its id field, so it blocks whatever it happens to
+mention — "kit audit" reports those as inbox-unparsed.
 
-  kit block 0007 "Should codes expire? Leaning: no, keep forever."`,
+State a leaning. It turns most questions into a yes/no.
+
+  kit block 0007 "Should codes expire? Leaning: no, keep forever."
+  kit block 7 "Using base62 for slugs." --fyi`,
 
 	"submit": `kit submit <id>
 
@@ -335,6 +391,8 @@ review state. --offline skips remote reads and labels reduced coverage; it does 
 prove remote availability or absence. Missing docs/features exits 2.
 
 Reads only, from any subdirectory. --json includes the same closing guidance.
+JSON progress fields are done and total. For several repositories:
+  for d in ~/code/*; do (cd "$d" && kit next); done
 
   kit next --json
   kit next --offline`,

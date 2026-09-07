@@ -17,6 +17,13 @@ templates/   project documents, help topics and Go/Python scaffolds
 
 `internal/kit` is one package, split by subject. All git subprocesses go through git.go.
 
+## Enforcement
+
+Prefer remote permissions, then command refusals, then prose. Agents can bypass kit
+with raw git. A printed recovery command must preserve the refusal's guarantees:
+never tell a losing claimant to delete the winner's branch. Runtime panes and restarts
+belong to the agent runner, not kit.
+
 ## Documents and lifecycle
 
 - One feature per `docs/features/NNNN-name.md`. Fields: id, title, status, created,
@@ -45,6 +52,7 @@ templates/   project documents, help topics and Go/Python scaffolds
 - Task order is execution order; the first unticked box is next. One box is one commit.
   `needs:` declares prerequisites, satisfied only by Submitted documents on trunk and
   in the current checkout. Submission on a work branch does not unlock dependents.
+  Shared files alone do not create dependencies; there is no global concurrency cap.
 - BLOCKING inbox lines match their id field; malformed lines conservatively match the
   whole line. FYI never blocks or ages. Concurrent questions append one complete line
   per write. Answer in the plan, remove its inbox line and commit both before resuming.
@@ -112,6 +120,7 @@ templates/   project documents, help topics and Go/Python scaffolds
   `--discard` permits unmerged commits, never foreign ownership or dirty worktrees. The
   remote delete leases the observed tip. Current and custom worktrees are kept detached;
   local ref deletion leases the checked tip. Incomplete cleanup names a kit release retry.
+  The local branch must contain the advertised remote tip before deletion.
 - Reopen checks the published trunk before changing a submission; missing objects or
   unknown integration evidence refuse. Reopen, submit and drop reject foreign claims.
 
@@ -121,6 +130,7 @@ templates/   project documents, help topics and Go/Python scaffolds
   an instruction, shared by text and JSON. Missing `docs/features` exits 2.
 - Claims and review states use advertised remote branch tips, not stale remote-tracking
   refs. Progress and last-moved dates come from that tip; unfetched objects give no count.
+  Read liveness from git history across branches, never document mtimes reset by merges.
   Orphan claims require positive evidence from the branch's own tree.
 - Review distinguishes local revision, unpushed submission, published review and
   integration, including squash merges and retained feature branches.
@@ -131,9 +141,13 @@ templates/   project documents, help topics and Go/Python scaffolds
   labels its reduced coverage (`offline: true` in JSON). Neither establishes remote absence.
   Strict online audit fails on an unanswered remote; offline audit names omitted checks.
 - Audit leaves project files unchanged; online reservation checks may refresh refs.
-  `featureChecks` and `repoChecks` use the registry in audit.go. Help is generated from it.
-  Every registered check must have one implementation and a conformance case.
+  Help is generated from the registry in audit.go.
+- **Checks are a table, not a function.** `featureChecks` runs per feature and `repoChecks`
+  once per project; each entry names the registry codes it can report, and a test fails the
+  build if a registered check has no implementation or two claim one code.
 - One defect produces one actionable finding. Severity reflects damage; age is advisory.
+  Delete checks for states nobody may repair. Missing VISION/INBOX share no-protocol;
+  split-claim and id-mismatch are HIGH. Keep issuer patterns in audit.go, never templates.
   `needs-unstated` is LOW because a citation alone cannot prove a dependency. It reads
   Problem and Design only for nonterminal plans. Secret checks use issuer-specific shapes.
 - Unreadable docs produce HIGH findings and skip other feature checks. Terminal docs
@@ -149,14 +163,21 @@ templates/   project documents, help topics and Go/Python scaffolds
   2 refusal or incomplete operation. An interrupted claim is not a confirmed loss.
 - Git path output uses `-z`. Git reads are batched; adding unclaimed features must not add
   subprocesses. Remote listing and reservation refresh each run at most once per read.
-- Remote calls are bounded at 15 seconds. Set `exec.Cmd.WaitDelay` within that budget;
-  killing git alone can leave a helper holding its output pipe. Inject dates into logic.
+  The process-growth comparison uses 30- and 130-feature boards with identical claims.
+- **`exec.CommandContext` kills git and nothing git started.** `git-remote-https` outlives
+  it holding the stdout pipe, so `cmd.Output()` blocks for ever: `next` against a
+  black-holed remote came back in 75s against the 15s its help promises, and in 15.05s
+  once every git command set `cmd.WaitDelay`. The delay comes out of the bound, not on
+  top of it.
+  Remote calls are bounded at 15 seconds. A 5s timeout excluded a working SSH remote
+  measured at 5.58s. Inject dates into logic.
 
 ## Scaffolding and parsing
 
 - Init exclusively creates missing files, preserving existing files and dangling symlinks.
   It owns the document layout; submit's TECH creation is a legacy fallback. Only the
   Work protocol section is refreshed; house rules and following sections survive.
+  Virgin projects audit clean: unfilled-vision and no-protocol wait for features.
 - AGENTS.md has a project title and refresh marker; CLAUDE.md is its symlink. Protocol
   detection ignores quoted markers, fences and HTML comments. Staleness reports which
   side is newer; never refresh a newer project protocol from an older binary.
@@ -170,11 +191,14 @@ templates/   project documents, help topics and Go/Python scaffolds
   main.go.tmpl. Embed from assets.go because go:embed cannot reach a parent directory.
 - Frontmatter closes only on a line exactly `---`; writes stay inside it. Trailing comments
   require two spaces before `#`. Backtick and tilde fences hide headings and task examples.
+  Preserve `title: Fix #123 crash`; a setext underline must not close frontmatter.
 - CLI parsing accepts flags after positional arguments. Requested help uses stdout;
   bad-flag usage uses stderr. Shipped references cite rule names, not list numbers.
 - Help topics and protocol paths must resolve through embedded content or scaffolded files.
   Checklists are review aids, not executable task boxes. Tests protect reachability,
   parsing and refusals, not prose length or wording counts.
+  Feature outcomes and splitting rules live in the unchanged AGENTS protocol. Optional
+  check/checked predictions were removed after zero of 82 docs used them; do not restore ceremony.
 
 ## Verification and release
 
@@ -189,12 +213,24 @@ make release TAG=v1.0.0  # complete gate, validated trunk tag, verified push
 
 CI runs Makefile CI_STEPS: check, vuln, audit. Missing or failed checks fail the gate.
 The Go linter is pinned at v2.12.2; govulncheck at v1.7.0. Scaffolded CI is bounded at
-15 minutes. Build with CGO_ENABLED=0, -trimpath and stripped ldflags; do not export
-CGO_ENABLED=0 into race tests. Version falls back to Go build metadata when unstamped.
+15 minutes. Build with CGO_ENABLED=0, -trimpath and stripped ldflags.
+Version falls back to Go build metadata when unstamped.
 
-Conformance builds the binary once and drives isolated temporary projects with controlled
-gitEnv, not the user's environment. No shared cwd, globals or fixture ordering. Coverage
-of the driver process is not coverage of the tested binary, so no percentage is reported.
+- **`CGO_ENABLED=0` must not reach `make test`.** The race detector needs cgo on
+  linux/amd64 but not darwin/arm64, so a file-level export passes locally and fails CI.
+
+**The conformance suite** (`cmd/kit/conformance*_test.go`) builds the binary once and drives
+it with the test suite’s race mode against throwaway projects, asserting on stdout, stderr, exit codes and the files left
+behind. In-tree, because an external script is deleted without anything noticing. Four
+properties are load-bearing. `TestEveryRegisteredCheckIsExercised` compares the cases
+against `kit.Checks` both ways, so a check with no test fails the build. Every audit case
+starts from the same clean project, which must report nothing. Every test is independent —
+own `t.TempDir()`, no `os.Chdir` or `os.Setenv`, binary built once behind `sync.Once`.
+**And the binary under test gets `gitEnv()`, not `os.Environ()`**: it used to inherit the
+developer's `~/.gitconfig`, so three tests — including the one written to catch the
+`release` deletion bug — passed only on a machine whose `init.defaultBranch` is `main`.
+
+Coverage of the driver process is not coverage of the tested binary; no percentage is reported.
 
 The module is private: installation requires GOPRIVATE and credentials. Preserve existing
 comma-separated GOPRIVATE entries; exported environment values override `go env -w`.
