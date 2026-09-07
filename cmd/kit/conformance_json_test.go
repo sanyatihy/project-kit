@@ -45,7 +45,7 @@ func TestTheBoardsGroupsAreAlwaysLists(t *testing.T) {
 	// A board with nothing in any group, which is where `null` used to come from.
 	p := setUp(t)
 	got := p.payload(0, "next", "--json")
-	for _, key := range []string{"yours", "ready", "taken", "blocked"} {
+	for _, key := range []string{"yours", "ready", "taken", "blocked", "parked"} {
 		isArray(t, got, key)
 	}
 	if _, ok := got["guidance"]; !ok {
@@ -79,7 +79,7 @@ func TestJSONReportsADirectoryThatWasNeverSurveyed(t *testing.T) {
 	p := newProject(t)
 
 	board := p.payload(2, "next", "--json")
-	for _, key := range []string{"yours", "ready", "taken", "blocked"} {
+	for _, key := range []string{"yours", "ready", "taken", "blocked", "parked"} {
 		isArray(t, board, key)
 	}
 	if !strings.Contains(string(board["error"]), "not set up yet") {

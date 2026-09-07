@@ -40,6 +40,8 @@ Commands (kit help <command> gives usage, refusals and recovery):
   kit submit <id>                  stamp completed work for review
   kit reopen <id> "<why>"          revise an unmerged submission
   kit drop <id> "<why>"            retire an unbuilt plan
+  kit park <id> "<why>"            retain a complete plan for later
+  kit activate <id>                propose making parked work available
   kit next [--json] [--offline]    show the next task and checkout
   kit audit [--json] [--strict] [--offline]  report drift
   kit version                     show the installed version
@@ -53,9 +55,10 @@ Workflow:
   Exploration: use a spike branch, then harvest and the same review sequence.
   Finish this checkout's claim first; otherwise take the lowest ready id.
 
-State: Draft → Submitted; Dropped retires a plan. Submitted is integrated only on
-trunk. Only submit, drop and reopen write status fields. Legacy ship/reset alias
-submit/reopen. BLOCKING inbox questions and unmet needs: prevent claims.
+State: Parked ↔ Draft → Submitted; Dropped retires a plan. Parking and activation
+need a planning PR merge. Submitted is integrated only on trunk. Status writers:
+submit, drop, reopen, park, activate. Legacy ship/reset alias submit/reopen.
+BLOCKING inbox questions and unmet needs: prevent claims.
 
 Exit codes:
   0  success
@@ -96,9 +99,25 @@ var topics = map[string]string{
 // commandHelp is the description and examples printed by `kit <cmd> --help`,
 // above the flag list.
 var commandHelp = map[string]string{
+	"park": `kit park <id> "<reason>"
+
+On a plan/<round> branch with no feature id, commit a complete, unstarted Draft
+as Parked and record the reason. Commit the plan first; unrelated edits stay out.
+Refuses claims, terminal history, invalid plans, dirty target files and unknown
+remote state. Integrate the current trunk before retrying. Already Parked is a no-op.
+Push the planning branch and open a PR. The human's merge changes shared availability.
+`,
+	"activate": `kit activate <id>
+
+When the operator asks, revalidate a Parked plan and commit it as Draft on a
+plan/<round> branch with no feature id. Uses park's plan, claim and remote guards.
+Already Draft is a no-op. This schedules work; block records a human question,
+release surrenders a claim, and drop retires a plan. Push and open a PR for human review; implementation
+can start only after activation merges and the trunk checkout is updated.
+`,
 	"finish": `kit finish [--json] [-- <gate argv>]
 
-Plans: validate Draft plans and untouched tasks, commit only setup/docs, audit, push.
+Plans: validate Draft or Parked plans and untouched tasks, commit only setup/docs, audit, push.
 Work: supply an executable and arguments after --. Harvest recorded direct work
 if needed; fill the requested Problem/Design facts and commit before retrying.
 Then require complete tasks and a clean tree, run the gate, audit, submit and push.
@@ -285,7 +304,8 @@ Revise an unmerged submission: set Draft, clear submitted:, add the reason to Lo
 and commit the doc. Unknown or missing statuses require --repair. Dropped stays
 retired; draft a new feature if the operator wants that work again.
 
-Refuses already Draft, foreign claims, ambiguous docs or missing frontmatter.
+Refuses already Draft, Parked (including --repair), foreign claims, ambiguous docs
+or missing frontmatter. Use activate for an operator-requested scheduling change.
 Reopening Submitted requires an unmerged working branch and readable published
 trunk (local trunk with no remote). Fetch missing objects before retrying.
 Submitted on trunk is frozen history and needs a new feature.

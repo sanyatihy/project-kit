@@ -21,12 +21,20 @@ templates/   project documents, help topics and Go/Python scaffolds
 
 - One feature per `docs/features/NNNN-name.md`. Fields: id, title, status, created,
   submitted, needs. Frontmatter carries data only; guidance stays in HTML comments.
-- Lifecycle: Draft → Submitted; Dropped retires unbuilt work. Submitted on a working
+- Lifecycle: Parked ↔ Draft → Submitted; Dropped retires unbuilt work. Submitted on a working
   branch means awaiting review; Submitted on trunk means integrated and frozen.
   Reopen returns an unmerged submission to Draft and clears its date.
+- Park and activate commit only the complete, unstarted target on a planning branch.
+  They reject claims, dirty target files and unreadable remote state, and require the
+  current trunk as an ancestor. Retries after a committed transition are no-ops.
+  Parking preserves plan content; activation needs merge before claims become eligible.
+  Parked remains document-validated, appears separately on next with its Log reason,
+  and does not age as stalled work. It satisfies no implementation dependency.
+  Next retains observed ownership; parked-claim fails strict audit when a claim races
+  parking review. Unknown integration is reported without guessing shared availability.
 - Legacy Shipped/shipped: remains readable; ship/reset alias submit/reopen with the same
   guards. Invalid-status repair requires `--repair`; Dropped cannot be reopened.
-- Submit, drop and reopen own status changes and commit them. Submit requires a clean
+- Submit, drop, reopen, park and activate own status changes and commit them. Submit requires a clean
   tree and the feature's branch. A failed status commit names the file to preserve.
 - Mutations require an unambiguous document: duplicate ids or frontmatter keys refuse.
   Read-only lookup may return the first match so diagnostics remain available.
@@ -51,7 +59,7 @@ templates/   project documents, help topics and Go/Python scaffolds
 - With no history, start creates and publishes an empty main through exclusive ref
   creation. The index and working files remain on the first review branch. Existing
   history, conflicting branches and unknown remote state refuse unsafe setup.
-- Plan finish validates complete Draft plans with unticked tasks, commits only approved
+- Plan finish validates complete Draft or Parked plans with unticked tasks, commits only approved
   setup/document paths, audits and pushes. Implementation changes require their own route.
 - Work finish harvests recorded direct work once, requests missing Problem/Design facts,
   and reuses a partial harvest after interruption, then requires complete tasks and a

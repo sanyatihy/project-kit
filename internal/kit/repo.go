@@ -11,6 +11,7 @@ import (
 
 const (
 	StatusDraft         = "Draft"
+	StatusParked        = "Parked"
 	StatusSubmitted     = "Submitted"
 	StatusLegacyShipped = "Shipped"
 	StatusDropped       = "Dropped"
@@ -370,6 +371,10 @@ func (r *Repo) UnmetNeeds(f *Feature) []string {
 // answering otherwise would block the first claim of every project that has one branch
 // and no remote.
 func (r *Repo) PlanLanded(f *Feature) bool {
+	// A plan already on trunk can still carry an unreviewed activation here.
+	if f.Status == StatusDraft && r.integratedStatuses()[f.Rel] == StatusParked {
+		return false
+	}
 	// Unknown landing state is handled by foundationProblem, which names the fetch.
 	// It must not be reported as a plan known to be absent from the trunk.
 	return r.trackedOnTrunk(f.Rel) || r.trunkPaths == nil

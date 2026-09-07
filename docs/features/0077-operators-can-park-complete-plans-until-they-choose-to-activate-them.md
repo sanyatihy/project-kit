@@ -1,9 +1,9 @@
 ---
 id: 0077
 title: Operators can park complete plans until they choose to activate them
-status: Draft
+status: Submitted
 created: 2026-09-06
-submitted:
+submitted: 2026-09-07
 needs:
 ---
 
@@ -42,8 +42,14 @@ This extends 0075's lifecycle.
 
 ## Tasks
 
-- [ ] Preserve full plans through command-owned parking and activation transitions, with safe refusal and retry behavior
-- [ ] Make next, claim, dependencies and audit agree on parked availability, including activation awaiting merge and stale-clone attempts
-- [ ] Document operator activation, distinguish parking from blockers and claim release, and verify text, JSON and previous-version safety
+- [x] Preserve full plans through command-owned parking and activation transitions, with safe refusal and retry behavior
+- [x] Make next, claim, dependencies and audit agree on parked availability, including activation awaiting merge and stale-clone attempts
+- [x] Document operator activation, distinguish parking from blockers and claim release, and verify text, JSON and previous-version safety
+
+- [x] Report claims acquired during parking review without hiding ownership or guessing unknown integration state
+
+- [x] Integrate 0078 and verify parking and activation through guided planning, finish and start
 
 ## Log
+- 2026-09-06 — Added review-race coverage: a claim may appear after parking is committed but before the planning PR merges. Next must show ownership and strict audit must flag that conflict.
+- 2026-09-07 — reopen to Draft: Integrate merged 0078 guided workflow and resolve parking conflicts

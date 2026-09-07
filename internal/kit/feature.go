@@ -10,7 +10,7 @@ import (
 // The feature document: its fields, its sections, and the branch name it implies.
 
 // AllStatuses includes current statuses and the readable legacy submission stamp.
-var AllStatuses = []string{StatusDraft, StatusDropped, StatusSubmitted, StatusLegacyShipped}
+var AllStatuses = []string{StatusDraft, StatusParked, StatusDropped, StatusSubmitted, StatusLegacyShipped}
 
 // terminal reports whether a status is an end state, after which a branch bearing the
 // feature's name is a merged leftover rather than somebody's work in progress.
@@ -73,6 +73,17 @@ func (f *Feature) Name() string {
 
 // Section returns a section's trimmed content, empty when absent.
 func (f *Feature) Section(heading string) string { return f.sections[heading] }
+
+// ParkingReason is the latest command-recorded scheduling decision.
+func (f *Feature) ParkingReason() string {
+	reason := "operator activation required"
+	for _, line := range strings.Split(f.Section("Log"), "\n") {
+		if _, why, ok := strings.Cut(line, " — parked: "); ok {
+			reason = strings.TrimSpace(why)
+		}
+	}
+	return reason
+}
 
 // PlannedSections are what an agent needs in order to work a feature at all. `Log` is
 // not among them: a plan that never changed needs no Log entries.

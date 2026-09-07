@@ -61,6 +61,23 @@ Confirmed competing winner: exit 1. Never infer ownership from matching starting
 or delete refs by hand. Worktree creation warning: the claim is won; preserve obstructing
 files and retry. Offline evidence cannot certify remote ownership or integration.
 
+## Parked plans
+
+Upgrade every writer before parking or activating plans. Parked is a scheduling status,
+not an invalid Draft. Next adds a `parked` array with reasons and no build tasks; existing
+JSON fields keep their meanings. Park and activate extend the lifecycle through reviewed
+planning commits; other protocol rules remain in force.
+
+The pre-0077 binary at b8bfe7e refuses a Parked claim with exit 1. Its board treats Parked
+as unknown and may suggest repair; older repair commands can erase scheduling intent.
+Never repair Parked with an old binary or use mixed writers. Current reopen refuses
+Parked even with --repair. A stale clone must update trunk before claiming.
+
+Parking checks visible claims when the command runs. The new HIGH `parked-claim`
+finding flags a known claim on a parked plan. Recheck next and audit before
+merging the planning PR: a later claim can race a review. Git permissions and human
+review enforce merge authority; these commands cannot prevent raw git changes.
+
 ## Release boundary
 
 Submitted means awaiting review. After human merge, the release operator validates trunk,
