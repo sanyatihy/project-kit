@@ -72,9 +72,10 @@ type Repo struct {
 	// from a mirror that may be stale.
 	Offline bool
 
-	commits []commit
-	refs    []string
-	loaded  bool
+	commits        []commit
+	refs           []string
+	loaded         bool
+	claimWorktrees map[string]string // branch -> absolute checkout path, read with refs
 
 	// The default branch, asked once. The flag is what makes "there is no trunk" an
 	// answer rather than a question not yet asked: without it, every caller re-ran the

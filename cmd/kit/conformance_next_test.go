@@ -975,3 +975,36 @@ func TestLocalSubmissionDoesNotReachTheReviewBoard(t *testing.T) {
 		t.Fatalf("unpushed submission = %+v", plan)
 	}
 }
+
+func TestTakenEntryNamesOnlyThisClonesHoldingWorktree(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("work/0007")
+	// An external custom path must survive porcelain quoting and stay relative.
+	path := filepath.Join(t.TempDir(), "held \"checkout\"\nwith spaces")
+	a.git("worktree", "move", w.Root, path)
+	path, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, err := filepath.Rel(a.Root, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.ToSlash(rel)
+	plan := a.plan("next", "--json")
+	if len(plan.Taken) != 1 || plan.Taken[0].Worktree != want || plan.Taken[0].Mine || len(plan.Yours) != 0 {
+		t.Fatalf("held claim = %+v", plan)
+	}
+	a.run("next").ok().has("checked out here: " + want)
+	remote := b.plan("next", "--json")
+	if len(remote.Taken) != 1 || remote.Taken[0].Worktree != "" {
+		t.Fatalf("another clone's checkout leaked onto board: %+v", remote)
+	}
+	// A local branch alone does not establish that a worktree holds it.
+	a.git("worktree", "remove", path)
+	if taken := a.plan("next", "--json").Taken; len(taken) != 1 || taken[0].Worktree != "" {
+		t.Fatalf("unoccupied claim = %+v", taken)
+	}
+}

@@ -2,6 +2,7 @@ package kit
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -18,9 +19,10 @@ type Item struct {
 	Doc       string   `json:"doc"`
 	Task      string   `json:"task"`
 	Branch    string   `json:"branch"`
-	Done      int      `json:"done"`            // boxes ticked
-	Total     int      `json:"total"`           // boxes in all
-	Needs     []string `json:"needs,omitempty"` // ids this is still waiting on
+	Done      int      `json:"done"`               // boxes ticked
+	Total     int      `json:"total"`              // boxes in all
+	Needs     []string `json:"needs,omitempty"`    // ids this is still waiting on
+	Worktree  string   `json:"worktree,omitempty"` // relative to this repo root; presence is not ownership
 	ClaimedBy string   `json:"claimed_by,omitempty"`
 	WaitingOn string   `json:"waiting_on,omitempty"`
 	Reason    string   `json:"reason,omitempty"`
@@ -229,6 +231,11 @@ func Survey(r *Repo) Plan {
 		if item.Mine = r.Mine(f.ID); item.Mine {
 			plan.Claiming = f.ID
 			item.Branch = r.HeadBranch()
+		}
+		if path := r.claimWorktrees[item.Branch]; path != "" {
+			if rel, err := filepath.Rel(r.Root, path); err == nil {
+				item.Worktree = filepath.ToSlash(rel)
+			}
 		}
 		// Boxes are ticked on the claim branch and stay there until it merges, so the
 		// checkout's copy reports 0/3 however far along somebody else is — which reads as
