@@ -940,6 +940,9 @@ func printPlan(plan kit.Plan, color bool) {
 			}
 			fmt.Printf("    %s  %-5s %s — %s%s\n", item.ID, item.Progress(),
 				kit.Show(item.Title, 34), item.ClaimedBy, moved)
+			if item.Worktree != "" {
+				fmt.Printf("          checked out here: %s\n", item.Worktree)
+			}
 		}
 	}
 

@@ -132,16 +132,19 @@ func (r *Repo) loadGit() {
 			}
 		}
 	}
-	// `branch refs/heads/<name>`, and the name is the whole rest of it. Keeping only the
-	// last path segment was right for the branches the kit names itself, which carry no
-	// slash — but `agents/0039-work` then landed in here twice, once whole from the branch
-	// list and once as `0039-work`, and one checkout reported itself as two agents holding
-	// the feature. `split-claim` said so, and its fix line deletes the work.
-	for _, line := range strings.Split(r.git("worktree", "list", "--porcelain"), "\n") {
-		if rest, found := strings.CutPrefix(strings.TrimSpace(line), "branch "); found {
-			if name := strings.TrimPrefix(rest, "refs/heads/"); name != "" {
-				seen[name] = true
-			}
+	// NUL fields preserve spaces, newlines and backslashes in checkout paths.
+	r.claimWorktrees = map[string]string{}
+	path := ""
+	for _, field := range strings.Split(r.git("worktree", "list", "--porcelain", "-z"), "\x00") {
+		switch {
+		case field == "":
+			path = ""
+		case strings.HasPrefix(field, "worktree "):
+			path = strings.TrimPrefix(field, "worktree ")
+		case strings.HasPrefix(field, "branch refs/heads/"):
+			name := strings.TrimPrefix(field, "branch refs/heads/")
+			seen[name] = true
+			r.claimWorktrees[name] = path
 		}
 	}
 	for name := range seen {

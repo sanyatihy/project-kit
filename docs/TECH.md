@@ -129,7 +129,14 @@ belong to the agent runner, not kit.
 - Next and audit read one repository, from any subdirectory. Every next state includes
   an instruction, shared by text and JSON. Missing `docs/features` exits 2.
 - Claims and review states use advertised remote branch tips, not stale remote-tracking
-  refs. Progress and last-moved dates come from that tip; unfetched objects give no count.
+  refs. Board progress and last-moved use a local head when it contains the advertised
+  tip; behind or diverged heads keep the remote answer, and unfetched objects give no
+  count. Other checkouts' uncommitted ticks are excluded. Review and audit retain the
+  published anchor, so an unpushed submission does not enter awaiting review.
+- Board items carry an optional `worktree` path relative to the surveyed repo root,
+  from the batched NUL-delimited worktree listing. Taken entries print it; guidance
+  counts held claims and names `kit release <id>` for an absent agent. A checkout path
+  does not grant ownership or route another agent into that checkout.
   Read liveness from git history across branches, never document mtimes reset by merges.
   Orphan claims require positive evidence from the branch's own tree.
 - Review distinguishes local revision, unpushed submission, published review and

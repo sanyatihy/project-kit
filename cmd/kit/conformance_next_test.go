@@ -922,3 +922,118 @@ func TestTheBoardCountsTheBoxesTheRemoteHas(t *testing.T) {
 		t.Errorf("the board says %+v; the branch the remote has is one of two ticked", taken)
 	}
 }
+
+func TestClaimProgressUsesLocalHeadOnlyWhenItContainsRemote(t *testing.T) {
+	t.Parallel()
+	for _, state := range []string{"ahead", "equal", "behind", "diverged"} {
+		t.Run(state, func(t *testing.T) {
+			t.Parallel()
+			a, _ := twoAgents(t)
+			a.run("claim", "0007").ok()
+			w := a.claimWorktree("work/0007")
+			w.git("tag", "claim-base")
+			feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [ ] Submit it")
+			w.commitAllAt("0007: published progress", daysAgo(2))
+			w.git("push", "-q", "origin", "work/0007")
+			wantDone, wantDays := 1, 2
+			switch state {
+			case "behind":
+				w.git("reset", "--hard", "claim-base")
+			case "diverged":
+				w.git("reset", "--hard", "claim-base")
+				fallthrough
+			case "ahead":
+				feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [x] Submit it")
+				w.commitAllAt("0007: local progress", daysAgo(1))
+				if state == "ahead" {
+					wantDone, wantDays = 2, 1
+				}
+			}
+			// Dirty ticks in the held checkout are never another checkout's progress.
+			feature(w, "0007", "widget", "A widget", "Draft", "- [ ] Build it")
+			taken := a.plan("next", "--json").Taken
+			if len(taken) != 1 || taken[0].Done != wantDone || taken[0].Total != 2 || taken[0].Moved == nil {
+				t.Fatalf("%s: progress = %+v", state, taken)
+			}
+			if days := int(time.Since(*taken[0].Moved).Hours() / 24); days != wantDays {
+				t.Errorf("moved = %d days, want %d", days, wantDays)
+			}
+		})
+	}
+}
+
+func TestLocalSubmissionDoesNotReachTheReviewBoard(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("work/0007")
+	feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it")
+	w.commitAll("0007: built")
+	w.run("submit", "0007").ok()
+	plan := a.plan("next", "--json")
+	if len(plan.AwaitingReview) != 0 || len(plan.Taken) != 1 || plan.Taken[0].Done != 1 {
+		t.Fatalf("unpushed submission = %+v", plan)
+	}
+}
+
+func TestTakenEntryNamesOnlyThisClonesHoldingWorktree(t *testing.T) {
+	t.Parallel()
+	a, b := twoAgents(t)
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("work/0007")
+	// An external custom path must survive porcelain quoting and stay relative.
+	path := filepath.Join(t.TempDir(), "held \"checkout\"\nwith spaces")
+	a.git("worktree", "move", w.Root, path)
+	path, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, err := filepath.Rel(a.Root, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.ToSlash(rel)
+	plan := a.plan("next", "--json")
+	if len(plan.Taken) != 1 || plan.Taken[0].Worktree != want || plan.Taken[0].Mine || len(plan.Yours) != 0 {
+		t.Fatalf("held claim = %+v", plan)
+	}
+	a.run("next").ok().has("checked out here: " + want)
+	if !strings.Contains(plan.Guidance, "1 claim is checked out in this clone (0007)") ||
+		!strings.Contains(plan.Guidance, "kit release <id>") ||
+		strings.Contains(plan.Guidance, "Stopping here") {
+		t.Fatalf("local claim guidance = %q", plan.Guidance)
+	}
+	if plan.Action == nil || plan.Action.Checkout != a.Root || len(plan.Action.Command) != 0 {
+		t.Fatalf("taken claim routed the reader into another checkout: %+v", plan.Action)
+	}
+	remote := b.plan("next", "--json")
+	if len(remote.Taken) != 1 || remote.Taken[0].Worktree != "" || strings.Contains(remote.Guidance, "checked out in this clone") {
+		t.Fatalf("another clone's checkout leaked onto board: %+v", remote)
+	}
+	// A local branch alone does not establish that a worktree holds it.
+	a.git("worktree", "remove", path)
+	if taken := a.plan("next", "--json").Taken; len(taken) != 1 || taken[0].Worktree != "" {
+		t.Fatalf("unoccupied claim = %+v", taken)
+	}
+}
+
+func TestGuidanceCountsHeldClaimsWithoutOfferingTheirWork(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	feature(p, "0001", "one", "One", "Draft", "- [ ] Build one")
+	feature(p, "0002", "two", "Two", "Draft", "- [ ] Build two")
+	p.commitAll("plans")
+	for _, branch := range []string{"0001-one", "0002-two"} {
+		p.git("worktree", "add", "-b", branch, filepath.Join(t.TempDir(), branch))
+	}
+	plan := p.plan("next", "--json")
+	if len(plan.Taken) != 2 || len(plan.Yours) != 0 || len(plan.Ready) != 0 ||
+		!strings.Contains(plan.Guidance, "2 claims are checked out in this clone (0001, 0002)") ||
+		!strings.Contains(plan.Guidance, "kit release <id>") {
+		t.Fatalf("held claims = %+v", plan)
+	}
+	text := strings.Join(strings.Fields(p.run("next").ok().Stdout), " ")
+	if !strings.Contains(text, "2 claims are checked out in this clone") || !strings.Contains(text, "kit release <id>") {
+		t.Fatalf("text guidance = %s", text)
+	}
+}

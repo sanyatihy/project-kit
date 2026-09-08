@@ -1,9 +1,9 @@
 ---
 id: 0081
 title: The board counts a claim's real progress and names the checkout holding it
-status: Draft
+status: Submitted
 created: 2026-09-08
-submitted:
+submitted: 2026-09-08
 needs:
 ---
 
@@ -46,8 +46,8 @@ one feature per checkout is what the path makes easy to break.
 
 ## Tasks
 
-- [ ] Count a claim's boxes and last-moved date from the local head when it contains the advertised tip
-- [ ] Name the worktree holding a claim on its taken entry, in text and JSON
-- [ ] Say in the guidance which claims this clone is holding and how to take one back
+- [x] Count a claim's boxes and last-moved date from the local head when it contains the advertised tip
+- [x] Name the worktree holding a claim on its taken entry, in text and JSON
+- [x] Say in the guidance which claims this clone is holding and how to take one back
 
 ## Log

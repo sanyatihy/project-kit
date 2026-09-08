@@ -2,6 +2,7 @@ package kit
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -18,9 +19,10 @@ type Item struct {
 	Doc       string   `json:"doc"`
 	Task      string   `json:"task"`
 	Branch    string   `json:"branch"`
-	Done      int      `json:"done"`            // boxes ticked
-	Total     int      `json:"total"`           // boxes in all
-	Needs     []string `json:"needs,omitempty"` // ids this is still waiting on
+	Done      int      `json:"done"`               // boxes ticked
+	Total     int      `json:"total"`              // boxes in all
+	Needs     []string `json:"needs,omitempty"`    // ids this is still waiting on
+	Worktree  string   `json:"worktree,omitempty"` // relative to this repo root; presence is not ownership
 	ClaimedBy string   `json:"claimed_by,omitempty"`
 	WaitingOn string   `json:"waiting_on,omitempty"`
 	Reason    string   `json:"reason,omitempty"`
@@ -230,12 +232,17 @@ func Survey(r *Repo) Plan {
 			plan.Claiming = f.ID
 			item.Branch = r.HeadBranch()
 		}
+		if path := r.claimWorktrees[item.Branch]; path != "" {
+			if rel, err := filepath.Rel(r.Root, path); err == nil {
+				item.Worktree = filepath.ToSlash(rel)
+			}
+		}
 		// Boxes are ticked on the claim branch and stay there until it merges, so the
 		// checkout's copy reports 0/3 however far along somebody else is — which reads as
 		// an agent that has done nothing, the same picture `stalled` paints. Read the
 		// branch instead. Not for your own claim: there the working tree is this branch,
 		// and fresher than any commit on it.
-		if rev := r.claimRev(claim); claim != "" && rev != "" {
+		if rev := r.claimProgressRev(claim); claim != "" && rev != "" {
 			if when := r.commitDate(rev); !when.IsZero() {
 				item.Moved = &when
 			}
@@ -356,6 +363,20 @@ func Survey(r *Repo) Plan {
 	return plan
 }
 
+// claimProgressRev may use committed local work, but review and audit keep claimRev's
+// published anchor. A stale or diverged head cannot replace the advertised answer.
+func (r *Repo) claimProgressRev(branch string) string {
+	if branch == "" {
+		return ""
+	}
+	rev := r.claimRev(branch)
+	local := "refs/heads/" + branch
+	if r.hasRef(local) && rev != "" && r.reaches(rev, local) {
+		return local
+	}
+	return rev
+}
+
 // waitingOnNeeds says what an unmet needs: is waiting for.
 //
 // A dependency that is Dropped can never submit, so a waiting instruction is a
@@ -408,6 +429,32 @@ func waitingOnLanding(r *Repo, f *Feature) string {
 // fixed by adding a sentence, and each time an agent had reached the end of the
 // documented path, found nothing, and decided for itself.
 func guidanceFor(r *Repo, plan Plan) string {
+	guidance := primaryGuidance(r, plan)
+	if ids := plan.localClaims(); len(ids) > 0 {
+		what := fmt.Sprintf("%d claims are", len(ids))
+		if len(ids) == 1 {
+			what = "1 claim is"
+		}
+		guidance += " " + what + " checked out in this clone (" + strings.Join(ids, ", ") +
+			"). Checkout paths do not transfer ownership. If a claim's agent is gone, " +
+			"use kit release <id> to take it back before claiming it again."
+	}
+	return guidance
+}
+
+func (p Plan) localClaims() []string {
+	var ids []string
+	for _, group := range [][]Item{p.Yours, p.Taken, p.Blocked} {
+		for _, item := range group {
+			if item.Worktree != "" {
+				ids = append(ids, item.ID)
+			}
+		}
+	}
+	return ids
+}
+
+func primaryGuidance(r *Repo, plan Plan) string {
 	switch {
 	case plan.Checkout != "":
 		return plan.Checkout
@@ -447,9 +494,13 @@ func guidanceFor(r *Repo, plan Plan) string {
 			"After it merges, update a trunk checkout and run kit next again. " +
 			"Nothing on a round can be claimed until the round is on the trunk."
 	case !plan.Empty():
+		ending := "Stopping here is the right outcome: say so and wait."
+		if len(plan.localClaims()) > 0 {
+			ending = "Leave active claims to their agents."
+		}
 		return "nothing is free: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
-			"Stopping here is the right outcome: say so and wait."
+			ending
 	// Everything open is finished and waiting, which is not the same as nothing having
 	// been planned: the entries below are plans that were built.
 	case len(plan.AwaitingReview) > 0:
