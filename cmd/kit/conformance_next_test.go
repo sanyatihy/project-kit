@@ -998,13 +998,42 @@ func TestTakenEntryNamesOnlyThisClonesHoldingWorktree(t *testing.T) {
 		t.Fatalf("held claim = %+v", plan)
 	}
 	a.run("next").ok().has("checked out here: " + want)
+	if !strings.Contains(plan.Guidance, "1 claim is checked out in this clone (0007)") ||
+		!strings.Contains(plan.Guidance, "kit release <id>") ||
+		strings.Contains(plan.Guidance, "Stopping here") {
+		t.Fatalf("local claim guidance = %q", plan.Guidance)
+	}
+	if plan.Action == nil || plan.Action.Checkout != a.Root || len(plan.Action.Command) != 0 {
+		t.Fatalf("taken claim routed the reader into another checkout: %+v", plan.Action)
+	}
 	remote := b.plan("next", "--json")
-	if len(remote.Taken) != 1 || remote.Taken[0].Worktree != "" {
+	if len(remote.Taken) != 1 || remote.Taken[0].Worktree != "" || strings.Contains(remote.Guidance, "checked out in this clone") {
 		t.Fatalf("another clone's checkout leaked onto board: %+v", remote)
 	}
 	// A local branch alone does not establish that a worktree holds it.
 	a.git("worktree", "remove", path)
 	if taken := a.plan("next", "--json").Taken; len(taken) != 1 || taken[0].Worktree != "" {
 		t.Fatalf("unoccupied claim = %+v", taken)
+	}
+}
+
+func TestGuidanceCountsHeldClaimsWithoutOfferingTheirWork(t *testing.T) {
+	t.Parallel()
+	p := setUp(t)
+	feature(p, "0001", "one", "One", "Draft", "- [ ] Build one")
+	feature(p, "0002", "two", "Two", "Draft", "- [ ] Build two")
+	p.commitAll("plans")
+	for _, branch := range []string{"0001-one", "0002-two"} {
+		p.git("worktree", "add", "-b", branch, filepath.Join(t.TempDir(), branch))
+	}
+	plan := p.plan("next", "--json")
+	if len(plan.Taken) != 2 || len(plan.Yours) != 0 || len(plan.Ready) != 0 ||
+		!strings.Contains(plan.Guidance, "2 claims are checked out in this clone (0001, 0002)") ||
+		!strings.Contains(plan.Guidance, "kit release <id>") {
+		t.Fatalf("held claims = %+v", plan)
+	}
+	text := strings.Join(strings.Fields(p.run("next").ok().Stdout), " ")
+	if !strings.Contains(text, "2 claims are checked out in this clone") || !strings.Contains(text, "kit release <id>") {
+		t.Fatalf("text guidance = %s", text)
 	}
 }

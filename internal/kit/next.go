@@ -429,6 +429,32 @@ func waitingOnLanding(r *Repo, f *Feature) string {
 // fixed by adding a sentence, and each time an agent had reached the end of the
 // documented path, found nothing, and decided for itself.
 func guidanceFor(r *Repo, plan Plan) string {
+	guidance := primaryGuidance(r, plan)
+	if ids := plan.localClaims(); len(ids) > 0 {
+		what := fmt.Sprintf("%d claims are", len(ids))
+		if len(ids) == 1 {
+			what = "1 claim is"
+		}
+		guidance += " " + what + " checked out in this clone (" + strings.Join(ids, ", ") +
+			"). Checkout paths do not transfer ownership. If a claim's agent is gone, " +
+			"use kit release <id> to take it back before claiming it again."
+	}
+	return guidance
+}
+
+func (p Plan) localClaims() []string {
+	var ids []string
+	for _, group := range [][]Item{p.Yours, p.Taken, p.Blocked} {
+		for _, item := range group {
+			if item.Worktree != "" {
+				ids = append(ids, item.ID)
+			}
+		}
+	}
+	return ids
+}
+
+func primaryGuidance(r *Repo, plan Plan) string {
 	switch {
 	case plan.Checkout != "":
 		return plan.Checkout
@@ -468,9 +494,13 @@ func guidanceFor(r *Repo, plan Plan) string {
 			"After it merges, update a trunk checkout and run kit next again. " +
 			"Nothing on a round can be claimed until the round is on the trunk."
 	case !plan.Empty():
+		ending := "Stopping here is the right outcome: say so and wait."
+		if len(plan.localClaims()) > 0 {
+			ending = "Leave active claims to their agents."
+		}
 		return "nothing is free: every feature is claimed or waiting on something. " +
 			"A claimed feature is not yours — do not work it, tick it, or help with it. " +
-			"Stopping here is the right outcome: say so and wait."
+			ending
 	// Everything open is finished and waiting, which is not the same as nothing having
 	// been planned: the entries below are plans that were built.
 	case len(plan.AwaitingReview) > 0:
