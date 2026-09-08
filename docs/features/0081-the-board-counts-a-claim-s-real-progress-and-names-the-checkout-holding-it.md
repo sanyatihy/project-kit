@@ -46,7 +46,7 @@ one feature per checkout is what the path makes easy to break.
 
 ## Tasks
 
-- [ ] Count a claim's boxes and last-moved date from the local head when it contains the advertised tip
+- [x] Count a claim's boxes and last-moved date from the local head when it contains the advertised tip
 - [ ] Name the worktree holding a claim on its taken entry, in text and JSON
 - [ ] Say in the guidance which claims this clone is holding and how to take one back
 

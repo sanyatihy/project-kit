@@ -235,7 +235,7 @@ func Survey(r *Repo) Plan {
 		// an agent that has done nothing, the same picture `stalled` paints. Read the
 		// branch instead. Not for your own claim: there the working tree is this branch,
 		// and fresher than any commit on it.
-		if rev := r.claimRev(claim); claim != "" && rev != "" {
+		if rev := r.claimProgressRev(claim); claim != "" && rev != "" {
 			if when := r.commitDate(rev); !when.IsZero() {
 				item.Moved = &when
 			}
@@ -354,6 +354,20 @@ func Survey(r *Repo) Plan {
 	plan.Guidance = guidanceFor(r, plan)
 	plan.Action = actionFor(r, plan)
 	return plan
+}
+
+// claimProgressRev may use committed local work, but review and audit keep claimRev's
+// published anchor. A stale or diverged head cannot replace the advertised answer.
+func (r *Repo) claimProgressRev(branch string) string {
+	if branch == "" {
+		return ""
+	}
+	rev := r.claimRev(branch)
+	local := "refs/heads/" + branch
+	if r.hasRef(local) && rev != "" && r.reaches(rev, local) {
+		return local
+	}
+	return rev
 }
 
 // waitingOnNeeds says what an unmet needs: is waiting for.

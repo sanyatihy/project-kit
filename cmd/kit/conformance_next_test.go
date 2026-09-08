@@ -922,3 +922,56 @@ func TestTheBoardCountsTheBoxesTheRemoteHas(t *testing.T) {
 		t.Errorf("the board says %+v; the branch the remote has is one of two ticked", taken)
 	}
 }
+
+func TestClaimProgressUsesLocalHeadOnlyWhenItContainsRemote(t *testing.T) {
+	t.Parallel()
+	for _, state := range []string{"ahead", "equal", "behind", "diverged"} {
+		t.Run(state, func(t *testing.T) {
+			t.Parallel()
+			a, _ := twoAgents(t)
+			a.run("claim", "0007").ok()
+			w := a.claimWorktree("work/0007")
+			w.git("tag", "claim-base")
+			feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [ ] Submit it")
+			w.commitAllAt("0007: published progress", daysAgo(2))
+			w.git("push", "-q", "origin", "work/0007")
+			wantDone, wantDays := 1, 2
+			switch state {
+			case "behind":
+				w.git("reset", "--hard", "claim-base")
+			case "diverged":
+				w.git("reset", "--hard", "claim-base")
+				fallthrough
+			case "ahead":
+				feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it\n- [x] Submit it")
+				w.commitAllAt("0007: local progress", daysAgo(1))
+				if state == "ahead" {
+					wantDone, wantDays = 2, 1
+				}
+			}
+			// Dirty ticks in the held checkout are never another checkout's progress.
+			feature(w, "0007", "widget", "A widget", "Draft", "- [ ] Build it")
+			taken := a.plan("next", "--json").Taken
+			if len(taken) != 1 || taken[0].Done != wantDone || taken[0].Total != 2 || taken[0].Moved == nil {
+				t.Fatalf("%s: progress = %+v", state, taken)
+			}
+			if days := int(time.Since(*taken[0].Moved).Hours() / 24); days != wantDays {
+				t.Errorf("moved = %d days, want %d", days, wantDays)
+			}
+		})
+	}
+}
+
+func TestLocalSubmissionDoesNotReachTheReviewBoard(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.run("claim", "0007").ok()
+	w := a.claimWorktree("work/0007")
+	feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it")
+	w.commitAll("0007: built")
+	w.run("submit", "0007").ok()
+	plan := a.plan("next", "--json")
+	if len(plan.AwaitingReview) != 0 || len(plan.Taken) != 1 || plan.Taken[0].Done != 1 {
+		t.Fatalf("unpushed submission = %+v", plan)
+	}
+}
