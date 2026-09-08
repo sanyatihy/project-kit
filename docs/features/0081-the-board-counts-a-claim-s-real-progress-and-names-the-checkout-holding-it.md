@@ -1,9 +1,9 @@
 ---
 id: 0081
 title: The board counts a claim's real progress and names the checkout holding it
-status: Draft
+status: Submitted
 created: 2026-09-08
-submitted:
+submitted: 2026-09-08
 needs:
 ---
 
