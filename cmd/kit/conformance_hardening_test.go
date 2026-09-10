@@ -271,7 +271,8 @@ func TestConcurrentBlockingQuestionsAreAllPreserved(t *testing.T) {
 	t.Parallel()
 	p := cleanProject(t)
 	const count = 12
-	before := strings.Count(p.read("docs/INBOX.md"), "BLOCKING")
+	const rel = "docs/features/0001-thing.md"
+	before := strings.Count(p.read(rel), "- [ ] 20")
 	start := make(chan struct{})
 	done := make(chan string, count)
 	for i := 0; i < count; i++ {
@@ -293,8 +294,8 @@ func TestConcurrentBlockingQuestionsAreAllPreserved(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if got := strings.Count(p.read("docs/INBOX.md"), "BLOCKING"); got != before+count {
-		t.Fatalf("inbox has %d new questions, want %d", got-before, count)
+	if got := strings.Count(p.read(rel), "- [ ] 20"); got != before+count {
+		t.Fatalf("the doc has %d new questions, want %d", got-before, count)
 	}
 }
 

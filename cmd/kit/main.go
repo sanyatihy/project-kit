@@ -707,7 +707,6 @@ func runRelease(args []string) int {
 
 func runBlock(args []string) int {
 	fs := newFlagSet("block", args)
-	fyi := fs.Bool("fyi", false, "record it without blocking the feature")
 	rest := parseArgs(fs, args)
 
 	if len(rest) < 2 {
@@ -725,25 +724,22 @@ func runBlock(args []string) int {
 		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
 		return 2
 	}
-	// A question blocks by id, so a doc whose frontmatter says two things about itself
-	// blocks nothing anyone can act on. Same refusal `submit` and `drop` make.
-	if _, err := repo.WriteTarget(id); err != nil {
+	// The question is written into the doc, so the same refusal `submit` and `drop` make:
+	// a doc whose frontmatter says two things about itself is not one the kit may write.
+	target, err := repo.WriteTarget(id)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
 		return 2
 	}
-	line, err := kit.AppendQuestion(repo, id, strings.Join(rest[1:], " "), *fyi, time.Now().UTC())
+	line, err := kit.AskQuestion(repo, target, strings.Join(rest[1:], " "), time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit block: %v\n", err)
 		return 2
 	}
 
-	fmt.Printf("\n  %s\n", repo.Rel(repo.Inbox))
+	fmt.Printf("\n  %s  ## %s\n", target.Rel, kit.QuestionsHeading)
 	fmt.Printf("  %s\n", line)
-	if *fyi {
-		fmt.Printf("\n  recorded. %s is not blocked — carry on.\n\n", id)
-	} else {
-		fmt.Printf("\n  %s is blocked until a human answers. Move to another feature.\n\n", id)
-	}
+	fmt.Printf("\n  %s is blocked until a human answers and ticks it. Move to another feature.\n\n", id)
 	return 0
 }
 

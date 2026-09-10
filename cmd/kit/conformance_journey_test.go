@@ -44,22 +44,23 @@ func TestApprovedRoundSurvivesClaimsQuestionsReviewAndSquashIntegration(t *testi
 	a.run("release", "0007").ok()
 	a.run("claim", "0007").ok()
 	aw, bw := a.claimWorktree("work/0007"), b.claimWorktree("work/0008")
+	// `block` commits the question itself, so there is nothing left in the tree to record.
 	aw.run("block", "0007", "Which output should the widget provide? Leaning: compact.").ok()
-	aw.commitAll("record the decision needed")
 	aw.git("push", "origin", "HEAD")
 	aw.run("next").ok().has("blocked", "Which output")
 	aw.run("submit", "0007").fails(2)
 
-	// The agent records the human's answer in the paused checkout before resuming.
-	inbox := aw.read("docs/INBOX.md")
-	var kept []string
-	for _, line := range strings.Split(inbox, "\n") {
-		if !strings.Contains(line, "Which output should the widget provide?") {
-			kept = append(kept, line)
-		}
-	}
-	aw.write("docs/INBOX.md", strings.Join(kept, "\n"))
+	// The agent records the human's answer in the paused checkout before resuming: the
+	// decision goes in the plan, and ticking the box is what unblocks the feature.
 	widget := "docs/features/0007-widget.md"
+	var answered []string
+	for _, line := range strings.Split(aw.read(widget), "\n") {
+		if strings.Contains(line, "Which output should the widget provide?") {
+			line = strings.Replace(line, "- [ ]", "- [x]", 1)
+		}
+		answered = append(answered, line)
+	}
+	aw.write(widget, strings.Join(answered, "\n"))
 	aw.write(widget, strings.Replace(aw.read(widget), "## Design", "## Design\nThe human selected compact output.", 1))
 	aw.commitAll("record the human decision and clear its blocker")
 	aw.run("next").ok().has("Build it").lacks("Which output")

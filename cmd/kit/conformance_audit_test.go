@@ -1282,31 +1282,6 @@ func TestARemoteNeedNotBeCalledOriginForTheTrunkToResolve(t *testing.T) {
 	}
 }
 
-func TestAnFYIIsNeverAgedAtAll(t *testing.T) {
-	t.Parallel()
-	// `kit block --fyi` promises the feature is not blocked and work continues, so
-	// nothing about the note is anybody's outstanding task. It carried a fuse anyway —
-	// LOW after a fortnight, and then a finding on every page for ever, whose fix was to
-	// answer a question that was cleared not to need one.
-	p := cleanProject(t)
-	p.write("docs/INBOX.md", fmt.Sprintf(
-		"# Inbox\n\n- [ ] %s · 0001 · FYI · Which host runs this? Leaning: decide later.\n",
-		daysAgo(365)))
-
-	if codes := p.auditCodes(); len(codes) > 0 {
-		t.Errorf("a year-old FYI was reported as %v; it blocks nothing and is owed nothing", codes)
-	}
-	p.run("audit", "--strict").ok()
-
-	// An old decision stays visible and blocks its feature, not the whole gate.
-	blocking := cleanProject(t)
-	blocking.write("docs/INBOX.md", fmt.Sprintf(
-		"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Which host runs this?\n",
-		daysAgo(kit.InboxStaleDays)))
-	blocking.run("audit", "--strict").ok().has("inbox-stale")
-	blocking.run("claim", "0001").fails(1)
-}
-
 // The claim checks read branch names, which is the one place this tool can
 // generate noise about work that is perfectly fine. Each of these is a situation
 // that must stay silent.

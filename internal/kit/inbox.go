@@ -34,58 +34,13 @@ func ResolveID(r *Repo, typed string) (string, error) {
 	return "", fmt.Errorf("no feature %q; have %s", typed, strings.Join(known, ", "))
 }
 
-// AppendQuestion writes one question to the inbox in the documented format and
-// returns the line it wrote.
-//
-// Writing the format is the point: a hand-typed line that misses it falls back to
-// matching by prose, which blocks whatever it happens to mention.
-func AppendQuestion(r *Repo, id, question string, fyi bool, today time.Time) (string, error) {
-	if r.Inbox == "" {
-		return "", fmt.Errorf("no docs/INBOX.md — run: kit init %s", r.Root)
-	}
-	// One item per line is what makes the file parseable at all.
-	question = strings.Join(strings.Fields(question), " ")
-	if question == "" {
-		return "", fmt.Errorf("a question is required")
-	}
-	marker := "BLOCKING"
-	if fyi {
-		marker = "FYI"
-	}
-	line := fmt.Sprintf("- [ ] %s %s %s %s %s %s %s",
-		today.UTC().Format(DateLayout), inboxSep, id, inboxSep, marker, inboxSep, question)
-
-	raw, err := os.ReadFile(r.Inbox)
-	if err != nil {
-		return "", err
-	}
-	lead := ""
-	if len(raw) > 0 && raw[len(raw)-1] != '\n' {
-		lead = "\n"
-	}
-	file, err := os.OpenFile(r.Inbox, os.O_WRONLY|os.O_APPEND, 0o644)
-	if err != nil {
-		return "", err
-	}
-	_, writeErr := file.WriteString(lead + line + "\n")
-	closeErr := file.Close()
-	if writeErr != nil {
-		return "", writeErr
-	}
-	if closeErr != nil {
-		return "", closeErr
-	}
-
-	return line, nil
-}
-
-// OpenQuestion is one unticked inbox line.
+// inboxQuestion is one unticked inbox line.
 //
 // Feature is the ID from the line's second field, empty when the line does not
 // follow the documented format. Blocking decisions use it in preference to the
 // whole line, so a question that merely mentions another feature in passing does
 // not stop work on it.
-type OpenQuestion struct {
+type inboxQuestion struct {
 	When    time.Time
 	Text    string
 	Feature string
@@ -98,7 +53,7 @@ type OpenQuestion struct {
 // The question text is deliberately not validated: it is prose and may contain
 // anything, including the separator.
 func parseInboxLine(text string) (id string, fyi, ok bool) {
-	fields := strings.SplitN(text, inboxSep, 4)
+	fields := strings.SplitN(text, questionSep, 4)
 	if len(fields) < 3 {
 		return "", false, false
 	}
@@ -120,8 +75,8 @@ func parseInboxLine(text string) (id string, fyi, ok bool) {
 	return id, fyi, true
 }
 
-// OpenQuestions reads the inbox, skipping fenced examples.
-func (r *Repo) OpenQuestions() []OpenQuestion {
+// inboxQuestions reads the inbox, skipping fenced examples.
+func (r *Repo) inboxQuestions() []inboxQuestion {
 	if r.Inbox == "" {
 		return nil
 	}
@@ -129,47 +84,18 @@ func (r *Repo) OpenQuestions() []OpenQuestion {
 	if err != nil {
 		return nil
 	}
-	var out []OpenQuestion
+	var out []inboxQuestion
 	for _, text := range Unticked(Normalise(string(raw))) {
 		if text == "" {
 			continue
 		}
-		q := OpenQuestion{When: ParseDate(text), Text: text}
+		q := inboxQuestion{When: ParseDate(text), Text: text}
 		if id, fyi, ok := parseInboxLine(text); ok {
 			q.Feature, q.FYI = id, fyi
 		} else {
 			q.FYI = isFYI(text)
 		}
 		out = append(out, q)
-	}
-	return out
-}
-
-// BlockersFor lists open questions that block this feature.
-//
-// A line marked FYI is a note, not a blocker — it is recorded so the human sees
-// it, but work continues. Anything else blocks, because an unmarked question is
-// more likely to be a real one than a courtesy note.
-//
-// A line in the documented format is matched on its feature-ID field alone.
-// Anything else falls back to scanning the whole line, which over-blocks: a
-// question that names the ID only in passing will stop work. That is the safe
-// direction to be wrong in — over-blocking is visible and annoying, while missing
-// a blocker sends an agent into work a human has not cleared. `inbox-unparsed`
-// reports the lines that land here so they can be fixed rather than tolerated.
-func (r *Repo) BlockersFor(id string) []string {
-	var out []string
-	for _, q := range r.OpenQuestions() {
-		if q.FYI {
-			continue
-		}
-		matched := Mentions(q.Text, id)
-		if q.Feature != "" {
-			matched = Mentions(q.Feature, id)
-		}
-		if matched {
-			out = append(out, q.Text)
-		}
 	}
 	return out
 }

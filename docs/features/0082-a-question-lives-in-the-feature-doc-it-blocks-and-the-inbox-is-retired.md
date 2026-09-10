@@ -70,9 +70,9 @@ records it in the upgrade table rather than the stable list.
 
 ## Tasks
 
-- [ ] `## Open questions` parses into blocking questions, and `BlockersFor` reads the
+- [x] `## Open questions` parses into blocking questions, and `BlockersFor` reads the
       target doc instead of the inbox
-- [ ] `kit block <id> "<question>"` appends to that doc's section, creating it when absent,
+- [x] `kit block <id> "<question>"` appends to that doc's section, creating it when absent,
       and commits the edit; `--fyi` is removed
 - [ ] `question-stale` and `question-informal` replace `inbox-stale` and `inbox-unparsed`
       in the registry, with conformance cases
@@ -84,3 +84,10 @@ records it in the upgrade table rather than the stable list.
 - [ ] `templates/compatibility.md` records the cutover and the migration step
 
 ## Log
+
+- 2026-09-10 — boxes 1 and 2 land in one commit. `block` writing where nothing reads is
+  not a state to leave the tool in, so the parse and its writer are one change.
+- 2026-09-10 — added a lock and an atomic write the design did not call for. Appending to
+  a section is read-modify-write where appending to the inbox was one `O_APPEND`: twelve
+  concurrent `block` runs lost four questions and handed a reader a doc truncated
+  mid-write, which `kit block` then reported as the project having no feature docs.

@@ -405,10 +405,10 @@ func (r *Repo) LastTouched(path string) time.Time {
 	return time.Time{}
 }
 
-// inboxSep separates the fields of an inbox line:
+// questionSep separates a question's date from its prose:
 //
-//   - [ ] YYYY-MM-DD · <feature-id> · BLOCKING|FYI · <question>
-const inboxSep = "·"
+//   - [ ] YYYY-MM-DD · <question>
+const questionSep = "·"
 
 // ActiveFeatures lists features open for work — every Draft, by ID.
 //

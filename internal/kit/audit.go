@@ -807,13 +807,13 @@ func inboxState(s *repoState) []Finding {
 		}
 	}
 	var out []Finding
-	for _, q := range s.r.OpenQuestions() {
+	for _, q := range s.r.inboxQuestions() {
 		switch {
 		case q.Feature == "":
 			out = append(out, finding(checkInboxUnparsed, s.r.Rel(s.r.Inbox),
 				"not in the documented format: "+clip(q.Text, 60),
 				`use: kit block <id> "<question>", or match `+
-					`"YYYY-MM-DD `+inboxSep+` <id> `+inboxSep+` BLOCKING|FYI `+inboxSep+` <question>"`))
+					`"YYYY-MM-DD `+questionSep+` <id> `+questionSep+` BLOCKING|FYI `+questionSep+` <question>"`))
 		// A question against a feature that does not exist blocks nothing and waits
 		// forever. `kit block` refuses these, so one here was hand-written — the same
 		// cause as a line out of format, and the same line to correct.
