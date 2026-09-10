@@ -835,6 +835,11 @@ func questionState(s *docState) []Finding {
 // `kit init` creates what is missing and overwrites nothing it did not write, so it can
 // never delete this. The finding is the migration: it is how a project that adopted the
 // kit before 0082 learns the file stopped being read.
+//
+// It does not say to move each line into the feature it names. Every line in the projects
+// that had one was an `FYI` against a feature already Shipped or Submitted, so that advice
+// would block work a human had cleared to continue, and `block` refuses a terminal doc
+// anyway. What is left is a file to read once and delete.
 func inboxRetired(s *repoState) []Finding {
 	if s.r.Inbox == "" {
 		return nil
@@ -851,8 +856,8 @@ func inboxRetired(s *repoState) []Finding {
 			problem, open, were)
 	}
 	return []Finding{finding(checkInboxRetired, s.r.Rel(s.r.Inbox), problem,
-		"move each open question into the ## Open questions of the feature it names, "+
-			"then delete the file")}
+		"read it once — record anything still live with kit block <id>, or in "+
+			"docs/features/BACKLOG.md — then delete the file")}
 }
 
 // Missing and stale are one gap: what submitted is not what a reader is told. Two findings

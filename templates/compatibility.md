@@ -94,9 +94,15 @@ another feature blocks only the doc it sits in. Only the leading date is parsed.
 
 `docs/INBOX.md` is not read. `kit init` no longer creates it and cannot delete the copy
 an earlier version wrote, so the new MEDIUM `inbox-retired` names a surviving file and
-counts the questions stranded in it. Migrate before relying on the board: move each open
-line into the `## Open questions` of the feature it names, then delete the file. A
-question left there blocks nothing, and the feature it named will be offered as work.
+counts the lines stranded in it.
+
+Migration is to read the file once and delete it, not to move its lines. A `BLOCKING`
+line against a live feature becomes a question with `kit block <id> "<question>"`.
+Everything else — an `FYI`, or a line naming a Submitted or Dropped feature — goes to
+`docs/features/BACKLOG.md` or nowhere: an `FYI` was cleared not to block, and moving it
+into `## Open questions` would stop work a human had already released, while `block`
+refuses a terminal doc outright. Keep the measurements such a line carries by putting
+what stays true in `docs/TECH.md` before deleting it.
 
 `--fyi` is removed rather than accepted and ignored, so a script passing it exits 2.
 Existing prose bullets under the heading keep their meaning — they are not boxes and

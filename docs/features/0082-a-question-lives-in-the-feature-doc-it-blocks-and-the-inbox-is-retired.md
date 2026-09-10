@@ -64,7 +64,7 @@ Retirement is a hard cutover. Nothing reads `docs/INBOX.md`, `kit init` stops cr
 and `inbox-retired` reports the file where one survives — MEDIUM because the file instructs
 an agent to append questions to it, and a question parked there now blocks nothing and
 reaches nobody. `kit init` overwrites nothing it did not write, so the finding is the
-migration: move open lines into the features they name, delete the file. This breaks a
+migration: read the file once, then delete it. This breaks a
 parsed document's meaning and lands before v1.0 freezes it, so `templates/compatibility.md`
 records it in the upgrade table rather than the stable list.
 
@@ -85,9 +85,16 @@ records it in the upgrade table rather than the stable list.
 - [x] `AppendToSection` finds a heading where the parser does, so a fenced example or a
       template comment never swallows a question
 - [x] `kit block` refuses a terminal doc
+- [x] `inbox-retired` and `templates/compatibility.md` describe a migration that can
+      actually be followed
 
 ## Log
 
+- 2026-09-10 — the migration is to read the file once and delete it, not to move its
+  lines. Every stranded line in the eight projects carrying an inbox was an `FYI`, and
+  nine of the ten named a feature already Shipped or Submitted. Moving those in would
+  block work a human had cleared to continue, and `block` refuses a terminal doc anyway.
+  The design assumed a per-line move that the only real corpus cannot take.
 - 2026-09-10 — review found two defects and added the last two boxes. `AppendToSection`
   scanned raw lines, so a doc quoting the format in a fenced example took the question
   into the fence: `block` reported the feature blocked and `next` went on offering it,
