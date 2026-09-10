@@ -1,9 +1,9 @@
 ---
 id: 0082
 title: A question lives in the feature doc it blocks, and the inbox is retired
-status: Draft
+status: Submitted
 created: 2026-09-10
-submitted: 
+submitted: 2026-09-10
 needs:
 ---
 
