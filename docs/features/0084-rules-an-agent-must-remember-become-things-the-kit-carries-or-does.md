@@ -1,9 +1,9 @@
 ---
 id: 0084
 title: Rules an agent must remember become things the kit carries or does
-status: Submitted
+status: Draft
 created: 2026-09-10
-submitted: 2026-09-10
+submitted: 
 needs:
 ---
 
@@ -73,3 +73,4 @@ still holding its claim, with the reason, so it is offered no other work.
 
 - 2026-09-10 — boxes 2 and 3 land in one commit: detection exists only to answer what
   `start` prints, and a detector with no caller is untestable through the binary.
+- 2026-09-10 — reopen to Draft: review found the board keeps reporting a pause after work resumes
