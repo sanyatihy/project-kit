@@ -78,7 +78,7 @@ type Check struct {
 var (
 	// HIGH — a doc says something untrue, or work is stuck and nobody noticed.
 	checkDuplicateID = Check{"duplicate-id", High,
-		"two feature docs share one id:, so one branch claims both and one inbox line blocks both"}
+		"two feature docs share one id:, so one branch claims both and neither says which plan it builds"}
 	// HIGH, and next to duplicate-id for the same reason: the doc says two things about
 	// itself, and every command that reads one of them believes it. `submit` used to write
 	// the line nothing reads, so the finding survived its own fix.
@@ -203,7 +203,7 @@ var (
 	// project missing more than one is one defect with one fix. It was three findings
 	// telling the reader to run `kit init .` three times.
 	checkNoProtocol = Check{"no-protocol", Medium,
-		"a document kit init writes is missing: AGENTS.md's work protocol, INBOX.md, or VISION.md"}
+		"a document kit init writes is missing: AGENTS.md's work protocol, or VISION.md"}
 )
 
 // OfflineChecks are the checks that cannot run without an answer from the remote: under
@@ -456,7 +456,7 @@ func frozenDocs(s *repoState) []Finding {
 	return out
 }
 
-// The ID is the primary key: branches claim by it, inbox lines block by it, and commits
+// The ID is the primary key: branches claim by it, needs: waits on it, and commits
 // cite it. Two docs sharing one makes all three ambiguous, and it is the one disagreement
 // git cannot surface — the filenames differ, so the merge is clean.
 func duplicateID(s *repoState) []Finding {
@@ -612,7 +612,7 @@ func stalled(s *docState) []Finding {
 		return []Finding{finding(checkStalled, s.at,
 			fmt.Sprintf("%s: %s, nothing has happened in %s",
 				s.f.Name(), s.f.Status+", claimed by "+claim, countDays(idle)),
-			"finish it, drop it, or move the blocker to docs/INBOX.md")}
+			"finish it, drop it, or record the blocker with kit block")}
 	}
 	return nil
 }
@@ -898,7 +898,7 @@ func tagStale(s *repoState) []Finding {
 		"cut a tag on the trunk and push it — until it is pushed nothing installs it")}
 }
 
-// One command writes AGENTS.md, docs/INBOX.md and docs/VISION.md, creates only what is
+// One command writes AGENTS.md and docs/VISION.md, creates only what is
 // missing and overwrites nothing — so a project lacking any of them has one defect with
 // one fix, and reporting it three times told the reader to run `kit init .` three times.
 //

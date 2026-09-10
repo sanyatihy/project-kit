@@ -81,19 +81,19 @@ The four rules:
      exit 1 means another agent won it. Local branches, remote branches and
      worktrees all count as claims. A won claim makes the worktree to work in;
      go there, not here.
-  4. A feature named by a BLOCKING line in docs/INBOX.md is blocked until it is
-     answered, and so is one whose "needs:" has not merged. "Named" means the id
-     field of the line, not a mention in the question text. FYI lines never block.
-     See "kit help inbox" for the format.
+  4. A feature with an unticked box under its own "## Open questions" is blocked
+     until a human answers and ticks it, and so is one whose "needs:" has not
+     merged. The doc is the id: a question naming another feature in its prose
+     blocks nothing. See "kit block --help" for the format.
 
-The claim refusals you will meet most: an unmet "needs:", a BLOCKING inbox line, an
+The claim refusals you will meet most: an unmet "needs:", an open question, an
 unwritten ## Problem, ## Design or ## Tasks, an id: that disagrees with the filename,
 a duplicate id, or a plan that has not reached the default branch. "kit claim --help"
 names every one.
 
 Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
-which writes docs/INBOX.md in the format the tool parses, then move to another
-free feature from another trunk checkout. If none is free, report the blocker and stop.
+which records it in that feature's doc and commits it, then move to another free
+feature from another trunk checkout. If none is free, report the blocker and stop.
 
 Exit codes, so a script can tell these apart:
   0  it worked
@@ -106,7 +106,6 @@ Topics:
   kit help protocol      the rules agents follow, as written into AGENTS.md
   kit help template      the feature doc format, field by field
   kit help checks        every audit finding and what it means
-  kit help inbox         the docs/INBOX.md format, and what BLOCKING means
   kit help compatibility supported use, stable interfaces and coordinated upgrades
   kit help backlog       the docs/features/BACKLOG.md format, and what promotes an entry
   kit help vision        the docs/VISION.md shape, and what it is not for
@@ -126,7 +125,6 @@ var topics = map[string]string{
 	"python-checklist": "templates/python-checklist.md",
 	"vision":           "templates/VISION.md",
 	"as-built":         "templates/TECH.md",
-	"inbox":            "templates/INBOX.md",
 	"backlog":          "templates/BACKLOG.md",
 }
 
@@ -178,7 +176,7 @@ Run kit finish for review; humans approve plans and merge implementations.
 
 Create missing project files; never clear the target first. Makes a directory and
 git repository if needed, then AGENTS.md, its CLAUDE.md symlink, .gitignore,
-docs/VISION.md, docs/INBOX.md, docs/TECH.md and docs/features/BACKLOG.md.
+docs/VISION.md, docs/TECH.md and docs/features/BACKLOG.md.
 --stack adds code layout, stack gitignore and CI. Deployment is not scaffolded.
 
 Preserves user files. Re-running refreshes only AGENTS.md's Work protocol section;
@@ -239,7 +237,7 @@ the claim. Start from an updated trunk checkout carrying the human-approved plan
 HEAD must equal the published trunk tip (local trunk with no remote).
 
 Exit 0: yours, including a recovered acquisition. Work in .worktrees/<branch>.
-Exit 1: not available: another claim, non-Draft/missing status, BLOCKING question,
+Exit 1: not available: another claim, non-Draft/missing status, an open question,
 unmet needs:, id/filename mismatch, ambiguous fields, invalid dependencies or an
 unwritten Problem, Design or Tasks. Run kit next and choose other work.
 Exit 2: cannot run: missing/duplicate id, no history, uncommitted or unlanded plan,
@@ -293,26 +291,26 @@ cannot be deleted by an earlier decision.
   kit release 0007
   kit release 7 --discard`,
 
-	"block": `kit block <id> "<question>" [--fyi]
+	"block": `kit block <id> "<question>"
 
 Blocked on something only a human can decide? Write it here and move on. Appends
-one line to docs/INBOX.md in the format the tool parses:
+one box to that feature's "## Open questions", opening the section if the doc has
+none, and commits the doc:
 
-  - [ ] YYYY-MM-DD · <id> · BLOCKING|FYI · <question>
+  - [ ] YYYY-MM-DD · <question>
 
-"kit next" then stops offering that feature until a human answers and deletes the
-line. Record the answer in the affected plan, commit it with the inbox change, and
-integrate that commit into any paused checkout before resuming. With --fyi it is recorded without blocking, for anything work can continue
-without.
+The doc is the whole record, so there is no id to keep in step with anything.
+"kit next" stops offering that feature until a human answers and ticks the box.
+Record the answer in the plan, commit it with the tick, and integrate that commit
+into any paused checkout before resuming.
 
-Use this rather than editing INBOX.md by hand. A line that misses the format is
-matched by prose instead of by its id field, so it blocks whatever it happens to
-mention — "kit audit" reports those as inbox-unparsed.
+Use this rather than editing the doc by hand. A plain bullet is not a box and
+blocks nothing; a box with no date blocks for ever, because nothing can age it.
+"kit audit" reports both as question-informal.
 
 State a leaning. It turns most questions into a yes/no.
 
-  kit block 0007 "Should codes expire? Leaning: no, keep forever."
-  kit block 7 "Using base62 for slugs." --fyi`,
+  kit block 0007 "Should codes expire? Leaning: no, keep forever."`,
 
 	"submit": `kit submit <id>
 
@@ -376,7 +374,7 @@ fixes, repeat the project gate, audit, submit and push to the existing PR.
 
 Read this repository and name the next task. Finish this checkout's claim first;
 otherwise lowest ready id first. Within a feature, take the first unticked Tasks box.
-An incomplete or unlanded plan, BLOCKING question or unmet needs: prevents claiming.
+An incomplete or unlanded plan, an open question or unmet needs: prevents claiming.
 
 Groups: yours (this checkout), ready, taken and blocked; published submissions not
 yet integrated appear under awaiting review. Branch names citing an id are claims,

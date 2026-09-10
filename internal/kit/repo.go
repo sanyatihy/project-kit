@@ -256,6 +256,33 @@ func (r *Repo) readFeature(path string) *Feature {
 	return f
 }
 
+// ResolveID maps what someone typed to the canonical ID of an existing feature,
+// so `kit block 7` and `kit block 0007` both reach 0007.
+//
+// It fails on an unknown ID rather than accepting it. A question filed against a
+// feature that does not exist can never unblock anything, and nothing would ever
+// notice.
+func ResolveID(r *Repo, typed string) (string, error) {
+	want := strings.TrimSpace(typed)
+	if want == "" {
+		return "", fmt.Errorf("a feature id is required")
+	}
+	var known []string
+	for _, f := range r.Features {
+		if f.ID == "" {
+			continue
+		}
+		known = append(known, f.ID)
+		if f.ID == want || strings.TrimLeft(f.ID, "0") == strings.TrimLeft(want, "0") {
+			return f.ID, nil
+		}
+	}
+	if len(known) == 0 {
+		return "", fmt.Errorf("no feature docs yet — run: kit new \"<what it does>\"")
+	}
+	return "", fmt.Errorf("no feature %q; have %s", typed, strings.Join(known, ", "))
+}
+
 // FeatureByID finds a feature by its declared id, or nil.
 func (r *Repo) FeatureByID(id string) *Feature {
 	for _, f := range r.Features {

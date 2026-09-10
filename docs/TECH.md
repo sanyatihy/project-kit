@@ -53,9 +53,14 @@ belong to the agent runner, not kit.
   `needs:` declares prerequisites, satisfied only by Submitted documents on trunk and
   in the current checkout. Submission on a work branch does not unlock dependents.
   Shared files alone do not create dependencies; there is no global concurrency cap.
-- BLOCKING inbox lines match their id field; malformed lines conservatively match the
-  whole line. FYI never blocks or ages. Concurrent questions append one complete line
-  per write. Answer in the plan, remove its inbox line and commit both before resuming.
+- A question is an unticked box under the feature's own `## Open questions`, so the doc
+  is the id and nothing scans prose for one. Every open box blocks; a plain bullet is not
+  a box and blocks nothing. Only the leading date is parsed, and an undated box blocks
+  without ageing. `block` writes and commits under a lock beside the doc, replacing the
+  file by rename: appending to a section is read-modify-write, and concurrent writers
+  otherwise lose questions and expose a half-written doc. Answer in the plan, tick the
+  box and commit both before resuming. `docs/INBOX.md` is retired; `inbox-retired`
+  reports one that survives, because `init` cannot delete what it did not write.
 - VISION holds direction; TECH holds current facts; features hold plans; Log holds plan
   changes; PRs hold validation and handoff. Log may be empty; length is not a gate.
   Integrated feature history is frozen. The one-time prose compaction is recorded in 0073.
@@ -153,7 +158,8 @@ belong to the agent runner, not kit.
   once per project; each entry names the registry codes it can report, and a test fails the
   build if a registered check has no implementation or two claim one code.
 - One defect produces one actionable finding. Severity reflects damage; age is advisory.
-  Delete checks for states nobody may repair. Missing VISION/INBOX share no-protocol;
+  Delete checks for states nobody may repair. Missing VISION and AGENTS.md share
+  no-protocol; question checks skip frozen docs, whose questions nobody may correct;
   split-claim and id-mismatch are HIGH. Keep issuer patterns in audit.go, never templates.
   `needs-unstated` is LOW because a citation alone cannot prove a dependency. It reads
   Problem and Design only for nonterminal plans. Secret checks use issuer-specific shapes.

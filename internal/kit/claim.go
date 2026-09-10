@@ -78,7 +78,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 
 	// Draft is the only status work starts from. Submitted and Dropped are end states, and
 	// a claim on either reopens finished history. What else refuses a claim is an
-	// unwritten plan (below), a BLOCKING inbox line, and an unmet `needs:`.
+	// unwritten plan (below), an open question, and an unmet `needs:`.
 	switch target.Status {
 	case StatusDraft:
 	case "":
@@ -107,7 +107,7 @@ func ClaimFeature(r *Repo, id string) (*Claimed, error) {
 	if blockers := r.BlockersFor(id); len(blockers) > 0 {
 		return nil, &NotYours{
 			fmt.Sprintf("%s is blocked: %s", target.Name(), clip(blockers[0], 70)),
-			"only a human can answer that, in " + r.Rel(r.Inbox)}
+			"only a human can answer that, in " + target.Rel + " ## " + QuestionsHeading}
 	}
 
 	// The same call `Survey` makes, so the board and the command cannot disagree. Without

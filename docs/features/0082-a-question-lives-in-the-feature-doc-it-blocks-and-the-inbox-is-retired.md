@@ -77,9 +77,9 @@ records it in the upgrade table rather than the stable list.
 - [x] `question-stale` and `question-informal` replace `inbox-stale` and `inbox-unparsed`
       in the registry, with conformance cases
 - [x] `inbox-retired` reports a surviving `docs/INBOX.md`, and `kit init` stops creating it
-- [ ] `internal/kit/inbox.go`, `templates/INBOX.md` and the kit's own `docs/INBOX.md` are
+- [x] `internal/kit/inbox.go`, `templates/INBOX.md` and the kit's own `docs/INBOX.md` are
       deleted, and `ResolveID` moves to the file that keeps it
-- [ ] The protocol, `kit help block`, `kit help checks`, `kit new`'s next actions, the
+- [x] The protocol, `kit help block`, `kit help checks`, `kit new`'s next actions, the
       feature template and README describe the one home
 - [ ] `templates/compatibility.md` records the cutover and the migration step
 
@@ -87,6 +87,9 @@ records it in the upgrade table rather than the stable list.
 
 - 2026-09-10 — boxes 1 and 2 land in one commit. `block` writing where nothing reads is
   not a state to leave the tool in, so the parse and its writer are one change.
+- 2026-09-10 — boxes 5 and 6 land in one commit. Deleting `templates/INBOX.md` deletes
+  the `kit help inbox` topic, and the overview offering a topic the binary cannot print
+  fails the build, so the deletion and the prose that points at it are one change.
 - 2026-09-10 — added a lock and an atomic write the design did not call for. Appending to
   a section is read-modify-write where appending to the inbox was one `O_APPEND`: twelve
   concurrent `block` runs lost four questions and handed a reader a doc truncated

@@ -310,7 +310,7 @@ func runNew(args []string) int {
 	}
 	fmt.Printf("\n  fill in Problem, Non-goals, Design, and Tasks.\n")
 	fmt.Printf("  leave status: Draft while anything is unresolved — put those in\n")
-	fmt.Printf("  ## Open questions, or docs/INBOX.md if only a human can answer.\n")
+	fmt.Printf("  ## Open questions — kit block <id> \"<question>\" if only a human can answer.\n")
 	// The gate this described is gone: `Accepted` was removed after 82 docs reached it
 	// zero times, and `next` offers a written Draft the moment its round lands.
 	fmt.Printf("  kit next offers it after the plan merges and its needs are integrated.\n")

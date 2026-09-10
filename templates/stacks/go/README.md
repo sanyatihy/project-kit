@@ -29,5 +29,5 @@ kit next       # what to work on
 kit audit      # where the docs and the repo disagree
 ```
 
-Agents follow [AGENTS.md](AGENTS.md). Questions only a human can answer go in
-[docs/INBOX.md](docs/INBOX.md).
+Agents follow [AGENTS.md](AGENTS.md). Questions only a human can answer go in the
+feature's `## Open questions`, with `kit block <id> "<question>"`.
