@@ -71,8 +71,17 @@ when they apply. Applying a section that does not apply is how a checklist becom
   by equality.
 - **Never a mutable default.** `None` and a guard for a function parameter,
   `field(default_factory=...)` for a dataclass field.
-- **`Decimal` or integer minor units for money.** `float` is for measured quantities where
-  a rounding error is noise, never for an amount that must reconcile.
+- **`Decimal` in the domain, integer minor units in storage, decimal text at the wire.**
+  `float` is for measured quantities where a rounding error is noise, never for an amount
+  that must reconcile. The three representations are deliberate: arithmetic needs an exact
+  type, a column needs one that cannot drift, and JSON has no decimal.
+- **`json.loads(..., parse_float=Decimal)` wherever money is read.** The default builds a
+  `float` before any validator sees the value, so parsing it into a `Decimal` afterwards
+  preserves a rounding error rather than avoiding one. The same applies to any client
+  library that decodes JSON for you.
+- **Never `str()` or `float()` a request field to make it fit.** Coercion at the call site
+  is validation nobody can find. The parser at the edge states the type, and the interior
+  trusts it.
 - **Type-check the tests too.** They are the largest body of code that calls the API.
 
 ### Configuration
@@ -269,6 +278,8 @@ When the project owns a database or other persistent store.
   (`SELECT … FOR UPDATE`) or appropriate isolation, to avoid TOCTOU under concurrency.
 - **Transactional outbox** — enqueue a triggered side effect in the same transaction as the
   state change, so a crash cannot do one without the other.
+- **Money is an integer of minor units, or a fixed-precision decimal column.** Never a
+  float column, and never a type whose precision is set by the driver's default.
 - Connection pools are **not fork-safe**. Dispose and rebuild in the child.
 
 ## Data and analysis

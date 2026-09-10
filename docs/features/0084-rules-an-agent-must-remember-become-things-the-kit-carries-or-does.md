@@ -59,7 +59,7 @@ still holding its claim, with the reason, so it is offered no other work.
 
 ## Tasks
 
-- [ ] `kit help python-checklist` carries money handling: decimal arithmetic, minor units
+- [x] `kit help python-checklist` carries money handling: decimal arithmetic, minor units
       in storage, boundary parsing, and no coercion of a request field
 - [ ] The stack is detected from the marker file `init --stack` writes
 - [ ] `kit start` prints the checklist topic for that stack on a won claim
