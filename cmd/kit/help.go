@@ -34,6 +34,7 @@ Commands:
   kit claim <id>                      take a feature: push the branch, win or lose
   kit release <id> [--discard]          give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
+  kit pause "<why>"                   set this checkout's work down, keeping the claim
   kit submit  <id>                      verify completed boxes, stamp, submit for review
   kit drop  <id> "<why>"              retire a feature that will not be built
   kit reopen <id> "<why>"              reopen an unmerged submission for review changes
@@ -293,6 +294,24 @@ cannot be deleted by an earlier decision.
   kit release 0007
   kit release 7 --discard`,
 
+	"pause": `kit pause "<why>"
+
+Setting work down without giving it up. Commits everything in this checkout's tree,
+records "paused: <why>" in the feature's ## Log, pushes the branch and prints the
+unfinished pull-request handoff with the tasks still open.
+
+The claim is kept, so nobody else is offered the feature and kit next still reports
+it as yours, with the reason. This is not kit release, which surrenders it, and not
+kit submit, which tells a reviewer the work is finished.
+
+Everything in the tree is committed, not only the doc: the point of a pause is that
+half-finished work survives the agent that was doing it.
+
+No remote means the commit exists here and nowhere else, which is said rather than
+treated as a failure. Resuming needs no command — the next commit on the branch is
+what says the work moved.
+
+  kit pause "the rate limiter needs the operator's ceiling before the retry loop"`,
 	"block": `kit block <id> "<question>"
 
 Blocked on something only a human can decide? Write it here and move on. Appends

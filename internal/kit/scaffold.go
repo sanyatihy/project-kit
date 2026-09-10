@@ -125,6 +125,42 @@ type Result struct {
 	CINotWritten bool
 }
 
+// stackMarkers name the file whose presence identifies a scaffold, in the order the
+// stacks were added. The marker is the one file of a stack a project cannot rename and
+// still be that stack, which is why detection reads it rather than recording a choice:
+// `init --stack` is not run again after setup, and nothing else remembers the answer.
+var stackMarkers = []struct{ stack, marker, checklist string }{
+	{"go", "go.mod", "go-checklist"},
+	{"python", "pyproject.toml", "python-checklist"},
+}
+
+// DetectStack names the scaffold a project is built on, or "" when nothing says.
+//
+// Unlike DetectForge there is no directory convention to fall back on, and no guess worth
+// making: a wrong answer here sends an agent to the wrong checklist.
+func DetectStack(root string) string {
+	for _, s := range stackMarkers {
+		if info, err := os.Stat(filepath.Join(root, s.marker)); err == nil && !info.IsDir() {
+			return s.stack
+		}
+	}
+	return ""
+}
+
+// ChecklistTopic is the `kit help` topic holding the standing guidance for a stack, or
+// "" where the stack has none.
+//
+// Named beside the marker rather than derived from the stack, so a scaffold added without
+// a checklist prints nothing instead of pointing at a topic that does not resolve.
+func ChecklistTopic(stack string) string {
+	for _, s := range stackMarkers {
+		if s.stack == stack {
+			return s.checklist
+		}
+	}
+	return ""
+}
+
 // Stacks lists the scaffolds available in the embedded templates.
 func Stacks(templates fs.FS) []string {
 	entries, err := fs.ReadDir(templates, "templates/stacks")

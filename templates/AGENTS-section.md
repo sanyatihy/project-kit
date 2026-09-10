@@ -68,8 +68,9 @@ Plan when asked. For work that began without a plan, use the spike route below.
     unless it blocks the work below. Revise an incorrect task in its own commit with
     the reason in Log; never silently delete unfinished work.
 13. Use `kit drop <id> "<why>"` for a plan that should not be built. Use `kit release
-    <id>` to surrender untouched work. To pause work with changes, commit and push it,
-    open the pull request unfinished, and say what remains.
+    <id>` to surrender untouched work. To pause work with changes, run `kit pause
+    "<why>"`: it commits the tree, records the reason, pushes and names what remains,
+    keeping the claim. Then open the pull request unfinished.
 14. Never put real secrets in docs. Name the variable and where its value lives.
     Only `kit submit`, `kit drop` and `kit reopen` write status and submitted fields.
 

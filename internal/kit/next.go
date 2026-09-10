@@ -287,6 +287,10 @@ func Survey(r *Repo) Plan {
 			plan.Blocked = append(plan.Blocked, item)
 		default:
 			if item.Mine {
+				// A pause is not a status, so nothing above sees it. The reason is in
+				// the doc's Log and the board is where the agent returning to this
+				// checkout looks first.
+				item.Reason = r.PausedReason(f)
 				plan.Yours = append(plan.Yours, item)
 			} else if claim != "" {
 				item.ClaimedBy = claim

@@ -853,3 +853,33 @@ func TestClaimNamesWhatTheNewHolderWillMeet(t *testing.T) {
 
 	p.run("claim", "0002").ok().has("meets", "0001", "handler.go")
 }
+
+func TestClaimNamesTheChecklistForTheStackItFinds(t *testing.T) {
+	t.Parallel()
+	// The marker file is what says which scaffold this is: `init --stack` is not run
+	// again after setup, and nothing else records the answer.
+	for _, tc := range []struct{ name, marker, want string }{
+		{"go", "go.mod", "go-checklist"},
+		{"python", "pyproject.toml", "python-checklist"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			p := setUp(t)
+			feature(p, "0001", "thing", "Thing", "Draft", "- [ ] Do it")
+			p.write(tc.marker, "x\n")
+			p.commitAll("a plan and the marker")
+
+			p.run("claim", "0001").ok().has("kit help " + tc.want)
+		})
+	}
+
+	// No marker, no guess: a wrong answer sends an agent to the wrong checklist.
+	t.Run("no stack", func(t *testing.T) {
+		t.Parallel()
+		p := setUp(t)
+		feature(p, "0001", "thing", "Thing", "Draft", "- [ ] Do it")
+		p.commitAll("a plan and no marker")
+
+		p.run("claim", "0001").ok().lacks("-checklist")
+	})
+}
