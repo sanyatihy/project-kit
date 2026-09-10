@@ -1,9 +1,9 @@
 ---
 id: 0085
 title: The settled scope of 0083 reaches the trunk so the feature can be claimed
-status: Draft
+status: Submitted
 created: 2026-09-10
-submitted:
+submitted: 2026-09-10
 needs:
 ---
 
