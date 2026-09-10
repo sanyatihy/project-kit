@@ -177,7 +177,7 @@ func TestThresholdProseCarriesTheRealNumbers(t *testing.T) {
 		days int
 	}{
 		{"stalled", kit.StalledDays},
-		{"inbox-stale", kit.InboxStaleDays},
+		{"question-stale", kit.QuestionStaleDays},
 	} {
 		want := fmt.Sprintf("%d day", tc.days)
 		found := false

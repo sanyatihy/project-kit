@@ -25,6 +25,9 @@ const QuestionsHeading = "Open questions"
 // write, which block either way and only need the date to age.
 var questionRe = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})\s*[·—-]?\s*(.*)$`)
 
+// bulletRe matches a list item, boxed or not.
+var bulletRe = regexp.MustCompile(`^\s*[-*]\s+(.*)$`)
+
 // OpenQuestion is one unticked box under `## Open questions`.
 //
 // When is the zero time for a box nobody dated. It still blocks — the safe direction —
@@ -48,6 +51,29 @@ func (f *Feature) OpenQuestions() []OpenQuestion {
 			}
 		}
 		out = append(out, q)
+	}
+	return out
+}
+
+// InformalQuestions lists bullets under `## Open questions` the kit cannot act on.
+//
+// Two shapes, one cause — a line `kit block` would never have written — and opposite
+// consequences. A plain bullet is the prose these sections carried before questions moved
+// into them: it blocks nothing, so an agent can write one and reach nobody. A box with no
+// date blocks, but nothing can age it into `question-stale`, so it waits for ever.
+func (f *Feature) InformalQuestions() []string {
+	var out []string
+	for _, line := range strings.Split(maskFences(f.Section(QuestionsHeading)), "\n") {
+		switch {
+		case tickedRe.MatchString(line): // answered
+		case untickedRe.MatchString(line):
+			item := strings.TrimSpace(untickedRe.FindStringSubmatch(line)[1])
+			if ParseDate(item).IsZero() {
+				out = append(out, item)
+			}
+		case bulletRe.MatchString(line):
+			out = append(out, strings.TrimSpace(bulletRe.FindStringSubmatch(line)[1]))
+		}
 	}
 	return out
 }

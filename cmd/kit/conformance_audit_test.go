@@ -175,13 +175,12 @@ var auditCases = []struct {
 		p.write("docs/features/0002-done.md", doc("0002", "Done", "Submitted",
 			"submitted: "+daysAgo(1), "- [x] Built it"))
 	}},
-	{"inbox-stale", func(p *project) {
-		p.write("docs/INBOX.md", fmt.Sprintf(
-			"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(10)))
+	{"question-stale", func(p *project) {
+		askOn(p, "docs/features/0001-thing.md", daysAgo(10), "Answer me?")
 	}},
-	{"inbox-unparsed", func(p *project) {
-		p.write("docs/INBOX.md",
-			"# Inbox\n\n- [ ] we should decide about 0001 at some point\n")
+	{"question-informal", func(p *project) {
+		p.write("docs/features/0001-thing.md", p.read("docs/features/0001-thing.md")+
+			"\n## Open questions\n\n- we should decide about this at some point\n")
 	}},
 	{"done-not-submitted", func(p *project) {
 		// Committed, because the gate is now whether HEAD carries the doc: a plan still
@@ -1369,16 +1368,15 @@ func TestTheThresholdsFireAtTheirBoundaryAndNotBefore(t *testing.T) {
 	t.Parallel()
 	// Retuning a threshold is only real if the boundary moved with the constant.
 	// Both are read from the package, so this keeps testing whatever they become.
-	t.Run("inbox-stale", func(t *testing.T) {
+	t.Run("question-stale", func(t *testing.T) {
 		for _, tc := range []struct {
 			age  int
 			want bool
-		}{{kit.InboxStaleDays - 1, false}, {kit.InboxStaleDays, true}} {
+		}{{kit.QuestionStaleDays - 1, false}, {kit.QuestionStaleDays, true}} {
 			p := cleanProject(t)
-			p.write("docs/INBOX.md", fmt.Sprintf(
-				"# Inbox\n\n- [ ] %s · 0001 · BLOCKING · Answer me?\n", daysAgo(tc.age)))
+			askOn(p, "docs/features/0001-thing.md", daysAgo(tc.age), "Answer me?")
 
-			if got := slices.Contains(p.auditCodes(), "inbox-stale"); got != tc.want {
+			if got := slices.Contains(p.auditCodes(), "question-stale"); got != tc.want {
 				t.Errorf("a question %d day(s) unanswered: reported=%v, want %v",
 					tc.age, got, tc.want)
 			}
@@ -1431,31 +1429,42 @@ func TestDuplicateIDNamesBothDocs(t *testing.T) {
 		"docs/features/0001-thing.md", "docs/features/0001-thing-as-well.md")
 }
 
-func TestInboxChecksStayQuietOnAWellFormedQuestion(t *testing.T) {
+func TestQuestionChecksStayQuietOnAWellFormedQuestion(t *testing.T) {
 	t.Parallel()
-	// A question written by `kit block` against a real feature is the normal case
-	// and must produce nothing.
+	// A question written by `kit block` into its own doc is the normal case and must
+	// produce nothing.
 	p := cleanProject(t)
 	p.run("block", "0001", "Should this expire? Leaning: no.").ok()
 
-	if codes := p.auditCodes(); slices.Contains(codes, "inbox-unparsed") {
+	if codes := p.auditCodes(); slices.Contains(codes, "question-informal") {
 		t.Errorf("a well-formed question was reported as %v", codes)
 	}
 
-	// The two ways a hand-written line goes wrong, under one name: out of format it
-	// blocks by prose match, and against an id nobody wrote it blocks nothing at all.
+	// The two ways a hand-written bullet goes wrong, under one name: a plain bullet
+	// blocks nothing, and a box with no date blocks for ever because nothing ages it.
 	// Opposite consequences, one cause, and the same line to rewrite.
-	for _, tc := range []struct{ name, line, want string }{
-		{"out of format", "- [ ] we should decide about 0001 at some point",
-			"not in the documented format"},
-		{"unknown feature", "- [ ] " + daysAgo(1) + " · 0099 · BLOCKING · About what?",
-			"names feature 0099"},
+	for _, tc := range []struct{ name, bullet string }{
+		{"not a box", "- we should decide about this at some point"},
+		{"a box with no date", "- [ ] we should decide about this at some point"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := cleanProject(t)
-			p.write("docs/INBOX.md", "# Inbox\n\n"+tc.line+"\n")
-			p.run("audit").ok().has("inbox-unparsed", tc.want)
+			p.write("docs/features/0001-thing.md", p.read("docs/features/0001-thing.md")+
+				"\n## Open questions\n\n"+tc.bullet+"\n")
+			p.run("audit").ok().has("question-informal", "cannot act on this")
 		})
+	}
+
+	// A settled question in a frozen doc is history: `Submitted` cannot be edited, so a
+	// finding on one names a line nobody may correct.
+	frozen := cleanProject(t)
+	frozen.write("docs/features/0003-old.md", doc("0003", "Old", "Submitted",
+		"submitted: "+daysAgo(30), "- [x] Built it")+
+		"\n## Open questions\n\n- Should this expire? It did not.\n")
+	frozen.commitAll("a frozen doc carrying its settled questions")
+
+	if codes := frozen.auditCodes(); slices.Contains(codes, "question-informal") {
+		t.Errorf("frozen history was reported as %v", codes)
 	}
 }
 

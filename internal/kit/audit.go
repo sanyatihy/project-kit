@@ -22,14 +22,14 @@ const (
 	// because a claim taken on a Friday and resumed on a Monday is not a stall.
 	StalledDays = 3
 
-	// InboxStaleDays is an unanswered BLOCKING question this old, which means you are
-	// the bottleneck.
+	// QuestionStaleDays is an unanswered question this old, which means you are the
+	// bottleneck.
 	//
-	// Two, not one. An inbox line carries a date and no time, so ages are measured from
+	// Two, not one. A question carries a date and no time, so ages are measured from
 	// midnight UTC on the day it was filed: at a threshold of one day a question filed
-	// at 23:00 was HIGH an hour later. A check that can fire before a human could
+	// at 23:00 was reported an hour later. A check that can fire before a human could
 	// plausibly have answered is a check nobody believes.
-	InboxStaleDays = 2
+	QuestionStaleDays = 2
 
 	// TagStaleCommits is how far the newest tag may fall behind the trunk before an
 	// install stops being the project the docs describe. Commits rather than days,
@@ -93,8 +93,9 @@ var (
 			countDays(StalledDays)}
 	checkParkedClaim = Check{"parked-claim", High,
 		"a parked plan still has a claim; resolve ownership before merging the scheduling decision"}
-	checkInboxStale = Check{"inbox-stale", Medium,
-		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
+	checkQuestionStale = Check{"question-stale", Medium,
+		"an open question in a feature's ## Open questions has gone unanswered for " +
+			countDays(QuestionStaleDays)}
 	checkSecretInDoc = Check{"secret-in-doc", High,
 		"a doc contains something shaped like a real credential"}
 	// HIGH for stalled's reasons: it is silent — every command exits 0, the doc says
@@ -153,11 +154,11 @@ var (
 	// while agents run.
 	checkIDMismatch = Check{"id-mismatch", High,
 		"frontmatter id: is missing or disagrees with the filename, so a claim on it is invisible to the board"}
-	// One defect wearing two names: a line `kit block` would never have written. Out of
-	// format it blocks by prose match, and against an id nobody wrote it blocks nothing —
-	// opposite consequences, one cause, and the same line to correct.
-	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
-		"an INBOX.md line the kit cannot resolve to a feature: out of format, or naming an id nobody wrote"}
+	// One defect wearing two names: a bullet `kit block` would never have written. A plain
+	// bullet blocks nothing and a box with no date never ages — opposite consequences, one
+	// cause, and the same line to correct.
+	checkQuestionInformal = Check{"question-informal", Medium,
+		"a bullet under ## Open questions the kit cannot act on: not a box, or a box with no date"}
 	checkNeedsUnknown = Check{"needs-unknown", Medium,
 		"a needs: names a feature that does not exist or can never submit, so the wait never ends"}
 	// HIGH: it names the worst failure the kit has — two agents building one feature,
@@ -220,10 +221,10 @@ func CheckCodes(checks []Check) []string {
 var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
 	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled, checkParkedClaim, checkMergedDraft,
-	checkInboxStale,
+	checkQuestionStale,
 	checkStatusUncommitted, checkSubmittedNotPushed,
 	checkUnfilledVision, checkDoneNotSubmitted, checkTechDrift, checkTagStale,
-	checkSubmittedNoDate, checkInboxUnparsed,
+	checkSubmittedNoDate, checkQuestionInformal,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
 	checkNoStatus, checkNoProtocol, checkProtocolStale,
 	checkNeedsUnstated,
@@ -354,6 +355,7 @@ var featureChecks = []featureCheck{
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
 	{[]Check{checkSplitClaim}, claimState},
 	{[]Check{checkIDMismatch}, idMismatch},
+	{[]Check{checkQuestionInformal, checkQuestionStale}, questionState},
 }
 
 // repoChecks run after every feature has been through the list above.
@@ -361,7 +363,6 @@ var repoChecks = []repoCheck{
 	{[]Check{checkFrozenDoc}, frozenDocs},
 	{[]Check{checkOrphanClaim}, orphanClaims},
 	{[]Check{checkOrphanReservation}, orphanReservations},
-	{[]Check{checkInboxUnparsed, checkInboxStale}, inboxState},
 	{[]Check{checkTechDrift}, techState},
 	{[]Check{checkTagStale}, tagStale},
 	{[]Check{checkNoProtocol}, noProtocol},
@@ -796,39 +797,29 @@ func describeReservation(held Reservation) string {
 	return fmt.Sprintf("id %s was reserved for %q and no doc holds it", held.ID, held.Title)
 }
 
-// An FYI line is asked nothing about its age. `kit block --fyi` promises work continues
-// without an answer, so a note nobody is required to act on had a fuse on it and a finding
-// waiting at the end — reported for ever, because answering it was never required.
-func inboxState(s *repoState) []Finding {
-	knownID := map[string]bool{}
-	for _, f := range s.r.Features {
-		if f.ID != "" {
-			knownID[f.ID] = true
-		}
+// A question in a frozen doc is history. `Submitted` and `Dropped` cannot be edited —
+// further changes need a new doc citing them — so a finding on one names a line nobody
+// may correct, and every settled question ever written down would be reported for ever.
+func questionState(s *docState) []Finding {
+	if terminal(s.f.Status) {
+		return nil
 	}
 	var out []Finding
-	for _, q := range s.r.inboxQuestions() {
-		switch {
-		case q.Feature == "":
-			out = append(out, finding(checkInboxUnparsed, s.r.Rel(s.r.Inbox),
-				"not in the documented format: "+clip(q.Text, 60),
-				`use: kit block <id> "<question>", or match `+
-					`"YYYY-MM-DD `+questionSep+` <id> `+questionSep+` BLOCKING|FYI `+questionSep+` <question>"`))
-		// A question against a feature that does not exist blocks nothing and waits
-		// forever. `kit block` refuses these, so one here was hand-written — the same
-		// cause as a line out of format, and the same line to correct.
-		case !knownID[q.Feature]:
-			out = append(out, finding(checkInboxUnparsed, s.r.Rel(s.r.Inbox),
-				fmt.Sprintf("names feature %s, which has no doc: %s", q.Feature, clip(q.Text, 50)),
-				"correct the id, or delete the line if the feature is gone"))
-		}
-		if q.FYI || q.When.IsZero() {
+	for _, item := range s.f.InformalQuestions() {
+		out = append(out, finding(checkQuestionInformal, s.at,
+			"the kit cannot act on this: "+clip(item, 60),
+			`use: kit block `+s.f.ID+` "<question>", or match "- [ ] `+DateLayout+
+				` `+questionSep+` <question>"`))
+	}
+	for _, q := range s.f.OpenQuestions() {
+		// An undated box is already reported above, and nothing can age it.
+		if q.When.IsZero() {
 			continue
 		}
-		if age := Days(q.When, s.today); age >= InboxStaleDays {
-			out = append(out, finding(checkInboxStale, s.r.Rel(s.r.Inbox),
+		if age := Days(q.When, s.today); age >= QuestionStaleDays {
+			out = append(out, finding(checkQuestionStale, s.at,
 				fmt.Sprintf("unanswered for %s: %s", countDays(age), clip(q.Text, 70)),
-				"answer it, or delete it if it stopped mattering"))
+				"answer it and tick the box, or delete it if it stopped mattering"))
 		}
 	}
 	return out

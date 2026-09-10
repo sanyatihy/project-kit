@@ -74,7 +74,7 @@ records it in the upgrade table rather than the stable list.
       target doc instead of the inbox
 - [x] `kit block <id> "<question>"` appends to that doc's section, creating it when absent,
       and commits the edit; `--fyi` is removed
-- [ ] `question-stale` and `question-informal` replace `inbox-stale` and `inbox-unparsed`
+- [x] `question-stale` and `question-informal` replace `inbox-stale` and `inbox-unparsed`
       in the registry, with conformance cases
 - [ ] `inbox-retired` reports a surviving `docs/INBOX.md`, and `kit init` stops creating it
 - [ ] `internal/kit/inbox.go`, `templates/INBOX.md` and the kit's own `docs/INBOX.md` are

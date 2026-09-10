@@ -22,9 +22,12 @@ import (
 // feature writes a minimal but valid feature doc. The template's full shape is
 // covered by the `new` suite; what matters here is status, ID, and task list.
 // ask records an open question in a feature doc, which is the only place one lives.
-func ask(p *project, rel, question string) {
+func ask(p *project, rel, question string) { askOn(p, rel, "2026-01-01", question) }
+
+// askOn is ask for the checks that turn on how old the question is.
+func askOn(p *project, rel, date, question string) {
 	p.t.Helper()
-	p.write(rel, p.read(rel)+"\n## Open questions\n\n- [ ] 2026-01-01 · "+question+"\n")
+	p.write(rel, p.read(rel)+"\n## Open questions\n\n- [ ] "+date+" · "+question+"\n")
 }
 
 func feature(p *project, id, slug, title, status, tasks string) {

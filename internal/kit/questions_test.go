@@ -76,3 +76,32 @@ func TestBlockersForReadsOnlyTheFeaturesOwnDoc(t *testing.T) {
 		t.Errorf("BlockersFor(0099) = %v, want none", got)
 	}
 }
+
+func TestInformalQuestionsNamesWhatTheKitCannotActOn(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name    string
+		section string
+		want    int
+	}{
+		{"a dated box is what block writes", "- [ ] 2026-08-11 · Which acquirer?", 0},
+		{"a ticked box is answered", "- [x] Which acquirer?", 0},
+		// Blocks, but nothing can age it into `question-stale`.
+		{"a box with no date", "- [ ] Which acquirer?", 1},
+		// Blocks nothing, so whoever wrote it reaches nobody.
+		{"a plain bullet", "- Which acquirer?", 1},
+		// A wrapped bullet is one finding, not one per line.
+		{"a wrapped bullet", "- Which acquirer? Leaning: the one\n  we already use.", 1},
+		// The section may explain itself without every paragraph being a question.
+		{"prose is not a bullet", "Settled in review.", 0},
+		// A documented example is not a question, the way it is not a task.
+		{"a fenced example", "```\n- [ ] YYYY-MM-DD · <question>\n```", 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := questionDoc("0001", tc.section).InformalQuestions(); len(got) != tc.want {
+				t.Errorf("InformalQuestions() = %v, want %d", got, tc.want)
+			}
+		})
+	}
+}
