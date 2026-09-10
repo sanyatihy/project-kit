@@ -49,6 +49,12 @@ belong to the agent runner, not kit.
   ambiguous plans block work; submit also rejects blockers and unwritten sections.
   Problem, Design and at least one Tasks box are required to build. Comments and fenced
   examples do not count. Plan-completeness audits apply to committed, nonterminal docs.
+- A free feature is reported with the live claims already changing a file it names in
+  backticks under `## Design` or `## Tasks`. The two sides differ in kind: the claim's
+  files are its branch's diff against the trunk, the feature's are author prose, so this
+  warns and never refuses. A token is a path only if it names a file present in the
+  checkout — measured 2026-09-10, 35 of 83 docs here name any, median one, which bounds
+  what it can see. A branch carrying only its own doc has changed nothing to meet.
 - Task order is execution order; the first unticked box is next. One box is one commit.
   `needs:` declares prerequisites, satisfied only by Submitted documents on trunk and
   in the current checkout. Submission on a work branch does not unlock dependents.

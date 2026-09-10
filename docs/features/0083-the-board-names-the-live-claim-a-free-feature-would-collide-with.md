@@ -60,7 +60,7 @@ no exit code changes, so a wrong reading costs a line of output.
 - [x] A live claim's changed files come from its branch against the trunk
 - [x] `kit next` names the overlapping claim and the files under each free feature
 - [x] `kit start <id>` prints the same overlap on a won claim
-- [ ] `kit help next`, `kit help start` and `docs/TECH.md` carry it, and the feature
+- [x] `kit help next`, `kit help start` and `docs/TECH.md` carry it, and the feature
       template says a backticked path is read
 
 ## Open questions

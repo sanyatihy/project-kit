@@ -170,6 +170,8 @@ Start from clean, updated trunk. New repos get a published empty main base;
 staged and unstaged files stay on the first review branch. Refuses foreign work, conflicting branches,
 unreadable remotes and direct work matching an existing plan. A pending plan
 never becomes a spike to avoid approval. Retrying the same recorded start is safe.
+A won claim names the live claims already changing a file its plan names, so an
+agent handed an id without reading the board still learns what it will meet.
 Run kit finish for review; humans approve plans and merge implementations.
 `,
 	"init": `kit init [PATH] [--stack STACK] [--forge FORGE]
@@ -379,6 +381,10 @@ An incomplete or unlanded plan, an open question or unmet needs: prevents claimi
 Groups: yours (this checkout), ready, taken and blocked; published submissions not
 yet integrated appear under awaiting review. Branch names citing an id are claims,
 including local branches and worktrees. Entries you built are marked for human review.
+
+A free feature is listed with the live claims already changing a file it names in
+backticks under ## Design or ## Tasks. It is a warning and never a refusal: that side
+is the author's prose, and a doc naming no file that exists is silent.
 
 Progress is completed/total boxes, not estimated effort. Other claims use the advertised
 remote tip and its last-moved date; missing objects give no count. Concurrent agents
