@@ -76,7 +76,7 @@ records it in the upgrade table rather than the stable list.
       and commits the edit; `--fyi` is removed
 - [x] `question-stale` and `question-informal` replace `inbox-stale` and `inbox-unparsed`
       in the registry, with conformance cases
-- [ ] `inbox-retired` reports a surviving `docs/INBOX.md`, and `kit init` stops creating it
+- [x] `inbox-retired` reports a surviving `docs/INBOX.md`, and `kit init` stops creating it
 - [ ] `internal/kit/inbox.go`, `templates/INBOX.md` and the kit's own `docs/INBOX.md` are
       deleted, and `ResolveID` moves to the file that keeps it
 - [ ] The protocol, `kit help block`, `kit help checks`, `kit new`'s next actions, the

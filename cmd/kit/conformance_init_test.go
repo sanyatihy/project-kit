@@ -19,7 +19,6 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 
 	for _, want := range []string{
 		"docs/VISION.md",
-		"docs/INBOX.md",
 		"docs/TECH.md",
 		"docs/features/BACKLOG.md",
 		"AGENTS.md",
@@ -33,6 +32,11 @@ func TestInitWritesTheDocsLayout(t *testing.T) {
 	// file the project maintains for the tool.
 	if p.exists("docs/features/TEMPLATE.md") {
 		t.Error("init wrote docs/features/TEMPLATE.md, which nothing reads")
+	}
+	// Questions live in the feature they block, so a project set up now never gets an
+	// inbox to keep in step with them.
+	if p.exists("docs/INBOX.md") {
+		t.Error("init wrote docs/INBOX.md, which nothing reads")
 	}
 	// The protocol is what makes the docs actionable; a layout without it is inert.
 	agents := p.read("AGENTS.md")

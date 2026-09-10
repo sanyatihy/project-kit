@@ -157,6 +157,10 @@ var (
 	// One defect wearing two names: a bullet `kit block` would never have written. A plain
 	// bullet blocks nothing and a box with no date never ages — opposite consequences, one
 	// cause, and the same line to correct.
+	// The file is not merely unused: it tells an agent to append questions to it, and one
+	// parked there now blocks nothing and reaches nobody.
+	checkInboxRetired = Check{"inbox-retired", Medium,
+		"docs/INBOX.md survives from before questions moved into the feature docs, and nothing reads it"}
 	checkQuestionInformal = Check{"question-informal", Medium,
 		"a bullet under ## Open questions the kit cannot act on: not a box, or a box with no date"}
 	checkNeedsUnknown = Check{"needs-unknown", Medium,
@@ -224,7 +228,7 @@ var Checks = []Check{
 	checkQuestionStale,
 	checkStatusUncommitted, checkSubmittedNotPushed,
 	checkUnfilledVision, checkDoneNotSubmitted, checkTechDrift, checkTagStale,
-	checkSubmittedNoDate, checkQuestionInformal,
+	checkSubmittedNoDate, checkQuestionInformal, checkInboxRetired,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
 	checkNoStatus, checkNoProtocol, checkProtocolStale,
 	checkNeedsUnstated,
@@ -366,6 +370,7 @@ var repoChecks = []repoCheck{
 	{[]Check{checkTechDrift}, techState},
 	{[]Check{checkTagStale}, tagStale},
 	{[]Check{checkNoProtocol}, noProtocol},
+	{[]Check{checkInboxRetired}, inboxRetired},
 	{[]Check{checkProtocolStale}, protocolStale},
 	{[]Check{checkNeedsUnknown, checkNeedsUnparsed}, needsState},
 	{[]Check{checkNeedsUnstated}, needsUnstated},
@@ -825,6 +830,27 @@ func questionState(s *docState) []Finding {
 	return out
 }
 
+// inboxRetired reports the file questions used to live in.
+//
+// `kit init` creates what is missing and overwrites nothing it did not write, so it can
+// never delete this. The finding is the migration: it is how a project that adopted the
+// kit before 0082 learns the file stopped being read.
+func inboxRetired(s *repoState) []Finding {
+	if s.r.Inbox == "" {
+		return nil
+	}
+	raw, _ := os.ReadFile(s.r.Inbox)
+	open := len(Unticked(Normalise(string(raw))))
+	problem := "nothing reads this file, and it still tells an agent to append questions to it"
+	if open > 0 {
+		problem = fmt.Sprintf("%s, of which %d block nothing and reach nobody",
+			problem, open)
+	}
+	return []Finding{finding(checkInboxRetired, s.r.Rel(s.r.Inbox), problem,
+		"move each open question into the ## Open questions of the feature it names, "+
+			"then delete the file")}
+}
+
 // Missing and stale are one gap: what submitted is not what a reader is told. Two findings
 // at two severities said that twice, and the fix is the same file either way.
 func techState(s *repoState) []Finding {
@@ -888,9 +914,6 @@ func noProtocol(s *repoState) []Finding {
 	case err == nil && !hasProtocol(Normalise(string(raw))):
 		missing = append(missing, "no "+ProtocolMarker+" section in "+s.r.Rel(s.r.Protocol)+
 			", so agents have no protocol and will invent one")
-	}
-	if s.r.Inbox == "" {
-		missing = append(missing, "no docs/INBOX.md, so a blocked agent has nowhere to put a question")
 	}
 	// Only once features exist: a project set up and not yet planned has nothing to
 	// decompose, and a finding on a fresh `kit init` would be noise at the moment the
