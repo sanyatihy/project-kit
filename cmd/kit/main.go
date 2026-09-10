@@ -648,6 +648,16 @@ func runClaim(args []string) int {
 	} else {
 		fmt.Printf("  worktree %s — already a checkout of this branch\n", claimed.Worktree)
 	}
+	// After the claim is won, because it changes nothing about whether it was: this is
+	// what its new holder will meet, not a reason to have stopped. `next` says the same
+	// thing before the claim; an agent handed `kit claim <id>` by a coordinator never
+	// reads that, and this is the last place to tell them.
+	if target := repo.FeatureByID(id); target != nil {
+		for _, over := range repo.OverlapsFor(target) {
+			fmt.Printf("  meets    %s in %s — that claim is already changing it\n",
+				over.ID, strings.Join(over.Paths, ", "))
+		}
+	}
 	fmt.Printf("\nnext:\n")
 	if claimed.WorktreeErr == nil {
 		fmt.Printf("  cd %s\n", claimed.Worktree)

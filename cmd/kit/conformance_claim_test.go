@@ -835,3 +835,21 @@ func TestClaimExcludesTheWorktreeDirectoryOncePerClone(t *testing.T) {
 		t.Fatalf("the pattern was written twice:\n%s", got)
 	}
 }
+
+func TestClaimNamesWhatTheNewHolderWillMeet(t *testing.T) {
+	t.Parallel()
+	// An agent handed `kit claim <id>` by a coordinator never reads the board, so this
+	// is the last place the overlap can reach them. It does not change the exit code:
+	// the claim is won either way.
+	p := setUp(t)
+	feature(p, "0001", "taken", "Taken", "Draft", "- [ ] Change the handler")
+	feature(p, "0002", "free", "Free", "Draft", "- [ ] Also change `handler.go`")
+	p.write("handler.go", "package main\n")
+	p.commitAll("two plans and the file")
+	p.run("claim", "0001").ok()
+	w := p.claimWorktree("work/0001")
+	w.write("handler.go", "package main // taken\n")
+	w.commitAll("work on the handler")
+
+	p.run("claim", "0002").ok().has("meets", "0001", "handler.go")
+}
