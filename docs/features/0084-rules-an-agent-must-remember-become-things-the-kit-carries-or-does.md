@@ -1,9 +1,9 @@
 ---
 id: 0084
 title: Rules an agent must remember become things the kit carries or does
-status: Draft
+status: Submitted
 created: 2026-09-10
-submitted: 
+submitted: 2026-09-10
 needs:
 ---
 
