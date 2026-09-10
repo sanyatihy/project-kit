@@ -50,6 +50,10 @@ needs:
      A paragraph per `## Tasks` box is the Tasks list restated, and the same fact then
      sits in two sections. What a box cannot say is what belongs here.
 
+     Name the files this will change, in backticks: `internal/kit/audit.go`. The board
+     reads them, and tells anyone taking this feature which live claim is already
+     changing one of them. A token naming no file is ignored, so nothing is owed.
+
      A doc is as long as its decisions and no longer. One a reader cannot hold in one
      sitting is describing a feature that is too big, not a design worth the length. -->
 

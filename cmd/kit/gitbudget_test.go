@@ -186,3 +186,53 @@ func countGit(t *testing.T, p *project, args ...string) (int, string) {
 	}
 	return len(lines), breakdown.String()
 }
+
+// The overlap report asks one question per live claim — what has that branch changed —
+// and `Survey` asks it once per ready feature. Unmemoised that is a diff per (feature,
+// claim) pair for an answer that cannot change inside one command, which is the third
+// instance of the regression this file exists to catch. The main ceiling above cannot
+// see it: it reads `next --offline`, where nothing resolves as ready and the report
+// never runs.
+func TestTheOverlapReportAsksEachClaimOnce(t *testing.T) {
+	t.Parallel()
+	counts := []int{}
+	for _, size := range []int{10, 60} {
+		p := overlapBudgetFixture(t, size)
+		n, breakdown := countGit(t, p, "next")
+		t.Logf("%d ready features over one claim: %d git calls\n%s", size, n, breakdown)
+		counts = append(counts, n)
+	}
+	if counts[1] > counts[0] {
+		t.Fatalf("%d more ready features added %d git calls; ask each claim once per read",
+			50, counts[1]-counts[0])
+	}
+}
+
+// overlapBudgetFixture is a board whose features all name one existing file, with a
+// single claim that has changed it — so every ready feature has an overlap to report and
+// every one of them wants the same diff.
+func overlapBudgetFixture(t *testing.T, size int) *project {
+	t.Helper()
+	base, origin := budgetRemote(t, "main")
+	p := projectAt(t, filepath.Join(base, "project"))
+	p.run("init").ok()
+	writeVision(p)
+	p.write("shared.go", "package main\n")
+	for i := 1; i <= size; i++ {
+		id := fmt.Sprintf("%04d", i)
+		feature(p, id, fmt.Sprintf("feature-%d", i), fmt.Sprintf("Feature %d", i),
+			"Draft", "- [ ] One in `shared.go`")
+	}
+	p.git("remote", "add", "origin", origin)
+	p.commitAll("a board naming one file")
+	p.git("push", "-q", "origin", "HEAD:refs/heads/main")
+	p.git("fetch", "-q", "origin")
+	p.run("claim", "0001").ok()
+
+	w := p.claimWorktree("work/0001")
+	w.write("shared.go", "package main // claimed\n")
+	w.commitAll("change the shared file")
+	w.git("push", "-q", "origin", "HEAD:refs/heads/work/0001")
+	p.git("fetch", "-q", "origin")
+	return p
+}

@@ -65,8 +65,9 @@ type Repo struct {
 	Tech        string
 	Vision      string
 	Inbox       string
-	Protocol    string
-	Backlog     string // agents write to it, so the secret scan has to open it
+
+	Protocol string
+	Backlog  string // agents write to it, so the secret scan has to open it
 
 	// Offline stops the kit asking the remote anything, at the cost of reading claims
 	// from a mirror that may be stale.
@@ -76,6 +77,12 @@ type Repo struct {
 	refs           []string
 	loaded         bool
 	claimWorktrees map[string]string // branch -> absolute checkout path, read with refs
+
+	// changed memoises a claim revision's diff against the trunk, revs the branch name
+	// it was resolved from. Neither answer can change inside one command, and the
+	// overlap report asks both once per ready feature.
+	changed map[string][]string
+	revs    map[string]string
 
 	// The default branch, asked once. The flag is what makes "there is no trunk" an
 	// answer rather than a question not yet asked: without it, every caller re-ran the

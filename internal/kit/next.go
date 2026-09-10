@@ -28,6 +28,12 @@ type Item struct {
 	Reason    string   `json:"reason,omitempty"`
 	Mine      bool     `json:"mine,omitempty"`
 
+	// Overlaps are the live claims already changing a file this feature names. A
+	// warning and never a refusal: the feature's side is prose its author wrote, which
+	// cannot carry one. Absent when the doc names no file that exists, which is most of
+	// them — 35 of 83 here named any when this was measured.
+	Overlaps []Overlap `json:"overlaps,omitempty"`
+
 	// Unplanned marks a feature blocked only because nobody has written its plan. That
 	// is the one blocked state whose fix is the reader's own next action rather than
 	// somebody else's, so the closing guidance has to tell them apart.
@@ -343,6 +349,9 @@ func Survey(r *Repo) Plan {
 				item.WaitingOn = why
 				plan.Blocked = append(plan.Blocked, item)
 			} else {
+				// Only on the free side. A feature already claimed has its own branch
+				// to collide on, and its holder is past the point this would inform.
+				item.Overlaps = r.OverlapsFor(f)
 				plan.Ready = append(plan.Ready, item)
 			}
 		}
@@ -373,11 +382,21 @@ func (r *Repo) claimProgressRev(branch string) string {
 	if branch == "" {
 		return ""
 	}
+	// Memoised for the same reason the board's other per-claim answers are: it cannot
+	// change inside one command, and the overlap report asks it once per ready feature.
+	// Unmemoised that was a `merge-base` per feature — 60 of them on a 60-feature board.
+	if cached, ok := r.revs[branch]; ok {
+		return cached
+	}
 	rev := r.claimRev(branch)
 	local := "refs/heads/" + branch
 	if r.hasRef(local) && rev != "" && r.reaches(rev, local) {
-		return local
+		rev = local
 	}
+	if r.revs == nil {
+		r.revs = map[string]string{}
+	}
+	r.revs[branch] = rev
 	return rev
 }
 

@@ -1034,3 +1034,71 @@ func TestGuidanceCountsHeldClaimsWithoutOfferingTheirWork(t *testing.T) {
 		t.Fatalf("text guidance = %s", text)
 	}
 }
+
+func TestNextNamesTheLiveClaimAFreeFeatureWouldMeet(t *testing.T) {
+	t.Parallel()
+	// The two sides are different kinds of fact: 0002 names a file in prose, and 0001's
+	// branch has actually changed it. The report compares one against the other.
+	p := setUp(t)
+	feature(p, "0001", "taken", "Taken", "Draft", "- [ ] Change the handler")
+	feature(p, "0002", "free", "Free", "Draft", "- [ ] Also change `handler.go`")
+	p.write("handler.go", "package main\n")
+	p.commitAll("two plans and the file")
+	p.run("claim", "0001").ok()
+
+	// The claim only collides once it has changed something. A branch carrying nothing
+	// is a claim with no work in it yet.
+	p.run("next").ok().lacks("meets 0001")
+
+	w := p.claimWorktree("work/0001")
+	w.write("handler.go", "package main // taken\n")
+	w.commitAll("work on the handler")
+
+	p.run("next").ok().has("meets 0001", "handler.go")
+}
+
+func TestNextIsSilentWhenAFreeFeatureNamesNoFile(t *testing.T) {
+	t.Parallel()
+	// The operator's decision on 0083: silence over nagging. Most docs name no file, and
+	// a finding on each of them is the noise a check must not make.
+	p := setUp(t)
+	feature(p, "0001", "taken", "Taken", "Draft", "- [ ] Change the handler")
+	feature(p, "0002", "free", "Free", "Draft", "- [ ] Change the handler somehow")
+	p.write("handler.go", "package main\n")
+	p.commitAll("two plans and the file")
+	p.run("claim", "0001").ok()
+	w := p.claimWorktree("work/0001")
+	w.write("handler.go", "package main // taken\n")
+	w.commitAll("work on the handler")
+
+	r := p.run("next").ok()
+	r.lacks("meets")
+	// And it is still offered as work — an overlap never refuses.
+	r.has("0002")
+}
+
+func TestNextSeesAClaimThatExistsOnlyOnTheRemote(t *testing.T) {
+	t.Parallel()
+	// The case the report exists for: another agent's claim, which this clone has only
+	// as refs/remotes/*. Diffing the branch name alone resolves to nothing here, so the
+	// overlap went unreported exactly when somebody else was already in the file.
+	a, b := twoAgents(t)
+	feature(a, "0008", "second", "Second", "Draft", "- [ ] Also change `shared.go`")
+	a.write("shared.go", "package main\n")
+	a.commitAll("a second plan and the file")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/main")
+	a.run("claim", "0007").ok()
+
+	aw := a.claimWorktree("work/0007")
+	aw.write("shared.go", "package main // a is here\n")
+	aw.commitAll("change the shared file")
+	aw.git("push", "-q", "origin", "HEAD:refs/heads/work/0007")
+
+	b.git("fetch", "-q", "origin")
+	b.git("merge", "-q", "--ff-only", "origin/main")
+	if b.gitOut(nil, "branch", "--list", "work/0007") != "" {
+		t.Fatal("b has a local copy of the claim, so this proves nothing")
+	}
+
+	b.run("next").ok().has("meets 0007", "shared.go")
+}
