@@ -1,9 +1,9 @@
 ---
 id: 0083
 title: The board names the live claim a free feature would collide with
-status: Submitted
+status: Draft
 created: 2026-09-10
-submitted: 2026-09-10
+submitted: 
 needs:
 ---
 
@@ -75,3 +75,4 @@ no exit code changes, so a wrong reading costs a line of output.
   stands as written. The warning covers 35 of the 83 docs here and no more by choice;
   the habit of naming files is asked for in the feature template, not enforced by a
   finding on the other 48.
+- 2026-09-10 — reopen to Draft: review found the overlap misses remote-only claims and re-diffs every claim per feature
