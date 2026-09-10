@@ -75,3 +75,16 @@ func TestPauseNeedsAReasonAndAClaim(t *testing.T) {
 	p.commitAll("a plan")
 	p.run("pause", "nothing is held here").fails(2).errHas("claims no feature")
 }
+
+func TestNextShowsAPausedClaimAsStillYoursWithItsReason(t *testing.T) {
+	t.Parallel()
+	// The agent returning to this checkout reads the board first, and a pause is not a
+	// status, so nothing else on it would say why the work stopped.
+	_, w := paused(t)
+	w.run("pause", "the expiry needs the operator's ceiling").ok()
+
+	r := w.run("next").ok()
+	r.has("yours", "0007", "paused:", "the expiry needs the operator's ceiling")
+	// Still the next box: a pause explains the stop, it does not remove the work.
+	r.has("The redirect")
+}

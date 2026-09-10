@@ -946,6 +946,11 @@ func printPlan(plan kit.Plan, color bool) {
 		fmt.Printf("    %s  %-5s %s\n", mine.ID, mine.Progress(), kit.Show(mine.Title, 54))
 		fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(mine.Task, 68))
 		fmt.Printf("       %s\n", mine.Doc)
+		// Said after the task, not instead of it: the work is still this checkout's and
+		// the next box is still the next box. What the reason adds is why it stopped.
+		if mine.Reason != "" {
+			fmt.Printf("       %s %s\n", paint("paused:", "2", color), kit.Show(mine.Reason, 60))
+		}
 		listItems(plan.Yours[1:])
 	}
 
