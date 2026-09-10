@@ -66,7 +66,7 @@ still holding its claim, with the reason, so it is offered no other work.
 - [x] `kit pause "<why>"` commits, records the reason in `## Log`, pushes, and prints the
       handoff, retaining the claim
 - [x] `kit next` shows a paused claim as still yours, with its reason
-- [ ] `kit help pause`, the command list, rule 13 in `templates/AGENTS-section.md` and
+- [x] `kit help pause`, the command list, rule 13 in `templates/AGENTS-section.md` and
       `docs/TECH.md` carry it
 
 ## Log

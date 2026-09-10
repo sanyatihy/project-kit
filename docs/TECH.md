@@ -63,6 +63,15 @@ belong to the agent runner, not kit.
   the same fence and comment masking the parser uses, so a heading quoted in an example
   never receives one. Answer in the plan, tick the box and commit both before resuming. `docs/INBOX.md` is retired; `inbox-retired`
   reports one that survives, because `init` cannot delete what it did not write.
+- Pause commits this checkout's whole tree, records `— paused: <why>` in the feature's
+  `## Log`, pushes the branch and verifies the advertised tip. It keeps the claim and
+  writes no status: paused work is unfinished, and a submission states the opposite. The
+  reason is read back from the Log the way parking's is, and the board shows it under a
+  claim that is still yours. No remote is reported, not failed — the commit is what
+  protects the work. Resuming needs no command; the next commit ends the pause.
+- The stack is detected from the marker file `init --stack` writes — `go.mod`,
+  `pyproject.toml` — because init is not run again and nothing else records the choice.
+  A won claim names that stack's checklist topic. No marker means no guess.
 - VISION holds direction; TECH holds current facts; features hold plans; Log holds plan
   changes; PRs hold validation and handoff. Log may be empty; length is not a gate.
   Integrated feature history is frozen. The one-time prose compaction is recorded in 0073.
