@@ -29,9 +29,9 @@ func TestOldQuestionDoesNotGateIndependentWork(t *testing.T) {
 	p := setUp(t)
 	feature(p, "0001", "blocked", "Blocked", "Draft", "- [ ] Build")
 	feature(p, "0002", "independent", "Independent", "Draft", "- [ ] Build")
-	p.write("docs/INBOX.md", "# Inbox\n\n- [ ] 2020-01-01 · 0001 · BLOCKING · Human decision\n")
+	askOn(p, "docs/features/0001-blocked.md", daysAgo(365), "Human decision")
 	p.commitAll("plans and question")
-	p.run("audit", "--strict").ok().has("inbox-stale")
+	p.run("audit", "--strict").ok().has("question-stale")
 	p.run("claim", "0001").fails(1)
 	p.run("claim", "0002").ok()
 }

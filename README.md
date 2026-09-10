@@ -60,7 +60,7 @@ Run it from anywhere — `kit` is on your `$PATH`. Prompting an agent inside the
 repo to set up some other project gives it write access to the tool it is using.
 
 It creates the directory if missing, makes it a git repo, and writes `AGENTS.md`,
-`docs/VISION.md`, `docs/INBOX.md`, `docs/TECH.md`, `docs/features/BACKLOG.md` and a
+`docs/VISION.md`, `docs/TECH.md`, `docs/features/BACKLOG.md` and a
 `.gitignore` covering what an editor and an operating system leave behind. It overwrites
 nothing you wrote, so it is safe on a populated directory and safe to re-run.
 
@@ -84,7 +84,7 @@ Re-running is how a project catches up after the kit is upgraded. One kit-owned 
 refreshed: the `## Work protocol` section of `AGENTS.md`. Every document is yours the
 moment it is placed and is never touched again; house rules live above the marker comment
 in `AGENTS.md`. Nothing but `kit init` creates a project file, so there is one answer to
-where a file came from, and `kit help vision`, `inbox` and `as-built` print the shape each
+where a file came from, and `kit help vision`, `template` and `as-built` print the shape each
 is waiting for.
 
 Once set up you never run anything yourself. `AGENTS.md` tells the agent to run
@@ -141,8 +141,8 @@ A task discovered during implementation becomes another box, feature or backlog 
 The agent continues through the current feature until it is ready for review or blocked.
 A human decision goes to `kit block <id> "<question>"`; the agent may take independent
 work from another checkout. If none is available, it reports the blocker and stops.
-When the human answers, record the decision in the plan and remove the blocking inbox
-line in the same commit. Bring that commit into the paused checkout before resuming.
+When the human answers, record the decision in the plan and tick the question's box in
+the same commit. Bring that commit into the paused checkout before resuming.
 
 ## Submission and integration
 
@@ -212,7 +212,7 @@ kit new   <title...>                     next free ID, date filled in, status Dr
 kit claim <id>                           push the branch; exit 1 means you lost it
 kit release <id> [--discard]               give a claim back; refuses over work, and over
                                          a claim this clone never created
-kit block <id> "<question>" [--fyi]      record a decision only a human can make
+kit block <id> "<question>"              record a decision only a human can make
 kit submit  <id>                           verify every box, stamp the date, submit
 kit reopen <id> "<why>" [--repair]       reopen review; explicit invalid-status repair
 kit park <id> "<why>"                   retain a complete plan for later
@@ -222,7 +222,7 @@ kit next  [--json] [--offline]           the next action for this checkout
 kit audit [--json] [--strict] [--offline]  --strict exits 1 on HIGH, for CI
                                          both exit 2 where there is no docs/features
 kit init  [PATH] [--stack S] [--forge F]
-kit help  [protocol|template|checks|inbox|vision|as-built|go-checklist]
+kit help  [protocol|template|checks|vision|as-built|go-checklist]
 kit version
 ```
 
@@ -274,8 +274,8 @@ their plans are merged and other blockers are resolved. `kit help template` expl
 Two things keep a doc honest. Every fact has one home: still true after the feature ships
 and it belongs in `docs/TECH.md`, one line; a change to this doc's plan and it belongs in
 `## Log`, one entry naming the change; neither and it belongs in the pull request. And
-blockers belong in `INBOX.md`, not in prose — a box that says "blocked on X" is invisible
-to `kit next` and will be handed to an agent that cannot do it.
+blockers belong in `## Open questions`, not in prose — a task box that says "blocked on X"
+is invisible to `kit next` and will be handed to an agent that cannot do it.
 
 ## Several agents
 

@@ -1,9 +1,9 @@
 ---
 id: 0082
 title: A question lives in the feature doc it blocks, and the inbox is retired
-status: Draft
+status: Submitted
 created: 2026-09-10
-submitted:
+submitted: 2026-09-10
 needs:
 ---
 
@@ -64,23 +64,51 @@ Retirement is a hard cutover. Nothing reads `docs/INBOX.md`, `kit init` stops cr
 and `inbox-retired` reports the file where one survives — MEDIUM because the file instructs
 an agent to append questions to it, and a question parked there now blocks nothing and
 reaches nobody. `kit init` overwrites nothing it did not write, so the finding is the
-migration: move open lines into the features they name, delete the file. This breaks a
+migration: read the file once, then delete it. This breaks a
 parsed document's meaning and lands before v1.0 freezes it, so `templates/compatibility.md`
 records it in the upgrade table rather than the stable list.
 
 ## Tasks
 
-- [ ] `## Open questions` parses into blocking questions, and `BlockersFor` reads the
+- [x] `## Open questions` parses into blocking questions, and `BlockersFor` reads the
       target doc instead of the inbox
-- [ ] `kit block <id> "<question>"` appends to that doc's section, creating it when absent,
+- [x] `kit block <id> "<question>"` appends to that doc's section, creating it when absent,
       and commits the edit; `--fyi` is removed
-- [ ] `question-stale` and `question-informal` replace `inbox-stale` and `inbox-unparsed`
+- [x] `question-stale` and `question-informal` replace `inbox-stale` and `inbox-unparsed`
       in the registry, with conformance cases
-- [ ] `inbox-retired` reports a surviving `docs/INBOX.md`, and `kit init` stops creating it
-- [ ] `internal/kit/inbox.go`, `templates/INBOX.md` and the kit's own `docs/INBOX.md` are
+- [x] `inbox-retired` reports a surviving `docs/INBOX.md`, and `kit init` stops creating it
+- [x] `internal/kit/inbox.go`, `templates/INBOX.md` and the kit's own `docs/INBOX.md` are
       deleted, and `ResolveID` moves to the file that keeps it
-- [ ] The protocol, `kit help block`, `kit help checks`, `kit new`'s next actions, the
+- [x] The protocol, `kit help block`, `kit help checks`, `kit new`'s next actions, the
       feature template and README describe the one home
-- [ ] `templates/compatibility.md` records the cutover and the migration step
+- [x] `templates/compatibility.md` records the cutover and the migration step
+- [x] `AppendToSection` finds a heading where the parser does, so a fenced example or a
+      template comment never swallows a question
+- [x] `kit block` refuses a terminal doc
+- [x] `inbox-retired` and `templates/compatibility.md` describe a migration that can
+      actually be followed
 
 ## Log
+
+- 2026-09-10 — the migration is to read the file once and delete it, not to move its
+  lines. Every stranded line in the eight projects carrying an inbox was an `FYI`, and
+  nine of the ten named a feature already Shipped or Submitted. Moving those in would
+  block work a human had cleared to continue, and `block` refuses a terminal doc anyway.
+  The design assumed a per-line move that the only real corpus cannot take.
+- 2026-09-10 — review found two defects and added the last two boxes. `AppendToSection`
+  scanned raw lines, so a doc quoting the format in a fenced example took the question
+  into the fence: `block` reported the feature blocked and `next` went on offering it,
+  which is the one direction this mechanism must not fail in. And `block` had no status
+  guard, because it never needed one while it wrote a file of its own — moving the write
+  into the doc let it edit and commit frozen history.
+- 2026-09-10 — boxes 1 and 2 land in one commit. `block` writing where nothing reads is
+  not a state to leave the tool in, so the parse and its writer are one change.
+- 2026-09-10 — boxes 5 and 6 land in one commit. Deleting `templates/INBOX.md` deletes
+  the `kit help inbox` topic, and the overview offering a topic the binary cannot print
+  fails the build, so the deletion and the prose that points at it are one change.
+- 2026-09-10 — added a lock and an atomic write the design did not call for. Appending to
+  a section is read-modify-write where appending to the inbox was one `O_APPEND`: twelve
+  concurrent `block` runs lost four questions and handed a reader a doc truncated
+  mid-write, which `kit block` then reported as the project having no feature docs.
+- 2026-09-10 — reopen to Draft: review found kit block writing into a fenced example and into frozen docs
+- 2026-09-10 — reopen to Draft: the inbox-retired advice would block cleared work and cannot be followed for frozen docs

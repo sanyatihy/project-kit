@@ -33,7 +33,6 @@ const ProtocolTemplate = "templates/AGENTS-section.md"
 // the tool.
 var docLayout = []struct{ src, dest string }{
 	{"templates/VISION.md", "docs/VISION.md"},
-	{"templates/INBOX.md", "docs/INBOX.md"},
 	{"templates/TECH.md", "docs/TECH.md"},
 	{"templates/BACKLOG.md", "docs/features/BACKLOG.md"},
 }

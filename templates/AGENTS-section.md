@@ -27,10 +27,12 @@ Plan when asked. For work that began without a plan, use the spike route below.
 4. Run `kit finish` to validate, commit and push the planning round; open one PR for
    human review. Planned features require the human's approval through that merge before implementation starts. After it
    merges, return to a trunk checkout, pull with --ff-only, and run kit audit and kit next.
-5. Put uncertainty in `## Open questions`. Use `kit block <id> "<question>"` for a
-   decision only the human can make. Never invent a product decision to unblock yourself.
-   Once answered, record the decision in the affected plan, remove its blocking inbox
-   line, and commit both. Integrate that answer into a paused checkout before resuming.
+5. Put uncertainty in the feature's `## Open questions`. Use `kit block <id>
+   "<question>"` for a decision only the human can make: it writes a dated box there
+   and commits it. An unticked box blocks that feature and nothing else. Never invent a
+   product decision to unblock yourself. Once answered, record the decision in the
+   affected plan, tick the box, and commit both. Integrate that answer into a paused
+   checkout before resuming.
 
 ### Taking work
 

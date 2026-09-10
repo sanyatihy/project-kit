@@ -21,6 +21,15 @@ import (
 
 // feature writes a minimal but valid feature doc. The template's full shape is
 // covered by the `new` suite; what matters here is status, ID, and task list.
+// ask records an open question in a feature doc, which is the only place one lives.
+func ask(p *project, rel, question string) { askOn(p, rel, "2026-01-01", question) }
+
+// askOn is ask for the checks that turn on how old the question is.
+func askOn(p *project, rel, date, question string) {
+	p.t.Helper()
+	p.write(rel, p.read(rel)+"\n## Open questions\n\n- [ ] "+date+" · "+question+"\n")
+}
+
 func feature(p *project, id, slug, title, status, tasks string) {
 	p.t.Helper()
 	p.write("docs/features/"+id+"-"+slug+".md", fmt.Sprintf(
@@ -326,26 +335,13 @@ func TestNextIsBlockedByAnOpenBlockingQuestion(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
-	p.write("docs/INBOX.md",
-		"# Inbox\n\n- [ ] 2026-01-01 · 0001 · BLOCKING · Should codes expire?\n")
+	ask(p, "docs/features/0001-shorten.md", "Should codes expire?")
 
 	r := p.run("next").ok()
 	r.has("blocked", "waiting on", "Should codes expire?")
 	if strings.Contains(r.Stdout, "start here") {
 		t.Errorf("a blocked feature was offered as work:\n%s", r.Stdout)
 	}
-}
-
-func TestNextIsNotBlockedByAnFYIQuestion(t *testing.T) {
-	t.Parallel()
-	// FYI is recorded for a human without stopping the work, or every note would
-	// halt a feature.
-	p := setUp(t)
-	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
-	p.write("docs/INBOX.md",
-		"# Inbox\n\n- [ ] 2026-01-01 · 0001 · FYI · Using base62 for slugs.\n")
-
-	p.run("next").ok().has("start here", "The POST handler")
 }
 
 func TestNextBlocksAFeatureWithEveryBoxTicked(t *testing.T) {
@@ -502,29 +498,30 @@ func TestNextOnAnUnsetUpProjectSaysHowToFixItAndExitsTwo(t *testing.T) {
 	p.run("next", "--json").fails(2).outHas("not set up yet")
 }
 
-func TestNextIsNotBlockedByAQuestionAboutAnotherFeature(t *testing.T) {
+func TestNextIsNotBlockedByAQuestionInAnotherFeaturesDoc(t *testing.T) {
 	t.Parallel()
-	// The ID lives in a field of the line. Matching the whole line blocks any
-	// feature a question happens to name, and the cause is invisible in the output.
+	// The doc is the id. A question that merely names 0007 in its prose used to block
+	// 0007 by a whole-line match, and the cause was invisible in the output.
 	p := setUp(t)
 	feature(p, "0007", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
-	p.write("docs/INBOX.md",
-		"# Inbox\n\n- [ ] 2026-08-11 · 0012 · BLOCKING · Should this match what we did in 0007?\n")
+	feature(p, "0012", "codes", "Codes", "Draft", "- [ ] The encoder")
+	ask(p, "docs/features/0012-codes.md", "Should this match what we did in 0007?")
 
 	p.run("next").ok().has("start here", "The POST handler")
 }
 
-func TestNextStillBlocksOnAMalformedLineThatNamesTheFeature(t *testing.T) {
+func TestNextBlocksOnAnUndatedQuestion(t *testing.T) {
 	t.Parallel()
-	// A line outside the format falls back to scanning the whole thing, which
-	// over-blocks. That is the safe direction: missing a blocker sends an agent
-	// into work a human has not cleared. `inbox-unparsed` makes the line visible.
+	// A box nobody dated cannot age into `question-stale`, but it still asks something.
+	// Blocking is the safe direction: missing one sends an agent into work a human has
+	// not cleared, and `question-informal` makes the line visible.
 	p := setUp(t)
 	feature(p, "0007", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
-	p.write("docs/INBOX.md", "# Inbox\n\n- [ ] is 0007 really the right approach\n")
+	p.write("docs/features/0007-shorten.md",
+		p.read("docs/features/0007-shorten.md")+
+			"\n## Open questions\n\n- [ ] is 0007 really the right approach\n")
 
 	p.run("next").ok().has("blocked")
-	p.run("audit").ok().has("inbox-unparsed")
 }
 
 func TestNextTellsAnEmptyPlanApartFromAFinishedOne(t *testing.T) {

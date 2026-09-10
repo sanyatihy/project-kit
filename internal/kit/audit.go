@@ -22,14 +22,14 @@ const (
 	// because a claim taken on a Friday and resumed on a Monday is not a stall.
 	StalledDays = 3
 
-	// InboxStaleDays is an unanswered BLOCKING question this old, which means you are
-	// the bottleneck.
+	// QuestionStaleDays is an unanswered question this old, which means you are the
+	// bottleneck.
 	//
-	// Two, not one. An inbox line carries a date and no time, so ages are measured from
+	// Two, not one. A question carries a date and no time, so ages are measured from
 	// midnight UTC on the day it was filed: at a threshold of one day a question filed
-	// at 23:00 was HIGH an hour later. A check that can fire before a human could
+	// at 23:00 was reported an hour later. A check that can fire before a human could
 	// plausibly have answered is a check nobody believes.
-	InboxStaleDays = 2
+	QuestionStaleDays = 2
 
 	// TagStaleCommits is how far the newest tag may fall behind the trunk before an
 	// install stops being the project the docs describe. Commits rather than days,
@@ -78,7 +78,7 @@ type Check struct {
 var (
 	// HIGH — a doc says something untrue, or work is stuck and nobody noticed.
 	checkDuplicateID = Check{"duplicate-id", High,
-		"two feature docs share one id:, so one branch claims both and one inbox line blocks both"}
+		"two feature docs share one id:, so one branch claims both and neither says which plan it builds"}
 	// HIGH, and next to duplicate-id for the same reason: the doc says two things about
 	// itself, and every command that reads one of them believes it. `submit` used to write
 	// the line nothing reads, so the finding survived its own fix.
@@ -93,8 +93,9 @@ var (
 			countDays(StalledDays)}
 	checkParkedClaim = Check{"parked-claim", High,
 		"a parked plan still has a claim; resolve ownership before merging the scheduling decision"}
-	checkInboxStale = Check{"inbox-stale", Medium,
-		"a BLOCKING question in INBOX.md has gone unanswered for " + countDays(InboxStaleDays)}
+	checkQuestionStale = Check{"question-stale", Medium,
+		"an open question in a feature's ## Open questions has gone unanswered for " +
+			countDays(QuestionStaleDays)}
 	checkSecretInDoc = Check{"secret-in-doc", High,
 		"a doc contains something shaped like a real credential"}
 	// HIGH for stalled's reasons: it is silent — every command exits 0, the doc says
@@ -153,11 +154,15 @@ var (
 	// while agents run.
 	checkIDMismatch = Check{"id-mismatch", High,
 		"frontmatter id: is missing or disagrees with the filename, so a claim on it is invisible to the board"}
-	// One defect wearing two names: a line `kit block` would never have written. Out of
-	// format it blocks by prose match, and against an id nobody wrote it blocks nothing —
-	// opposite consequences, one cause, and the same line to correct.
-	checkInboxUnparsed = Check{"inbox-unparsed", Medium,
-		"an INBOX.md line the kit cannot resolve to a feature: out of format, or naming an id nobody wrote"}
+	// One defect wearing two names: a bullet `kit block` would never have written. A plain
+	// bullet blocks nothing and a box with no date never ages — opposite consequences, one
+	// cause, and the same line to correct.
+	// The file is not merely unused: it tells an agent to append questions to it, and one
+	// parked there now blocks nothing and reaches nobody.
+	checkInboxRetired = Check{"inbox-retired", Medium,
+		"docs/INBOX.md survives from before questions moved into the feature docs, and nothing reads it"}
+	checkQuestionInformal = Check{"question-informal", Medium,
+		"a bullet under ## Open questions the kit cannot act on: not a box, or a box with no date"}
 	checkNeedsUnknown = Check{"needs-unknown", Medium,
 		"a needs: names a feature that does not exist or can never submit, so the wait never ends"}
 	// HIGH: it names the worst failure the kit has — two agents building one feature,
@@ -198,7 +203,7 @@ var (
 	// project missing more than one is one defect with one fix. It was three findings
 	// telling the reader to run `kit init .` three times.
 	checkNoProtocol = Check{"no-protocol", Medium,
-		"a document kit init writes is missing: AGENTS.md's work protocol, INBOX.md, or VISION.md"}
+		"a document kit init writes is missing: AGENTS.md's work protocol, or VISION.md"}
 )
 
 // OfflineChecks are the checks that cannot run without an answer from the remote: under
@@ -220,10 +225,10 @@ func CheckCodes(checks []Check) []string {
 var Checks = []Check{
 	checkSecretInDoc, checkUnfilledTemplate, checkUnreadableDoc,
 	checkDuplicateID, checkDuplicateKey, checkFrozenDoc, checkIDMismatch, checkSplitClaim, checkStalled, checkParkedClaim, checkMergedDraft,
-	checkInboxStale,
+	checkQuestionStale,
 	checkStatusUncommitted, checkSubmittedNotPushed,
 	checkUnfilledVision, checkDoneNotSubmitted, checkTechDrift, checkTagStale,
-	checkSubmittedNoDate, checkInboxUnparsed,
+	checkSubmittedNoDate, checkQuestionInformal, checkInboxRetired,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
 	checkNoStatus, checkNoProtocol, checkProtocolStale,
 	checkNeedsUnstated,
@@ -354,6 +359,7 @@ var featureChecks = []featureCheck{
 	{[]Check{checkUnfilledTemplate}, unfilledTemplate},
 	{[]Check{checkSplitClaim}, claimState},
 	{[]Check{checkIDMismatch}, idMismatch},
+	{[]Check{checkQuestionInformal, checkQuestionStale}, questionState},
 }
 
 // repoChecks run after every feature has been through the list above.
@@ -361,10 +367,10 @@ var repoChecks = []repoCheck{
 	{[]Check{checkFrozenDoc}, frozenDocs},
 	{[]Check{checkOrphanClaim}, orphanClaims},
 	{[]Check{checkOrphanReservation}, orphanReservations},
-	{[]Check{checkInboxUnparsed, checkInboxStale}, inboxState},
 	{[]Check{checkTechDrift}, techState},
 	{[]Check{checkTagStale}, tagStale},
 	{[]Check{checkNoProtocol}, noProtocol},
+	{[]Check{checkInboxRetired}, inboxRetired},
 	{[]Check{checkProtocolStale}, protocolStale},
 	{[]Check{checkNeedsUnknown, checkNeedsUnparsed}, needsState},
 	{[]Check{checkNeedsUnstated}, needsUnstated},
@@ -450,7 +456,7 @@ func frozenDocs(s *repoState) []Finding {
 	return out
 }
 
-// The ID is the primary key: branches claim by it, inbox lines block by it, and commits
+// The ID is the primary key: branches claim by it, needs: waits on it, and commits
 // cite it. Two docs sharing one makes all three ambiguous, and it is the one disagreement
 // git cannot surface — the filenames differ, so the merge is clean.
 func duplicateID(s *repoState) []Finding {
@@ -606,7 +612,7 @@ func stalled(s *docState) []Finding {
 		return []Finding{finding(checkStalled, s.at,
 			fmt.Sprintf("%s: %s, nothing has happened in %s",
 				s.f.Name(), s.f.Status+", claimed by "+claim, countDays(idle)),
-			"finish it, drop it, or move the blocker to docs/INBOX.md")}
+			"finish it, drop it, or record the blocker with kit block")}
 	}
 	return nil
 }
@@ -796,42 +802,62 @@ func describeReservation(held Reservation) string {
 	return fmt.Sprintf("id %s was reserved for %q and no doc holds it", held.ID, held.Title)
 }
 
-// An FYI line is asked nothing about its age. `kit block --fyi` promises work continues
-// without an answer, so a note nobody is required to act on had a fuse on it and a finding
-// waiting at the end — reported for ever, because answering it was never required.
-func inboxState(s *repoState) []Finding {
-	knownID := map[string]bool{}
-	for _, f := range s.r.Features {
-		if f.ID != "" {
-			knownID[f.ID] = true
-		}
+// A question in a frozen doc is history. `Submitted` and `Dropped` cannot be edited —
+// further changes need a new doc citing them — so a finding on one names a line nobody
+// may correct, and every settled question ever written down would be reported for ever.
+func questionState(s *docState) []Finding {
+	if terminal(s.f.Status) {
+		return nil
 	}
 	var out []Finding
-	for _, q := range s.r.OpenQuestions() {
-		switch {
-		case q.Feature == "":
-			out = append(out, finding(checkInboxUnparsed, s.r.Rel(s.r.Inbox),
-				"not in the documented format: "+clip(q.Text, 60),
-				`use: kit block <id> "<question>", or match `+
-					`"YYYY-MM-DD `+inboxSep+` <id> `+inboxSep+` BLOCKING|FYI `+inboxSep+` <question>"`))
-		// A question against a feature that does not exist blocks nothing and waits
-		// forever. `kit block` refuses these, so one here was hand-written — the same
-		// cause as a line out of format, and the same line to correct.
-		case !knownID[q.Feature]:
-			out = append(out, finding(checkInboxUnparsed, s.r.Rel(s.r.Inbox),
-				fmt.Sprintf("names feature %s, which has no doc: %s", q.Feature, clip(q.Text, 50)),
-				"correct the id, or delete the line if the feature is gone"))
-		}
-		if q.FYI || q.When.IsZero() {
+	for _, item := range s.f.InformalQuestions() {
+		out = append(out, finding(checkQuestionInformal, s.at,
+			"the kit cannot act on this: "+clip(item, 60),
+			`use: kit block `+s.f.ID+` "<question>", or match "- [ ] `+DateLayout+
+				` `+questionSep+` <question>"`))
+	}
+	for _, q := range s.f.OpenQuestions() {
+		// An undated box is already reported above, and nothing can age it.
+		if q.When.IsZero() {
 			continue
 		}
-		if age := Days(q.When, s.today); age >= InboxStaleDays {
-			out = append(out, finding(checkInboxStale, s.r.Rel(s.r.Inbox),
+		if age := Days(q.When, s.today); age >= QuestionStaleDays {
+			out = append(out, finding(checkQuestionStale, s.at,
 				fmt.Sprintf("unanswered for %s: %s", countDays(age), clip(q.Text, 70)),
-				"answer it, or delete it if it stopped mattering"))
+				"answer it and tick the box, or delete it if it stopped mattering"))
 		}
 	}
 	return out
+}
+
+// inboxRetired reports the file questions used to live in.
+//
+// `kit init` creates what is missing and overwrites nothing it did not write, so it can
+// never delete this. The finding is the migration: it is how a project that adopted the
+// kit before 0082 learns the file stopped being read.
+//
+// It does not say to move each line into the feature it names. Every line in the projects
+// that had one was an `FYI` against a feature already Shipped or Submitted, so that advice
+// would block work a human had cleared to continue, and `block` refuses a terminal doc
+// anyway. What is left is a file to read once and delete.
+func inboxRetired(s *repoState) []Finding {
+	if s.r.Inbox == "" {
+		return nil
+	}
+	raw, _ := os.ReadFile(s.r.Inbox)
+	open := len(Unticked(Normalise(string(raw))))
+	problem := "nothing reads this file, and it still tells an agent to append questions to it"
+	if open > 0 {
+		were := "questions are"
+		if open == 1 {
+			were = "question is"
+		}
+		problem = fmt.Sprintf("%s; %d %s parked here, blocking nothing and reaching nobody",
+			problem, open, were)
+	}
+	return []Finding{finding(checkInboxRetired, s.r.Rel(s.r.Inbox), problem,
+		"read it once — record anything still live with kit block <id>, or in "+
+			"docs/features/BACKLOG.md — then delete the file")}
 }
 
 // Missing and stale are one gap: what submitted is not what a reader is told. Two findings
@@ -881,7 +907,7 @@ func tagStale(s *repoState) []Finding {
 		"cut a tag on the trunk and push it — until it is pushed nothing installs it")}
 }
 
-// One command writes AGENTS.md, docs/INBOX.md and docs/VISION.md, creates only what is
+// One command writes AGENTS.md and docs/VISION.md, creates only what is
 // missing and overwrites nothing — so a project lacking any of them has one defect with
 // one fix, and reporting it three times told the reader to run `kit init .` three times.
 //
@@ -897,9 +923,6 @@ func noProtocol(s *repoState) []Finding {
 	case err == nil && !hasProtocol(Normalise(string(raw))):
 		missing = append(missing, "no "+ProtocolMarker+" section in "+s.r.Rel(s.r.Protocol)+
 			", so agents have no protocol and will invent one")
-	}
-	if s.r.Inbox == "" {
-		missing = append(missing, "no docs/INBOX.md, so a blocked agent has nowhere to put a question")
 	}
 	// Only once features exist: a project set up and not yet planned has nothing to
 	// decompose, and a finding on a fresh `kit init` would be noise at the moment the

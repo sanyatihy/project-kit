@@ -226,6 +226,24 @@ func forEachBox(text string, visit func(line string, done bool)) {
 	}
 }
 
+// maskNonContent hides everything ParseSections does not see — fenced examples and HTML
+// comments — while preserving every byte and line offset, so a writer finds a heading in
+// exactly the places a reader will.
+func maskNonContent(text string) string { return maskFences(maskComments(text)) }
+
+// maskComments blanks HTML comments, keeping their newlines so line numbers still line up.
+func maskComments(text string) string {
+	out := []byte(text)
+	for _, m := range commentRe.FindAllStringIndex(text, -1) {
+		for i := m[0]; i < m[1]; i++ {
+			if out[i] != '\n' {
+				out[i] = ' '
+			}
+		}
+	}
+	return string(out)
+}
+
 // maskFences hides fenced examples while preserving byte offsets for section slicing.
 func maskFences(text string) string {
 	lines := strings.Split(text, "\n")
@@ -324,9 +342,14 @@ func Days(a, b time.Time) int { return int(b.Sub(a).Hours() / 24) }
 // stops looking like a list.
 func AppendToSection(text, heading, line string) (string, bool) {
 	lines := strings.Split(text, "\n")
+	// Found where the reader will find it. A raw scan matched a heading inside a fenced
+	// example, so `kit block` wrote a question into a code block, reported the feature
+	// blocked, and `next` went on offering it as ready — a question reaching nobody,
+	// which is the direction the whole mechanism must not fail in.
+	masked := strings.Split(maskNonContent(text), "\n")
 	want := "## " + heading
 	start := -1
-	for i, l := range lines {
+	for i, l := range masked {
 		if strings.TrimSpace(l) == want {
 			start = i
 			break
@@ -336,8 +359,8 @@ func AppendToSection(text, heading, line string) (string, bool) {
 		return text, false
 	}
 	end := len(lines)
-	for i := start + 1; i < len(lines); i++ {
-		if strings.HasPrefix(lines[i], "## ") {
+	for i := start + 1; i < len(masked); i++ {
+		if strings.HasPrefix(masked[i], "## ") {
 			end = i
 			break
 		}

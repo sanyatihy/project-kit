@@ -143,22 +143,3 @@ func TestNewFeatureNeedsAnInitialisedProject(t *testing.T) {
 		t.Error("succeeded without a features directory, want an error pointing at kit init")
 	}
 }
-
-func TestFYIQuestionsDoNotBlock(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	inbox := filepath.Join(dir, "INBOX.md")
-	if err := os.WriteFile(inbox, []byte(
-		"- [ ] 2026-08-11 · 0001 · BLOCKING · which acquirer?\n"+
-			"- [ ] 2026-08-11 · 0002 · FYI · heads up, the rate limit is lower\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	r := &Repo{Root: dir, Inbox: inbox}
-
-	if got := r.BlockersFor("0001"); len(got) != 1 {
-		t.Errorf("BlockersFor(0001) = %v, want the BLOCKING question", got)
-	}
-	if got := r.BlockersFor("0002"); len(got) != 0 {
-		t.Errorf("BlockersFor(0002) = %v, want none — FYI is a note, not a blocker", got)
-	}
-}

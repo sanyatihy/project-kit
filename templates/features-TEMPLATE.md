@@ -63,7 +63,14 @@ needs:
      plan is missing instead of `kit next` handing an agent a placeholder to build. -->
 
 ## Open questions
-<!-- Optional. Delete when empty. Each with a leaning if you have one. -->
+<!-- Optional. Delete when empty. One box per question, with a leaning if you have one:
+       - [ ] YYYY-MM-DD · Should codes expire? Leaning: no, keep forever.
+
+     An unticked box blocks this feature until a human answers and ticks it. Write them
+     with `kit block <id> "<question>"` rather than by hand: a plain bullet is not a box
+     and blocks nothing, and a box with no date can never be reported as unanswered.
+     Record the answer where it belongs — Design, or Log if it changed the plan — and
+     tick the box. Ticked questions stay: they are what the doc was asked. -->
 
 ## Log
 <!-- One entry per change to the plan, and each names the change: a box rewritten, a

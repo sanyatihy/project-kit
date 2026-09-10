@@ -197,7 +197,7 @@ func TestParkedDependenciesRemainUnmetAndDocumentsRemainValidated(t *testing.T) 
 	}
 	p.run("claim", "0002").fails(1).errHas("0001")
 	// Scheduling itself creates no age-based work or question finding.
-	p.run("audit", "--strict").ok().lacks("stalled", "inbox-stale", "no-status")
+	p.run("audit", "--strict").ok().lacks("stalled", "question-stale", "no-status")
 	path := "docs/features/0001-later.md"
 	p.write(path, strings.Replace(p.read(path), "This way.", "", 1))
 	p.commitAll("break design")
