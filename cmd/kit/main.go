@@ -96,6 +96,8 @@ func run() int {
 		return runReopen(os.Args[2:])
 	case "block":
 		return runBlock(os.Args[2:])
+	case "pause":
+		return runPause(os.Args[2:])
 	case "submit":
 		return runSubmit(os.Args[2:])
 	case "next":
@@ -652,6 +654,12 @@ func runClaim(args []string) int {
 	if claimed.WorktreeErr == nil {
 		fmt.Printf("  cd %s\n", claimed.Worktree)
 	}
+	// Rule 9 tells an agent to read this, which is a rule about reading a rule: one that
+	// does not already know the page exists never runs the command. Named here because
+	// this is the moment before it writes code, and nowhere else in the session is.
+	if topic := kit.ChecklistTopic(kit.DetectStack(repo.Root)); topic != "" {
+		fmt.Printf("  kit help %s — read it before writing code\n", topic)
+	}
 	// No status edit to instruct: the branch just pushed is what says this is started,
 	// and asking for a second copy of that in the doc is what the model forbade all along.
 	fmt.Printf("  work there, not here — the branch is the claim, so nothing else to set\n\n")
@@ -740,6 +748,52 @@ func runBlock(args []string) int {
 	fmt.Printf("\n  %s  ## %s\n", target.Rel, kit.QuestionsHeading)
 	fmt.Printf("  %s\n", line)
 	fmt.Printf("\n  %s is blocked until a human answers and ticks it. Move to another feature.\n\n", id)
+	return 0
+}
+
+// ---------------------------------------------------------------- pause
+
+func runPause(args []string) int {
+	fs := newFlagSet("pause", args)
+	rest := parseArgs(fs, args)
+	if len(rest) < 1 {
+		fmt.Fprintf(os.Stderr, "kit pause: say what remains\n\n%s\n", commandHelp["pause"])
+		return 2
+	}
+	repo, err := kit.Open(kit.ProjectRoot("."))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "kit pause: %v\n", err)
+		return 2
+	}
+	res, err := kit.Pause(repo, strings.Join(rest, " "), time.Now().UTC())
+	if err != nil {
+		// A result with an error is a pause that committed and could not publish. The
+		// commit is what protects the work, so it is reported before the failure.
+		if res != nil && res.Commit != "" {
+			fmt.Printf("\n  paused   %s — %s\n", res.ID, res.Reason)
+			fmt.Printf("  commit   %s\n", res.Candidate)
+		}
+		fmt.Fprintf(os.Stderr, "kit pause: %v\n", err)
+		return 2
+	}
+
+	fmt.Printf("\n  paused   %s — %s\n", res.ID, res.Reason)
+	fmt.Printf("  commit   %s  (%s)\n", res.Candidate, res.Branch)
+	if res.Remote == "" {
+		fmt.Printf("\n  no remote, so the work is committed here and nowhere else.\n")
+	} else {
+		fmt.Printf("  pushed   %s/%s — the work is not only in this clone\n", res.Remote, res.Branch)
+	}
+	if len(res.Remains) > 0 {
+		fmt.Printf("\n  remaining:\n")
+		for _, task := range res.Remains {
+			fmt.Printf("    - %s\n", kit.Show(task, 68))
+		}
+	}
+	fmt.Printf("\nnext:\n")
+	fmt.Printf("  open the pull request unfinished and say what remains — the claim is\n")
+	fmt.Printf("  still yours, so nobody else will take %s.\n", res.ID)
+	fmt.Printf("  pr_title: %s\n\n", res.PRTitle)
 	return 0
 }
 
@@ -892,6 +946,11 @@ func printPlan(plan kit.Plan, color bool) {
 		fmt.Printf("    %s  %-5s %s\n", mine.ID, mine.Progress(), kit.Show(mine.Title, 54))
 		fmt.Printf("    %s %s\n", paint("→", "1;32", color), kit.Show(mine.Task, 68))
 		fmt.Printf("       %s\n", mine.Doc)
+		// Said after the task, not instead of it: the work is still this checkout's and
+		// the next box is still the next box. What the reason adds is why it stopped.
+		if mine.Reason != "" {
+			fmt.Printf("       %s %s\n", paint("paused:", "2", color), kit.Show(mine.Reason, 60))
+		}
 		listItems(plan.Yours[1:])
 	}
 
