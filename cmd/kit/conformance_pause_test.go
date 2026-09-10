@@ -88,3 +88,21 @@ func TestNextShowsAPausedClaimAsStillYoursWithItsReason(t *testing.T) {
 	// Still the next box: a pause explains the stop, it does not remove the work.
 	r.has("The redirect")
 }
+
+func TestNextStopsReportingAPauseOnceWorkResumes(t *testing.T) {
+	t.Parallel()
+	// The Log holds every pause the feature ever had, so the entry alone would read as
+	// paused for ever. The branch is what answers it: `pause` commits the tree, so
+	// anything committed on top of that ends the pause.
+	_, w := paused(t)
+	w.run("pause", "waiting on a decision").ok()
+	w.run("next").ok().has("paused:")
+
+	w.write("redirect.go", "package main\n")
+	w.commitAll("build the redirect")
+
+	r := w.run("next").ok()
+	r.lacks("paused:")
+	// Still this checkout's work, with a task — resuming changes nothing but the pause.
+	r.has("yours", "0007", "The redirect")
+}

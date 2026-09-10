@@ -27,13 +27,16 @@ type PauseResult struct {
 	Candidate string
 }
 
-// PausedReason is the latest recorded pause, empty when the feature is not paused.
+// pausePrefix opens the commit subject `Pause` writes, and is what says a claim is still
+// standing where the pause left it.
+const pausePrefix = "Pause "
+
+// pausedLogEntry is the latest pause the doc records, which is every pause it ever had.
 //
 // Read from `## Log` the way `ParkingReason` reads parking: the entry is already the
 // doc's record of what happened to its plan, and a second place to look would be a fact
-// with two homes. A resumption is not written — the next commit on the branch is what
-// says the work moved, and `next` stops reporting the pause once it does.
-func (f *Feature) PausedReason() string {
+// with two homes.
+func (f *Feature) pausedLogEntry() string {
 	reason := ""
 	for _, line := range strings.Split(f.Section("Log"), "\n") {
 		if _, why, ok := strings.Cut(line, " — paused: "); ok {
@@ -41,6 +44,37 @@ func (f *Feature) PausedReason() string {
 		}
 	}
 	return reason
+}
+
+// PausedReason is why this feature's work is standing still, empty when it is not.
+//
+// The Log alone cannot answer it: it holds every pause the feature ever had, so a doc
+// paused once reads as paused for ever. What answers it is the branch. `Pause` commits
+// the tree, so the pause is over the moment anything is committed on top of it — the tip
+// still being that commit is the whole test.
+//
+// Checked rather than written back, because a resumption is not a thing anybody would
+// remember to record, and a board that keeps reporting a pause somebody ended is worse
+// than one that never mentioned it.
+func (r *Repo) PausedReason(f *Feature) string {
+	reason := f.pausedLogEntry()
+	if reason == "" || f.ID == "" {
+		return ""
+	}
+	for _, branch := range r.Claims(f.ID) {
+		if strings.HasPrefix(r.subjectOf(r.claimProgressRev(branch)), pausePrefix+f.ID+":") {
+			return reason
+		}
+	}
+	return ""
+}
+
+// subjectOf is a revision's commit subject, empty when it cannot be read.
+func (r *Repo) subjectOf(rev string) string {
+	if rev == "" {
+		return ""
+	}
+	return strings.TrimSpace(r.git("log", "-1", "--pretty=%s", rev))
 }
 
 // Pause commits what is in the tree, records the reason, and publishes the branch.
@@ -81,7 +115,7 @@ func Pause(r *Repo, why string, today time.Time) (*PauseResult, error) {
 	// Everything in the tree, not only the doc. The point of a pause is that work in
 	// progress survives the agent that was doing it, and `commitPaths` would leave
 	// exactly the half-finished files this exists to preserve.
-	res.Commit = "Pause " + id + ": " + clip(why, 60)
+	res.Commit = pausePrefix + id + ": " + clip(why, 60)
 	if err := r.commitAll(res.Commit); err != nil {
 		return nil, fmt.Errorf("%s records the pause in %s, and committing it failed:\n%v\n"+
 			"commit and push the branch yourself — an unpushed pause is work only this clone has",

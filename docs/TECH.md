@@ -68,7 +68,9 @@ belong to the agent runner, not kit.
   writes no status: paused work is unfinished, and a submission states the opposite. The
   reason is read back from the Log the way parking's is, and the board shows it under a
   claim that is still yours. No remote is reported, not failed — the commit is what
-  protects the work. Resuming needs no command; the next commit ends the pause.
+  protects the work. Resuming needs no command: the board reports the pause only while
+  the claim's tip is still that `Pause` commit, since the Log holds every pause the
+  feature ever had and cannot say which is current.
 - The stack is detected from the marker file `init --stack` writes — `go.mod`,
   `pyproject.toml` — because init is not run again and nothing else records the choice.
   A won claim names that stack's checklist topic. No marker means no guess.

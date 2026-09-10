@@ -66,11 +66,17 @@ still holding its claim, with the reason, so it is offered no other work.
 - [x] `kit pause "<why>"` commits, records the reason in `## Log`, pushes, and prints the
       handoff, retaining the claim
 - [x] `kit next` shows a paused claim as still yours, with its reason
+- [x] The board stops reporting a pause once work resumes
 - [x] `kit help pause`, the command list, rule 13 in `templates/AGENTS-section.md` and
       `docs/TECH.md` carry it
 
 ## Log
 
+- 2026-09-10 — review found the board reporting a pause for ever. `## Log` holds every
+  pause a feature ever had, so the entry alone cannot say whether this one is current;
+  the design said the next commit ends the pause and nothing checked. The claim's tip
+  still being the `Pause` commit is the test, checked rather than written back — a
+  resumption is not something anybody would remember to record.
 - 2026-09-10 — boxes 2 and 3 land in one commit: detection exists only to answer what
   `start` prints, and a detector with no caller is untestable through the binary.
 - 2026-09-10 — reopen to Draft: review found the board keeps reporting a pause after work resumes
