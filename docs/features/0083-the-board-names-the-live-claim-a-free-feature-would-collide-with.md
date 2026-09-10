@@ -58,7 +58,7 @@ no exit code changes, so a wrong reading costs a line of output.
 - [x] A feature's `## Design` and `## Tasks` yield the repo-relative paths they name in
       backticks, dropping any that names no file
 - [x] A live claim's changed files come from its branch against the trunk
-- [ ] `kit next` names the overlapping claim and the files under each free feature
+- [x] `kit next` names the overlapping claim and the files under each free feature
 - [ ] `kit start <id>` prints the same overlap on a won claim
 - [ ] `kit help next`, `kit help start` and `docs/TECH.md` carry it, and the feature
       template says a backticked path is read

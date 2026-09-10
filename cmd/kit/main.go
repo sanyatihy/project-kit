@@ -861,6 +861,18 @@ func listItems(items []kit.Item) {
 	for _, item := range items {
 		fmt.Printf("    %s  %-5s %s\n", item.ID, item.Progress(), kit.Show(item.Title, 54))
 		fmt.Printf("          %s\n", kit.Show(item.Task, 64))
+		printOverlaps(item, "          ")
+	}
+}
+
+// printOverlaps names the live claims already changing a file this feature names.
+//
+// Said under the feature it concerns and nowhere else, so it reads as a property of that
+// work rather than a warning about the board. It refuses nothing: the feature's side of
+// the comparison is prose, and a claim made in prose cannot carry a refusal.
+func printOverlaps(item kit.Item, indent string) {
+	for _, over := range item.Overlaps {
+		fmt.Printf("%smeets %s in %s\n", indent, over.ID, strings.Join(over.Paths, ", "))
 	}
 }
 
@@ -916,6 +928,7 @@ func printPlan(plan kit.Plan, color bool) {
 			// The claim comes before the worktree, and kit claim prints the worktree
 			// command once it has actually won. Printing it here instead would have
 			// the agent building somewhere to work before knowing the work is theirs.
+			printOverlaps(first, "       ")
 			fmt.Printf("       kit claim %s\n", first.ID)
 			if rest := plan.Ready[1:]; len(rest) > 0 {
 				fmt.Printf("\n  also free\n")

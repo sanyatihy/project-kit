@@ -1034,3 +1034,45 @@ func TestGuidanceCountsHeldClaimsWithoutOfferingTheirWork(t *testing.T) {
 		t.Fatalf("text guidance = %s", text)
 	}
 }
+
+func TestNextNamesTheLiveClaimAFreeFeatureWouldMeet(t *testing.T) {
+	t.Parallel()
+	// The two sides are different kinds of fact: 0002 names a file in prose, and 0001's
+	// branch has actually changed it. The report compares one against the other.
+	p := setUp(t)
+	feature(p, "0001", "taken", "Taken", "Draft", "- [ ] Change the handler")
+	feature(p, "0002", "free", "Free", "Draft", "- [ ] Also change `handler.go`")
+	p.write("handler.go", "package main\n")
+	p.commitAll("two plans and the file")
+	p.run("claim", "0001").ok()
+
+	// The claim only collides once it has changed something. A branch carrying nothing
+	// is a claim with no work in it yet.
+	p.run("next").ok().lacks("meets 0001")
+
+	w := p.claimWorktree("work/0001")
+	w.write("handler.go", "package main // taken\n")
+	w.commitAll("work on the handler")
+
+	p.run("next").ok().has("meets 0001", "handler.go")
+}
+
+func TestNextIsSilentWhenAFreeFeatureNamesNoFile(t *testing.T) {
+	t.Parallel()
+	// The operator's decision on 0083: silence over nagging. Most docs name no file, and
+	// a finding on each of them is the noise a check must not make.
+	p := setUp(t)
+	feature(p, "0001", "taken", "Taken", "Draft", "- [ ] Change the handler")
+	feature(p, "0002", "free", "Free", "Draft", "- [ ] Change the handler somehow")
+	p.write("handler.go", "package main\n")
+	p.commitAll("two plans and the file")
+	p.run("claim", "0001").ok()
+	w := p.claimWorktree("work/0001")
+	w.write("handler.go", "package main // taken\n")
+	w.commitAll("work on the handler")
+
+	r := p.run("next").ok()
+	r.lacks("meets")
+	// And it is still offered as work — an overlap never refuses.
+	r.has("0002")
+}
