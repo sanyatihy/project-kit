@@ -61,8 +61,8 @@ still holding its claim, with the reason, so it is offered no other work.
 
 - [x] `kit help python-checklist` carries money handling: decimal arithmetic, minor units
       in storage, boundary parsing, and no coercion of a request field
-- [ ] The stack is detected from the marker file `init --stack` writes
-- [ ] `kit start` prints the checklist topic for that stack on a won claim
+- [x] The stack is detected from the marker file `init --stack` writes
+- [x] `kit start` prints the checklist topic for that stack on a won claim
 - [ ] `kit pause "<why>"` commits, records the reason in `## Log`, pushes, and prints the
       handoff, retaining the claim
 - [ ] `kit next` shows a paused claim as still yours, with its reason
@@ -70,3 +70,6 @@ still holding its claim, with the reason, so it is offered no other work.
       `docs/TECH.md` carry it
 
 ## Log
+
+- 2026-09-10 — boxes 2 and 3 land in one commit: detection exists only to answer what
+  `start` prints, and a detector with no caller is untestable through the binary.

@@ -652,6 +652,12 @@ func runClaim(args []string) int {
 	if claimed.WorktreeErr == nil {
 		fmt.Printf("  cd %s\n", claimed.Worktree)
 	}
+	// Rule 9 tells an agent to read this, which is a rule about reading a rule: one that
+	// does not already know the page exists never runs the command. Named here because
+	// this is the moment before it writes code, and nowhere else in the session is.
+	if topic := kit.ChecklistTopic(kit.DetectStack(repo.Root)); topic != "" {
+		fmt.Printf("  kit help %s — read it before writing code\n", topic)
+	}
 	// No status edit to instruct: the branch just pushed is what says this is started,
 	// and asking for a second copy of that in the doc is what the model forbade all along.
 	fmt.Printf("  work there, not here — the branch is the claim, so nothing else to set\n\n")
