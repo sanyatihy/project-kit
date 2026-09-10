@@ -1,9 +1,9 @@
 ---
 id: 0083
 title: The board names the live claim a free feature would collide with
-status: Draft
+status: Submitted
 created: 2026-09-10
-submitted: 
+submitted: 2026-09-10
 needs:
 ---
 
