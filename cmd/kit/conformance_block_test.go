@@ -165,3 +165,41 @@ func TestBlockKeepsTheQuestionOnOneLine(t *testing.T) {
 		}
 	}
 }
+
+func TestBlockWritesWhereTheBoardWillReadIt(t *testing.T) {
+	t.Parallel()
+	// A doc quoting the format in a fenced example has two `## Open questions` headings
+	// and only one of them is a section. Appending into the example reported the feature
+	// blocked while `next` went on offering it — a question that reaches nobody.
+	p := setUp(t)
+	feature(p, "0007", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
+	rel := "docs/features/0007-shorten.md"
+	p.write(rel, strings.Replace(p.read(rel), "## Design",
+		"## Design\nThe format is:\n\n```\n## Open questions\n\n- [ ] YYYY-MM-DD · <question>\n\n## Log\n```\n", 1))
+
+	p.run("block", "0007", "Should codes expire?").ok()
+	p.run("next").ok().has("blocked", "Should codes expire?")
+}
+
+func TestBlockRefusesFinishedWork(t *testing.T) {
+	t.Parallel()
+	// A terminal doc cannot be claimed, so nothing a question said would ever unblock;
+	// on the trunk it is frozen history, which a further change needs a new doc to make.
+	for _, status := range []string{"Submitted", "Dropped"} {
+		t.Run(status, func(t *testing.T) {
+			t.Parallel()
+			p := setUp(t)
+			extra := ""
+			if status == "Submitted" {
+				extra = "submitted: 2026-01-02"
+			}
+			p.write("docs/features/0007-done.md", doc("0007", "Done", status, extra, "- [x] Built it"))
+			p.commitAll("finished work")
+
+			p.run("block", "0007", "Should codes expire?").fails(2).errHas(status)
+			if got := p.read("docs/features/0007-done.md"); strings.Contains(got, "Should codes expire?") {
+				t.Errorf("block edited frozen history:\n%s", got)
+			}
+		})
+	}
+}

@@ -105,3 +105,29 @@ func TestInformalQuestionsNamesWhatTheKitCannotActOn(t *testing.T) {
 		})
 	}
 }
+
+func TestAppendToSectionIgnoresHeadingsTheParserCannotSee(t *testing.T) {
+	t.Parallel()
+	// The writer has to find the section where the reader will. A fenced example or a
+	// template comment containing `## Open questions` is not a section, and appending
+	// into one wrote a question nothing read: `block` reported the feature blocked and
+	// `next` went on offering it as ready.
+	for _, tc := range []struct{ name, body string }{
+		{"a fenced example", "## Design\n\n```\n## Open questions\n\n## Log\n```\n\n" +
+			"## Open questions\n\n## Log\n"},
+		{"a template comment", "## Design\n\n<!--\n## Open questions\n\n## Log\n-->\n\n" +
+			"## Open questions\n\n## Log\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, ok := AppendToSection(tc.body, QuestionsHeading, "- [ ] 2026-08-11 · Which?")
+			if !ok {
+				t.Fatal("the real heading was not found at all")
+			}
+			f := &Feature{ID: "0001", sections: ParseSections(got)}
+			if len(f.OpenQuestions()) != 1 {
+				t.Errorf("the question landed where nothing reads it:\n%s", got)
+			}
+		})
+	}
+}

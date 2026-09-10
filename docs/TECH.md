@@ -58,8 +58,10 @@ belong to the agent runner, not kit.
   a box and blocks nothing. Only the leading date is parsed, and an undated box blocks
   without ageing. `block` writes and commits under a lock beside the doc, replacing the
   file by rename: appending to a section is read-modify-write, and concurrent writers
-  otherwise lose questions and expose a half-written doc. Answer in the plan, tick the
-  box and commit both before resuming. `docs/INBOX.md` is retired; `inbox-retired`
+  otherwise lose questions and expose a half-written doc. It refuses a terminal doc,
+  which cannot be claimed and is frozen on trunk. Section writes locate a heading through
+  the same fence and comment masking the parser uses, so a heading quoted in an example
+  never receives one. Answer in the plan, tick the box and commit both before resuming. `docs/INBOX.md` is retired; `inbox-retired`
   reports one that survives, because `init` cannot delete what it did not write.
 - VISION holds direction; TECH holds current facts; features hold plans; Log holds plan
   changes; PRs hold validation and handoff. Log may be empty; length is not a gate.

@@ -110,6 +110,17 @@ func AskQuestion(r *Repo, target *Feature, question string, today time.Time) (st
 	if question == "" {
 		return "", fmt.Errorf("a question is required")
 	}
+	// A question against finished work asks nobody anything: a terminal doc is not
+	// claimable, so nothing would ever be unblocked, and on the trunk it is frozen
+	// history that a further change needs a new doc to make. `submit` and `drop` guard
+	// status for the same reason; `block` did not have to while it wrote a file of
+	// its own, and moving the write into the doc is what makes this reachable.
+	if terminal(target.Status) {
+		return "", fmt.Errorf("%s is %s, so a question cannot block it\n"+
+			"run kit reopen %s \"<why>\" if it is still under review, "+
+			"or kit new for work that is already integrated",
+			target.Name(), target.Status, target.ID)
+	}
 	line := "- [ ] " + today.UTC().Format(DateLayout) + " " + questionSep + " " + question
 
 	// Read, write and commit under one lock. Appending to the inbox was a single O_APPEND
@@ -198,7 +209,7 @@ func replaceFile(path, content string) error {
 // it, so a doc that grows one still reads in the order every other doc does.
 func addQuestionsSection(body, line string) string {
 	section := "## " + QuestionsHeading + "\n\n" + line + "\n"
-	if at := strings.Index(body, "\n## Log"); at != -1 {
+	if at := strings.Index(maskNonContent(body), "\n## Log"); at != -1 {
 		return body[:at+1] + section + "\n" + body[at+1:]
 	}
 	return strings.TrimRight(body, "\n") + "\n\n" + section

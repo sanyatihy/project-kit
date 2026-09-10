@@ -82,9 +82,18 @@ records it in the upgrade table rather than the stable list.
 - [x] The protocol, `kit help block`, `kit help checks`, `kit new`'s next actions, the
       feature template and README describe the one home
 - [x] `templates/compatibility.md` records the cutover and the migration step
+- [x] `AppendToSection` finds a heading where the parser does, so a fenced example or a
+      template comment never swallows a question
+- [x] `kit block` refuses a terminal doc
 
 ## Log
 
+- 2026-09-10 — review found two defects and added the last two boxes. `AppendToSection`
+  scanned raw lines, so a doc quoting the format in a fenced example took the question
+  into the fence: `block` reported the feature blocked and `next` went on offering it,
+  which is the one direction this mechanism must not fail in. And `block` had no status
+  guard, because it never needed one while it wrote a file of its own — moving the write
+  into the doc let it edit and commit frozen history.
 - 2026-09-10 — boxes 1 and 2 land in one commit. `block` writing where nothing reads is
   not a state to leave the tool in, so the parse and its writer are one change.
 - 2026-09-10 — boxes 5 and 6 land in one commit. Deleting `templates/INBOX.md` deletes
