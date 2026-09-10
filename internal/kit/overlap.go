@@ -45,21 +45,39 @@ func (r *Repo) NamedPaths(f *Feature) []string {
 	return sorted(seen)
 }
 
-// ChangedPaths lists what a branch has changed against the trunk.
+// ChangedPaths lists what a revision has changed against the trunk.
+//
+// A revision and not a branch name: a claim another agent pushed exists here only as
+// `refs/remotes/*`, and `work/0001` alone resolves to nothing, so the diff failed
+// silently and the overlap went unreported exactly when it mattered most. `stalled`
+// resolves the same way before asking git anything.
 //
 // Three dots, as `BranchBuildsOn` uses: what the branch changed since it diverged, not
 // what has landed on trunk meanwhile. Unknown answers nothing — with no trunk to compare
 // against, a report invented from missing information is worse than none.
-func (r *Repo) ChangedPaths(branch string) []string {
+//
+// Memoised for the life of the Repo, because the answer cannot change inside one command
+// and `Survey` asks it once per ready feature. Without this a board of F such features
+// and C claims spent F×C diffs on C distinct answers, which is the growth-with-board-size
+// regression `TestABoardReadKeepsGitWorkBoundedAsFeaturesGrow` exists to refuse.
+func (r *Repo) ChangedPaths(rev string) []string {
 	trunk := r.trunkRef()
-	if trunk == "" || branch == "" || branch == r.Trunk() {
+	if trunk == "" || rev == "" {
 		return nil
 	}
+	if cached, ok := r.changed[rev]; ok {
+		return cached
+	}
 	seen := map[string]bool{}
-	for _, rel := range gitPaths(r.git("diff", "--name-only", "-z", trunk+"..."+branch)) {
+	for _, rel := range gitPaths(r.git("diff", "--name-only", "-z", trunk+"..."+rev)) {
 		seen[rel] = true
 	}
-	return sorted(seen)
+	out := sorted(seen)
+	if r.changed == nil {
+		r.changed = map[string][]string{}
+	}
+	r.changed[rev] = out
+	return out
 }
 
 // Overlap is a live claim a free feature would meet, and where.
@@ -88,7 +106,7 @@ func (r *Repo) OverlapsFor(f *Feature) []Overlap {
 		}
 		for _, branch := range r.Claims(other.ID) {
 			hit := map[string]bool{}
-			for _, rel := range r.ChangedPaths(branch) {
+			for _, rel := range r.ChangedPaths(r.claimProgressRev(branch)) {
 				// A branch carrying only its own doc is a claim with nothing in it yet.
 				if want[rel] && rel != other.Rel {
 					hit[rel] = true

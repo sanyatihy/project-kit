@@ -1076,3 +1076,29 @@ func TestNextIsSilentWhenAFreeFeatureNamesNoFile(t *testing.T) {
 	// And it is still offered as work — an overlap never refuses.
 	r.has("0002")
 }
+
+func TestNextSeesAClaimThatExistsOnlyOnTheRemote(t *testing.T) {
+	t.Parallel()
+	// The case the report exists for: another agent's claim, which this clone has only
+	// as refs/remotes/*. Diffing the branch name alone resolves to nothing here, so the
+	// overlap went unreported exactly when somebody else was already in the file.
+	a, b := twoAgents(t)
+	feature(a, "0008", "second", "Second", "Draft", "- [ ] Also change `shared.go`")
+	a.write("shared.go", "package main\n")
+	a.commitAll("a second plan and the file")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/main")
+	a.run("claim", "0007").ok()
+
+	aw := a.claimWorktree("work/0007")
+	aw.write("shared.go", "package main // a is here\n")
+	aw.commitAll("change the shared file")
+	aw.git("push", "-q", "origin", "HEAD:refs/heads/work/0007")
+
+	b.git("fetch", "-q", "origin")
+	b.git("merge", "-q", "--ff-only", "origin/main")
+	if b.gitOut(nil, "branch", "--list", "work/0007") != "" {
+		t.Fatal("b has a local copy of the claim, so this proves nothing")
+	}
+
+	b.run("next").ok().has("meets 0007", "shared.go")
+}

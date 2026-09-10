@@ -62,11 +62,22 @@ no exit code changes, so a wrong reading costs a line of output.
 - [x] `kit start <id>` prints the same overlap on a won claim
 - [x] `kit help next`, `kit help start` and `docs/TECH.md` carry it, and the feature
       template says a backticked path is read
+- [x] The claim is resolved to a revision before diffing, and both that answer and the
+      diff are asked once per read
 
 ## Open questions
 - [x] 2026-09-10 · Should a free feature that names no backticked path be reported, so docs learn to name the files they touch? Measured here: 35 of 83 docs name at least one existing file in Design or Tasks, median 1, so silence means the warning reaches under half the board. Leaning: stay silent and accept the partial reach — a finding on the other 48 docs is exactly the noise a check must not make, and the habit is better asked for in the template than enforced.
 
 ## Log
+
+- 2026-09-10 — review found the report blind to the claims it exists for and growing with
+  the board. `Claims` returns a branch name, and another agent's claim is only
+  `refs/remotes/*` here, so diffing the name resolved to nothing and said nothing;
+  `stalled` had resolved through `claimProgressRev` all along. Asking per ready feature
+  then cost a diff and a `merge-base` each — 60 of each on a 60-feature board — against
+  answers that cannot change inside one command. Both are memoised on the Repo.
+  `TestABoardReadKeepsGitWorkBoundedAsFeaturesGrow` could not have caught it: it reads
+  `next --offline`, where nothing resolves as ready and the report never runs.
 
 - 2026-09-10 — boxes 1 and 2 land in one commit: both sides of the comparison are one
   file, and the second is ten lines over `BranchBuildsOn`'s existing diff.

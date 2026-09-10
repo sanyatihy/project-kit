@@ -378,11 +378,21 @@ func (r *Repo) claimProgressRev(branch string) string {
 	if branch == "" {
 		return ""
 	}
+	// Memoised for the same reason the board's other per-claim answers are: it cannot
+	// change inside one command, and the overlap report asks it once per ready feature.
+	// Unmemoised that was a `merge-base` per feature — 60 of them on a 60-feature board.
+	if cached, ok := r.revs[branch]; ok {
+		return cached
+	}
 	rev := r.claimRev(branch)
 	local := "refs/heads/" + branch
 	if r.hasRef(local) && rev != "" && r.reaches(rev, local) {
-		return local
+		rev = local
 	}
+	if r.revs == nil {
+		r.revs = map[string]string{}
+	}
+	r.revs[branch] = rev
 	return rev
 }
 

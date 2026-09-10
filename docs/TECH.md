@@ -54,7 +54,10 @@ belong to the agent runner, not kit.
   files are its branch's diff against the trunk, the feature's are author prose, so this
   warns and never refuses. A token is a path only if it names a file present in the
   checkout — measured 2026-09-10, 35 of 83 docs here name any, median one, which bounds
-  what it can see. A branch carrying only its own doc has changed nothing to meet.
+  what it can see. A branch carrying only its own doc has changed nothing to meet. The
+  claim resolves through `claimProgressRev` before any diff, because another agent's
+  claim exists here only as `refs/remotes/*`; that revision and its diff are memoised per
+  read, since the board asks both once per ready feature.
 - Task order is execution order; the first unticked box is next. One box is one commit.
   `needs:` declares prerequisites, satisfied only by Submitted documents on trunk and
   in the current checkout. Submission on a work branch does not unlock dependents.
