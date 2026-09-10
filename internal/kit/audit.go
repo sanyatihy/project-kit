@@ -843,8 +843,12 @@ func inboxRetired(s *repoState) []Finding {
 	open := len(Unticked(Normalise(string(raw))))
 	problem := "nothing reads this file, and it still tells an agent to append questions to it"
 	if open > 0 {
-		problem = fmt.Sprintf("%s, of which %d block nothing and reach nobody",
-			problem, open)
+		were := "questions are"
+		if open == 1 {
+			were = "question is"
+		}
+		problem = fmt.Sprintf("%s; %d %s parked here, blocking nothing and reaching nobody",
+			problem, open, were)
 	}
 	return []Finding{finding(checkInboxRetired, s.r.Rel(s.r.Inbox), problem,
 		"move each open question into the ## Open questions of the feature it names, "+
