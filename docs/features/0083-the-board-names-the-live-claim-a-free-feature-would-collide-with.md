@@ -64,6 +64,11 @@ no exit code changes, so a wrong reading costs a line of output.
       template says a backticked path is read
 
 ## Open questions
-- [ ] 2026-09-10 · Should a free feature that names no backticked path be reported, so docs learn to name the files they touch? Measured here: 35 of 83 docs name at least one existing file in Design or Tasks, median 1, so silence means the warning reaches under half the board. Leaning: stay silent and accept the partial reach — a finding on the other 48 docs is exactly the noise a check must not make, and the habit is better asked for in the template than enforced.
+- [x] 2026-09-10 · Should a free feature that names no backticked path be reported, so docs learn to name the files they touch? Measured here: 35 of 83 docs name at least one existing file in Design or Tasks, median 1, so silence means the warning reaches under half the board. Leaning: stay silent and accept the partial reach — a finding on the other 48 docs is exactly the noise a check must not make, and the habit is better asked for in the template than enforced.
 
 ## Log
+
+- 2026-09-10 — settled: a free feature naming no path is not reported, so the design
+  stands as written. The warning covers 35 of the 83 docs here and no more by choice;
+  the habit of naming files is asked for in the feature template, not enforced by a
+  finding on the other 48.
