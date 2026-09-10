@@ -1,9 +1,9 @@
 ---
 id: 0082
 title: A question lives in the feature doc it blocks, and the inbox is retired
-status: Submitted
+status: Draft
 created: 2026-09-10
-submitted: 2026-09-10
+submitted: 
 needs:
 ---
 
@@ -94,3 +94,4 @@ records it in the upgrade table rather than the stable list.
   a section is read-modify-write where appending to the inbox was one `O_APPEND`: twelve
   concurrent `block` runs lost four questions and handed a reader a doc truncated
   mid-write, which `kit block` then reported as the project having no feature docs.
+- 2026-09-10 — reopen to Draft: review found kit block writing into a fenced example and into frozen docs
