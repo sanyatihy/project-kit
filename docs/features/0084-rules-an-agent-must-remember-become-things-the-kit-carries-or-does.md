@@ -63,7 +63,7 @@ still holding its claim, with the reason, so it is offered no other work.
       in storage, boundary parsing, and no coercion of a request field
 - [x] The stack is detected from the marker file `init --stack` writes
 - [x] `kit start` prints the checklist topic for that stack on a won claim
-- [ ] `kit pause "<why>"` commits, records the reason in `## Log`, pushes, and prints the
+- [x] `kit pause "<why>"` commits, records the reason in `## Log`, pushes, and prints the
       handoff, retaining the claim
 - [ ] `kit next` shows a paused claim as still yours, with its reason
 - [ ] `kit help pause`, the command list, rule 13 in `templates/AGENTS-section.md` and
