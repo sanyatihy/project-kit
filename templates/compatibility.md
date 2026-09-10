@@ -54,6 +54,9 @@ Changed operations:
 | revive Dropped | new feature for human approval |
 | release --force | release --discard; ownership/dirty-work guards remain |
 | drop id without a doc | drop --reservation for unused-id cleanup |
+| block writing docs/INBOX.md | block writing the feature's ## Open questions |
+| block --fyi | removed; every open question blocks |
+| inbox-stale / inbox-unparsed | question-stale / question-informal |
 | shipped-not-pushed / shipped-no-date / done-not-shipped | submitted-not-pushed / submitted-no-date / done-not-submitted |
 
 Unknown push outcome: retain the receipt and retry claim from that clone when online.
@@ -77,6 +80,28 @@ Parking checks visible claims when the command runs. The new HIGH `parked-claim`
 finding flags a known claim on a parked plan. Recheck next and audit before
 merging the planning PR: a later claim can race a review. Git permissions and human
 review enforce merge authority; these commands cannot prevent raw git changes.
+
+## Questions in feature docs
+
+A question now lives as an unticked box under the feature's own `## Open questions`, and
+that is the only thing that blocks a claim, a submit or the board. The doc is the id, so
+the line carries no feature field and nothing scans prose for one: a question naming
+another feature blocks only the doc it sits in. Only the leading date is parsed.
+
+```
+- [ ] YYYY-MM-DD · <question>
+```
+
+`docs/INBOX.md` is not read. `kit init` no longer creates it and cannot delete the copy
+an earlier version wrote, so the new MEDIUM `inbox-retired` names a surviving file and
+counts the questions stranded in it. Migrate before relying on the board: move each open
+line into the `## Open questions` of the feature it names, then delete the file. A
+question left there blocks nothing, and the feature it named will be offered as work.
+
+`--fyi` is removed rather than accepted and ignored, so a script passing it exits 2.
+Existing prose bullets under the heading keep their meaning — they are not boxes and
+never blocked — and `question-informal` reports one only in a doc still open to change.
+Answering is ticking the box: the question stays in the doc as part of its history.
 
 ## Release boundary
 

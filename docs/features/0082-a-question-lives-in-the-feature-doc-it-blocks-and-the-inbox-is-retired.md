@@ -81,7 +81,7 @@ records it in the upgrade table rather than the stable list.
       deleted, and `ResolveID` moves to the file that keeps it
 - [x] The protocol, `kit help block`, `kit help checks`, `kit new`'s next actions, the
       feature template and README describe the one home
-- [ ] `templates/compatibility.md` records the cutover and the migration step
+- [x] `templates/compatibility.md` records the cutover and the migration step
 
 ## Log
 
