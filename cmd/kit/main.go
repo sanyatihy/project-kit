@@ -454,7 +454,7 @@ func runReopen(args []string) int {
 		return 2
 	}
 	why := strings.TrimSpace(strings.Join(rest[1:], " "))
-	res, err := kit.Reopen(repo, id, why, time.Now().UTC(), *repair)
+	res, err := kit.Reopen(repo, id, why, *repair)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit reopen: %v\n", err)
 		return 2
@@ -468,8 +468,8 @@ func runReopen(args []string) int {
 	// string typed at it, and saying so is what makes the omission visible while the
 	// person who knows the answer is still here.
 	if why == "" {
-		fmt.Printf("\n  no reason recorded — say why in ## Log, or the next person\n")
-		fmt.Printf("  cannot tell a repaired doc from one somebody reopened\n")
+		fmt.Printf("\n  no reason recorded — the commit cannot tell a repaired doc from\n")
+		fmt.Printf("  one somebody reopened; pass \"<why>\" next time\n")
 	}
 	fmt.Printf("\nnext:\n  kit next\n\n")
 	return 0

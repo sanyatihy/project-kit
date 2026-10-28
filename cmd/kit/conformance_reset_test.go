@@ -32,8 +32,12 @@ func TestReopenClearsAStatusNobodyCanShipOrClaim(t *testing.T) {
 	if !strings.Contains(got, "status: Draft") {
 		t.Errorf("reopen did not set the status:\n%s", got)
 	}
-	if !strings.Contains(got, "In Progress was never a status the kit writes") {
-		t.Errorf("reopen did not record why in ## Log:\n%s", got)
+	// The reason is the commit's, not the plan's: a reopen changes no plan.
+	if strings.Contains(got, "In Progress was never a status the kit writes") {
+		t.Errorf("reopen wrote its reason into the doc:\n%s", got)
+	}
+	if subject := p.gitOut(nil, "log", "-1", "--format=%s"); subject != "Reopen 0007: In Progress was never a status the kit writes" {
+		t.Errorf("reopen's commit subject does not carry the reason: %q", subject)
 	}
 	// The repair is durable, which is 0066's rule for every command that writes a status.
 	if head := p.gitOut(nil, "show", "HEAD:docs/features/0007-stuck.md"); !strings.Contains(head, "status: Draft") {
