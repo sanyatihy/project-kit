@@ -139,6 +139,41 @@ func TestFinishRequiresReopenForChangesAfterSubmission(t *testing.T) {
 	w.run("finish", "--", "true").ok()
 }
 
+func TestFinishSkipsTheGateForAProseOnlyRevisionAndNothingElse(t *testing.T) {
+	t.Parallel()
+	const doc = "docs/features/0007-widget.md"
+	revise := func(w *project, from, to string) {
+		w.t.Helper()
+		w.write(doc, strings.Replace(w.read(doc), from, to, 1))
+		w.commitAll("revise " + to)
+	}
+	w := completedGuidedWork(t)
+	w.run("finish", "--", "true").ok()
+
+	// The gate that would fail proves it never ran.
+	w.run("reopen", "0007", "trim the prose").ok()
+	if strings.Contains(w.read(doc), "trim the prose") {
+		t.Fatal("reopen wrote its reason into the doc")
+	}
+	revise(w, "Something needs doing.", "Something short.")
+	w.run("finish", "--", "false").ok().has("gate: skipped", "published: true")
+	if !strings.Contains(w.read(doc), "status: Submitted") {
+		t.Fatal("prose-only finish did not submit")
+	}
+
+	// A Tasks change is a plan change, so the gate runs.
+	w.run("reopen", "0007", "another box").ok()
+	revise(w, "- [x] Build it", "- [x] Build it\n- [x] Test it")
+	w.run("finish", "--", "false").fails(2).errHas("gate failed")
+	w.run("finish", "--", "true").ok().lacks("gate: skipped")
+
+	// So does any file beside the doc.
+	w.run("reopen", "0007", "review change").ok()
+	w.write("review-change.txt", "changed after submission\n")
+	revise(w, "Something short.", "Something shorter.")
+	w.run("finish", "--", "false").fails(2).errHas("gate failed")
+}
+
 func TestFinishPublishesTheEmptyBaseWhenRemoteIsAddedLater(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)

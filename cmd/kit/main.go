@@ -149,6 +149,9 @@ func runFinish(args []string) int {
 			return 2
 		}
 	} else {
+		if result.GateSkipped != "" {
+			fmt.Printf("gate: skipped — only the feature doc's prose changed since %s, whose gate covers this code\n", result.GateSkipped[:min(12, len(result.GateSkipped))])
+		}
 		fmt.Printf("pr_title: %s\nbase: %s\nbranch: %s\ncandidate: %s\npublished: %t\n%s\n", result.PRTitle, result.Base, result.Branch, result.Candidate, result.Published, result.Next)
 	}
 	return 0
