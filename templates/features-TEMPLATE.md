@@ -23,7 +23,9 @@ needs:
 ## Problem
 <!-- 1-3 sentences: the standing tension and the signal that justifies it now — not the
      incident that surfaced it, which the pull request holds. Shorter and nobody can tell
-     whether it was worth doing; longer and the doc is arguing instead of deciding. -->
+     whether it was worth doing; longer and the doc is arguing instead of deciding.
+     Measurements and evidence go in the pull request, not the doc: name the signal in a
+     clause, never a table. Most docs fit in 200–600 words. -->
 
 ## Non-goals
 <!-- What this deliberately does not do, and where that lives instead. One line each, with
@@ -35,6 +37,12 @@ needs:
      code will say what the code does, and this is read alongside it. Call out data-model,
      migration, API and config changes explicitly. Written before the work, so it is the
      part most likely to be wrong by the end; let `## Log` carry what the doing teaches.
+
+     One bullet per decision, labelled so a reviewer can scan for it, with each option it
+     beat in a clause:
+       - **Cache scope.** Per-process; this deployment has no cross-worker invalidation.
+         Rejected: a shared cache, which needs it.
+     A paragraph of more than three sentences is arguing; `doc-long` reports it.
 
      One claim per sentence, and evidence gets one clause. Rejected, then the rewrite:
        no   the cache is per-process because a shared one would need invalidation across
