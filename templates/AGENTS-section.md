@@ -90,8 +90,10 @@ Plan when asked. For work that began without a plan, use the spike route below.
     Review waits apply to that feature. Return to a clean, updated trunk checkout, run
     `kit next`, and continue independent approved work without waiting for that merge.
 18. For review changes before merge, run `kit reopen <id> "<why>"`, revise the tasks,
-    implement the changes, and repeat the gate and submit steps. A Submitted doc on the
-    trunk is frozen history; further changes need a new doc citing it.
+    implement the changes, and repeat the gate and submit steps. A prose-only revision
+    that leaves Tasks and every other file untouched needs no Log entry, and `kit finish`
+    skips the gate for it. A Submitted doc on the trunk is frozen history; further
+    changes need a new doc citing it.
 19. After any merge, return to a trunk checkout, pull with --ff-only, then run
     `kit audit` and `kit next`. Dependencies unlock only once their merged work is here.
     Release your retained merged claims with `kit release`; custom checkouts are preserved.

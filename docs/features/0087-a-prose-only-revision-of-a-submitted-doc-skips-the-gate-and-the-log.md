@@ -40,7 +40,7 @@ does so on the kit's own initiative.
 - [x] `kit reopen` writes no Log entry and its commit subject carries the reason
 - [x] `kit finish` skips the gate, and says so, when only the feature doc outside
       `## Tasks` changed since its last Submit; a code change or a Tasks change still runs it
-- [ ] Rule 18 and `kit help reopen` describe the prose-only route, with `AGENTS.md`
+- [x] Rule 18 and `kit help reopen` describe the prose-only route, with `AGENTS.md`
       regenerated in the same commit
 - [ ] `docs/TECH.md` records what the skip relies on
 

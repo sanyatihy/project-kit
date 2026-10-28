@@ -375,8 +375,8 @@ reason in the PR.
 
 	"reopen": `kit reopen <id> "<why>" [--repair]
 
-Revise an unmerged submission: set Draft, clear submitted:, add the reason to Log
-and commit the doc. Unknown or missing statuses require --repair. Dropped stays
+Revise an unmerged submission: set Draft, clear submitted: and commit the doc as
+"Reopen <id>: <why>". It writes no Log entry; a revised task gets its own. Unknown or missing statuses require --repair. Dropped stays
 retired; draft a new feature if the operator wants that work again.
 
 Refuses already Draft, Parked (including --repair), foreign claims, ambiguous docs
@@ -386,7 +386,8 @@ trunk (local trunk with no remote). Fetch missing objects before retrying.
 Submitted on trunk is frozen history and needs a new feature.
 
 If writing succeeded but committing failed, commit the named file. After review
-fixes, repeat the project gate, audit, submit and push to the existing PR.
+fixes, run kit finish -- <gate argv> to submit and push to the existing PR. It skips
+the gate when only the doc's prose changed since its Submit, leaving Tasks as they were.
 
   kit reopen 0007 "review requested another case"
   kit reopen 0007 --repair "In Progress is not a supported status"`,
