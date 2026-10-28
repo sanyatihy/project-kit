@@ -42,6 +42,6 @@ does so on the kit's own initiative.
       `## Tasks` changed since its last Submit; a code change or a Tasks change still runs it
 - [x] Rule 18 and `kit help reopen` describe the prose-only route, with `AGENTS.md`
       regenerated in the same commit
-- [ ] `docs/TECH.md` records what the skip relies on
+- [x] `docs/TECH.md` records what the skip relies on
 
 ## Log
