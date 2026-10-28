@@ -1,9 +1,9 @@
 ---
 id: 0086
 title: Agent-drafted docs land at decision density
-status: Draft
+status: Submitted
 created: 2026-10-28
-submitted:
+submitted: 2026-10-28
 needs:
 ---
 
