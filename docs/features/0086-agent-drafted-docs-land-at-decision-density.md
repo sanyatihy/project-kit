@@ -48,6 +48,6 @@ says where evidence goes, so drafts copy the sentence shape and keep the evidenc
       over three sentences, in Draft and Parked docs only, with conformance cases for
       both triggers and for a Submitted doc that stays silent
 - [x] `kit audit` on this repo reports no `doc-long` finding for 0086 or 0087
-- [ ] `docs/TECH.md` records the check and its sentence rule
+- [x] `docs/TECH.md` records the check and its sentence rule
 
 ## Log

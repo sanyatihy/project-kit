@@ -185,6 +185,10 @@ belong to the agent runner, not kit.
   split-claim and id-mismatch are HIGH. Keep issuer patterns in audit.go, never templates.
   `needs-unstated` is LOW because a citation alone cannot prove a dependency. It reads
   Problem and Design only for nonterminal plans. Secret checks use issuer-specific shapes.
+  `doc-long` is LOW and reads Draft and Parked docs only. It flags a table rule in
+  Problem, or a Design prose block of more than three sentences. Lists, tables, quotes,
+  fenced code and code spans are not prose. A sentence ends at `.`, `?` or `!` before
+  whitespace. It never counts words.
 - Unreadable docs produce HIGH findings and skip other feature checks. Terminal docs
   retain frontmatter and secret checks. Frozen-doc compares against published trunk
   online or local history offline; deleted docs and unreadable evidence remain findings.
