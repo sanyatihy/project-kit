@@ -280,6 +280,13 @@ var auditCases = []struct {
 				"## Design\nRead what it writes.\n\n## Tasks\n- [ ] Draw them\n\n"+
 				"## Log\n- 2026-01-01 — started.\n")
 	}},
+	{"doc-long", func(p *project) {
+		// The draft a reviewer cut by 39%: evidence pasted into Problem.
+		p.write("docs/features/0002-cache.md",
+			"---\nid: 0002\ntitle: Cache\nstatus: Draft\ncreated: 2026-01-01\nneeds:\n---\n\n"+
+				"## Problem\nPages are slow.\n\n| page | ms |\n|---|---|\n| / | 900 |\n\n"+
+				"## Design\nCache them.\n\n## Tasks\n- [ ] Cache\n")
+	}},
 	{"secret-in-doc", func(p *project) {
 		// The realistic path: an agent writes up a failed deploy and pastes what it
 		// was holding into the Log.
@@ -400,6 +407,32 @@ func TestAPlanNamingSettledWorkIsNotADependency(t *testing.T) {
 	// LOW blocks nothing: --strict is the HIGH gate, and this cannot tell a dependency
 	// from a comparison.
 	p.run("audit", "--strict").ok()
+}
+
+func TestADesignParagraphArguingItsCaseIsReportedAndBulletsAreNot(t *testing.T) {
+	t.Parallel()
+	p := cleanProject(t)
+	body := "## Problem\nPages are slow.\n\n## Design\n" +
+		"- **Scope.** Per process. Rejected: shared. It needs invalidation. Nobody has it.\n\n" +
+		"```\nOne. Two. Three. Four.\n```\n\n" +
+		"Reads `a.go. b.go. c.go. d.go.` and stops. It caches.\n\n## Tasks\n- [ ] Cache\n"
+	front := "---\nid: 0002\ntitle: Cache\nstatus: %s\ncreated: 2026-01-01\n%sneeds:\n---\n\n"
+	p.write("docs/features/0002-cache.md", fmt.Sprintf(front, "Draft", "")+body)
+	if codes := p.auditCodes(); slices.Contains(codes, "doc-long") {
+		t.Errorf("doc-long fired on bullets, fenced code and file names: %v", codes)
+	}
+
+	argued := strings.Replace(body, "It caches.", "It caches. A shared one was tried. It failed.", 1)
+	p.write("docs/features/0002-cache.md", fmt.Sprintf(front, "Draft", "")+argued)
+	p.run("audit").ok().has("doc-long", "runs 4 sentences")
+	p.run("audit", "--strict").ok()
+
+	// Frozen: a finding on a Submitted doc could never be fixed.
+	p.write("docs/features/0002-cache.md",
+		fmt.Sprintf(front, "Submitted", "submitted: 2026-01-02\n")+argued)
+	if codes := p.auditCodes(); slices.Contains(codes, "doc-long") {
+		t.Errorf("doc-long fired on a Submitted doc: %v", codes)
+	}
 }
 
 func TestAFeatureThatNeedsItselfIsReported(t *testing.T) {

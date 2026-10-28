@@ -44,7 +44,7 @@ says where evidence goes, so drafts copy the sentence shape and keep the evidenc
 
 - [x] `templates/features-TEMPLATE.md` carries the bullet example, the 200–600 word
       budget and the evidence-goes-in-the-PR line
-- [ ] `doc-long` is registered as LOW and fires on a Problem table or a Design paragraph
+- [x] `doc-long` is registered as LOW and fires on a Problem table or a Design paragraph
       over three sentences, in Draft and Parked docs only, with conformance cases for
       both triggers and for a Submitted doc that stays silent
 - [ ] `kit audit` on this repo reports no `doc-long` finding for 0086 or 0087
