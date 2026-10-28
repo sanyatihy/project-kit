@@ -1,9 +1,9 @@
 ---
 id: 0087
 title: A prose-only revision of a submitted doc skips the gate and the Log
-status: Draft
+status: Submitted
 created: 2026-10-28
-submitted:
+submitted: 2026-10-28
 needs:
 ---
 
