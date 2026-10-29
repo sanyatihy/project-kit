@@ -1661,3 +1661,13 @@ func TestTheAuditSummaryCountsBySeverity(t *testing.T) {
 	// And nothing to fix where the docs and the repo agree.
 	cleanProject(t).run("audit").ok().lacks("to fix.")
 }
+
+func TestAParkedPlansQuestionDoesNotAgeIntoAFinding(t *testing.T) {
+	t.Parallel()
+	// A parked plan waits for the operator on purpose; anna's round reported five of these.
+	p := cleanProject(t)
+	p.write("docs/features/0002-later.md", doc("0002", "Later", "Parked", "", "- [ ] Do it"))
+	askOn(p, "docs/features/0002-later.md", daysAgo(60), "Which provider?")
+	p.commitAll("a parked plan with an old question")
+	p.run("audit", "--offline").ok().lacks("question-stale")
+}

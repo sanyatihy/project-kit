@@ -73,22 +73,37 @@ type Reservation struct {
 // linger as a reservation the remote no longer has.
 func (r *Repo) Reservations() ([]Reservation, bool) {
 	if !r.reservationsAsked {
+		r.StartReservations()
 		r.reservationsAsked = true
-		r.reservationsFresh = r.fetchReservations()
+		r.reservationsFresh = <-r.reservationsPending
 		r.reservations = r.readReservations()
 	}
 	return r.reservations, r.reservationsFresh
+}
+
+// StartReservations begins the reservation fetch without waiting for it, so a caller that
+// will need it overlaps it with the branch listing instead of following it. Two round
+// trips one after the other were half of online `audit`'s wall time.
+func (r *Repo) StartReservations() {
+	if r.reservationsPending != nil {
+		return
+	}
+	r.reservationsPending = make(chan bool, 1)
+	remote, err := pickRemote(r)
+	if r.Offline || err != nil || remote == "" {
+		r.reservationsPending <- false
+		return
+	}
+	go func() { r.reservationsPending <- r.fetchReservationsFrom(remote) }()
 }
 
 // fetchReservations brings the namespace up to date, reporting whether it managed to.
 // Nothing to ask means false rather than an error: no remote, `--offline`, and a remote
 // that did not answer are all "this list may be stale", which is the caller's decision
 // to make.
-func (r *Repo) fetchReservations() bool {
-	remote, err := pickRemote(r)
-	if r.Offline || err != nil || remote == "" {
-		return false
-	}
+//
+// It touches no memo, so it is safe on a goroutine of its own.
+func (r *Repo) fetchReservationsFrom(remote string) bool {
 	// A read: no gc or maintenance started behind the command that asked.
 	_, fetchErr := r.gitRun("-c", "maintenance.auto=false", "-c", "gc.auto=0",
 		"fetch", "--prune", remote, "+"+idRef("*")+":"+idRef("*"))

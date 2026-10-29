@@ -104,9 +104,10 @@ type Repo struct {
 	// The remote's branch list, asked once. It cannot change under a single command, and
 	// `audit` asks it per Submitted feature: unmemoised, one ls-remote per doc took this
 	// repo's audit from under a second to two minutes.
-	heads      []string
-	headsKnown bool
-	headsAsked bool
+	heads               []string
+	headsKnown          bool
+	reservationsPending chan bool
+	headsAsked          bool
 
 	// What each remote advertises for each branch, from the same round trip. `release`
 	// deletes a ref on the remote, so it has to know whether the copy it read is that ref.

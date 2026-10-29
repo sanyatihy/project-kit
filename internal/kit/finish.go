@@ -90,7 +90,9 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 		if err != nil {
 			return nil, err
 		}
-		if strings.TrimSpace(stamp) != strings.TrimSpace(r.git("rev-parse", "HEAD")) {
+		// Merging the trunk in changes no plan, so it needs no reopen: the gate runs again
+		// below and the status stays. Anything else after the stamp is a revision.
+		if stamp = strings.TrimSpace(stamp); stamp != strings.TrimSpace(r.git("rev-parse", "HEAD")) && !r.onlyTrunkMergesSince(stamp) {
 			return nil, fmt.Errorf("changes follow submission; run kit reopen %s before revising and finishing again", id)
 		}
 	}
@@ -485,4 +487,29 @@ func (r *Repo) gatedOn(sha string) string {
 		}
 	}
 	return ""
+}
+
+// onlyTrunkMergesSince reports whether every commit on this branch after since is a merge
+// bringing in the trunk.
+func (r *Repo) onlyTrunkMergesSince(since string) bool {
+	trunk := r.trunkRef()
+	if trunk == "" {
+		return false
+	}
+	out, err := r.gitRun("rev-list", "--first-parent", "--parents", since+"..HEAD")
+	if err != nil || strings.TrimSpace(out) == "" {
+		return false
+	}
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		parents := strings.Fields(line)[1:]
+		if len(parents) < 2 {
+			return false
+		}
+		for _, p := range parents[1:] {
+			if !r.reaches(p, trunk) {
+				return false
+			}
+		}
+	}
+	return true
 }

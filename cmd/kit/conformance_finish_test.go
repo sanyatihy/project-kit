@@ -297,3 +297,27 @@ esac
 `)
 	w.run("finish", "--", "true").fails(2).errHas("submission changed the validated candidate")
 }
+
+func TestASubmittedBranchTakesInTheTrunkWithoutAReopen(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	a.run("start", "0007").ok()
+	w := a.claimWorktree("work/0007")
+	feature(w, "0007", "widget", "A widget", "Draft", "- [x] Build it")
+	w.commitAll("0007 built")
+	w.run("finish", "--", "true").ok()
+
+	// The trunk moves on while the PR waits; the branch merges it in.
+	a.write("elsewhere.txt", "landed on trunk\n")
+	a.commitAll("other work lands")
+	a.git("push", "-q", "origin", "HEAD:refs/heads/main")
+	w.git("fetch", "-q", "origin")
+	w.git("merge", "-q", "--no-edit", "origin/main")
+
+	// The gate runs on the merged code, and the status needs no second stamp.
+	w.run("finish", "--", "false").fails(2).errHas("gate failed")
+	w.run("finish", "--", "true").ok().has("published: true")
+	if !strings.Contains(w.read("docs/features/0007-widget.md"), "status: Submitted") {
+		t.Fatal("the merge cost the submission")
+	}
+}

@@ -101,7 +101,8 @@ belong to the agent runner, not kit.
   clean candidate. Planning branches cannot be harvested to bypass approval. Gate argv runs directly with a
   30-minute bound; failure, changed HEAD/branch or dirty output stops publication.
   Submission may change only lifecycle fields; hook-created commits or other edits refuse publication.
-  Revisions after submission require reopen. Retrying finish reruns validation.
+  Revisions after submission require reopen; merges of the trunk into the branch do not,
+  and finish reruns the gate on them. Retrying finish reruns validation.
   Reopen writes no Log entry; its commit subject carries the reason.
 - Finish skips the gate after a reopen when nothing but the feature doc changed since the
   commit named by the latest Submit's `Kit-Gate:` trailer, and its parsed `## Tasks` is
@@ -187,7 +188,8 @@ belong to the agent runner, not kit.
   build if a registered check has no implementation or two claim one code.
 - One defect produces one actionable finding. Severity reflects damage; age is advisory.
   Delete checks for states nobody may repair. Missing VISION and AGENTS.md share
-  no-protocol; question checks skip frozen docs, whose questions nobody may correct;
+  no-protocol; question checks skip frozen docs, whose questions nobody may correct,
+  and question-stale skips Parked plans, which wait for the operator by design;
   split-claim and id-mismatch are HIGH. Keep issuer patterns in audit.go, never templates.
   `needs-unstated` is LOW because a citation alone cannot prove a dependency. It reads
   Problem and Design only for nonterminal plans. Secret checks use issuer-specific shapes.
@@ -208,7 +210,8 @@ belong to the agent runner, not kit.
   or refused over its plan — or a strict HIGH finding); 2 a refusal over this checkout or
   an incomplete operation. An interrupted claim is not a confirmed loss.
 - Git path output uses `-z`. Git reads are batched; adding unclaimed features must not add
-  subprocesses. Remote listing and reservation refresh each run at most once per read.
+  subprocesses. Remote listing and reservation refresh each run at most once per read, and
+  audit runs them concurrently.
   The process-growth comparison uses 30- and 130-feature boards with identical claims.
 - **`exec.CommandContext` kills git and nothing git started.** `git-remote-https` outlives
   it holding the stdout pipe, so `cmd.Output()` blocks for ever: `next` against a

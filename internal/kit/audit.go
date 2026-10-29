@@ -396,6 +396,8 @@ var repoChecks = []repoCheck{
 // protocol that had already been fixed.
 func Audit(r *Repo, today time.Time, protocol string) []Finding {
 	rs := &repoState{r: r, today: today, protocol: protocol}
+	r.StartReservations()
+	r.loadGit()
 	found := duplicateID(rs)
 
 	statuses := strings.Join(AllStatuses, ", ")
@@ -831,8 +833,9 @@ func questionState(s *docState) []Finding {
 				` `+questionSep+` <question>"`))
 	}
 	for _, q := range s.f.OpenQuestions() {
-		// An undated box is already reported above, and nothing can age it.
-		if q.When.IsZero() {
+		// An undated box is already reported above, and nothing can age it. A parked plan
+		// is waiting for the operator by design, so its questions age on purpose.
+		if q.When.IsZero() || s.f.Status == StatusParked {
 			continue
 		}
 		if age := Days(q.When, s.today); age >= QuestionStaleDays {
