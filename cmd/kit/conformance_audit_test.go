@@ -764,7 +764,7 @@ func TestATerminalDocIsAskedNothingAboutItsPlan(t *testing.T) {
 	dropped.run("drop", "0002", "not worth building").ok()
 	dropped.run("audit", "--strict").ok().lacks("unfilled-template")
 
-	// Submitted is the other terminal status, and rule 21 freezes it harder: a doc written
+	// Submitted is the other terminal status, and the frozen-doc rule freezes it harder: a doc written
 	// under a kit that did not have these headings is history, not work.
 	submitted := cleanProject(t)
 	submitted.write("docs/features/0002-frozen.md",

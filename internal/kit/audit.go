@@ -656,7 +656,7 @@ func doneNotSubmitted(s *docState) []Finding {
 func statusState(s *docState) []Finding {
 	// Both fixes name the command. "use one of: Draft, Dropped, Submitted" was an
 	// instruction to hand-edit `status:`, which is what put the unrecognised value there
-	// and what rule 6 forbids — the one finding a 27-session chain repaired by breaking
+	// and what the protocol forbids — the one finding a 27-session chain repaired by breaking
 	// the rule it was told to follow. `reopen` writes the field, including into a doc that
 	// carries no `status:` line at all.
 	fix := `run: kit reopen ` + s.f.ID + ` --repair "<why>"`
@@ -680,7 +680,7 @@ func statusState(s *docState) []Finding {
 
 // A terminal doc is asked nothing about its plan. A stub retired with `kit drop` before
 // anybody wrote it reported three HIGH findings whose fixes were to write a plan for work
-// that will never happen, or to set a status back to Draft — the edit rule 21 forbids. It
+// that will never happen, or to set a status back to Draft — the edit the frozen-doc rule forbids. It
 // is HIGH and `--strict` is project-wide, so one such doc refused every submit in the
 // project for ever.
 //

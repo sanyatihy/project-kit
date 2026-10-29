@@ -15,38 +15,12 @@ runtime dependency.
 
 ## Install
 
-From a clone: `make install`. Nothing below applies.
-
-Over the network it takes two settings, because the repo is private.
-
-**1. Keep Go off the proxy and the checksum database for it.** Neither can see a private
-repo.
-
 ```sh
-go env -w GOPRIVATE='github.com/sanyatihy/*'
+go install github.com/sanyatihy/project-kit/cmd/kit@latest
 ```
 
-`GOPRIVATE` is a comma-separated list, so append to a company value rather than replacing
-it. A shell `export GOPRIVATE=` beats `go env -w`, and `GONOPROXY`/`GONOSUMDB` override it
-entirely. Run `go env GOPRIVATE` and confirm before blaming anything else.
-
-**2. Give `git` a way to authenticate.** Go fetches over HTTPS, which needs credentials
-for a private repo. Reuse the SSH key you have, scoped to the one namespace:
-
-```sh
-git config --global url."git@github.com:sanyatihy/".insteadOf "https://github.com/sanyatihy/"
-```
-
-Then `go install github.com/sanyatihy/project-kit/cmd/kit@latest`. Upgrading is the same
-command.
-
-The failure modes are distinguishable:
-
-| symptom | missing |
-| --- | --- |
-| `410 Gone` from `proxy.golang.org` | setting 1 |
-| a `sum.golang.org` `404` | setting 1, the checksum half |
-| a git prompt, or `terminal prompts disabled` | setting 2 |
+Upgrading is the same command; `@latest` resolves to the newest release tag. From a
+clone, `make install` builds the checkout instead.
 
 ## Setup
 
@@ -285,8 +259,8 @@ is invisible to `kit next` and will be handed to an agent that cannot do it.
 ## Several agents
 
 One worktree each, one feature each. The worktree is what keeps them apart; two agents in
-one checkout overwrite each other. Merging is serial. Two or three at once is the
-realistic ceiling — the limit is your review bandwidth.
+one checkout overwrite each other. Merging is serial. The kit sets no limit on agents;
+in practice two or three at once is the ceiling, because review bandwidth is.
 
 ## Layout
 

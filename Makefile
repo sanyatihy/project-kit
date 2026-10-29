@@ -77,8 +77,8 @@ lint:
 vuln:
 	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.7.0 $(PKG)
 
-# audit reads this repo's own board. `go run` builds it from the checkout, so it
-# needs no credential for a private module — CI never installs the kit.
+# audit reads this repo's own board with the kit this checkout builds, so CI checks
+# the source it tests rather than an installed release.
 .PHONY: audit
 audit:
 	$(GO) run ./cmd/kit audit --strict

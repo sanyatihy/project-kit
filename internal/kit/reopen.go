@@ -66,7 +66,7 @@ func Reopen(r *Repo, id, why string, repair bool) (*ReopenResult, error) {
 	res := &ReopenResult{Doc: target.Rel, Was: target.Status}
 	if r.HasHistory() {
 		// The reason goes in the subject, not ## Log: a reopen changes no plan, and a task
-		// revised afterwards gets its own Log entry (rule 12).
+		// revised afterwards gets its own Log entry under the task-revision rule.
 		res.Commit = "Reopen " + target.ID
 		if why != "" {
 			res.Commit += ": " + why

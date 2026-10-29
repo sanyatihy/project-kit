@@ -286,10 +286,9 @@ developer's `~/.gitconfig`, so three tests — including the one written to catc
 
 Coverage of the driver process is not coverage of the tested binary; no percentage is reported.
 
-The module is private: installation requires GOPRIVATE and credentials. Preserve existing
-comma-separated GOPRIVATE entries; exported environment values override `go env -w`.
-Generated CI omits kit audit to avoid distributing those credentials; this repo audits
-its own source. After merge, reinstall and publish a tag: `@latest` resolves to a release.
+The module is public: `go install …/cmd/kit@latest` needs no credentials and resolves to
+the newest tag. Generated CI does not run kit audit yet (BACKLOG); this repo audits its
+own source. After merge, reinstall and publish a tag.
 
 Release binds the complete gate and annotated tag to one clean published trunk commit.
 Retry reuses the same tag; conflicts and unreadable state refuse. Verify the remote tag

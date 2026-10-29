@@ -1,6 +1,6 @@
 package main
 
-// Conformance: `kit pause`. Rule 13's four clauses as one command, so the half that an
+// Conformance: `kit pause`. The pause rule's four clauses as one command, so the half that an
 // agent could get wrong silently — the push — is verified rather than remembered.
 
 import (

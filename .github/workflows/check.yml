@@ -1,15 +1,8 @@
 name: check
 
 # The kit's own gate. Close to what `kit init --stack go` generates, with one
-# deliberate difference: this repo runs `kit audit --strict` and a scaffolded
-# project does not.
-#
-# The difference is not a double standard, it is that the constraint does not
-# apply here. Auditing elsewhere means *installing* the kit, and the kit is a
-# private module, so every scaffolded project would need a credential. This repo
-# already has the source, so `go run ./cmd/kit` audits it with nothing to
-# authenticate. The kit should hold itself to the check it cannot cheaply hand
-# out.
+# difference: this repo runs `kit audit --strict`, built from the checkout under
+# test, and a scaffolded project does not yet.
 
 on:
   pull_request:
@@ -56,6 +49,5 @@ jobs:
       # A gate, not a build step: it fails the commit rather than the release.
       - run: make vuln
 
-      # No install step: `go run` builds from the checkout, so this works on a
-      # private repo with no token.
+      # No install step: `go run` audits with the kit this commit builds.
       - run: make audit

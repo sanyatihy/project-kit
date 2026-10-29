@@ -670,7 +670,7 @@ func claimAs(name string, args []string) int {
 	if claimed.WorktreeErr == nil {
 		fmt.Printf("  cd %s\n", claimed.Worktree)
 	}
-	// Rule 9 tells an agent to read this, which is a rule about reading a rule: one that
+	// The protocol tells an agent to read this, which is a rule about reading a rule: one that
 	// does not already know the page exists never runs the command. Named here because
 	// this is the moment before it writes code, and nowhere else in the session is.
 	if topic := kit.ChecklistTopic(kit.DetectStack(repo.Root)); topic != "" {

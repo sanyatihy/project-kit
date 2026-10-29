@@ -9,7 +9,7 @@ import (
 
 // Setting work down without giving it up.
 //
-// Rule 13 described this as four clauses of prose — commit, push, open the pull request
+// The pause rule described this as four clauses of prose — commit, push, open the pull request
 // unfinished, say what remains — which is a sequence an agent has to remember and half of
 // which it can get wrong silently. Every other multi-step sequence the protocol described
 // has become a command; this is that.

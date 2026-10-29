@@ -21,9 +21,9 @@ So the mutual visibility the multi-agent model rests on is the shared local obje
 not the remote. On one machine with worktrees that holds. Across two it does not, and it
 fails silently: `stalled` never ages a claim carrying no commits beyond the doc, which is
 exactly what a live agent looks like from anywhere else. Two checkouts of one feature were
-observed reporting different progress for it in the same instant; since 0056 the board
-reads the tip `ls-remote` advertises and a checkout that cannot reach it shows no count at
-all, which is silence rather than liveness.
+observed reporting different progress for it in the same instant; since 0081 the board
+reads the local head when it contains the advertised tip, and a checkout that cannot reach
+the tip shows no count at all, which is silence rather than liveness.
 
 The fix is that the push becomes the heartbeat — the claim branch gets one when a box is
 ticked — after which `stalled` can age from the remote branch's commit date and be true from
@@ -31,16 +31,6 @@ any machine. It has to degrade for `--offline` and for projects with no remote.
 
 **Value:** a board that means the same thing on every machine.
 **Promote when:** a second machine joins, or a claim's work is lost with the machine holding it.
-
-## Source comments cite protocol rules that have moved
-
-`internal/kit/audit.go` and `cmd/kit/conformance_audit_test.go` still cite rule 21,
-which does not exist in the current protocol. Other comments cite a number whose
-meaning changed. Removing the former rule-number test did not correct those references.
-Replace the references with the constraint they mean; no numbering gate is required.
-
-**Value:** source comments identify the actual constraint a reader must preserve.
-**Promote when:** fired — obsolete references remain in the 0076 review.
 
 ## `tag-stale` reads this machine's tags, and `@latest` reads the remote's
 
@@ -67,35 +57,6 @@ design covers; an unreachable one is the case it does not. `next` and `audit` bo
 **Promote when:** an agent is seen unable to draft, or a round is delayed by a remote that
 was down.
 
-## `kit new` help omits some refusal conditions
-
-Help describes branch and write-collision guards but omits rejected titles, missing
-setup, ambiguous remotes, failed reservation and exhausted ids. The former refusal
-registry is gone; that does not make the missing command guidance obsolete.
-Document the invocation conditions without restoring a refusal-count or prose-format gate.
-
-**Value:** a caller can understand the command's preconditions before attempting it.
-**Promote when:** fired — the 0076 review found these conditions absent from help.
-
-## Nothing tells an agent which language a project's docs are written in
-
-Kit generates no prose: the templates and what you typed are its only sources. The language
-of a doc body is therefore the agent's choice, remade each session. A project that wants
-Russian gets English unless its own house rules say otherwise, and that sentence is written
-by hand in every project that wants one.
-
-`kit init --lang ru` would seed it above the marker in `AGENTS.md`, which `init` never
-rewrites and the project owns afterwards — any language, with no translated templates and
-no model in the binary. The seeded line has to name what stays English whatever the
-language: the headings the parsers read, the frontmatter keys, and `Draft | Submitted |
-Dropped`. Without that an agent translates `## Tasks` and the board sees no tasks at all. A
-re-run under a different language would not update the line, and `kit new` still takes an
-ASCII title — `Slug` strips to `[a-z0-9]`.
-
-**Value:** a project says what language its docs are written in once, and every agent is told.
-**Promote when:** a second project needs non-English docs, or an agent writes English into
-one that asked for Russian.
-
 ## A reservation cannot be released before the horizon, and nothing else can reach it
 
 `kit drop <id> --reservation` refuses a reservation younger than the `stalled` horizon, which is right for
@@ -109,13 +70,13 @@ cannot do it through the kit reaches for git, and the kit stops being the record
 
 ## The comments already written carry the incidents their feature docs hold
 
-27% of non-test source is comment — 1,969 lines of 7,239 — and 105 blocks of six lines or
-more hold 927 of them. `OnlyHere` spends 20 lines, seven of which restate 0039's
+21% of non-test source is comment — 2,110 lines of 10,181 on 2026-10-29 — and 104 blocks
+of six lines or more hold 914 of them. `OnlyHere` spends 20 lines, seven of which restate 0039's
 `## Problem`. 0073 added the rule and cut nothing, so every block written before it still
 carries the incident beside the constraint.
 
 **Value:** a reader of the code gets the constraint without the archaeology.
-**Promote when:** fired — measured 2026-09-01, and the rule that judges it now exists.
+**Promote when:** fired — measured 2026-09-01 and again 2026-10-29, and the rule that judges it now exists.
 
 ## Review complete changes locally before publishing
 
@@ -138,3 +99,22 @@ must cover human approval, claim ownership, failed checks and safe recovery.
 **Value:** smaller instruction context without losing established behavior or engineering guidance.
 **Promote when:** paired behavioral evidence supports a candidate and the operator chooses
 guidance compression; smaller word counts or passing kit tests alone do not qualify.
+
+## Generated CI does not run `kit audit`
+
+The stack CI templates skip `kit audit --strict` because installing a private module needed
+a credential in every project; their own comment says adding it back costs nothing once the
+kit is public. Drift then reaches review unchecked in every scaffolded project.
+
+**Value:** every project's CI refuses the HIGH findings this repo's CI already refuses.
+**Promote when:** the repository is public.
+
+## Per-claim git reads are not batched
+
+`next` spends about four git processes per live claim and `audit` about two, plus a history
+walk per claim in `stalled`. Measured 2026-10-29: 2.4 s at 3 claims, about 6 s for `next` and
+12 s for `audit` at 200. Batching through `cat-file --batch` and one `log --all` pass brings
+200 claims to about 3 s.
+
+**Value:** the board stays one round trip at fleet scale.
+**Promote when:** a project holds 50 live claims at once.
