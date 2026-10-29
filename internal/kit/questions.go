@@ -193,14 +193,37 @@ func withDocLock(path string, fn func() error) error {
 // replaceFile writes through a rename, so a concurrent reader sees the whole old doc or
 // the whole new one. os.WriteFile truncates first, and `block` handed a reader an empty
 // file often enough for `kit block` to report the project had no feature docs at all.
+//
+// A symlink is refused rather than followed: the repo is untrusted input, and a doc or an
+// AGENTS.md committed as a link would send the write to any file the agent can reach.
 func replaceFile(path, content string) error {
-	tmp := path + ".kit-tmp"
-	if err := os.WriteFile(tmp, []byte(content), 0o644); err != nil {
+	if err := refuseSymlink(path); err != nil {
 		return err
 	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".kit-*")
+	if err != nil {
 		return err
+	}
+	_, err = tmp.WriteString(content)
+	if closeErr := tmp.Close(); err == nil {
+		err = closeErr
+	}
+	if err == nil {
+		err = os.Chmod(tmp.Name(), 0o644)
+	}
+	if err == nil {
+		err = os.Rename(tmp.Name(), path)
+	}
+	if err != nil {
+		_ = os.Remove(tmp.Name())
+	}
+	return err
+}
+
+// refuseSymlink reports a symlink at path. A missing path is fine: the caller creates it.
+func refuseSymlink(path string) error {
+	if info, err := os.Lstat(path); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("%s is a symlink, and kit writes no file through one; replace it with the file itself", path)
 	}
 	return nil
 }

@@ -18,8 +18,8 @@ type Handoff struct {
 	Checkout   string `json:"checkout"`
 	Published  bool   `json:"published"`
 	Next       string `json:"next"`
-	// GateSkipped names the Submit commit whose gate still covers the candidate, when
-	// only the feature doc's prose changed since it.
+	// GateSkipped names the commit a passing gate ran on, when only the feature doc's
+	// prose changed since it.
 	GateSkipped string `json:"gate_skipped,omitempty"`
 }
 
@@ -96,7 +96,11 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 	}
 	candidate := strings.TrimSpace(r.git("rev-parse", "HEAD"))
 	branch = r.HeadBranch()
-	covered := r.proseOnlySince(f.Rel)
+	// Only after a reopen: a retry of a finished submission revalidates.
+	covered := ""
+	if f.Status == StatusDraft {
+		covered = r.proseOnlySince(f.Rel)
+	}
 	if covered == "" {
 		if err := runGate(gate); err != nil {
 			return nil, fmt.Errorf("gate failed; no submission or push: %w", err)
@@ -127,7 +131,11 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 	}
 	r = fresh
 	if !IsSubmitted(f.Status) {
-		if _, err := Submit(templates, r, id, today); err != nil {
+		gated := covered
+		if gated == "" {
+			gated = candidate
+		}
+		if _, err := submit(templates, r, id, today, gated); err != nil {
 			return nil, err
 		}
 		r, err = Open(r.Root)
@@ -416,9 +424,12 @@ func (r *Repo) onlySubmissionStamp(candidate, path string) bool {
 	return before == after
 }
 
-// proseOnlySince returns the latest commit at which path read Submitted, if nothing but
-// path changed since and its ## Tasks did not. That commit's gate ran on identical code,
-// so running it again proves nothing. Empty means the gate must run.
+// proseOnlySince returns the commit a passing gate last ran on, when nothing but path has
+// changed since it and its ## Tasks did not. Running the gate again on identical code
+// proves nothing. Empty means the gate must run.
+//
+// The commit comes from the latest Submit's Kit-Gate trailer, which only `finish` writes:
+// a bare `kit submit` runs no gate, so a doc that read Submitted proves nothing.
 func (r *Repo) proseOnlySince(path string) string {
 	// -G also matches the Reopen that removed the line, so each hit's copy is read.
 	hits, err := r.gitRun("log", "--format=%H", "-G", "^status: (Submitted|Shipped)", "--", path)
@@ -430,26 +441,48 @@ func (r *Repo) proseOnlySince(path string) string {
 		if err != nil {
 			return ""
 		}
-		fields, thenBody := ParseFrontmatter(Normalise(then))
-		if !IsSubmitted(fields["status"]) {
+		if fields, _ := ParseFrontmatter(Normalise(then)); !IsSubmitted(fields["status"]) {
 			continue
 		}
-		changed, err := r.gitRun("diff", "--name-only", "-z", sha, "HEAD", "--")
+		gated := r.gatedOn(sha)
+		if gated == "" || !r.reaches(gated, "HEAD") {
+			return ""
+		}
+		changed, err := r.gitRun("diff", "--name-only", "-z", gated, "HEAD", "--")
 		if err != nil {
 			return ""
 		}
 		if paths := gitPaths(changed); len(paths) != 1 || paths[0] != path {
 			return ""
 		}
+		before, err := r.gitRun("show", gated+":"+path)
+		if err != nil {
+			return ""
+		}
 		now, err := r.gitRun("show", "HEAD:"+path)
 		if err != nil {
 			return ""
 		}
+		_, beforeBody := ParseFrontmatter(Normalise(before))
 		_, nowBody := ParseFrontmatter(Normalise(now))
-		if ParseSections(thenBody)["Tasks"] != ParseSections(nowBody)["Tasks"] {
+		if ParseSections(beforeBody)["Tasks"] != ParseSections(nowBody)["Tasks"] {
 			return ""
 		}
-		return sha
+		return gated
+	}
+	return ""
+}
+
+// gatedOn reads a commit's Kit-Gate trailer: the full id of the commit the gate ran on.
+func (r *Repo) gatedOn(sha string) string {
+	message, err := r.gitRun("log", "-1", "--format=%B", sha)
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(message, "\n") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(line), gateTrailer); ok && len(value) >= 40 && strings.Trim(value, "0123456789abcdef") == "" {
+			return value
+		}
 	}
 	return ""
 }

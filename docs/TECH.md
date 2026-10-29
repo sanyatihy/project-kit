@@ -103,10 +103,11 @@ belong to the agent runner, not kit.
   Submission may change only lifecycle fields; hook-created commits or other edits refuse publication.
   Revisions after submission require reopen. Retrying finish reruns validation.
   Reopen writes no Log entry; its commit subject carries the reason.
-- Finish skips the gate when nothing but the feature doc changed since the latest commit
-  where that doc read Submitted, and its parsed `## Tasks` is identical. The skip trusts
-  that Submit's gate. `-G` also matches the Reopen, so each hit's copy is read. Audit
-  still runs, and the handoff names the covering commit in `gate_skipped`.
+- Finish skips the gate after a reopen when nothing but the feature doc changed since the
+  commit named by the latest Submit's `Kit-Gate:` trailer, and its parsed `## Tasks` is
+  identical. Only finish writes the trailer, naming the commit its passing gate ran on; a
+  skip carries it forward. A bare `kit submit` writes none, so the gate runs. Audit still
+  runs, and the handoff names that commit in `gate_skipped`.
 - Finish supplies pr_title from the feature title or Plan: <round>; next repeats the
   feature title for pending review. Agents set the PR title explicitly instead of
   commit autofill, which can select the claim receipt.
@@ -213,12 +214,17 @@ belong to the agent runner, not kit.
   black-holed remote came back in 75s against the 15s its help promises, and in 15.05s
   once every git command set `cmd.WaitDelay`. The delay comes out of the bound, not on
   top of it.
-  Remote calls are bounded at 15 seconds. A 5s timeout excluded a working SSH remote
+  Remote calls are bounded at 15 seconds; other reads at 30. Commit, push and worktree
+  creation run hooks and get 10 minutes. Every git runs with `GIT_TERMINAL_PROMPT=0`, and
+  the reservation fetch disables gc and maintenance. A 5s timeout excluded a working SSH remote
   measured at 5.58s. Inject dates into logic.
 
 ## Scaffolding and parsing
 
 - Init exclusively creates missing files, preserving existing files and dangling symlinks.
+  No command writes through a symlink: docs and AGENTS.md are replaced by rename from a
+  random temp file after an `Lstat`, and a `.worktrees` that is not a directory gets no
+  worktree.
   It owns the document layout; submit's TECH creation is a legacy fallback. Only the
   Work protocol section is refreshed; house rules and following sections survive.
   Virgin projects audit clean: unfilled-vision and no-protocol wait for features.

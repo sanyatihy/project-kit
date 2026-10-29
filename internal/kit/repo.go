@@ -19,6 +19,11 @@ const (
 	gitLogLimit = "500"
 	gitTimeout  = 30 * time.Second
 
+	// hookTimeout bounds the git commands a project's hooks run inside: a pre-commit hook
+	// running its tests, a pre-push hook, a checkout of a large tree. At gitTimeout such a
+	// project could never submit, and the doc was left staged.
+	hookTimeout = 10 * time.Minute
+
 	// remoteTimeout bounds the one question the kit asks the network on a read. Bounded
 	// on purpose: `kit next ~/code/*` walks every project, and a board that hangs because
 	// one remote is unreachable is worse than a board that falls back to a stale mirror

@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 // A repo is untrusted input: anything a doc, a branch or a remote says may reach a
 // printed command, a git argument or a file write.
@@ -65,5 +69,53 @@ func TestABranchNamedLikeAnOptionNeverReachesGitAsOne(t *testing.T) {
 	c.run("next", "--offline").ok()
 	if got := c.read("Makefile"); got != "check:\n\ttrue\n" {
 		t.Fatalf("a branch name rewrote a tracked file: %q", got)
+	}
+}
+
+func TestKitWritesNoFileThroughASymlink(t *testing.T) {
+	t.Parallel()
+	outside := t.TempDir() + "/rc"
+	p := cleanProject(t)
+	if err := os.WriteFile(outside, []byte("untouched\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// AGENTS.md committed as a link: init must not append the protocol to its target.
+	agents := filepath.Join(p.Root, "AGENTS.md")
+	if err := os.Remove(agents); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, agents); err != nil {
+		t.Fatal(err)
+	}
+	p.run("init").fails(2).errHas("symlink")
+
+	// A feature doc committed as a link: a status write must not land in its target.
+	q := cleanProject(t)
+	feature(q, "0002", "real", "Real", "Draft", "- [ ] Do it")
+	if err := os.Symlink(outside, filepath.Join(q.Root, "docs/features/0003-link.md")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(outside, []byte(doc("0003", "Link", "Draft", "", "- [ ] Do it")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := os.ReadFile(outside)
+	q.commitAll("a linked doc")
+	q.run("drop", "0003", "not wanted").fails(2).errHas("symlink")
+	if after, _ := os.ReadFile(outside); string(after) != string(before) {
+		t.Fatalf("drop wrote through the link:\n%s", after)
+	}
+}
+
+func TestAClaimWorktreeIsNeverMadeThroughALinkedWorktreesDir(t *testing.T) {
+	t.Parallel()
+	a, _ := twoAgents(t)
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(a.Root, ".worktrees")); err != nil {
+		t.Fatal(err)
+	}
+	a.run("claim", "0007").ok().has("not a directory")
+	if _, err := os.Stat(filepath.Join(outside, "work")); err == nil {
+		t.Fatal("the claim's worktree was made outside the project")
 	}
 }

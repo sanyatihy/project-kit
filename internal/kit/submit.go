@@ -32,6 +32,14 @@ type SubmitResult struct {
 // it afterwards — and the two findings that reported the other hand-edits are deleted,
 // because a Submitted doc is the one thing nobody is allowed to correct.
 func Submit(templates fs.FS, r *Repo, id string, today time.Time) (*SubmitResult, error) {
+	return submit(templates, r, id, today, "")
+}
+
+// gateTrailer names, in a Submit commit, the commit a passing gate ran on. Only `finish`
+// writes it, and only it lets a later finish skip the gate.
+const gateTrailer = "Kit-Gate: "
+
+func submit(templates fs.FS, r *Repo, id string, today time.Time, gated string) (*SubmitResult, error) {
 	target, err := r.WriteTarget(id)
 	if err != nil {
 		return nil, err
@@ -125,7 +133,7 @@ func Submit(templates fs.FS, r *Repo, id string, today time.Time) (*SubmitResult
 	// SetStatus above has already proved there is a frontmatter, so this cannot fail.
 	updated = RemoveField(updated, "shipped")
 	updated, _ = AddField(updated, "submitted", stamped)
-	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
+	if err := replaceFile(target.Path, updated); err != nil {
 		return nil, err
 	}
 
@@ -165,7 +173,11 @@ func Submit(templates fs.FS, r *Repo, id string, today time.Time) (*SubmitResult
 	}
 	if r.HasHistory() {
 		res.Commit = "Submit " + target.ID
-		if err := r.commitPaths(res.Commit, paths...); err != nil {
+		message := res.Commit
+		if gated != "" {
+			message += "\n\n" + gateTrailer + gated
+		}
+		if err := r.commitPaths(message, paths...); err != nil {
 			// The write already happened, so the error says where the stamp is. Silence
 			// here would leave the loss this closes, one layer down.
 			return nil, fmt.Errorf("%s is stamped Submitted in %s, and committing it failed:\n%v\n"+

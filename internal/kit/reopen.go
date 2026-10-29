@@ -59,7 +59,7 @@ func Reopen(r *Repo, id, why string, repair bool) (*ReopenResult, error) {
 	}
 	updated = RemoveField(updated, "shipped")
 	updated, _ = AddField(updated, "submitted", "")
-	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
+	if err := replaceFile(target.Path, updated); err != nil {
 		return nil, err
 	}
 

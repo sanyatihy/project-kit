@@ -359,6 +359,9 @@ func writeProtocol(templates fs.FS, root string, res *Result) error {
 	}
 	protocol := string(raw)
 	dest := filepath.Join(root, "AGENTS.md")
+	if err := refuseSymlink(dest); err != nil {
+		return err
+	}
 
 	existing, err := os.ReadFile(dest)
 	if os.IsNotExist(err) {
@@ -371,7 +374,7 @@ func writeProtocol(templates fs.FS, root string, res *Result) error {
 			"<!-- The section below is written by `kit init` from the kit's own template.\n" +
 			"     Edits inside it are lost on the next run; put durable house rules above\n" +
 			"     this comment. -->\n\n"
-		if err := os.WriteFile(dest, []byte(header+protocol), 0o644); err != nil {
+		if err := replaceFile(dest, header+protocol); err != nil {
 			return err
 		}
 		res.Created = append(res.Created, "AGENTS.md")
@@ -382,7 +385,7 @@ func writeProtocol(templates fs.FS, root string, res *Result) error {
 
 	current := Normalise(string(existing))
 	if !hasProtocol(current) {
-		if err := os.WriteFile(dest, []byte(current+"\n"+protocol), 0o644); err != nil {
+		if err := replaceFile(dest, current+"\n"+protocol); err != nil {
 			return err
 		}
 		res.Created = append(res.Created, "AGENTS.md (work protocol appended)")
@@ -394,7 +397,7 @@ func writeProtocol(templates fs.FS, root string, res *Result) error {
 		res.Kept = append(res.Kept, "AGENTS.md")
 		return nil
 	}
-	if err := os.WriteFile(dest, []byte(updated), 0o644); err != nil {
+	if err := replaceFile(dest, updated); err != nil {
 		return err
 	}
 	res.Refreshed = append(res.Refreshed, "AGENTS.md (work protocol)")

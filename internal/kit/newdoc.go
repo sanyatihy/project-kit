@@ -89,7 +89,9 @@ func (r *Repo) fetchReservations() bool {
 	if r.Offline || err != nil || remote == "" {
 		return false
 	}
-	_, fetchErr := r.gitRun("fetch", "--prune", remote, "+"+idRef("*")+":"+idRef("*"))
+	// A read: no gc or maintenance started behind the command that asked.
+	_, fetchErr := r.gitRun("-c", "maintenance.auto=false", "-c", "gc.auto=0",
+		"fetch", "--prune", remote, "+"+idRef("*")+":"+idRef("*"))
 	return fetchErr == nil
 }
 

@@ -68,7 +68,7 @@ func Drop(r *Repo, id, why string, today time.Time) (*DropResult, error) {
 		// who supplied one was never told it had been thrown away.
 		updated = appendLog(updated, entry)
 	}
-	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
+	if err := replaceFile(target.Path, updated); err != nil {
 		return nil, err
 	}
 

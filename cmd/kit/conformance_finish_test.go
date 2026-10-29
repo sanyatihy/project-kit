@@ -174,6 +174,19 @@ func TestFinishSkipsTheGateForAProseOnlyRevisionAndNothingElse(t *testing.T) {
 	w.run("finish", "--", "false").fails(2).errHas("gate failed")
 }
 
+func TestFinishRunsTheGateWhenTheSubmitItFollowsRanNone(t *testing.T) {
+	t.Parallel()
+	const doc = "docs/features/0007-widget.md"
+	w := completedGuidedWork(t)
+	// A bare submit runs no gate, so its stamp proves nothing about the code.
+	w.run("submit", "0007").ok()
+	w.run("reopen", "0007", "trim the prose").ok()
+	w.write(doc, strings.Replace(w.read(doc), "Something needs doing.", "Something short.", 1))
+	w.commitAll("trim")
+	w.run("finish", "--", "false").fails(2).errHas("gate failed")
+	w.run("finish", "--", "true").ok().lacks("gate: skipped")
+}
+
 func TestFinishPublishesTheEmptyBaseWhenRemoteIsAddedLater(t *testing.T) {
 	t.Parallel()
 	p := setUp(t)

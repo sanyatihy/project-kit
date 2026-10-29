@@ -220,6 +220,9 @@ func HarvestNothing(r *Repo, what string, today time.Time) (*Harvested, error) {
 	if len(old) > 0 && !strings.HasSuffix(string(old), "\n") {
 		lead = "\n"
 	}
+	if err := refuseSymlink(r.Backlog); err != nil {
+		return nil, err
+	}
 	f, err := os.OpenFile(r.Backlog, os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return nil, err

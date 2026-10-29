@@ -3,7 +3,9 @@ package kit
 import (
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
+	"time"
 )
 
 // gitIn runs git in a throwaway repository with an identity of its own.
@@ -65,5 +67,20 @@ func TestTheBranchAndRemotesAreAskedOnce(t *testing.T) {
 	}
 	if got := r.remotes(); len(got) != 1 {
 		t.Errorf("remotes() re-read git and returned %v; it should answer from the first call", got)
+	}
+}
+
+func TestGitCommandsHooksRunInsideGetTheLongBound(t *testing.T) {
+	t.Parallel()
+	for args, want := range map[string]time.Duration{
+		"commit --quiet -m x":                    hookTimeout,
+		"push --porcelain origin x":              hookTimeout,
+		"worktree add p b":                       hookTimeout,
+		"-c maintenance.auto=false fetch origin": gitTimeout,
+		"log -1":                                 gitTimeout,
+	} {
+		if got := timeoutFor(strings.Fields(args)); got != want {
+			t.Errorf("timeoutFor(%q) = %s, want %s", args, got, want)
+		}
 	}
 }

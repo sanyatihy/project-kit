@@ -102,7 +102,7 @@ func changeAvailability(r *Repo, id, from, to, verb, decision string, today time
 		return nil, fmt.Errorf("%s has no status: line to set", f.Rel)
 	}
 	updated = appendLog(updated, "- "+today.UTC().Format(DateLayout)+" — "+decision)
-	if err := os.WriteFile(f.Path, []byte(updated), 0o644); err != nil {
+	if err := replaceFile(f.Path, updated); err != nil {
 		return nil, err
 	}
 	res.Commit = verb + " " + id

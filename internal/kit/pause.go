@@ -108,7 +108,7 @@ func Pause(r *Repo, why string, today time.Time) (*PauseResult, error) {
 	}
 	updated := appendLog(Normalise(string(raw)),
 		"- "+today.UTC().Format(DateLayout)+" — paused: "+why)
-	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
+	if err := replaceFile(target.Path, updated); err != nil {
 		return nil, err
 	}
 
