@@ -1,9 +1,9 @@
 ---
 id: 0088
 title: Kit is safe to run on untrusted repos and its output names one route
-status: Draft
+status: Submitted
 created: 2026-10-29
-submitted:
+submitted: 2026-10-29
 needs:
 ---
 
