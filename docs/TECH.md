@@ -204,8 +204,9 @@ belong to the agent runner, not kit.
 - JSON fields keep their types and meanings: empty board groups are `[]`; unavailable
   moved timestamps are omitted; read failures populate error and exit 2. Additive fields
   are allowed; human-readable wording is not a parsing interface.
-- Exit codes: 0 success; 1 completed negative result (lost claim or strict HIGH finding);
-  2 refusal or incomplete operation. An interrupted claim is not a confirmed loss.
+- Exit codes: 0 success; 1 completed negative result (a feature that is not yours — lost,
+  or refused over its plan — or a strict HIGH finding); 2 a refusal over this checkout or
+  an incomplete operation. An interrupted claim is not a confirmed loss.
 - Git path output uses `-z`. Git reads are batched; adding unclaimed features must not add
   subprocesses. Remote listing and reservation refresh each run at most once per read.
   The process-growth comparison uses 30- and 130-feature boards with identical claims.

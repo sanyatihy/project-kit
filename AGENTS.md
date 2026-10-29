@@ -128,7 +128,8 @@ Plan when asked. For work that began without a plan, use the spike route below.
     "<why>"`: it commits the tree, records the reason, pushes and names what remains,
     keeping the claim. Then open the pull request unfinished.
 14. Never put real secrets in docs. Name the variable and where its value lives.
-    Only `kit submit`, `kit drop` and `kit reopen` write status and submitted fields.
+    Only `kit submit`, `kit drop`, `kit reopen`, `kit park` and `kit activate` write
+    status and submitted fields.
 
 ### Finishing and review
 

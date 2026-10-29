@@ -59,6 +59,9 @@ func actionFor(r *Repo, p Plan) *NextAction {
 	} else if p.Spike != "" {
 		action.Kind = "finish_work"
 		action.Instruction = "Finish the requested work; kit finish -- <gate argv> records and validates it before review."
+		if !p.SpikeRecorded {
+			action.Instruction = "Record the work with kit harvest \"<title>\" --box \"<outcome>\", then kit finish -- <gate argv>."
+		}
 	} else if len(p.Blocked) > 0 {
 		action.Kind = "resolve_blocker"
 		if r.HeldClaim() != "" && len(r.BlockersFor(r.HeldClaim())) > 0 {

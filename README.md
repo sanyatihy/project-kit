@@ -179,18 +179,20 @@ cannot activate parked work. Upgrade all writers before using Parked.
 
 ## Exploring first
 
-For an MVP or experiment the human asks to explore, work on an ordinary branch with no id (four or more digits) in its name.
-This route does not bypass approval of an already drafted feature. When the result is
-worth keeping:
+For an MVP or experiment the human asks to explore, record the intent first and work
+on the spike branch it makes. This route does not bypass approval of an already drafted
+feature. When the result is worth keeping, finish it:
 
 ```sh
-kit harvest "Shorten URLs" --box "A long URL comes back short"
+kit start --work "A long URL comes back short"
+# ...implement and commit...
+kit finish -- make check
 ```
 
-Harvest gives the existing work a feature doc and commits it on a branch named after
-that feature. Fill Problem and Design from the decisions actually made; the completed
-outcomes are already ticked. Then use the same gate, submit, review and revision sequence
-as planned work. Do not create retrospective plans pretending to precede the code.
+Finish harvests the work into a feature doc on a branch named after that feature, asks
+for Problem and Design, then gates, submits and pushes. A spike made without
+`kit start --work` is recorded with `kit harvest "<title>" --box "<outcome>"` first. Fill Problem and Design from the decisions actually made; the completed
+outcomes are already ticked. Review and revision then follow planned work. Do not create retrospective plans pretending to precede the code.
 
 With no prior commits, harvest creates an empty trunk base and commits the entire MVP
 on the feature branch. Publish the empty base before opening the first PR. Staged product
@@ -209,7 +211,9 @@ approval for the human; an agent using the human's credentials has the same perm
 kit start <id> | --plan <round> | --work <outcome>  prepare recorded work
 kit finish [--json] [-- <gate argv>]     validate, submit and publish for human review
 kit new   <title...>                     next free ID, date filled in, status Draft
-kit claim <id>                           push the branch; exit 1 means you lost it
+kit claim <id>                           the claim step of start; exit 1: not yours
+kit harvest <title...> --box "..."       give an unrecorded spike a doc and a commit
+kit pause "<why>"                        set work down, keeping the claim
 kit release <id> [--discard]               give a claim back; refuses over work, and over
                                          a claim this clone never created
 kit block <id> "<question>"              record a decision only a human can make
@@ -222,7 +226,8 @@ kit next  [--json] [--offline]           the next action for this checkout
 kit audit [--json] [--strict] [--offline]  --strict exits 1 on HIGH, for CI
                                          both exit 2 where there is no docs/features
 kit init  [PATH] [--stack S] [--forge F]
-kit help  [protocol|template|checks|vision|as-built|go-checklist]
+kit help  [protocol|template|checks|vision|as-built|go-checklist|python-checklist|
+           compatibility|backlog]
 kit version
 ```
 
@@ -247,7 +252,7 @@ Exit codes are a contract, so a script can tell a typo from a finding:
 | Code | Means |
 | --- | --- |
 | `0` | it worked |
-| `1` | it ran and the answer is no: `claim` lost the race, or `audit --strict` found HIGH |
+| `1` | it ran and the answer is no: the feature is not yours (lost, or refused over its plan), or `audit --strict` found HIGH |
 | `2` | the command could not run, or refused: unknown command, bad flag, a refusal |
 
 Diagnostics go to stderr and data to stdout, so `kit next --json` stays pipe-clean even

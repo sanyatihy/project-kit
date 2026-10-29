@@ -270,7 +270,7 @@ func TestNextAlwaysEndsWithAnInstruction(t *testing.T) {
 	// Checked against the guidance the plan carries rather than the rendered text:
 	// the text is wrapped for a narrow terminal, so asserting phrases in it breaks
 	// on line breaks rather than on the thing being tested.
-	tell := []string{"kit claim", "draft a feature", "nothing is free", "write the plan in"}
+	tell := []string{"kit start", "start a round", "nothing is free", "write the plan in"}
 	ends := func(out string) bool {
 		for _, phrase := range tell {
 			if strings.Contains(out, phrase) {
@@ -364,7 +364,7 @@ func TestNextOffersADraftAsWork(t *testing.T) {
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 
 	r := p.run("next").ok()
-	r.has("start here", "0001", "kit claim 0001")
+	r.has("start here", "0001", "kit start 0001")
 	r.lacks("waiting on a human")
 }
 
@@ -404,7 +404,7 @@ func TestNextPrintsTheCommandThatStartsTheWork(t *testing.T) {
 	feature(p, "0001", "shorten", "Shorten URLs", "Draft", "- [ ] The POST handler")
 
 	r := p.run("next").ok()
-	r.has("kit claim 0001", "docs/features/0001-shorten.md")
+	r.has("kit start 0001", "docs/features/0001-shorten.md")
 	if strings.Contains(r.Stdout, "worktree add") {
 		t.Errorf("next offered a worktree before the feature was claimed:\n%s", r.Stdout)
 	}
@@ -425,7 +425,7 @@ func TestNextNeverOffersAClaimThatWouldBeRefused(t *testing.T) {
 
 	r := a.run("next").ok()
 	r.has("blocked", "0008", "plan/round-two")
-	r.lacks("kit claim 0008")
+	r.lacks("kit start 0008")
 	// The pairing is the point: what the board withholds is exactly what the command
 	// refuses, so neither can send an agent to the other and be wrong.
 	a.run("claim", "0008").fails(2).errHas("Land the round first")
@@ -445,7 +445,7 @@ func TestNextNeverOffersAClaimThatWouldBeRefused(t *testing.T) {
 	a.git("merge", "-q", "--no-ff", "-m", "land the round", "plan/round-two")
 	a.git("push", "origin", "HEAD")
 
-	a.run("next").ok().has("start here", "0008", "kit claim 0008")
+	a.run("next").ok().has("start here", "0008", "kit start 0008")
 }
 
 func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
@@ -464,7 +464,7 @@ func TestNextWillNotHeadlineAnotherFeatureInAClaimedCheckout(t *testing.T) {
 		t.Errorf("a claimed checkout was told to start another feature:\n%s", r.Stdout)
 	}
 	// The free work is still reported — the point is where to do it, not secrecy.
-	r.has("0002", "not in this checkout", "kit claim 0002")
+	r.has("0002", "not in this checkout", "kit start 0002")
 }
 
 func TestAClaimedCheckoutIsNotOfferedOtherWorkEvenWhenItsOwnIsBlocked(t *testing.T) {

@@ -91,6 +91,9 @@ type Plan struct {
 	// a claim nor a plan round, which is what work that started without a doc looks like.
 	// Empty on the trunk and on a detached HEAD.
 	Spike string `json:"spike,omitempty"`
+	// SpikeRecorded is a spike `kit start --work` began, which `kit finish` can harvest.
+	// Any other spike needs `kit harvest` first.
+	SpikeRecorded bool `json:"spike_recorded,omitempty"`
 
 	// RemoteUnanswered says the remote was asked and did not answer, so the board is a
 	// weaker statement than it looks: claims come from the last fetch, and anything
@@ -169,6 +172,10 @@ func Survey(r *Repo) Plan {
 	plan.Branch = r.HeadBranch()
 	plan.Claiming = r.HeldClaim()
 	plan.Spike = spikeBranch(r, plan.Branch)
+	if plan.Spike != "" {
+		intent, _ := r.WorkIntent()
+		plan.SpikeRecorded = intent != nil && intent.Mode == "work" && plan.Spike == "spike/"+Slug(intent.Outcome)
+	}
 	// Before the board, because the board is what this takes entries out of. A feature
 	// its builder has submitted is finished work waiting for a merge, not a claim somebody
 	// is holding, and it was reported as both — one feature under `taken` and again under
@@ -487,13 +494,13 @@ func primaryGuidance(r *Repo, plan Plan) string {
 		return plan.Checkout
 	case len(plan.Yours) > 0:
 		if plan.Yours[0].Task == "" {
-			return "all tasks are complete. Run the project gate, kit audit --strict, then kit submit " + plan.Yours[0].ID + "."
+			return "all tasks are complete. Run kit finish -- <gate argv>: it gates, submits and pushes " + plan.Yours[0].ID + " for review."
 		}
 		return "work the box named under yours, in this checkout. It is already claimed by you."
 	case len(plan.Ready) > 0 && plan.Claiming != "":
 		return "finish this checkout’s claim first. Start another feature from a separate, updated trunk checkout."
 	case len(plan.Ready) > 0:
-		return "take one with kit claim <id>, then work it in the worktree it prints."
+		return "take one with kit start <id>, then work it in the worktree it prints."
 	// Before every arm below, all of which say some version of "there is nothing for you
 	// here". On a spike that answers a question nobody asked: the board routes claims and
 	// plan rounds, this is neither, and it has nothing to refuse.
@@ -541,7 +548,7 @@ func primaryGuidance(r *Repo, plan Plan) string {
 		// No command inside the sentence: guidance is wrapped for a narrow terminal,
 		// and a wrapped command is one nobody can copy. The caller prints the command
 		// on its own line.
-		return "nothing is planned yet. Read docs/VISION.md and draft a feature, or stop."
+		return "nothing is planned yet. If the operator asked for planning, read docs/VISION.md and start a round; otherwise stop."
 	}
 }
 

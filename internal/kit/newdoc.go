@@ -315,7 +315,7 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 	if held := r.ForeignClaim(); held != "" {
 		return nil, fmt.Errorf("this checkout is on %s, whose name cites %s — a branch "+
 			"citing an id claims that feature, so a doc drafted here would claim it too\n"+
-			"put the round on a branch of its own: git switch -c plan/<round>, with no "+
+			"start the round from an updated trunk checkout: kit start --plan \"<round>\", with no "+
 			"id (four or more digits) anywhere in the name", r.HeadBranch(), held)
 	}
 

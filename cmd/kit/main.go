@@ -163,7 +163,7 @@ func runStart(args []string) int {
 	work := fs.String("work", "", "record directly requested work")
 	rest := parseArgs(fs, args)
 	if *plan == "" && *work == "" && len(rest) == 1 {
-		return runClaim(rest)
+		return claimAs("start", rest)
 	}
 	if (*plan == "") == (*work == "") || len(rest) != 0 {
 		fmt.Fprintln(os.Stderr, commandHelp["start"])
@@ -546,7 +546,7 @@ func runHarvest(args []string) int {
 	}
 	fmt.Printf("\n  answer ## Problem and ## Design — they are the part the code\n")
 	fmt.Printf("  cannot say, and audit --strict refuses the doc until they are written.\n")
-	fmt.Printf("  then run the project gate, kit audit --strict, kit submit %s, and open the pull request.\n",
+	fmt.Printf("  then run kit finish -- <gate argv>, and open the pull request for %s.\n",
 		harvested.ID)
 
 	// The handoff. This is the moment the operator knows what is worth doing next and the
@@ -590,21 +590,24 @@ func harvestNothing(what string) int {
 	return 0
 }
 
-func runClaim(args []string) int {
+func runClaim(args []string) int { return claimAs("claim", args) }
+
+// claimAs is claim under the name the agent typed, so its errors name that command.
+func claimAs(name string, args []string) int {
 	fs := newFlagSet("claim", args)
 	rest := parseArgs(fs, args)
 	if len(rest) != 1 {
-		fmt.Fprintf(os.Stderr, "kit claim: need one feature id\n\n%s\n", commandHelp["claim"])
+		fmt.Fprintf(os.Stderr, "kit %s: need one feature id\n\n%s\n", name, commandHelp["claim"])
 		return 2
 	}
 	repo, err := kit.Open(kit.ProjectRoot("."))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", name, err)
 		return 2
 	}
 	id, err := kit.ResolveID(repo, rest[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", name, err)
 		return 2
 	}
 
@@ -618,7 +621,7 @@ func runClaim(args []string) int {
 			fmt.Fprintf(os.Stderr, "  %s\n\n", taken.Then)
 			return 1
 		}
-		fmt.Fprintf(os.Stderr, "kit claim: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kit %s: %v\n", name, err)
 		return 2
 	}
 
@@ -991,7 +994,7 @@ func printPlan(plan kit.Plan, color bool) {
 			listItems(plan.Ready)
 			fmt.Printf("\n  this checkout claims %s. Take one of those in a worktree of\n",
 				plan.Claiming)
-			fmt.Printf("  its own. From a separate, updated trunk checkout: kit claim %s\n", first.ID)
+			fmt.Printf("  its own. From a separate, updated trunk checkout: kit start %s\n", first.ID)
 		} else {
 			fmt.Printf("\n  %s\n", paint("start here", "1;32", color))
 			fmt.Printf("    %s  %-5s %s\n", first.ID, first.Progress(), kit.Show(first.Title, 54))
@@ -1001,7 +1004,7 @@ func printPlan(plan kit.Plan, color bool) {
 			// command once it has actually won. Printing it here instead would have
 			// the agent building somewhere to work before knowing the work is theirs.
 			printOverlaps(first, "       ")
-			fmt.Printf("       kit claim %s\n", first.ID)
+			fmt.Printf("       kit start %s\n", first.ID)
 			if rest := plan.Ready[1:]; len(rest) > 0 {
 				fmt.Printf("\n  also free\n")
 				listItems(rest)
@@ -1087,10 +1090,12 @@ func printPlan(plan kit.Plan, color bool) {
 		// Mid-spike the command to run is the one that ends it. `kit new` here names the
 		// route the operator did not take, which is the board printing a step for
 		// somebody else.
+		case plan.Spike != "" && plan.SpikeRecorded:
+			fmt.Printf("    kit finish -- <gate argv>\n")
 		case plan.Spike != "":
 			fmt.Printf("    kit harvest \"<what the work delivered>\" --box \"<outcome>\"\n")
 		case plan.Empty() && len(plan.Parked) == 0 && len(plan.AwaitingReview) == 0 && plan.Checkout == "":
-			fmt.Printf("    kit new \"<what the feature does>\"\n")
+			fmt.Printf("    kit start --plan \"<round>\"\n")
 		}
 	}
 	fmt.Println()

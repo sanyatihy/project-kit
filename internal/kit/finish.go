@@ -59,7 +59,7 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 		return nil, err
 	}
 	if !r.Mine(id) {
-		return nil, fmt.Errorf("finish %s from its owning feature checkout", id)
+		return nil, fmt.Errorf("finish %s from its owning feature checkout: cd %s", id, r.WorktreePath(f.ClaimBranch()))
 	}
 	if IsSubmitted(r.integratedStatuses()[f.Rel]) {
 		return nil, fmt.Errorf("%s is integrated; return to an updated trunk checkout and run kit next", id)
@@ -74,7 +74,7 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 		return nil, fmt.Errorf("fill review facts in %s: ## %s; commit them, then retry kit finish with the gate", f.Rel, strings.Join(sections, ", ## "))
 	}
 	if open, _ := f.TaskCount(); open > 0 {
-		return nil, fmt.Errorf("%s still has unfinished tasks: %s", id, f.NextTask())
+		return nil, fmt.Errorf("%s still has unfinished tasks: %s\ndo it and tick it in the same commit, or set the work down with kit pause \"<why>\"", id, f.NextTask())
 	}
 	if blocked := r.BlockersFor(id); len(blocked) > 0 {
 		return nil, fmt.Errorf("%s is blocked: %s", id, blocked[0])
@@ -103,7 +103,7 @@ func Finish(templates fs.FS, r *Repo, gate []string, runGate func([]string) erro
 	}
 	if covered == "" {
 		if err := runGate(gate); err != nil {
-			return nil, fmt.Errorf("gate failed; no submission or push: %w", err)
+			return nil, fmt.Errorf("gate failed; no submission or push: %w\nfix the failure, commit, and run kit finish -- <gate argv> again", err)
 		}
 	}
 	r, err = Open(r.Root)

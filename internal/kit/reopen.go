@@ -30,7 +30,7 @@ func Reopen(r *Repo, id, why string, repair bool) (*ReopenResult, error) {
 	case StatusParked:
 		return nil, fmt.Errorf("%s is Parked — use kit activate %s on a planning branch when the operator asks", target.Name(), target.ID)
 	case StatusDraft:
-		return nil, fmt.Errorf("%s is already Draft", target.Name())
+		return nil, fmt.Errorf("%s is already Draft — revise it, then run kit finish -- <gate argv>", target.Name())
 	default:
 		if !repair {
 			return nil, fmt.Errorf("%s has invalid status %q — use kit reopen %s --repair \"<why>\" to repair it", target.Name(), target.Status, id)
