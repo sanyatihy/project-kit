@@ -78,7 +78,7 @@ Plan when asked. For work that began without a plan, use the spike route below.
 3. Start the round with `kit start --plan "<round>"`. For a new repo, it publishes an
    empty trunk base and preserves setup files for the first PR. Draft the whole round
    with `kit new "<title>"` on that `plan/<round>` branch whose
-   name contains no four-digit id. Fill `needs:` with prerequisite feature ids; leave
+   name contains no id (four or more digits). Fill `needs:` with prerequisite feature ids; leave
    it empty when work can start independently. Keep every draft `status: Draft`.
 4. Run `kit finish` to validate, commit and push the planning round; open one PR for
    human review. Planned features require the human's approval through that merge before implementation starts. After it
@@ -99,7 +99,7 @@ Plan when asked. For work that began without a plan, use the spike route below.
    - **2**: the command could not run; fix the reported cause before retrying.
    A claimed branch or worktree belonging to another agent is not yours to clean up.
 7. Each agent works in its own checkout. Do not share a working tree, index or claim.
-   A branch citing a four-digit id is a claim; recorded direct work and spikes cite none.
+   A branch citing a id (four or more digits) is a claim; recorded direct work and spikes cite none.
 8. For directly requested changes or exploration, use `kit start --work "<outcome>"`.
    It records intent on a spike branch of its own; small changes also use this route.
    Do not turn a pending plan into a spike to bypass approval. When done,

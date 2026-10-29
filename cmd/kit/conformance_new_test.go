@@ -317,7 +317,7 @@ func TestNewRefusesATitleItCannotUse(t *testing.T) {
 
 func TestNewRefusesToDraftOnABranchThatClaimsAFeature(t *testing.T) {
 	t.Parallel()
-	// A branch citing a four-digit id claims that feature, wherever in the name it
+	// A branch citing an id claims that feature, wherever in the name it
 	// sits, so a plan round drafted on one claims a feature it has nothing to do with:
 	// `plan/fold-in-0007-fix` made the board report 0007 as taken while `audit` exited
 	// 0 saying the docs and the repo agreed. Closed here rather than by narrowing what
@@ -325,7 +325,7 @@ func TestNewRefusesToDraftOnABranchThatClaimsAFeature(t *testing.T) {
 	a, _ := twoAgents(t)
 	a.git("checkout", "-q", "-b", "plan/fold-in-0007-fix")
 
-	a.run("new", "Later").fails(2).errHas("0007", "no four-digit id")
+	a.run("new", "Later").fails(2).errHas("0007", "no id (four or more digits)")
 
 	if matches, err := filepath.Glob(a.path("docs/features/*-later.md")); err != nil ||
 		len(matches) > 0 {

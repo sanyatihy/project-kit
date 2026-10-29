@@ -244,7 +244,10 @@ func (r *Repo) readFeature(path string) *Feature {
 		text := Normalise(string(raw))
 		fields, body := ParseFrontmatter(text)
 		f.ID = fields["id"]
-		f.Title = fields["title"]
+		if f.ID != "" && !ValidID(f.ID) {
+			f.BadID, f.ID = f.ID, ""
+		}
+		f.Title = printable(fields["title"])
 		f.Status = fields["status"]
 		f.Needs = ParseIDList(fields["needs"])
 		stamp, present := fields["submitted"]

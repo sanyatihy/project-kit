@@ -137,7 +137,7 @@ belong to the agent runner, not kit.
   rebased equivalents are bookkeeping, not product work.
 - Claim requires a committed plan on trunk and HEAD equal to the advertised trunk tip
   online, or local trunk offline. Board eligibility uses the same PlanLanded predicate.
-- Any branch name citing a four-digit id is a claim. One feature per checkout; new refuses
+- Any branch name citing a id (four or more digits) is a claim. One feature per checkout; new refuses
   a foreign claim branch. Planning uses `plan/<round>` without an id. A spike is neither
   trunk, a plan branch nor a claim; harvest assigns its id and feature branch afterward.
 - Harvest commits the whole working tree with completed task boxes. With no history it

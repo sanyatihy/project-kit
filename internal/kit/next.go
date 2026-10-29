@@ -271,6 +271,10 @@ func Survey(r *Repo) Plan {
 		// question comes first because a human already has to answer it, so the
 		// dependency is not the thing standing in the way.
 		switch questions, unmet := r.BlockersFor(f.ID), r.UnmetNeeds(f); {
+		// No command can name a feature without an id, so offering it prints `kit start `.
+		case f.ID == "":
+			item.WaitingOn = "no usable id: — set it to the filename's number"
+			plan.Blocked = append(plan.Blocked, item)
 		case r.mergedDraftClaim(f) != "":
 			item.ClaimedBy = r.mergedDraftClaim(f)
 			item.WaitingOn = "merged before submission; preserve unfinished tasks, then release the retained claim with kit release " + f.ID

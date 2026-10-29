@@ -148,7 +148,9 @@ func (r *Repo) loadGit() {
 		}
 	}
 	for name := range seen {
-		r.refs = append(r.refs, name)
+		if safeRef(name) {
+			r.refs = append(r.refs, name)
+		}
 	}
 	sort.Strings(r.refs)
 }
@@ -233,7 +235,7 @@ func (r *Repo) fetchHeads(remotes []string) headsResult {
 			if !found {
 				continue
 			}
-			if name := strings.TrimPrefix(ref, "refs/heads/"); name != ref && name != "" {
+			if name := strings.TrimPrefix(ref, "refs/heads/"); name != ref && safeRef(name) {
 				out = append(out, name)
 				tips[remote+"/"+name] = sha
 			}
@@ -290,6 +292,11 @@ func (r *Repo) branchName(ref string) string {
 	}
 	return ref
 }
+
+// safeRef reports whether a branch name can be passed to git as a revision. A remote
+// chooses its branch names and its HEAD, and one beginning with "-" is read as an option:
+// `--output=Makefile` truncated a tracked file.
+func safeRef(name string) bool { return name != "" && !strings.HasPrefix(name, "-") }
 
 // RefsAreAuthoritative reports whether the claim refs were read from the remotes
 // themselves rather than from the last fetch. Only the second can name a branch that no

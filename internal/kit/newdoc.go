@@ -23,7 +23,7 @@ func Slug(title string) string {
 	return strings.Trim(s, "-")
 }
 
-// NextID is one past the highest four-digit feature ID in use.
+// NextID is one past the highest feature ID in use.
 //
 // Where the search for a free ID starts, not what it answers: disk records the docs
 // that exist rather than the numbers that have been handed out, so a deleted doc's
@@ -210,7 +210,7 @@ func reserveID(r *Repo, remote, title string) (string, error) {
 // that finding was not fired by every doc.
 //
 // One push for all of them, and re-running it is free — a reservation already there
-// answers "up to date". A project with no remote, or with no doc holding a four-digit
+// answers "up to date". A project with no remote, or with no doc holding a feature
 // ID, asks the network nothing.
 func BackfillIDs(r *Repo) (int, error) {
 	remote, err := pickRemote(r)
@@ -253,7 +253,7 @@ func BackfillIDs(r *Repo) (int, error) {
 	return created, nil
 }
 
-// heldIDs are the four-digit numbers a project's docs already hold, from the frontmatter
+// heldIDs are the numbers of four or more digits a project's docs already hold, from the frontmatter
 // and from the filename both — the two halves NextID counts, because a doc whose halves
 // disagree has taken both numbers out of circulation.
 func heldIDs(r *Repo) []string {
@@ -261,7 +261,7 @@ func heldIDs(r *Repo) []string {
 	var ids []string
 	for _, f := range r.Features {
 		for _, candidate := range []string{f.ID, f.FilenamePrefix()} {
-			if n, err := strconv.Atoi(candidate); err != nil || n <= 0 || len(candidate) != 4 {
+			if n, err := strconv.Atoi(candidate); err != nil || n <= 0 || len(candidate) < 4 {
 				continue
 			}
 			if !seen[candidate] {
@@ -291,6 +291,9 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 	if strings.TrimSpace(title) == "" {
 		return nil, fmt.Errorf("a title is required")
 	}
+	if !SingleLine(title) {
+		return nil, fmt.Errorf("a title is one line with no control characters")
+	}
 	slug := Slug(title)
 	if slug == "" {
 		return nil, fmt.Errorf("title %q has no usable characters", title)
@@ -299,7 +302,7 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 		return nil, fmt.Errorf("not set up yet — run: kit init %s", r.Root)
 	}
 
-	// A branch whose name cites a four-digit id is a claim on that feature, wherever in
+	// A branch whose name cites a id (four or more digits) is a claim on that feature, wherever in
 	// the name it sits, and a plan round drafted on one claims a feature it has nothing
 	// to do with: `plan/fold-in-0002-fix` made the board report 0002 as taken while
 	// `audit` exited 0 saying the docs and the repo agreed. Refused here rather than by
@@ -311,7 +314,7 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 		return nil, fmt.Errorf("this checkout is on %s, whose name cites %s — a branch "+
 			"citing an id claims that feature, so a doc drafted here would claim it too\n"+
 			"put the round on a branch of its own: git switch -c plan/<round>, with no "+
-			"four-digit id anywhere in the name", r.HeadBranch(), held)
+			"id (four or more digits) anywhere in the name", r.HeadBranch(), held)
 	}
 
 	raw, err := fs.ReadFile(templates, "templates/features-TEMPLATE.md")

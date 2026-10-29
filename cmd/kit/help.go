@@ -202,7 +202,7 @@ Fill Problem and Design; keep Log for plan changes, which may be empty.
 Without --box, the refusal lists the working tree to help name outcomes.
 
 Refuses trunk, planning branches, detached HEAD and existing claims, including branch names citing a
-four-digit id. Use a spike branch; never bypass a pending plan's approval. With no
+id (four or more digits). Use a spike branch; never bypass a pending plan's approval. With no
 commits, first creates an empty trunk review base; product files stay on the feature
 branch. Publish that base before the first PR.
 
@@ -218,7 +218,7 @@ and takes no id.
 	"new": `kit new <title...>
 
 Create docs/features/NNNN-name.md with id, title, date and status: Draft.
-Use a plan/<round> branch with no four-digit id. Fill Problem, Non-goals, Design
+Use a plan/<round> branch with no id (four or more digits). Fill Problem, Non-goals, Design
 and Tasks; unresolved choices go in Open questions and kit block when human-owned.
 Push the planning branch and open a PR. The human approves through merge before
 implementation. Do not set status or submitted fields by hand.
@@ -228,7 +228,7 @@ its id. No remote means local allocation without cross-clone guarantees.
 
 Refuses an empty/unusable title, missing setup, a foreign claim branch, ambiguous
 remotes, failed reservation or file creation. It never overwrites an existing doc.
-Remote id allocation also refuses exhaustion of the four-digit range. A feature's
+Remote id allocation also refuses when every id in its search window is taken. A feature's
 own claim branch may draft discovered work.
 
   kit new "Shorten URLs"`,

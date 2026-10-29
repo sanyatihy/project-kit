@@ -169,7 +169,8 @@ func TestParseIDList(t *testing.T) {
 		{"0002, 0002", []string{"0002"}},       // a repeat is one dependency
 		{"none", nil},                          // prose is not an id
 		{"see 0004 for why", []string{"0004"}}, // and an id inside prose still counts
-		{"12345", nil},                         // not the shape of an id
+		{"12345", []string{"12345"}},           // ids grow past four digits
+		{"123", nil},                           // and never shrink below them
 	} {
 		got := ParseIDList(tc.in)
 		if len(got) != len(tc.want) {

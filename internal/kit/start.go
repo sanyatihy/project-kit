@@ -21,12 +21,12 @@ type Started struct{ Branch, Checkout string }
 // Start prepares a planning or direct-work branch. Approved features use ClaimFeature.
 func Start(r *Repo, mode, outcome string) (*Started, error) {
 	outcome = strings.TrimSpace(outcome)
-	if (mode != "plan" && mode != "work") || outcome == "" || strings.ContainsAny(outcome, "\r\n") {
+	if (mode != "plan" && mode != "work") || outcome == "" || !SingleLine(outcome) {
 		return nil, fmt.Errorf("choose --plan <round> or --work <outcome>, with a nonempty single-line intent")
 	}
 	slug := Slug(outcome)
 	if slug == "" || idListRe.MatchString(slug) {
-		return nil, fmt.Errorf("the planning round or direct outcome must have a usable name without a four-digit feature id; use kit start <id> for planned work")
+		return nil, fmt.Errorf("the planning round or direct outcome must have a usable name without a feature id (four or more digits); use kit start <id> for planned work")
 	}
 	prefix := "plan/"
 	if mode == "work" {

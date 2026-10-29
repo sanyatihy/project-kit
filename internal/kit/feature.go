@@ -50,9 +50,12 @@ type Feature struct {
 	submittedText string
 
 	// needsText is the same, for the same reason: Needs holds what parsed, and prose
-	// scans for four-digit runs like any other string. A doc nobody edited declared
+	// scans for runs of four or more digits like any other string. A doc nobody edited declared
 	// `needs: 0002, 0003` out of the template's own "e.g. 0002, 0003".
 	needsText string
+
+	// BadID is an id: that is not a feature id. ID is left empty, so nothing routes it.
+	BadID string
 
 	// Unreadable marks a doc the kit could not open. Everything above it then comes from
 	// the filename, and nothing below it exists — so `audit` reports the file and asks no

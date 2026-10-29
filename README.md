@@ -179,7 +179,7 @@ cannot activate parked work. Upgrade all writers before using Parked.
 
 ## Exploring first
 
-For an MVP or experiment the human asks to explore, work on an ordinary branch with no four-digit id in its name.
+For an MVP or experiment the human asks to explore, work on an ordinary branch with no id (four or more digits) in its name.
 This route does not bypass approval of an already drafted feature. When the result is
 worth keeping:
 
