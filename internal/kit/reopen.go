@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 )
 
 // ReopenResult is what reopening changed, for reporting.
@@ -16,7 +15,7 @@ type ReopenResult struct {
 
 // Reopen repairs a status or returns unmerged work to Draft for review changes.
 // A Submitted document on the trunk is frozen history.
-func Reopen(r *Repo, id, why string, today time.Time, repair bool) (*ReopenResult, error) {
+func Reopen(r *Repo, id, why string, repair bool) (*ReopenResult, error) {
 	target, err := r.WriteTarget(id)
 	if err != nil {
 		return nil, err
@@ -60,19 +59,18 @@ func Reopen(r *Repo, id, why string, today time.Time, repair bool) (*ReopenResul
 	}
 	updated = RemoveField(updated, "shipped")
 	updated, _ = AddField(updated, "submitted", "")
-	// `drop`'s argument: a status change nobody explained reads later as a mistake, and
-	// the doc is where every other durable decision lives.
-	if why != "" {
-		updated = appendLog(updated,
-			"- "+today.UTC().Format(DateLayout)+" — reopen to Draft: "+why)
-	}
 	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
 		return nil, err
 	}
 
 	res := &ReopenResult{Doc: target.Rel, Was: target.Status}
 	if r.HasHistory() {
+		// The reason goes in the subject, not ## Log: a reopen changes no plan, and a task
+		// revised afterwards gets its own Log entry (rule 12).
 		res.Commit = "Reopen " + target.ID
+		if why != "" {
+			res.Commit += ": " + why
+		}
 		if err := r.commitPaths(res.Commit, target.Path); err != nil {
 			return nil, fmt.Errorf("%s is back to Draft in %s, and committing it failed:\n%v\n"+
 				"commit that file yourself — the status is repaired only once the commit exists",

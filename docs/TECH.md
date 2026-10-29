@@ -102,6 +102,11 @@ belong to the agent runner, not kit.
   30-minute bound; failure, changed HEAD/branch or dirty output stops publication.
   Submission may change only lifecycle fields; hook-created commits or other edits refuse publication.
   Revisions after submission require reopen. Retrying finish reruns validation.
+  Reopen writes no Log entry; its commit subject carries the reason.
+- Finish skips the gate when nothing but the feature doc changed since the latest commit
+  where that doc read Submitted, and its parsed `## Tasks` is identical. The skip trusts
+  that Submit's gate. `-G` also matches the Reopen, so each hit's copy is read. Audit
+  still runs, and the handoff names the covering commit in `gate_skipped`.
 - Finish supplies pr_title from the feature title or Plan: <round>; next repeats the
   feature title for pending review. Agents set the PR title explicitly instead of
   commit autofill, which can select the claim receipt.

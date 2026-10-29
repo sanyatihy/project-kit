@@ -1,9 +1,9 @@
 ---
 id: 0087
 title: A prose-only revision of a submitted doc skips the gate and the Log
-status: Draft
+status: Submitted
 created: 2026-10-28
-submitted:
+submitted: 2026-10-28
 needs:
 ---
 
@@ -37,11 +37,11 @@ does so on the kit's own initiative.
 
 ## Tasks
 
-- [ ] `kit reopen` writes no Log entry and its commit subject carries the reason
-- [ ] `kit finish` skips the gate, and says so, when only the feature doc outside
+- [x] `kit reopen` writes no Log entry and its commit subject carries the reason
+- [x] `kit finish` skips the gate, and says so, when only the feature doc outside
       `## Tasks` changed since its last Submit; a code change or a Tasks change still runs it
-- [ ] Rule 18 and `kit help reopen` describe the prose-only route, with `AGENTS.md`
+- [x] Rule 18 and `kit help reopen` describe the prose-only route, with `AGENTS.md`
       regenerated in the same commit
-- [ ] `docs/TECH.md` records what the skip relies on
+- [x] `docs/TECH.md` records what the skip relies on
 
 ## Log

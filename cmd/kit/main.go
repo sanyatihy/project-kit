@@ -149,6 +149,9 @@ func runFinish(args []string) int {
 			return 2
 		}
 	} else {
+		if result.GateSkipped != "" {
+			fmt.Printf("gate: skipped — only the feature doc's prose changed since %s, whose gate covers this code\n", result.GateSkipped[:min(12, len(result.GateSkipped))])
+		}
 		fmt.Printf("pr_title: %s\nbase: %s\nbranch: %s\ncandidate: %s\npublished: %t\n%s\n", result.PRTitle, result.Base, result.Branch, result.Candidate, result.Published, result.Next)
 	}
 	return 0
@@ -454,7 +457,7 @@ func runReopen(args []string) int {
 		return 2
 	}
 	why := strings.TrimSpace(strings.Join(rest[1:], " "))
-	res, err := kit.Reopen(repo, id, why, time.Now().UTC(), *repair)
+	res, err := kit.Reopen(repo, id, why, *repair)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kit reopen: %v\n", err)
 		return 2
@@ -468,8 +471,8 @@ func runReopen(args []string) int {
 	// string typed at it, and saying so is what makes the omission visible while the
 	// person who knows the answer is still here.
 	if why == "" {
-		fmt.Printf("\n  no reason recorded — say why in ## Log, or the next person\n")
-		fmt.Printf("  cannot tell a repaired doc from one somebody reopened\n")
+		fmt.Printf("\n  no reason recorded — the commit cannot tell a repaired doc from\n")
+		fmt.Printf("  one somebody reopened; pass \"<why>\" next time\n")
 	}
 	fmt.Printf("\nnext:\n  kit next\n\n")
 	return 0
