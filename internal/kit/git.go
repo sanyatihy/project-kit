@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"slices"
 	"sort"
@@ -23,13 +24,40 @@ type commit struct {
 func (r *Repo) git(args ...string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
-	cmd.WaitDelay = waitDelay
-	out, err := cmd.Output()
+	out, err := gitCommand(ctx, r.Root, args...).Output()
 	if err != nil {
 		return ""
 	}
 	return string(out)
+}
+
+// gitCommand is every git the kit runs. It never prompts: a credential prompt has no one
+// to answer it and would hold the call until its deadline.
+func gitCommand(ctx context.Context, dir string, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	cmd.WaitDelay = waitDelay
+	return cmd
+}
+
+// timeoutFor gives the commands a project's hooks run inside the long bound.
+func timeoutFor(args []string) time.Duration {
+	if slices.Contains([]string{"commit", "push", "worktree"}, subcommand(args)) {
+		return hookTimeout
+	}
+	return gitTimeout
+}
+
+// subcommand is the git command in args, past any leading `-c key=value` pairs.
+func subcommand(args []string) string {
+	for i := 0; i < len(args); i++ {
+		if args[i] == "-c" {
+			i++
+			continue
+		}
+		return args[i]
+	}
+	return ""
 }
 
 // gitFed is gitRun with something on stdin, for the one caller that batches: `cat-file
@@ -37,8 +65,7 @@ func (r *Repo) git(args ...string) string {
 func (r *Repo) gitFed(stdin string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
-	cmd.WaitDelay = waitDelay
+	cmd := gitCommand(ctx, r.Root, args...)
 	cmd.Stdin = strings.NewReader(stdin)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -47,7 +74,7 @@ func (r *Repo) gitFed(stdin string, args ...string) (string, error) {
 		if detail == "" {
 			detail = err.Error()
 		}
-		return stdout.String(), fmt.Errorf("git %s: %s", args[0], detail)
+		return stdout.String(), fmt.Errorf("git %s: %s", subcommand(args), detail)
 	}
 	return stdout.String(), nil
 }
@@ -59,10 +86,9 @@ func (r *Repo) gitFed(stdin string, args ...string) (string, error) {
 // to a report. Anything that changes state needs the opposite: a push that did not
 // happen must never be mistaken for one that found nothing to do.
 func (r *Repo) gitRun(args ...string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutFor(args))
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", r.Root}, args...)...)
-	cmd.WaitDelay = waitDelay
+	cmd := gitCommand(ctx, r.Root, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
@@ -70,7 +96,7 @@ func (r *Repo) gitRun(args ...string) (string, error) {
 		if detail == "" {
 			detail = err.Error()
 		}
-		return stdout.String(), fmt.Errorf("git %s: %s", args[0], detail)
+		return stdout.String(), fmt.Errorf("git %s: %s", subcommand(args), detail)
 	}
 	return stdout.String(), nil
 }
@@ -148,7 +174,9 @@ func (r *Repo) loadGit() {
 		}
 	}
 	for name := range seen {
-		r.refs = append(r.refs, name)
+		if safeRef(name) {
+			r.refs = append(r.refs, name)
+		}
 	}
 	sort.Strings(r.refs)
 }
@@ -218,8 +246,7 @@ func (r *Repo) fetchHeads(remotes []string) headsResult {
 		// The deadline is remoteTimeout less what WaitDelay may spend closing the pipes
 		// after it fires, so the whole question stays inside the bound the help states.
 		ctx, cancel := context.WithTimeout(context.Background(), remoteTimeout-waitDelay)
-		cmd := exec.CommandContext(ctx, "git", "-C", r.Root, "ls-remote", "--heads", remote)
-		cmd.WaitDelay = waitDelay
+		cmd := gitCommand(ctx, r.Root, "ls-remote", "--heads", remote)
 		raw, err := cmd.Output()
 		cancel()
 		if err != nil {
@@ -233,7 +260,7 @@ func (r *Repo) fetchHeads(remotes []string) headsResult {
 			if !found {
 				continue
 			}
-			if name := strings.TrimPrefix(ref, "refs/heads/"); name != ref && name != "" {
+			if name := strings.TrimPrefix(ref, "refs/heads/"); name != ref && safeRef(name) {
 				out = append(out, name)
 				tips[remote+"/"+name] = sha
 			}
@@ -290,6 +317,11 @@ func (r *Repo) branchName(ref string) string {
 	}
 	return ref
 }
+
+// safeRef reports whether a branch name can be passed to git as a revision. A remote
+// chooses its branch names and its HEAD, and one beginning with "-" is read as an option:
+// `--output=Makefile` truncated a tracked file.
+func safeRef(name string) bool { return name != "" && !strings.HasPrefix(name, "-") }
 
 // RefsAreAuthoritative reports whether the claim refs were read from the remotes
 // themselves rather than from the last fetch. Only the second can name a branch that no
@@ -512,8 +544,7 @@ func (r *Repo) resolveBranch(branch string) string {
 func ProjectRoot(start string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", "-C", start, "rev-parse", "--show-toplevel")
-	cmd.WaitDelay = waitDelay
+	cmd := gitCommand(ctx, start, "rev-parse", "--show-toplevel")
 	if out, err := cmd.Output(); err == nil {
 		if root := strings.TrimSpace(string(out)); root != "" {
 			return root

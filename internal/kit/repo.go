@@ -19,6 +19,11 @@ const (
 	gitLogLimit = "500"
 	gitTimeout  = 30 * time.Second
 
+	// hookTimeout bounds the git commands a project's hooks run inside: a pre-commit hook
+	// running its tests, a pre-push hook, a checkout of a large tree. At gitTimeout such a
+	// project could never submit, and the doc was left staged.
+	hookTimeout = 10 * time.Minute
+
 	// remoteTimeout bounds the one question the kit asks the network on a read. Bounded
 	// on purpose: `kit next ~/code/*` walks every project, and a board that hangs because
 	// one remote is unreachable is worse than a board that falls back to a stale mirror
@@ -99,9 +104,10 @@ type Repo struct {
 	// The remote's branch list, asked once. It cannot change under a single command, and
 	// `audit` asks it per Submitted feature: unmemoised, one ls-remote per doc took this
 	// repo's audit from under a second to two minutes.
-	heads      []string
-	headsKnown bool
-	headsAsked bool
+	heads               []string
+	headsKnown          bool
+	reservationsPending chan bool
+	headsAsked          bool
 
 	// What each remote advertises for each branch, from the same round trip. `release`
 	// deletes a ref on the remote, so it has to know whether the copy it read is that ref.
@@ -244,7 +250,10 @@ func (r *Repo) readFeature(path string) *Feature {
 		text := Normalise(string(raw))
 		fields, body := ParseFrontmatter(text)
 		f.ID = fields["id"]
-		f.Title = fields["title"]
+		if f.ID != "" && !ValidID(f.ID) {
+			f.BadID, f.ID = f.ID, ""
+		}
+		f.Title = printable(fields["title"])
 		f.Status = fields["status"]
 		f.Needs = ParseIDList(fields["needs"])
 		stamp, present := fields["submitted"]

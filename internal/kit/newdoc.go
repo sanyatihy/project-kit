@@ -23,7 +23,7 @@ func Slug(title string) string {
 	return strings.Trim(s, "-")
 }
 
-// NextID is one past the highest four-digit feature ID in use.
+// NextID is one past the highest feature ID in use.
 //
 // Where the search for a free ID starts, not what it answers: disk records the docs
 // that exist rather than the numbers that have been handed out, so a deleted doc's
@@ -73,23 +73,40 @@ type Reservation struct {
 // linger as a reservation the remote no longer has.
 func (r *Repo) Reservations() ([]Reservation, bool) {
 	if !r.reservationsAsked {
+		r.StartReservations()
 		r.reservationsAsked = true
-		r.reservationsFresh = r.fetchReservations()
+		r.reservationsFresh = <-r.reservationsPending
 		r.reservations = r.readReservations()
 	}
 	return r.reservations, r.reservationsFresh
+}
+
+// StartReservations begins the reservation fetch without waiting for it, so a caller that
+// will need it overlaps it with the branch listing instead of following it. Two round
+// trips one after the other were half of online `audit`'s wall time.
+func (r *Repo) StartReservations() {
+	if r.reservationsPending != nil {
+		return
+	}
+	r.reservationsPending = make(chan bool, 1)
+	remote, err := pickRemote(r)
+	if r.Offline || err != nil || remote == "" {
+		r.reservationsPending <- false
+		return
+	}
+	go func() { r.reservationsPending <- r.fetchReservationsFrom(remote) }()
 }
 
 // fetchReservations brings the namespace up to date, reporting whether it managed to.
 // Nothing to ask means false rather than an error: no remote, `--offline`, and a remote
 // that did not answer are all "this list may be stale", which is the caller's decision
 // to make.
-func (r *Repo) fetchReservations() bool {
-	remote, err := pickRemote(r)
-	if r.Offline || err != nil || remote == "" {
-		return false
-	}
-	_, fetchErr := r.gitRun("fetch", "--prune", remote, "+"+idRef("*")+":"+idRef("*"))
+//
+// It touches no memo, so it is safe on a goroutine of its own.
+func (r *Repo) fetchReservationsFrom(remote string) bool {
+	// A read: no gc or maintenance started behind the command that asked.
+	_, fetchErr := r.gitRun("-c", "maintenance.auto=false", "-c", "gc.auto=0",
+		"fetch", "--prune", remote, "+"+idRef("*")+":"+idRef("*"))
 	return fetchErr == nil
 }
 
@@ -210,7 +227,7 @@ func reserveID(r *Repo, remote, title string) (string, error) {
 // that finding was not fired by every doc.
 //
 // One push for all of them, and re-running it is free — a reservation already there
-// answers "up to date". A project with no remote, or with no doc holding a four-digit
+// answers "up to date". A project with no remote, or with no doc holding a feature
 // ID, asks the network nothing.
 func BackfillIDs(r *Repo) (int, error) {
 	remote, err := pickRemote(r)
@@ -253,7 +270,7 @@ func BackfillIDs(r *Repo) (int, error) {
 	return created, nil
 }
 
-// heldIDs are the four-digit numbers a project's docs already hold, from the frontmatter
+// heldIDs are the numbers of four or more digits a project's docs already hold, from the frontmatter
 // and from the filename both — the two halves NextID counts, because a doc whose halves
 // disagree has taken both numbers out of circulation.
 func heldIDs(r *Repo) []string {
@@ -261,7 +278,7 @@ func heldIDs(r *Repo) []string {
 	var ids []string
 	for _, f := range r.Features {
 		for _, candidate := range []string{f.ID, f.FilenamePrefix()} {
-			if n, err := strconv.Atoi(candidate); err != nil || n <= 0 || len(candidate) != 4 {
+			if n, err := strconv.Atoi(candidate); err != nil || n <= 0 || len(candidate) < 4 {
 				continue
 			}
 			if !seen[candidate] {
@@ -291,6 +308,9 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 	if strings.TrimSpace(title) == "" {
 		return nil, fmt.Errorf("a title is required")
 	}
+	if !SingleLine(title) {
+		return nil, fmt.Errorf("a title is one line with no control characters")
+	}
 	slug := Slug(title)
 	if slug == "" {
 		return nil, fmt.Errorf("title %q has no usable characters", title)
@@ -299,7 +319,7 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 		return nil, fmt.Errorf("not set up yet — run: kit init %s", r.Root)
 	}
 
-	// A branch whose name cites a four-digit id is a claim on that feature, wherever in
+	// A branch whose name cites a id (four or more digits) is a claim on that feature, wherever in
 	// the name it sits, and a plan round drafted on one claims a feature it has nothing
 	// to do with: `plan/fold-in-0002-fix` made the board report 0002 as taken while
 	// `audit` exited 0 saying the docs and the repo agreed. Refused here rather than by
@@ -310,8 +330,8 @@ func NewFeature(templates fs.FS, r *Repo, title string, today time.Time) (*Draft
 	if held := r.ForeignClaim(); held != "" {
 		return nil, fmt.Errorf("this checkout is on %s, whose name cites %s — a branch "+
 			"citing an id claims that feature, so a doc drafted here would claim it too\n"+
-			"put the round on a branch of its own: git switch -c plan/<round>, with no "+
-			"four-digit id anywhere in the name", r.HeadBranch(), held)
+			"start the round from an updated trunk checkout: kit start --plan \"<round>\", with no "+
+			"id (four or more digits) anywhere in the name", r.HeadBranch(), held)
 	}
 
 	raw, err := fs.ReadFile(templates, "templates/features-TEMPLATE.md")

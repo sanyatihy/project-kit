@@ -153,7 +153,7 @@ var (
 	// on handing the feature out. It has to fail --strict — it cannot be left sitting
 	// while agents run.
 	checkIDMismatch = Check{"id-mismatch", High,
-		"frontmatter id: is missing or disagrees with the filename, so a claim on it is invisible to the board"}
+		"frontmatter id: is missing, is not four or more digits, or disagrees with the filename, so the board cannot route a claim on it"}
 	// One defect wearing two names: a bullet `kit block` would never have written. A plain
 	// bullet blocks nothing and a box with no date never ages — opposite consequences, one
 	// cause, and the same line to correct.
@@ -173,7 +173,7 @@ var (
 	checkSplitClaim = Check{"split-claim", High,
 		"two branches claim one feature — two agents believe they own it"}
 	// MEDIUM beside needs-unknown, whose blind spot it is: that check can only ask about
-	// ids that parsed, and prose scans for four-digit runs like any other string.
+	// ids that parsed, and prose scans for runs of four or more digits like any other string.
 	checkNeedsUnparsed = Check{"needs-unparsed", Medium,
 		"a needs: carries something that is not an id list, so the ids read out of it are not dependencies anybody declared"}
 	checkOrphanClaim = Check{"orphan-claim", Medium,
@@ -396,6 +396,8 @@ var repoChecks = []repoCheck{
 // protocol that had already been fixed.
 func Audit(r *Repo, today time.Time, protocol string) []Finding {
 	rs := &repoState{r: r, today: today, protocol: protocol}
+	r.StartReservations()
+	r.loadGit()
 	found := duplicateID(rs)
 
 	statuses := strings.Join(AllStatuses, ", ")
@@ -654,7 +656,7 @@ func doneNotSubmitted(s *docState) []Finding {
 func statusState(s *docState) []Finding {
 	// Both fixes name the command. "use one of: Draft, Dropped, Submitted" was an
 	// instruction to hand-edit `status:`, which is what put the unrecognised value there
-	// and what rule 6 forbids — the one finding a 27-session chain repaired by breaking
+	// and what the protocol forbids — the one finding a 27-session chain repaired by breaking
 	// the rule it was told to follow. `reopen` writes the field, including into a doc that
 	// carries no `status:` line at all.
 	fix := `run: kit reopen ` + s.f.ID + ` --repair "<why>"`
@@ -678,7 +680,7 @@ func statusState(s *docState) []Finding {
 
 // A terminal doc is asked nothing about its plan. A stub retired with `kit drop` before
 // anybody wrote it reported three HIGH findings whose fixes were to write a plan for work
-// that will never happen, or to set a status back to Draft — the edit rule 21 forbids. It
+// that will never happen, or to set a status back to Draft — the edit the frozen-doc rule forbids. It
 // is HIGH and `--strict` is project-wide, so one such doc refused every submit in the
 // project for ever.
 //
@@ -729,6 +731,15 @@ func claimState(s *docState) []Finding {
 
 func idMismatch(s *docState) []Finding {
 	prefix := s.f.FilenamePrefix()
+	if s.f.BadID != "" {
+		fix := "set id: to the filename's number"
+		if prefix != "" {
+			fix = "set id: " + prefix
+		}
+		return []Finding{finding(checkIDMismatch, s.at,
+			fmt.Sprintf("id %q is not a feature id of four or more digits, so nothing can claim it", s.f.BadID),
+			fix)}
+	}
 	if prefix == "" || prefix == s.f.ID {
 		return nil
 	}
@@ -822,8 +833,9 @@ func questionState(s *docState) []Finding {
 				` `+questionSep+` <question>"`))
 	}
 	for _, q := range s.f.OpenQuestions() {
-		// An undated box is already reported above, and nothing can age it.
-		if q.When.IsZero() {
+		// An undated box is already reported above, and nothing can age it. A parked plan
+		// is waiting for the operator by design, so its questions age on purpose.
+		if q.When.IsZero() || s.f.Status == StatusParked {
 			continue
 		}
 		if age := Days(q.When, s.today); age >= QuestionStaleDays {
@@ -961,9 +973,9 @@ func protocolStale(s *repoState) []Finding {
 	return nil
 }
 
-// idRunRe finds the feature ids a doc's prose names. A four-digit run that resolves to no
+// idRunRe finds the feature ids a doc's prose names. A run of four or more digits that resolves to no
 // doc is a year, a port or a count, and is not looked at again.
-var idRunRe = regexp.MustCompile(`\b\d{4}\b`)
+var idRunRe = regexp.MustCompile(`\b\d{4,}\b`)
 
 // A doc that names another feature in its plan and leaves `needs:` empty is the state that
 // cost a chain a session: 0002's ## Problem said "without this, 0003's charts have nothing
@@ -1009,10 +1021,10 @@ func needsUnstated(s *repoState) []Finding {
 	return out
 }
 
-// idListOnlyRe matches a needs: that is nothing but four-digit ids, commas and spaces.
+// idListOnlyRe matches a needs: that is nothing but ids, commas and spaces.
 // Anything else in the value was not written as a dependency, which is why this cannot
 // fire on a healthy doc. An empty value matches, because empty is the common case.
-var idListOnlyRe = regexp.MustCompile(`^[\s,]*(?:\d{4}[\s,]*)*$`)
+var idListOnlyRe = regexp.MustCompile(`^[\s,]*(?:\d{4,}[\s,]*)*$`)
 
 // The graph is only checked for the ways it can be *impossible*, never for whether the
 // declared needs are the right ones — that is a judgement call and no heuristic has it.
@@ -1035,7 +1047,7 @@ func needsState(s *repoState) []Finding {
 		if !idListOnlyRe.MatchString(f.needsText) {
 			out = append(out, finding(checkNeedsUnparsed, f.Rel,
 				fmt.Sprintf("%s: needs: %q is not an id list", f.Name(), clip(f.needsText, 40)),
-				"leave it empty, or list only the four-digit ids that must merge first"))
+				"leave it empty, or list only the ids that must merge first"))
 			continue
 		}
 		if s.r.needsCycle(f.ID, f.ID, map[string]bool{}) && !slices.Contains(f.Needs, f.ID) {
@@ -1153,6 +1165,7 @@ func visionIsStub(path string) bool {
 }
 
 func clip(text string, width int) string {
+	text = printable(text)
 	runes := []rune(text)
 	if len(runes) <= width {
 		return text

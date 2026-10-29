@@ -101,12 +101,14 @@ belong to the agent runner, not kit.
   clean candidate. Planning branches cannot be harvested to bypass approval. Gate argv runs directly with a
   30-minute bound; failure, changed HEAD/branch or dirty output stops publication.
   Submission may change only lifecycle fields; hook-created commits or other edits refuse publication.
-  Revisions after submission require reopen. Retrying finish reruns validation.
+  Revisions after submission require reopen; merges of the trunk into the branch do not,
+  and finish reruns the gate on them. Retrying finish reruns validation.
   Reopen writes no Log entry; its commit subject carries the reason.
-- Finish skips the gate when nothing but the feature doc changed since the latest commit
-  where that doc read Submitted, and its parsed `## Tasks` is identical. The skip trusts
-  that Submit's gate. `-G` also matches the Reopen, so each hit's copy is read. Audit
-  still runs, and the handoff names the covering commit in `gate_skipped`.
+- Finish skips the gate after a reopen when nothing but the feature doc changed since the
+  commit named by the latest Submit's `Kit-Gate:` trailer, and its parsed `## Tasks` is
+  identical. Only finish writes the trailer, naming the commit its passing gate ran on; a
+  skip carries it forward. A bare `kit submit` writes none, so the gate runs. Audit still
+  runs, and the handoff names that commit in `gate_skipped`.
 - Finish supplies pr_title from the feature title or Plan: <round>; next repeats the
   feature title for pending review. Agents set the PR title explicitly instead of
   commit autofill, which can select the claim receipt.
@@ -137,7 +139,7 @@ belong to the agent runner, not kit.
   rebased equivalents are bookkeeping, not product work.
 - Claim requires a committed plan on trunk and HEAD equal to the advertised trunk tip
   online, or local trunk offline. Board eligibility uses the same PlanLanded predicate.
-- Any branch name citing a four-digit id is a claim. One feature per checkout; new refuses
+- Any branch name citing a id (four or more digits) is a claim. One feature per checkout; new refuses
   a foreign claim branch. Planning uses `plan/<round>` without an id. A spike is neither
   trunk, a plan branch nor a claim; harvest assigns its id and feature branch afterward.
 - Harvest commits the whole working tree with completed task boxes. With no history it
@@ -186,7 +188,8 @@ belong to the agent runner, not kit.
   build if a registered check has no implementation or two claim one code.
 - One defect produces one actionable finding. Severity reflects damage; age is advisory.
   Delete checks for states nobody may repair. Missing VISION and AGENTS.md share
-  no-protocol; question checks skip frozen docs, whose questions nobody may correct;
+  no-protocol; question checks skip frozen docs, whose questions nobody may correct,
+  and question-stale skips Parked plans, which wait for the operator by design;
   split-claim and id-mismatch are HIGH. Keep issuer patterns in audit.go, never templates.
   `needs-unstated` is LOW because a citation alone cannot prove a dependency. It reads
   Problem and Design only for nonterminal plans. Secret checks use issuer-specific shapes.
@@ -203,22 +206,29 @@ belong to the agent runner, not kit.
 - JSON fields keep their types and meanings: empty board groups are `[]`; unavailable
   moved timestamps are omitted; read failures populate error and exit 2. Additive fields
   are allowed; human-readable wording is not a parsing interface.
-- Exit codes: 0 success; 1 completed negative result (lost claim or strict HIGH finding);
-  2 refusal or incomplete operation. An interrupted claim is not a confirmed loss.
+- Exit codes: 0 success; 1 completed negative result (a feature that is not yours — lost,
+  or refused over its plan — or a strict HIGH finding); 2 a refusal over this checkout or
+  an incomplete operation. An interrupted claim is not a confirmed loss.
 - Git path output uses `-z`. Git reads are batched; adding unclaimed features must not add
-  subprocesses. Remote listing and reservation refresh each run at most once per read.
+  subprocesses. Remote listing and reservation refresh each run at most once per read, and
+  audit runs them concurrently.
   The process-growth comparison uses 30- and 130-feature boards with identical claims.
 - **`exec.CommandContext` kills git and nothing git started.** `git-remote-https` outlives
   it holding the stdout pipe, so `cmd.Output()` blocks for ever: `next` against a
   black-holed remote came back in 75s against the 15s its help promises, and in 15.05s
   once every git command set `cmd.WaitDelay`. The delay comes out of the bound, not on
   top of it.
-  Remote calls are bounded at 15 seconds. A 5s timeout excluded a working SSH remote
+  Remote calls are bounded at 15 seconds; other reads at 30. Commit, push and worktree
+  creation run hooks and get 10 minutes. Every git runs with `GIT_TERMINAL_PROMPT=0`, and
+  the reservation fetch disables gc and maintenance. A 5s timeout excluded a working SSH remote
   measured at 5.58s. Inject dates into logic.
 
 ## Scaffolding and parsing
 
 - Init exclusively creates missing files, preserving existing files and dangling symlinks.
+  No command writes through a symlink: docs and AGENTS.md are replaced by rename from a
+  random temp file after an `Lstat`, and a `.worktrees` that is not a directory gets no
+  worktree.
   It owns the document layout; submit's TECH creation is a legacy fallback. Only the
   Work protocol section is refreshed; house rules and following sections survive.
   Virgin projects audit clean: unfilled-vision and no-protocol wait for features.
@@ -276,10 +286,9 @@ developer's `~/.gitconfig`, so three tests — including the one written to catc
 
 Coverage of the driver process is not coverage of the tested binary; no percentage is reported.
 
-The module is private: installation requires GOPRIVATE and credentials. Preserve existing
-comma-separated GOPRIVATE entries; exported environment values override `go env -w`.
-Generated CI omits kit audit to avoid distributing those credentials; this repo audits
-its own source. After merge, reinstall and publish a tag: `@latest` resolves to a release.
+The module is public: `go install …/cmd/kit@latest` needs no credentials and resolves to
+the newest tag. Generated CI does not run kit audit yet (BACKLOG); this repo audits its
+own source. After merge, reinstall and publish a tag.
 
 Release binds the complete gate and annotated tag to one clean published trunk commit.
 Retry reuses the same tag; conflicts and unreadable state refuse. Verify the remote tag

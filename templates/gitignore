@@ -26,3 +26,9 @@ Desktop.ini
 # Merge and patch leftovers
 *.orig
 *.rej
+
+# Secrets — kit commits with `git add -A` on pause and harvest, so a local env file must
+# never be addable. The committed template stays.
+.env
+.env.*
+!.env.example

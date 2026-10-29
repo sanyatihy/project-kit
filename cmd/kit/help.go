@@ -26,20 +26,21 @@ func canonicalCommand(name string) string {
 const overview = `kit — bootstrap projects and run them with agents.
 
 Commands:
-  kit start [<id>|--plan <round>|--work <outcome>]  prepare requested work
-  kit finish [--json] [-- <gate argv>]  validate and publish for review
-  kit init  [PATH] [--stack STACK]    set a project up, or fill in what is missing
+  kit start <id> | --plan <round> | --work <outcome>   take or begin work
+  kit finish [--json] [-- <gate argv>]  gate, submit and publish for review
+  kit init  [PATH] [--stack STACK] [--forge FORGE]  set a project up, or fill in the gaps
   kit new   <title...>                start a feature doc, ID and date filled in
-  kit harvest <title...> --box "..."  give finished work a doc and a commit
-  kit claim <id>                      take a feature: push the branch, win or lose
-  kit release <id> [--discard]          give a claim back: delete the branch, both sides
+  kit harvest <title...> --box "..." | --nothing "<what it showed>"
+                                      give an existing spike a doc and a commit
+  kit claim <id>                      the claim step of kit start <id>, alone
+  kit release <id> [--discard]        give a claim back: delete the branch, both sides
   kit block <id> "<question>"         park a decision only a human can make
   kit pause "<why>"                   set this checkout's work down, keeping the claim
-  kit submit  <id>                      verify completed boxes, stamp, submit for review
-  kit drop  <id> "<why>"              retire a feature that will not be built
-  kit reopen <id> "<why>"              reopen an unmerged submission for review changes
-  kit park <id> "<why>"                retain a complete plan for later
-  kit activate <id>                    propose making parked work available
+  kit submit <id>                     the stamp step of kit finish, alone; runs no gate
+  kit drop  <id> "<why>" [--reservation]  retire a plan, or an id no doc holds
+  kit reopen <id> "<why>" [--repair]  reopen an unmerged submission for review changes
+  kit park <id> "<why>"               retain a complete plan for later
+  kit activate <id>                   propose making parked work available
   kit next  [--json] [--offline]      what should I work on?
   kit audit [--json] [--strict] [--offline]
                                       where do the docs disagree with the repo?
@@ -77,9 +78,9 @@ The four rules:
      free. Finishing beats starting.
   2. Within a feature, do the topmost unticked "## Tasks" box. List order is the
      order of work, so ordering needs no extra syntax.
-  3. One agent per feature, one feature per checkout. "kit claim <id>" pushes the
+  3. One agent per feature, one feature per checkout. "kit start <id>" pushes the
      branch that claims it, and creating that ref on the remote is what decides:
-     exit 1 means another agent won it. Local branches, remote branches and
+     exit 1 means it is not yours. Local branches, remote branches and
      worktrees all count as claims. A won claim makes the worktree to work in;
      go there, not here.
   4. A feature with an unticked box under its own "## Open questions" is blocked
@@ -89,8 +90,9 @@ The four rules:
 
 The claim refusals you will meet most: an unmet "needs:", an open question, an
 unwritten ## Problem, ## Design or ## Tasks, an id: that disagrees with the filename,
-a duplicate id, or a plan that has not reached the default branch. "kit claim --help"
-names every one.
+a duplicate id, or a plan that has not reached the default branch. A refusal over the
+feature exits 1, like a lost race: choose other work. One over this checkout exits 2:
+fix it and retry. "kit claim --help" names every one.
 
 Blocked on something only a human can decide? Run "kit block <id> \"<question>\"",
 which records it in that feature's doc and commits it, then move to another free
@@ -98,10 +100,10 @@ feature from another trunk checkout. If none is free, report the blocker and sto
 
 Exit codes, so a script can tell these apart:
   0  it worked
-  1  it ran and the answer is no: "kit claim" lost the feature to another agent,
-     or "kit audit --strict" found something HIGH
+  1  it ran and the answer is no: the feature is not yours to take (lost, or one
+     of the claim refusals above), or "kit audit --strict" found something HIGH
   2  the command could not run, or refused: unknown command, bad flag, or a
-     refusal named above
+     state to fix before retrying
 
 Topics:
   kit help protocol      the rules agents follow, as written into AGENTS.md
@@ -201,13 +203,13 @@ working tree. Name observable outcomes with --box; history is not used to infer 
 Fill Problem and Design; keep Log for plan changes, which may be empty.
 Without --box, the refusal lists the working tree to help name outcomes.
 
-Refuses trunk, planning branches, detached HEAD and existing claims, including branch names citing a
-four-digit id. Use a spike branch; never bypass a pending plan's approval. With no
+Refuses trunk, planning branches, detached HEAD and existing claims, including branch
+names citing an id (four or more digits). Use a spike branch; never bypass a pending plan's approval. With no
 commits, first creates an empty trunk review base; product files stay on the feature
 branch. Publish that base before the first PR.
 
-Then run the project gate, kit audit --strict and kit submit. Push the branch and
-open a PR for human review; never merge it yourself.
+Then run kit finish -- <gate argv>: it gates, audits, submits and pushes. Open a PR
+for human review; never merge it yourself.
 
 --nothing "<lesson>" records a discarded spike in BACKLOG.md, commits only that file
 and takes no id.
@@ -218,7 +220,7 @@ and takes no id.
 	"new": `kit new <title...>
 
 Create docs/features/NNNN-name.md with id, title, date and status: Draft.
-Use a plan/<round> branch with no four-digit id. Fill Problem, Non-goals, Design
+Use a plan/<round> branch with no id (four or more digits). Fill Problem, Non-goals, Design
 and Tasks; unresolved choices go in Open questions and kit block when human-owned.
 Push the planning branch and open a PR. The human approves through merge before
 implementation. Do not set status or submitted fields by hand.
@@ -228,7 +230,7 @@ its id. No remote means local allocation without cross-clone guarantees.
 
 Refuses an empty/unusable title, missing setup, a foreign claim branch, ambiguous
 remotes, failed reservation or file creation. It never overwrites an existing doc.
-Remote id allocation also refuses exhaustion of the four-digit range. A feature's
+Remote id allocation also refuses when every id in its search window is taken. A feature's
 own claim branch may draft discovered work.
 
   kit new "Shorten URLs"`,
@@ -348,8 +350,9 @@ dependencies, foreign claims, trunk/detached checkout, uncommitted/untracked fil
 or unreadable git status. If the stamp was written but its commit failed, commit
 the named file as instructed.
 
-Push and open the PR; never merge your own work. For review changes, run kit reopen,
-revise tasks, implement, then repeat gate, audit, submit and push. Submitted docs
+kit finish -- <gate argv> runs the gate, audit, this and the push in one step; use it.
+Open the PR; never merge your own work. For review changes, run kit reopen, revise
+tasks, implement, then kit finish again. Submitted docs
 on trunk are frozen; further changes need a new feature.
 
   kit submit 0007`,

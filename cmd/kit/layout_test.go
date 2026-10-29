@@ -1,7 +1,7 @@
 package main
 
 // A file the protocol tells an agent to write is a file the kit has to write or
-// describe. `BACKLOG.md` was named by rule 14 and by `kit submit` while nothing created
+// describe. `BACKLOG.md` was named by the protocol and by `kit submit` while nothing created
 // it and no topic printed its format, so an agent told to add a line had to invent one
 // — the binary naming something it does not have.
 //
@@ -21,7 +21,7 @@ import (
 
 const protocolPath = "../../templates/AGENTS-section.md"
 
-// Any markdown file the protocol names, however it names it. Rule 14 says "a
+// Any markdown file the protocol names, however it names it. The protocol says "a
 // `BACKLOG.md` line" with no directory, which is how the gap hid: a pattern anchored on
 // `docs/` read the protocol and found nothing to check.
 var protocolFileRe = regexp.MustCompile(`[A-Za-z0-9_/-]*[A-Za-z]\.md`)

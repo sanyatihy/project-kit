@@ -15,38 +15,12 @@ runtime dependency.
 
 ## Install
 
-From a clone: `make install`. Nothing below applies.
-
-Over the network it takes two settings, because the repo is private.
-
-**1. Keep Go off the proxy and the checksum database for it.** Neither can see a private
-repo.
-
 ```sh
-go env -w GOPRIVATE='github.com/sanyatihy/*'
+go install github.com/sanyatihy/project-kit/cmd/kit@latest
 ```
 
-`GOPRIVATE` is a comma-separated list, so append to a company value rather than replacing
-it. A shell `export GOPRIVATE=` beats `go env -w`, and `GONOPROXY`/`GONOSUMDB` override it
-entirely. Run `go env GOPRIVATE` and confirm before blaming anything else.
-
-**2. Give `git` a way to authenticate.** Go fetches over HTTPS, which needs credentials
-for a private repo. Reuse the SSH key you have, scoped to the one namespace:
-
-```sh
-git config --global url."git@github.com:sanyatihy/".insteadOf "https://github.com/sanyatihy/"
-```
-
-Then `go install github.com/sanyatihy/project-kit/cmd/kit@latest`. Upgrading is the same
-command.
-
-The failure modes are distinguishable:
-
-| symptom | missing |
-| --- | --- |
-| `410 Gone` from `proxy.golang.org` | setting 1 |
-| a `sum.golang.org` `404` | setting 1, the checksum half |
-| a git prompt, or `terminal prompts disabled` | setting 2 |
+Upgrading is the same command; `@latest` resolves to the newest release tag. From a
+clone, `make install` builds the checkout instead.
 
 ## Setup
 
@@ -179,18 +153,20 @@ cannot activate parked work. Upgrade all writers before using Parked.
 
 ## Exploring first
 
-For an MVP or experiment the human asks to explore, work on an ordinary branch with no four-digit id in its name.
-This route does not bypass approval of an already drafted feature. When the result is
-worth keeping:
+For an MVP or experiment the human asks to explore, record the intent first and work
+on the spike branch it makes. This route does not bypass approval of an already drafted
+feature. When the result is worth keeping, finish it:
 
 ```sh
-kit harvest "Shorten URLs" --box "A long URL comes back short"
+kit start --work "A long URL comes back short"
+# ...implement and commit...
+kit finish -- make check
 ```
 
-Harvest gives the existing work a feature doc and commits it on a branch named after
-that feature. Fill Problem and Design from the decisions actually made; the completed
-outcomes are already ticked. Then use the same gate, submit, review and revision sequence
-as planned work. Do not create retrospective plans pretending to precede the code.
+Finish harvests the work into a feature doc on a branch named after that feature, asks
+for Problem and Design, then gates, submits and pushes. A spike made without
+`kit start --work` is recorded with `kit harvest "<title>" --box "<outcome>"` first. Fill Problem and Design from the decisions actually made; the completed
+outcomes are already ticked. Review and revision then follow planned work. Do not create retrospective plans pretending to precede the code.
 
 With no prior commits, harvest creates an empty trunk base and commits the entire MVP
 on the feature branch. Publish the empty base before opening the first PR. Staged product
@@ -209,7 +185,9 @@ approval for the human; an agent using the human's credentials has the same perm
 kit start <id> | --plan <round> | --work <outcome>  prepare recorded work
 kit finish [--json] [-- <gate argv>]     validate, submit and publish for human review
 kit new   <title...>                     next free ID, date filled in, status Draft
-kit claim <id>                           push the branch; exit 1 means you lost it
+kit claim <id>                           the claim step of start; exit 1: not yours
+kit harvest <title...> --box "..."       give an unrecorded spike a doc and a commit
+kit pause "<why>"                        set work down, keeping the claim
 kit release <id> [--discard]               give a claim back; refuses over work, and over
                                          a claim this clone never created
 kit block <id> "<question>"              record a decision only a human can make
@@ -222,7 +200,8 @@ kit next  [--json] [--offline]           the next action for this checkout
 kit audit [--json] [--strict] [--offline]  --strict exits 1 on HIGH, for CI
                                          both exit 2 where there is no docs/features
 kit init  [PATH] [--stack S] [--forge F]
-kit help  [protocol|template|checks|vision|as-built|go-checklist]
+kit help  [protocol|template|checks|vision|as-built|go-checklist|python-checklist|
+           compatibility|backlog]
 kit version
 ```
 
@@ -247,7 +226,7 @@ Exit codes are a contract, so a script can tell a typo from a finding:
 | Code | Means |
 | --- | --- |
 | `0` | it worked |
-| `1` | it ran and the answer is no: `claim` lost the race, or `audit --strict` found HIGH |
+| `1` | it ran and the answer is no: the feature is not yours (lost, or refused over its plan), or `audit --strict` found HIGH |
 | `2` | the command could not run, or refused: unknown command, bad flag, a refusal |
 
 Diagnostics go to stderr and data to stdout, so `kit next --json` stays pipe-clean even
@@ -280,8 +259,8 @@ is invisible to `kit next` and will be handed to an agent that cannot do it.
 ## Several agents
 
 One worktree each, one feature each. The worktree is what keeps them apart; two agents in
-one checkout overwrite each other. Merging is serial. Two or three at once is the
-realistic ceiling — the limit is your review bandwidth.
+one checkout overwrite each other. Merging is serial. The kit sets no limit on agents;
+in practice two or three at once is the ceiling, because review bandwidth is.
 
 ## Layout
 

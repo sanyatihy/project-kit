@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // DateLayout is the only date format these docs use.
@@ -20,8 +21,9 @@ var (
 	// crash` to `Fix`, and the kit then named the feature by half its title everywhere.
 	trailingRe = regexp.MustCompile(`\s{2,}#.*$`)
 	// Four digits, the shape of every feature id the kit allocates.
-	idListRe = regexp.MustCompile(`\b\d{4}\b`)
-	dateRe   = regexp.MustCompile(`^\s*(\d{4}-\d{2}-\d{2})`)
+	idListRe  = regexp.MustCompile(`\b\d{4,}\b`)
+	validIDRe = regexp.MustCompile(`^\d{4,}$`)
+	dateRe    = regexp.MustCompile(`^\s*(\d{4}-\d{2}-\d{2})`)
 )
 
 // Normalise strips a BOM and CRLF endings so parsing never depends on either.
@@ -388,4 +390,25 @@ func RemoveField(text, key string) string {
 		kept = append(kept, line)
 	}
 	return text[:start] + strings.Join(kept, "\n") + text[end:]
+}
+
+// ValidID reports whether id is a feature id: four or more digits and nothing else. An id
+// is printed into commands an agent runs, so anything else is refused where it is read.
+func ValidID(id string) bool { return validIDRe.MatchString(id) }
+
+// SingleLine reports whether text can be written into a frontmatter line or a branch name:
+// a newline would add a key, and a control character would reach a terminal.
+func SingleLine(text string) bool {
+	return !strings.ContainsFunc(text, unicode.IsControl)
+}
+
+// printable drops control characters: a doc's text reaches a terminal, and an escape
+// sequence in a title would drive it.
+func printable(text string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, text)
 }

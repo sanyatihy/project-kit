@@ -33,7 +33,7 @@ func (r *Repo) findTrunk() string {
 	for _, remote := range r.remotes() {
 		ref := strings.TrimSpace(r.git("symbolic-ref", "--quiet", "--short",
 			"refs/remotes/"+remote+"/HEAD"))
-		if name := r.branchName(ref); name != "" && name != "HEAD" {
+		if name := r.branchName(ref); safeRef(name) && name != "HEAD" {
 			return name
 		}
 	}
@@ -107,6 +107,10 @@ func (r *Repo) HeadBranch() string {
 			strings.TrimSpace(r.git("symbolic-ref", "--quiet", "HEAD")), "refs/heads/")
 		if r.head == "" {
 			r.head = r.rebasingBranch()
+		}
+		// A clone checks out the branch the remote's HEAD names, whatever it is called.
+		if !safeRef(r.head) {
+			r.head = ""
 		}
 	}
 	return r.head
@@ -214,7 +218,7 @@ func (r *Repo) Mine(id string) bool {
 	return true
 }
 
-// HeldClaim is the four-digit id this checkout's branch cites, empty when it cites none.
+// HeldClaim is the id (four or more digits) this checkout's branch cites, empty when it cites none.
 //
 // The same broad reading of a branch name that `Claims` uses, and deliberately so: a name
 // mentioning an id is a claim on that feature, wherever in the name it sits. It is what
@@ -593,7 +597,7 @@ func (r *Repo) statusOn(rev, rel string) string {
 	return fields["status"]
 }
 
-// OrphanClaims lists branches named like a claim — a leading four-digit ID — that cite a
+// OrphanClaims lists branches named like a claim — a leading ID (four or more digits) — that cite a
 // feature doc nobody wrote.
 //
 // Only branches that look like claims are considered. Ordinary working branches

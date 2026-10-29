@@ -71,6 +71,11 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 	if strings.TrimSpace(title) == "" {
 		return nil, fmt.Errorf("a title is required")
 	}
+	for _, text := range append([]string{title}, boxes...) {
+		if !SingleLine(text) {
+			return nil, fmt.Errorf("a title or box is one line with no control characters")
+		}
+	}
 	slug := Slug(title)
 	if slug == "" {
 		return nil, fmt.Errorf("title %q has no usable characters", title)
@@ -84,7 +89,7 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 	if held := r.HeldClaim(); held != "" {
 		return nil, fmt.Errorf("this checkout is on %s, whose name cites %s — a branch "+
 			"citing an id claims that feature, so a doc harvested here would claim it too\n"+
-			"move the work to a branch of its own with no four-digit id in the name",
+			"move the work to a branch of its own with no id (four or more digits) in the name",
 			r.HeadBranch(), held)
 	}
 	branch := r.HeadBranch()
@@ -98,7 +103,7 @@ func Harvest(r *Repo, title string, boxes []string, today time.Time) (*Harvested
 		return nil, fmt.Errorf("this checkout is on %s, the trunk, and harvest commits the "+
 			"whole working tree — which nobody could review there\n"+
 			"move the work to a branch of its own: git switch -c <name>, with no "+
-			"four-digit id anywhere in it", branch)
+			"id (four or more digits) anywhere in it", branch)
 	}
 
 	established := r.HasHistory()
@@ -214,6 +219,9 @@ func HarvestNothing(r *Repo, what string, today time.Time) (*Harvested, error) {
 	lead := ""
 	if len(old) > 0 && !strings.HasSuffix(string(old), "\n") {
 		lead = "\n"
+	}
+	if err := refuseSymlink(r.Backlog); err != nil {
+		return nil, err
 	}
 	f, err := os.OpenFile(r.Backlog, os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {

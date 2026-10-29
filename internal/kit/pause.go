@@ -9,7 +9,7 @@ import (
 
 // Setting work down without giving it up.
 //
-// Rule 13 described this as four clauses of prose — commit, push, open the pull request
+// The pause rule described this as four clauses of prose — commit, push, open the pull request
 // unfinished, say what remains — which is a sequence an agent has to remember and half of
 // which it can get wrong silently. Every other multi-step sequence the protocol described
 // has become a command; this is that.
@@ -108,7 +108,7 @@ func Pause(r *Repo, why string, today time.Time) (*PauseResult, error) {
 	}
 	updated := appendLog(Normalise(string(raw)),
 		"- "+today.UTC().Format(DateLayout)+" — paused: "+why)
-	if err := os.WriteFile(target.Path, []byte(updated), 0o644); err != nil {
+	if err := replaceFile(target.Path, updated); err != nil {
 		return nil, err
 	}
 

@@ -764,7 +764,7 @@ func TestATerminalDocIsAskedNothingAboutItsPlan(t *testing.T) {
 	dropped.run("drop", "0002", "not worth building").ok()
 	dropped.run("audit", "--strict").ok().lacks("unfilled-template")
 
-	// Submitted is the other terminal status, and rule 21 freezes it harder: a doc written
+	// Submitted is the other terminal status, and the frozen-doc rule freezes it harder: a doc written
 	// under a kit that did not have these headings is history, not work.
 	submitted := cleanProject(t)
 	submitted.write("docs/features/0002-frozen.md",
@@ -1660,4 +1660,14 @@ func TestTheAuditSummaryCountsBySeverity(t *testing.T) {
 
 	// And nothing to fix where the docs and the repo agree.
 	cleanProject(t).run("audit").ok().lacks("to fix.")
+}
+
+func TestAParkedPlansQuestionDoesNotAgeIntoAFinding(t *testing.T) {
+	t.Parallel()
+	// A parked plan waits for the operator on purpose; anna's round reported five of these.
+	p := cleanProject(t)
+	p.write("docs/features/0002-later.md", doc("0002", "Later", "Parked", "", "- [ ] Do it"))
+	askOn(p, "docs/features/0002-later.md", daysAgo(60), "Which provider?")
+	p.commitAll("a parked plan with an old question")
+	p.run("audit", "--offline").ok().lacks("question-stale")
 }

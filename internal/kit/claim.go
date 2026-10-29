@@ -249,6 +249,12 @@ func (r *Repo) finishClaim(branch, remote string) (*Claimed, error) {
 // a checkout that has one is not an error. Anything else there is left where it is and
 // named — it is somebody's directory, and this is not the command that removes one.
 func (r *Repo) addWorktree(branch, path string) (bool, error) {
+	// git creates the parent directories through a committed symlink, which would put the
+	// checkout outside the project.
+	dir := filepath.Join(r.MainWorktree(), WorktreesDir)
+	if info, err := os.Lstat(dir); err == nil && !info.IsDir() {
+		return false, fmt.Errorf("%s is not a directory, so no worktree is made there; remove it", dir)
+	}
 	if held := r.worktreeBranch(path); held != "" {
 		if held == branch {
 			return false, nil
