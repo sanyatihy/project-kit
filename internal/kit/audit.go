@@ -199,6 +199,10 @@ var (
 	// ungated version fires on two docs in three; with the gate, none.
 	checkNeedsUnstated = Check{"needs-unstated", Low,
 		"a plan names a feature that has not submitted, and needs: does not list it"}
+	// Shape, not size: a word count cannot tell a verbose doc from a large one (0073).
+	// Plans only — a Submitted doc is frozen, so its finding could never be fixed.
+	checkDocLong = Check{"doc-long", Low,
+		"a plan argues instead of deciding: a table in ## Problem, or a ## Design paragraph over three sentences"}
 	// One command writes all three of these files and overwrites none of them, so a
 	// project missing more than one is one defect with one fix. It was three findings
 	// telling the reader to run `kit init .` three times.
@@ -231,7 +235,7 @@ var Checks = []Check{
 	checkSubmittedNoDate, checkQuestionInformal, checkInboxRetired,
 	checkNeedsUnknown, checkNeedsUnparsed, checkOrphanClaim, checkOrphanReservation,
 	checkNoStatus, checkNoProtocol, checkProtocolStale,
-	checkNeedsUnstated,
+	checkNeedsUnstated, checkDocLong,
 }
 
 // secretShapes are credential formats whose issuer publishes a fixed prefix or
@@ -360,6 +364,7 @@ var featureChecks = []featureCheck{
 	{[]Check{checkSplitClaim}, claimState},
 	{[]Check{checkIDMismatch}, idMismatch},
 	{[]Check{checkQuestionInformal, checkQuestionStale}, questionState},
+	{[]Check{checkDocLong}, docLong},
 }
 
 // repoChecks run after every feature has been through the list above.
@@ -1161,4 +1166,51 @@ func mergedDraft(s *docState) []Finding {
 			"preserve unfinished tasks; release the retained claim with kit release "+s.f.ID+", then kit next")}
 	}
 	return nil
+}
+
+// maxDesignSentences is the longest ## Design paragraph that still states a decision.
+const maxDesignSentences = 3
+
+var (
+	tableRuleRe  = regexp.MustCompile(`(?m)^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$`)
+	codeSpanRe   = regexp.MustCompile("`[^`]*`")
+	sentenceEnd  = regexp.MustCompile(`[.?!](\s|$)`)
+	nonParagraph = regexp.MustCompile(`^\s*([-*+>|#]|\d+[.)]\s)`)
+)
+
+func docLong(s *docState) []Finding {
+	if s.f.Status != StatusDraft && s.f.Status != StatusParked {
+		return nil
+	}
+	var out []Finding
+	if tableRuleRe.MatchString(s.f.Section("Problem")) {
+		out = append(out, finding(checkDocLong, s.at,
+			s.f.Name()+": ## Problem holds a table",
+			"name the signal in a clause and move the measurements to the pull request"))
+	}
+	if n := longestParagraph(s.f.Section("Design")); n > maxDesignSentences {
+		out = append(out, finding(checkDocLong, s.at,
+			fmt.Sprintf("%s: a ## Design paragraph runs %d sentences", s.f.Name(), n),
+			"write one bullet per decision, with each rejected option in a clause"))
+	}
+	return out
+}
+
+// longestParagraph counts sentences in the longest prose block. Lists, tables, quotes and
+// fenced code are not paragraphs, and code spans are dropped so a file name ends nothing.
+func longestParagraph(section string) int {
+	longest, fenced := 0, false
+	for _, block := range strings.Split(section, "\n\n") {
+		lines := strings.Split(strings.Trim(block, "\n"), "\n")
+		opensFence := strings.Count(block, "```")%2 == 1
+		if fenced || strings.HasPrefix(strings.TrimSpace(lines[0]), "```") ||
+			nonParagraph.MatchString(lines[0]) {
+			fenced = fenced != opensFence
+			continue
+		}
+		fenced = fenced != opensFence
+		text := codeSpanRe.ReplaceAllString(strings.Join(lines, " "), "x")
+		longest = max(longest, len(sentenceEnd.FindAllString(text+" ", -1)))
+	}
+	return longest
 }
